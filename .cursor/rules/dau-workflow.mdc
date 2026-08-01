@@ -17,8 +17,8 @@ alwaysApply: true
 ```
 
 ## Master Reference
-- Kaynak: `docs/DAU_MASTER_REFERENCE_v07.pdf`
-- Kaynak HTML: `docs/DAU_MASTER_REFERENCE_v07.html`
+- Kaynak: `docs/DAU_MASTER_REFERENCE_v08.pdf`
+- Kaynak HTML: `docs/DAU_MASTER_REFERENCE_v08.html`
 - Katman tamamlanınca kullanıcıya "master reference güncellenebilir" önerisi ver
 - Güncelleme ve commit kullanıcı onayına bağlıdır
 
@@ -27,4 +27,5 @@ alwaysApply: true
 - Layer 1 Memory ✅
 - Layer 1.5 Prediction Error ✅ (`graph.py` / `prediction_error`)
 - Layer 2 EmotionalWeight + Drift ✅
-- Sıradaki: Layer 3 Generation / drift healing
+- Layer 3 GenerationConsolidation + DriftHealing ✅
+- Sıradaki: Layer 4 Society

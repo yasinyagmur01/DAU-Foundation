@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8"/>
-<title>DAU Master Reference v0.7</title>
+<title>DAU Master Reference v0.8</title>
 <style>
   @page { size: A4; margin: 18mm 16mm; }
   * { box-sizing: border-box; }
@@ -75,8 +75,8 @@
 
 <h1>DAU — Master Reference</h1>
 <p class="meta">
-  <strong>Versiyon 0.7</strong> · 2026-08-01<br/>
-  Layer 1.5 (Prediction Error) + Layer 2 (EmotionalWeight + Drift) tamamlandı —
+  <strong>Versiyon 0.8</strong> · 2026-08-01<br/>
+  Layer 3 (GenerationConsolidation + DriftHealing) tamamlandı —
   Foundation, Memory, Graph entegrasyonu güncel.
 </p>
 
@@ -202,7 +202,32 @@ get_drift_bias: flagged ise magnitude, değilse 0.0
   <code>Warning: drift detected in {domain} (bias={bias:.2f})</code>
 </p>
 
-<h2>9. Mimari durum</h2>
+
+<h2>9. Layer 3 — Nesil Konsolidasyonu + Drift Healing (tamam)</h2>
+<h3>DAU-Generation (<code>generation.py</code>)</h3>
+<ul>
+  <li><code>TransferCandidate</code>: DeltaRecord + memory_score + recall_count wrapper</li>
+  <li><code>select_for_transfer</code>: memory_score &gt;= 0.6, recall_count &gt;= 1, trauma sadece drift &gt;= 1.5 ise geçer</li>
+  <li><code>consolidate_generation</code>: store'dan tüm izleri çeker, filtreler, GenerationRecord paketler</li>
+  <li><code>apply_generation</code>: drift kopyalar, generation sayacı artırır, retrieval_context'e inherited izleri yazar</li>
+  <li>Constants: <code>GENERATION_TRANSFER_THRESHOLD=0.6</code>, <code>GENERATION_MIN_RECALL=1</code>, <code>DRIFT_TRANSFER_MIN=1.5</code></li>
+</ul>
+
+<h3>DAU-DriftHealing (<code>drift.py</code> eklentisi)</h3>
+<ul>
+  <li><code>heal_drift</code>: flagged domain + magnitude &gt;= 0.6 + is_trauma=False → magnitudes azalır</li>
+  <li><code>HEAL_RATE=0.3</code> → bir travmayı temizlemek ~5 güçlü deneyim gerektirir</li>
+  <li>magnitude=0 olunca flag kalkar</li>
+  <li>Constants: <code>HEAL_THRESHOLD=0.6</code>, <code>HEAL_RATE=0.3</code></li>
+</ul>
+
+<h3><code>state.py</code></h3>
+<ul>
+  <li><code>retrieval_context: list[dict[str, Any]]</code> — inherited memory path</li>
+  <li><code>generation_record: Any | None</code> — konsolidasyon kaydı, checkpoint'e yazılıyor</li>
+</ul>
+
+<h2>10. Mimari durum</h2>
 <table>
   <tr><th>Katman</th><th>Durum</th><th>Özet</th></tr>
   <tr>
@@ -227,8 +252,8 @@ get_drift_bias: flagged ise magnitude, değilse 0.0
   </tr>
   <tr>
     <td>Layer 3 Generation</td>
-    <td class="status-next">Sonraki</td>
-    <td>Nesil sonu, miras, drift healing, EWC/LoRA araştırması</td>
+    <td class="status-done">✅</td>
+    <td>Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı</td>
   </tr>
   <tr>
     <td>Layer 4 Society</td>
@@ -242,7 +267,7 @@ get_drift_bias: flagged ise magnitude, değilse 0.0
   </tr>
 </table>
 
-<h2>10. Kod ağacı (v0.7)</h2>
+<h2>11. Kod ağacı (v0.8)</h2>
 <pre class="tree">dau/foundation/
  ├── state.py              — DAUAgentState (+ drift_state), InternalState, DeltaRecord, Event
  ├── delta.py              — compute_delta, classify_delta, should_persist, is_trauma
@@ -259,7 +284,7 @@ dau/memory/
  ├── store.py / decay.py / retrieval.py / consolidation.py
  └── tests/</pre>
 
-<h2>11. Graph yaşam döngüsü</h2>
+<h2>12. Graph yaşam döngüsü</h2>
 <pre>agent_node:
   expected_outcome → retrieve_relevant → EmotionalWeight bias
   → drift warning (bias&gt;0) → LLM karar → Event
@@ -276,7 +301,7 @@ run sonu:
   Groq Llama-3.1-8b-instant · LangSmith
 </p>
 
-<h2>12. Test durumu</h2>
+<h2>13. Test durumu</h2>
 <ul>
   <li>Foundation (Layer 0–1 helpers): 32</li>
   <li>EmotionalWeight: 8</li>
@@ -285,7 +310,7 @@ run sonu:
   <li><strong>Toplam: 53 passed</strong></li>
 </ul>
 
-<h2>13. AMADS / GovSim karşılaştırma</h2>
+<h2>14. AMADS / GovSim karşılaştırma</h2>
 <table>
   <tr><th>AMADS / klasik</th><th>DAU</th></tr>
   <tr><td>Trait dışarıdan atanıyor</td><td>Trait yaşantıdan inşa ediliyor</td></tr>
@@ -295,7 +320,7 @@ run sonu:
   <tr><td>Zaman = round</td><td>Zaman = event + delta büyüklüğü</td></tr>
 </table>
 
-<h2>14. Beş evrensel kısıt</h2>
+<h2>15. Beş evrensel kısıt</h2>
 <table>
   <tr><th>Kısıt</th><th>Anlam</th><th>DAU karşılığı</th></tr>
   <tr><td>time_pressure</td><td>Her şeyin sonu var</td><td>Nesil sonu / konsolidasyon</td></tr>
@@ -305,18 +330,30 @@ run sonu:
   <tr><td>generation_end</td><td>Nesil kapanır</td><td>Miras aktarımı (Layer 3)</td></tr>
 </table>
 
-<h2>15. Açık sorular (güncel)</h2>
+<h2>16. Açık sorular (güncel)</h2>
 <ul>
   <li class="status-done">Duygu fonksiyonu ne? → EmotionalWeight (Layer 2 ✅)</li>
   <li class="status-done">Delta = tahmin hatası nasıl bağlanır? → Layer 1.5 ✅</li>
+  <li class="status-done">Her şeyin bir sonu var → Nesil sonu, konsolidasyon tetikleyicisi ✅</li>
+  <li class="status-done">Drift healing mekanizması ✅</li>
   <li>Continual learning olmadan gerçek iz? (Layer 3)</li>
   <li>LLM embedding match henüz skor değil (W_SEM=0)</li>
   <li>"İyi"yi "kötü"den ayıran mekanizma?</li>
   <li>Öz sorgu nasıl aktive olur?</li>
   <li>Fitness dışarıdan geliyorsa gerçek evrim mi?</li>
 </ul>
+<h3>Hâlâ Açık</h3>
+<ul>
+  <li>Fitness-based transfer filtering — Layer 4 kaynak fiziği olmadan tam çalışmıyor</li>
+  <li><code>select_for_transfer</code> şu an memory_score + recall_count kullanıyor, hayatta kalma kriteri Layer 4'te eklenecek</li>
+</ul>
 
-<h2>16. Versiyon geçmişi</h2>
+<h2>17. Bilinen Sınırlar</h2>
+<ul>
+  <li>Nesil konsolidasyonu kısmi: fitness kriteri (hangi kararlar hayatta kalmayı sağladı) Layer 4 olmadan hesaplanamıyor. Kasıtlı kabul edildi.</li>
+</ul>
+
+<h2>18. Versiyon geçmişi</h2>
 <table>
   <tr><th>Ver</th><th>Tarih</th><th>Not</th></tr>
   <tr><td>0.1</td><td>2026-07-30</td><td>İlk taslak</td></tr>
@@ -326,18 +363,26 @@ run sonu:
   <tr><td>0.5</td><td>2026-08-01</td><td>Akademik havuz, Foundation tamamlandı</td></tr>
   <tr><td>0.6</td><td>2026-08-01</td><td>Layer 1 Memory + SleepConsolidation, Graph-Memory, 32+8 test</td></tr>
   <tr>
-    <td><strong>0.7</strong></td>
-    <td><strong>2026-08-01</strong></td>
+    <td>0.7</td>
+    <td>2026-08-01</td>
     <td>
       Layer 1.5 prediction_error; Layer 2 EmotionalWeight + DriftState;
       graph wiring; 53 test geçiyor
+    </td>
+  </tr>
+  <tr>
+    <td><strong>0.8</strong></td>
+    <td><strong>2026-08-01</strong></td>
+    <td>
+      Layer 3 tamamlandı: GenerationConsolidation + DriftHealing + state.py formal fields.
+      66 test geçiyor.
     </td>
   </tr>
 </table>
 
 <div class="footer">
   Bu döküman her önemli katman tamamlanınca güncellenir.
-  Versiyon 0.7 — Layer 1.5 + Layer 2 tamamlandı; sıradaki Layer 3 (nesil / healing).
+  Versiyon 0.8 — Layer 3 (nesil konsolidasyonu + drift healing) tamamlandı; sıradaki Layer 4 (Society).
 </div>
 
 </body>

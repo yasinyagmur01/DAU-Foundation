@@ -262,24 +262,73 @@ class DAUAgentState(BaseModel):
             "Permanent until Layer 3 healing."
         ),
     )
+    # Layer 3 — inherited retrieval refs + last GenerationRecord package.
+    # generation_record typed Any to avoid circular import:
+    # state → generation → state (same pattern as drift_state).
+    retrieval_context: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description=(
+            "Inherited memory refs for retrieval "
+            "(entries marked generation_inherited=True)."
+        ),
+    )
+    generation_record: Any | None = Field(
+        default=None,
+        description=(
+            "Last GenerationRecord inheritance package applied to this "
+            "organism, or None at birth."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod
-    def _coerce_drift_state(cls, data: Any) -> Any:
+    def _coerce_layer_extensions(cls, data: Any) -> Any:
         from .drift import DriftState
 
         if not isinstance(data, dict):
             return data
-        raw = data.get("drift_state", None)
-        if isinstance(raw, DriftState):
-            return data
-        if raw is None:
+
+        raw_drift = data.get("drift_state", None)
+        if isinstance(raw_drift, DriftState):
+            pass
+        elif raw_drift is None:
             data["drift_state"] = DriftState()
-        elif isinstance(raw, dict):
+        elif isinstance(raw_drift, dict):
             data["drift_state"] = DriftState(
-                flags=dict(raw.get("flags", {})),
-                magnitudes=dict(raw.get("magnitudes", {})),
+                flags=dict(raw_drift.get("flags", {})),
+                magnitudes=dict(raw_drift.get("magnitudes", {})),
             )
+
+        raw_ctx = data.get("retrieval_context", None)
+        if raw_ctx is None:
+            data["retrieval_context"] = []
+        elif not isinstance(raw_ctx, list):
+            raise TypeError("retrieval_context must be a list of dicts")
+
+        raw_gen = data.get("generation_record", None)
+        if raw_gen is None or not isinstance(raw_gen, dict):
+            return data
+
+        # Lazy import: GenerationRecord dataclass (avoids import cycle at load).
+        from .generation import GenerationRecord
+
+        drift_raw = raw_gen.get("inherited_drift", {})
+        if isinstance(drift_raw, DriftState):
+            inherited_drift = drift_raw
+        elif isinstance(drift_raw, dict):
+            inherited_drift = DriftState(
+                flags=dict(drift_raw.get("flags", {})),
+                magnitudes=dict(drift_raw.get("magnitudes", {})),
+            )
+        else:
+            inherited_drift = DriftState()
+        data["generation_record"] = GenerationRecord(
+            agent_id=str(raw_gen["agent_id"]),
+            generation=int(raw_gen.get("generation", DEFAULT_GENERATION)),
+            inherited_memories=list(raw_gen.get("inherited_memories", [])),
+            inherited_drift=inherited_drift,
+            transfer_timestamp=int(raw_gen.get("transfer_timestamp", 0)),
+        )
         return data
 
 

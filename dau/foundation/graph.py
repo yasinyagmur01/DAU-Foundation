@@ -23,8 +23,15 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
 from .constraints import build_default_constraints
-from .delta import DeltaClassification, classify_delta, compute_delta
-from .drift import DRIFT_BIAS_ABSENT, DriftState, get_drift_bias, update_drift
+from .delta import DeltaClassification, classify_delta, compute_delta, is_trauma
+from .drift import (
+    DRIFT_BIAS_ABSENT,
+    HEAL_THRESHOLD,
+    DriftState,
+    get_drift_bias,
+    heal_drift,
+    update_drift,
+)
 from .emotional_weight import apply_emotional_weight, compute_emotional_weight
 from .memory_bridge import (
     MAX_RETRIEVED_MEMORIES,
@@ -489,6 +496,9 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     if not isinstance(current_drift, DriftState):
         current_drift = DriftState()
     new_drift = update_drift(current_drift, record)
+    # Layer 3: strong non-trauma experience may slowly overwrite domain scars.
+    if not is_trauma(record) and float(record.magnitude) >= HEAL_THRESHOLD:
+        new_drift = heal_drift(new_drift, record)
 
     if MEMORY_ENABLED:
         store = _memory_stores.get(state.agent_id)

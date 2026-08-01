@@ -13,12 +13,15 @@ from .delta import is_trauma
 from .state import DeltaRecord
 
 # ---------------------------------------------------------------------------
-# Drift defaults (no magic numbers in logic)
+# Drift defaults / healing (no magic numbers in logic)
 # ---------------------------------------------------------------------------
 
 DRIFT_BIAS_ABSENT: float = 0.0
 MAGNITUDE_ACCUMULATOR_INIT: float = 0.0
 FLAG_SET_ON_TRAUMA: bool = True
+HEAL_THRESHOLD: float = 0.6  # strong positive experience required to heal
+HEAL_RATE: float = 0.3  # slow: ~3+ strong experiences to clear one trauma
+HEALED_MAGNITUDE: float = 0.0
 
 
 @dataclass
@@ -51,6 +54,35 @@ def update_drift(drift_state: DriftState, delta: DeltaRecord) -> DriftState:
     new_magnitudes[domain] = (
         new_magnitudes.get(domain, MAGNITUDE_ACCUMULATOR_INIT) + float(delta.magnitude)
     )
+    return DriftState(flags=new_flags, magnitudes=new_magnitudes)
+
+
+def heal_drift(drift_state: DriftState, delta: DeltaRecord) -> DriftState:
+    """Slowly reduce trauma drift when a strong non-trauma experience lands.
+
+    Biology analogy: scar tissue does not fade on its own — only repeated
+    strong positive experience in the same niche can overwrite it, and even
+    then healing is partial. More trauma never heals trauma.
+    """
+
+    domain = str(delta.affected_domain)
+    if not drift_state.flags.get(domain):
+        return drift_state
+    if float(delta.magnitude) < HEAL_THRESHOLD:
+        return drift_state
+    if is_trauma(delta):
+        return drift_state
+
+    new_flags = dict(drift_state.flags)
+    new_magnitudes = dict(drift_state.magnitudes)
+    reduced = max(
+        HEALED_MAGNITUDE,
+        float(new_magnitudes.get(domain, MAGNITUDE_ACCUMULATOR_INIT))
+        - float(delta.magnitude) * HEAL_RATE,
+    )
+    new_magnitudes[domain] = reduced
+    if reduced == HEALED_MAGNITUDE:
+        new_flags[domain] = False
     return DriftState(flags=new_flags, magnitudes=new_magnitudes)
 
 

@@ -55,4 +55,4 @@ get_drift_bias → flagged magnitude else 0.0
 
 ## Katman Durumu
 - Layer 0–2 ✅ · Layer 1.5 ✅ · Sıradaki Layer 3
-- Master reference: `docs/DAU_MASTER_REFERENCE_v07.pdf`
+- Master reference: `docs/DAU_MASTER_REFERENCE_v08.pdf`
