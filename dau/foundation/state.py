@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Tunable bounds / homeostatic setpoints (no magic numbers in fields)
@@ -251,6 +251,36 @@ class DAUAgentState(BaseModel):
         default_factory=list,
         description="Ordered record of internal-state deltas (append-only history).",
     )
+    # Layer 2 — permanent trauma drift (DriftState lives in drift.py; lazy default
+    # avoids circular import: state → drift → delta → state).
+    drift_state: Any = Field(
+        default_factory=lambda: __import__(
+            "dau.foundation.drift", fromlist=["DriftState"]
+        ).DriftState(),
+        description=(
+            "Per-domain trauma drift flags and accumulated magnitudes. "
+            "Permanent until Layer 3 healing."
+        ),
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_drift_state(cls, data: Any) -> Any:
+        from .drift import DriftState
+
+        if not isinstance(data, dict):
+            return data
+        raw = data.get("drift_state", None)
+        if isinstance(raw, DriftState):
+            return data
+        if raw is None:
+            data["drift_state"] = DriftState()
+        elif isinstance(raw, dict):
+            data["drift_state"] = DriftState(
+                flags=dict(raw.get("flags", {})),
+                magnitudes=dict(raw.get("magnitudes", {})),
+            )
+        return data
 
 
 if __name__ == "__main__":

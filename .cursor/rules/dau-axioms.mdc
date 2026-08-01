@@ -1,0 +1,22 @@
+---
+description: DAU immutable axioms — trait injection yok, LLM-as-judge yok, event-clock
+alwaysApply: true
+---
+
+# DAU — Değiştirilemez Aksiyomlar
+
+DAU (Dynamic Agent Universe): LLM agent'lar trait almadan, yaşantı yoluyla iç dünya inşa eder.
+**Trait verilemez. Sadece yaşam verilir. Trait oradan çıkar.**
+
+## Yasaklar
+1. **Trait injection yok** — dışarıdan kişilik/değer/karakter atanmaz
+2. **LLM-as-judge yok** — tüm metrikler deterministik Python
+3. **Clock-driven zaman yok** — zaman = event sırası (`int`, `now_counter`)
+
+## Kod Disiplini
+- Her sabit `UPPER_CASE`, dosya başındaki constants bloğunda
+- Magic number yok — her sayı semantic isimli sabite bağlı
+- Bir seferde bir dosya — onay gelmeden bir sonrakine geçilmez
+
+## Stack
+LangGraph · Pydantic v2 · ChromaDB · SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · LangSmith

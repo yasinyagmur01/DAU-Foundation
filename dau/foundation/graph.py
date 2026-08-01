@@ -24,6 +24,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .constraints import build_default_constraints
 from .delta import DeltaClassification, classify_delta, compute_delta
+from .drift import DRIFT_BIAS_ABSENT, DriftState, get_drift_bias, update_drift
+from .emotional_weight import apply_emotional_weight, compute_emotional_weight
 from .memory_bridge import (
     MAX_RETRIEVED_MEMORIES,
     MemoryStore,
@@ -57,6 +59,31 @@ MODEL_NAME: str = "llama-3.1-8b-instant"
 TEMPERATURE: float = 0.2
 MAX_TOKENS: int = 150
 MEMORY_ENABLED: bool = True
+
+# Prediction-error proxy (keyword overlap) — Layer 1.5, no LLM judge.
+# Imprint depth uses DELTA_THRESHOLD_* from delta.py (cursorrules / dau-formulas).
+EMPTY_OVERLAP_RATIO: float = 1.0
+ZERO_OVERLAP_RATIO: float = 0.0
+PREDICTION_ERROR_MIN: float = METRIC_MIN
+PREDICTION_ERROR_MAX: float = METRIC_MAX
+INTERNAL_AXIS_COUNT: float = 4.0
+
+# Pre-action expectations by dominant load (deterministic anticipation).
+EXPECTED_OUTCOME_ENERGY: str = "rest recover energy"
+EXPECTED_OUTCOME_RESOURCE: str = "resource extract take"
+EXPECTED_OUTCOME_SOCIAL: str = "social talk cooperate"
+EXPECTED_OUTCOME_UNCERTAINTY: str = "observe wait uncertain"
+EXPECTED_OUTCOME_BY_DOMAIN: dict[str, str] = {
+    "energy": EXPECTED_OUTCOME_ENERGY,
+    "resource": EXPECTED_OUTCOME_RESOURCE,
+    "social": EXPECTED_OUTCOME_SOCIAL,
+    "uncertainty": EXPECTED_OUTCOME_UNCERTAINTY,
+}
+
+# Layer 2 drift warning injected into the system prompt when bias > 0.
+DRIFT_WARNING_TEMPLATE: str = (
+    "Warning: drift detected in {domain} (bias={bias:.2f})"
+)
 
 # Module-local vault handles — not on DAUAgentState (Pydantic cannot serialize).
 _memory_stores: dict[str, MemoryStore] = {}
@@ -226,6 +253,73 @@ def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+def _tokenize(text: str) -> set[str]:
+    """Split text into a lowercase word set for overlap comparison."""
+
+    return {token for token in text.lower().split() if token}
+
+
+def _keyword_overlap_ratio(expected: str, actual: str) -> float:
+    """Jaccard word overlap in [0, 1] — deterministic stand-in for similarity.
+
+    Biology analogy: crude sensory match between anticipated and lived
+    signals before a proper semantic cortex exists.
+    """
+
+    expected_words = _tokenize(expected)
+    actual_words = _tokenize(actual)
+    if not expected_words and not actual_words:
+        return EMPTY_OVERLAP_RATIO
+    if not expected_words or not actual_words:
+        return ZERO_OVERLAP_RATIO
+    union_words = expected_words | actual_words
+    common_words = expected_words & actual_words
+    return len(common_words) / len(union_words)
+
+
+def _build_expected_outcome(state: DAUAgentState) -> str:
+    """Anticipate the next act from the loudest current load domain.
+
+    Biology analogy: before the organism moves, the nervous system emits a
+    provisional prediction shaped by whichever homeostatic burden dominates.
+    """
+
+    domain = dominant_load_domain(state)
+    return EXPECTED_OUTCOME_BY_DOMAIN.get(domain, EXPECTED_OUTCOME_ENERGY)
+
+
+def _prediction_error(expected_outcome: str, actual_outcome: str) -> float:
+    """Return 1 - keyword overlap, clamped to the unit metric interval."""
+
+    overlap_ratio = _keyword_overlap_ratio(expected_outcome, actual_outcome)
+    error = 1.0 - overlap_ratio
+    return max(PREDICTION_ERROR_MIN, min(PREDICTION_ERROR_MAX, error))
+
+
+def _apply_prediction_error(
+    before: InternalState,
+    prediction_error: float,
+) -> InternalState:
+    """Move all homeostatic axes by prediction_error (metabolic floor on energy).
+
+    Biology analogy: unmet prediction revises the whole vital panel. Each axis
+    shifts by the surprise magnitude so compute_delta's mean absolute change
+    equals prediction_error when clamps do not bind. Energy never drops by
+    less than the basal metabolic floor, so perfect prediction still ages the
+    organism. INTERNAL_AXIS_COUNT matches delta.py's four-axis mean.
+    """
+
+    metabolic_floor = ENERGY_DECAY_PER_EVENT * (1.0 + (1.0 - before.energy))
+    energy_drop = max(prediction_error, metabolic_floor)
+    return InternalState(
+        energy=_clamp(before.energy - energy_drop),
+        resource_load=_clamp(before.resource_load + prediction_error),
+        social_load=_clamp(before.social_load + prediction_error),
+        uncertainty_load=_clamp(before.uncertainty_load + prediction_error),
+        somatic_markers=dict(before.somatic_markers),
+    )
+
+
 def _primary_affected_domain(
     before: InternalState,
     after: InternalState,
@@ -288,10 +382,14 @@ def _format_memory_context(memories: list[dict[str, Any]]) -> str:
 def agent_node(state: DAUAgentState) -> dict[str, Any]:
     """Perceive environment and internal state, then decide once.
 
-    Biology analogy: the organism senses niche and body, then commits to a
-    short free-form action. Traits are not injected — only lived context
-    is visible, and the act becomes an immutable event.
+    Biology analogy: the organism first emits an expected outcome from current
+    load pressure, then senses niche and body and commits to a short free-form
+    action. Traits are not injected — only lived context is visible, and the
+    act becomes an immutable event.
     """
+
+    # Anticipate before acting — prediction written into state for evaluator.
+    expected_outcome = _build_expected_outcome(state)
 
     memories: list[dict[str, Any]] = []
     if MEMORY_ENABLED:
@@ -310,6 +408,26 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
     if memory_block:
         system_content = f"{SYSTEM_PROMPT}\n\n{memory_block}"
 
+    # Layer 2 — somatic markers bias priority (function, not emotion label).
+    if state.delta_log:
+        emotional_weight = compute_emotional_weight(
+            state.delta_log[-1],
+            state.internal_state,
+        )
+        system_content = apply_emotional_weight(system_content, emotional_weight)
+
+    # Layer 2 — permanent trauma drift warning on the dominant load domain.
+    dominant_domain = dominant_load_domain(state)
+    drift = state.drift_state
+    if not isinstance(drift, DriftState):
+        drift = DriftState()
+    drift_bias = get_drift_bias(drift, dominant_domain)
+    if drift_bias > DRIFT_BIAS_ABSENT:
+        system_content = (
+            f"{system_content}\n"
+            f"{DRIFT_WARNING_TEMPLATE.format(domain=dominant_domain, bias=drift_bias)}"
+        )
+
     llm = _build_llm()
     response = llm.invoke(
         [
@@ -325,49 +443,40 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         {
             "decision": decision,
             "energy": float(state.internal_state.energy),
+            "expected_outcome": expected_outcome,
         },
     )
     new_state = append_event(state, event)
-    return {"event_log": new_state.event_log}
+    return {
+        "event_log": new_state.event_log,
+        "expected_outcome": expected_outcome,
+    }
 
 
 def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
-    """Apply reflexive homeostatic updates from the latest decision.
+    """Apply homeostatic updates from prediction error (expected vs actual).
 
-    Biology analogy: the already-weakened organism is shaken harder — scarcity
-    and fatigue amplify each hit. Load and energy costs scale with how depleted
-    the body already is; pure reflex, no LLM judgment.
+    Biology analogy: Friston free energy — the organism compares what it
+    anticipated with what it uttered/lived. Keyword overlap is a temporary
+    sensory proxy; prediction_error scales the bodily swing fed into
+    compute_delta. Pure reflex, no LLM judgment. Imprint depth uses
+    DELTA_THRESHOLD_NOISE / NORMAL / DEEP via classify_delta in delta.py.
     """
 
     if not state.event_log:
         return {}
 
     last_event = state.event_log[-1]
-    decision = str(last_event.payload.get("decision", "")).lower()
+    actual_outcome = str(last_event.payload.get("decision", ""))
+    expected_outcome = str(
+        getattr(state, "expected_outcome", "")
+        or last_event.payload.get("expected_outcome", "")
+    )
     before = state.internal_state.model_copy(deep=True)
 
-    resource_load = before.resource_load
-    social_load = before.social_load
-    if _contains_any(decision, RESOURCE_KEYWORDS):
-        resource_impact = RESOURCE_LOAD_INCREMENT * (
-            1.0 + (1.0 - before.resource_load)
-        )
-        resource_load = _clamp(resource_load + resource_impact)
-    if _contains_any(decision, SOCIAL_KEYWORDS):
-        social_impact = SOCIAL_LOAD_INCREMENT * (
-            1.0 + (1.0 - before.social_load)
-        )
-        social_load = _clamp(social_load + social_impact)
-    energy_decay = ENERGY_DECAY_PER_EVENT * (1.0 + (1.0 - before.energy))
-    energy = _clamp(before.energy - energy_decay)
+    prediction_error = _prediction_error(expected_outcome, actual_outcome)
+    after = _apply_prediction_error(before, prediction_error)
 
-    after = InternalState(
-        energy=energy,
-        resource_load=resource_load,
-        social_load=social_load,
-        uncertainty_load=before.uncertainty_load,
-        somatic_markers=dict(before.somatic_markers),
-    )
     affected = _primary_affected_domain(before, after)
     record = compute_delta(
         before,
@@ -375,6 +484,12 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         affected_domain=affected,
         timestamp=last_event.timestamp,
     )
+
+    current_drift = state.drift_state
+    if not isinstance(current_drift, DriftState):
+        current_drift = DriftState()
+    new_drift = update_drift(current_drift, record)
+
     if MEMORY_ENABLED:
         store = _memory_stores.get(state.agent_id)
         if store is not None:
@@ -386,6 +501,7 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     return {
         "internal_state": after,
         "delta_log": list(state.delta_log) + [record],
+        "drift_state": new_drift,
     }
 
 
@@ -442,11 +558,23 @@ def _state_to_plain(values: Any) -> dict[str, Any]:
     """Normalize graph state values into a JSON-serializable dict."""
 
     if isinstance(values, DAUAgentState):
-        return values.model_dump(mode="json")
+        plain = values.model_dump(mode="json")
+        drift = values.drift_state
+        if isinstance(drift, DriftState):
+            plain["drift_state"] = {
+                "flags": dict(drift.flags),
+                "magnitudes": dict(drift.magnitudes),
+            }
+        return plain
     if isinstance(values, dict):
         plain: dict[str, Any] = {}
         for key, value in values.items():
-            if hasattr(value, "model_dump"):
+            if isinstance(value, DriftState):
+                plain[key] = {
+                    "flags": dict(value.flags),
+                    "magnitudes": dict(value.magnitudes),
+                }
+            elif hasattr(value, "model_dump"):
                 plain[key] = value.model_dump(mode="json")
             elif isinstance(value, list):
                 plain[key] = [

@@ -1,0 +1,30 @@
+---
+description: DAU geliştirme akışı — test-first, tek dosya, commit formatı
+alwaysApply: true
+---
+
+# DAU — Geliştirme Akışı
+
+## Sıra
+1. Değişiklik önce test ile doğrulanır
+2. Mevcut testler bozulmadan ilerlenir
+3. Yeni dosya = yeni onay (bir seferde bir dosya)
+4. Commit/push yalnızca kullanıcı istediğinde
+
+## Commit
+```
+[LAYER-X] kısa açıklama
+```
+
+## Master Reference
+- Kaynak: `docs/DAU_MASTER_REFERENCE_v07.pdf`
+- Kaynak HTML: `docs/DAU_MASTER_REFERENCE_v07.html`
+- Katman tamamlanınca kullanıcıya "master reference güncellenebilir" önerisi ver
+- Güncelleme ve commit kullanıcı onayına bağlıdır
+
+## Katman durumu
+- Layer 0 Foundation ✅
+- Layer 1 Memory ✅
+- Layer 1.5 Prediction Error ✅ (`graph.py` / `prediction_error`)
+- Layer 2 EmotionalWeight + Drift ✅
+- Sıradaki: Layer 3 Generation / drift healing
