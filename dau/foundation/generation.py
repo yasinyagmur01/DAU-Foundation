@@ -4,13 +4,22 @@ Biology analogy: when one life ends, only what was used and strong enough
 passes to the next generation. Trauma scars transfer only if they reshaped
 the organism enough to matter. Packaging inheritance is not birth — the
 new agent is created elsewhere and then receives this package.
+
+Layer 4 adds F_agent / W_transfer: low-fitness lives purge trauma; high-fitness
+lives convert trauma into inherited warnings with scaled somatic weight.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
+from dau.generation.fitness import (
+    FITNESS_HIGH_THRESHOLD,
+    FITNESS_LOW_THRESHOLD,
+    WARNING_SOMATIC_SCALE,
+    compute_w_transfer,
+)
 from dau.memory.decay import compute_strength_init
 from dau.memory.retrieval import compute_memory_score
 
@@ -29,6 +38,14 @@ DRIFT_TRANSFER_MIN: float = 1.5
 RETRIEVAL_CONTEXT_ATTR: str = "retrieval_context"
 GENERATION_INHERITED_KEY: str = "generation_inherited"
 RECORD_ID_KEY: str = "record_id"
+INHERITED_WARNING_KEY: str = "inherited_warning"
+SOMATIC_SCALE_KEY: str = "somatic_scale"
+
+TRANSFER_KIND_STANDARD: str = "standard"
+TRANSFER_KIND_INHERITED_WARNING: str = "inherited_warning"
+
+DEFAULT_REWARD_MARKER: float = 0.0
+DEFAULT_THREAT_MARKER: float = 0.0
 
 
 @dataclass
@@ -37,13 +54,14 @@ class TransferCandidate:
 
     Biology analogy: an engram card pulled from the vault with its rehearsal
     count and current salience attached — selection needs more than the raw
-    physiological delta alone.
+    physiological delta alone. transfer_kind marks inherited warnings.
     """
 
     record: DeltaRecord
     record_id: str
     memory_score: float
     recall_count: int
+    transfer_kind: str = TRANSFER_KIND_STANDARD
 
 
 @dataclass
@@ -60,17 +78,14 @@ class GenerationRecord:
     inherited_memories: list[str] = field(default_factory=list)
     inherited_drift: DriftState = field(default_factory=DriftState)
     transfer_timestamp: int = 0
+    inherited_warning_ids: list[str] = field(default_factory=list)
 
 
-def select_for_transfer(
+def _legacy_select_for_transfer(
     memories: list[TransferCandidate],
     drift_state: DriftState,
 ) -> list[TransferCandidate]:
-    """Keep only memories that earned survival into the next generation.
-
-    Biology analogy: natural selection over engrams — high salience, at least
-    one rehearsal, and trauma only if it scarred the decision surface enough.
-    """
+    """Layer-3 path: memory_score, recall_count, trauma gated by drift."""
 
     selected: list[TransferCandidate] = []
     for candidate in memories:
@@ -86,6 +101,65 @@ def select_for_transfer(
             if drift_magnitude < DRIFT_TRANSFER_MIN:
                 continue
         selected.append(candidate)
+    return selected
+
+
+def select_for_transfer(
+    memories: list[TransferCandidate],
+    drift_state: DriftState,
+    f_agent: float | None = None,
+    reward_marker: float = DEFAULT_REWARD_MARKER,
+    threat_marker: float = DEFAULT_THREAT_MARKER,
+) -> list[TransferCandidate]:
+    """Keep only memories that earned survival into the next generation.
+
+    Biology analogy: natural selection over engrams. When F_agent is omitted,
+    Layer-3 salience / rehearsal / drift rules apply. When F_agent is given,
+    W_transfer gates transfer and fitness bands reshape trauma handling.
+    """
+
+    if f_agent is None:
+        return _legacy_select_for_transfer(memories, drift_state)
+
+    f_value = float(f_agent)
+    selected: list[TransferCandidate] = []
+    for candidate in memories:
+        if candidate.recall_count < GENERATION_MIN_RECALL:
+            continue
+
+        trauma = is_trauma(candidate.record)
+        if f_value < FITNESS_LOW_THRESHOLD and trauma:
+            continue
+
+        w_transfer = compute_w_transfer(
+            candidate.memory_score,
+            f_value,
+            reward_marker,
+            threat_marker,
+        )
+        if w_transfer < GENERATION_TRANSFER_THRESHOLD:
+            continue
+
+        if trauma and f_value >= FITNESS_HIGH_THRESHOLD:
+            selected.append(
+                replace(
+                    candidate,
+                    transfer_kind=TRANSFER_KIND_INHERITED_WARNING,
+                )
+            )
+            continue
+
+        if trauma:
+            domain = str(candidate.record.affected_domain)
+            drift_magnitude = float(
+                drift_state.magnitudes.get(domain, 0.0)
+            )
+            if drift_magnitude < DRIFT_TRANSFER_MIN:
+                continue
+
+        selected.append(
+            replace(candidate, transfer_kind=TRANSFER_KIND_STANDARD)
+        )
     return selected
 
 
@@ -153,12 +227,16 @@ def _candidates_from_store(
 def consolidate_generation(
     agent_state: DAUAgentState,
     memory_store: Any,
+    f_agent: float | None = None,
+    reward_marker: float = DEFAULT_REWARD_MARKER,
+    threat_marker: float = DEFAULT_THREAT_MARKER,
 ) -> GenerationRecord:
     """Package earned memories and current drift for the next generation.
 
     Biology analogy: end-of-life consolidation — inventory the vault, keep
     what survived selection pressure, seal the scar map. Does not birth the
-    heir; only prepares the inheritance.
+    heir; only prepares the inheritance. Optional F_agent enables Layer-4
+    fitness-based trauma purge / inherited-warning marking.
     """
 
     now_counter = _now_counter_from_state(agent_state)
@@ -171,7 +249,13 @@ def consolidate_generation(
     if not isinstance(drift, DriftState):
         drift = DriftState()
 
-    selected = select_for_transfer(candidates, drift)
+    selected = select_for_transfer(
+        candidates,
+        drift,
+        f_agent=f_agent,
+        reward_marker=reward_marker,
+        threat_marker=threat_marker,
+    )
     return GenerationRecord(
         agent_id=agent_state.agent_id,
         generation=int(agent_state.generation),
@@ -181,6 +265,11 @@ def consolidate_generation(
             magnitudes=dict(drift.magnitudes),
         ),
         transfer_timestamp=now_counter,
+        inherited_warning_ids=[
+            c.record_id
+            for c in selected
+            if c.transfer_kind == TRANSFER_KIND_INHERITED_WARNING
+        ],
     )
 
 
@@ -192,8 +281,8 @@ def apply_generation(
     """Apply an inheritance package onto a newly created agent state.
 
     Biology analogy: the heir receives scarred niches and the engrams that
-    earned transfer — lineage age advances by one. memory_store is reserved
-    for future vault re-binding; selection IDs already live on the record.
+    earned transfer — lineage age advances by one. Inherited warnings carry
+    a reduced somatic scale so ancestral trauma informs without dominating.
     """
 
     _ = memory_store  # vault re-binding reserved for later wiring
@@ -202,13 +291,17 @@ def apply_generation(
         flags=dict(record.inherited_drift.flags),
         magnitudes=dict(record.inherited_drift.magnitudes),
     )
-    retrieval_context: list[dict[str, Any]] = [
-        {
+    warning_ids = set(record.inherited_warning_ids)
+    retrieval_context: list[dict[str, Any]] = []
+    for memory_id in record.inherited_memories:
+        entry: dict[str, Any] = {
             RECORD_ID_KEY: memory_id,
             GENERATION_INHERITED_KEY: True,
         }
-        for memory_id in record.inherited_memories
-    ]
+        if memory_id in warning_ids:
+            entry[INHERITED_WARNING_KEY] = True
+            entry[SOMATIC_SCALE_KEY] = WARNING_SOMATIC_SCALE
+        retrieval_context.append(entry)
     return new_agent_state.model_copy(
         update={
             "generation": int(record.generation) + 1,

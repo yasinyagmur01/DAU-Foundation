@@ -22,6 +22,8 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
+from dau.society.environment import EnvironmentState, get_pool_ratio
+
 from .constraints import build_default_constraints
 from .delta import DeltaClassification, classify_delta, compute_delta, is_trauma
 from .drift import (
@@ -33,6 +35,16 @@ from .drift import (
     update_drift,
 )
 from .emotional_weight import apply_emotional_weight, compute_emotional_weight
+from .lod import (
+    DOMAIN_RESOURCE_LOAD,
+    DOMAIN_SOCIAL_LOAD,
+    DOMAIN_UNCERTAINTY_LOAD,
+    LODState,
+    compute_t_cognitive,
+    npc_decision,
+    should_run_llm,
+    update_lod,
+)
 from .memory_bridge import (
     MAX_RETRIEVED_MEMORIES,
     MemoryStore,
@@ -40,6 +52,14 @@ from .memory_bridge import (
     initialize_memory,
     record_delta,
     retrieve_relevant,
+)
+from .social import (
+    MARKOV_WINDOW,
+    SocialState,
+    compute_coordination_friction,
+    compute_markov_expectation,
+    compute_social_load,
+    shannon_entropy,
 )
 from .state import (
     METRIC_MAX,
@@ -108,6 +128,31 @@ SYSTEM_PROMPT: str = (
 
 NODE_AGENT: str = "agent_node"
 NODE_EVALUATOR: str = "evaluator_node"
+NODE_SOCIAL_PRE: str = "social_pre_node"
+
+# Layer 4 — strategic expectation injection + LOD domain bridge
+STRATEGIC_EXPECTATION_TEMPLATE: str = (
+    "Strategic Expectation: P(Cooperate)={p:.2f}, Entropy={h:.2f}"
+)
+STRATEGIC_EXPECTATION_KEY: str = "strategic_expectation"
+STRATEGIC_EXPECTATION_TEXT_KEY: str = "text"
+COGNITIVE_MODE_SYSTEM_1: str = "system_1"
+FRICTION_SOLO: float = 0.0
+
+# dominant_load_domain() → npc_decision() domain labels (lod.py DOMAIN_*)
+DOMINANT_DOMAIN_TO_NPC: dict[str, str] = {
+    "resource": DOMAIN_RESOURCE_LOAD,
+    "social": DOMAIN_SOCIAL_LOAD,
+    "uncertainty": DOMAIN_UNCERTAINTY_LOAD,
+}
+# unmapped / "energy" → lod falls through to NPC_ACTION_MAINTAIN
+
+DRIFT_BIAS_DOMAINS: tuple[str, ...] = (
+    "energy",
+    "resource",
+    "social",
+    "uncertainty",
+)
 
 RESOURCE_KEYWORDS: tuple[str, ...] = ("resource", "extract", "take")
 SOCIAL_KEYWORDS: tuple[str, ...] = ("social", "talk", "cooperate")
@@ -386,17 +431,134 @@ def _format_memory_context(memories: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _ensure_lod(state: DAUAgentState) -> LODState:
+    """Return LODState from agent state, or SYSTEM_1 defaults if unset."""
+
+    lod = state.lod_state
+    return lod if isinstance(lod, LODState) else LODState()
+
+
+def _ensure_social(state: DAUAgentState) -> SocialState:
+    """Return SocialState from agent state, or empty history if unset."""
+
+    social = state.social_state
+    return social if isinstance(social, SocialState) else SocialState()
+
+
+def _ensure_env(state: DAUAgentState) -> EnvironmentState:
+    """Return EnvironmentState from agent state, or pool defaults if unset."""
+
+    env = state.env_state
+    return env if isinstance(env, EnvironmentState) else EnvironmentState()
+
+
+def _max_drift_bias(drift: DriftState) -> float:
+    """Largest per-domain drift bias — input to T_cognitive."""
+
+    return max(
+        (get_drift_bias(drift, domain) for domain in DRIFT_BIAS_DOMAINS),
+        default=DRIFT_BIAS_ABSENT,
+    )
+
+
+def _opponent_markov_entropy(
+    social: SocialState,
+    agent_id: str,
+    opponent_id: str,
+) -> float:
+    """Shannon entropy over the same Markov window as P(cooperate)."""
+
+    opponent_actions = [
+        record
+        for record in social.interactions
+        if record.agent_id == opponent_id and record.opponent_id == agent_id
+    ]
+    window = opponent_actions[-MARKOV_WINDOW:]
+    return shannon_entropy([record.outcome for record in window])
+
+
+def _strategic_expectation_texts(
+    retrieval_context: list[dict[str, Any]],
+) -> list[str]:
+    """Collect strategic expectation strings previously injected by social_pre."""
+
+    texts: list[str] = []
+    for entry in retrieval_context:
+        if entry.get(STRATEGIC_EXPECTATION_KEY):
+            text = entry.get(STRATEGIC_EXPECTATION_TEXT_KEY)
+            if isinstance(text, str) and text:
+                texts.append(text)
+    return texts
+
+
+def social_pre_node(state: DAUAgentState) -> dict[str, Any]:
+    """Inject Markov strategic expectation before the agent acts.
+
+    Biology analogy: before committing, the organism updates its forecast of
+    the conspecific's likely cooperation. Solo organisms skip this step.
+    """
+
+    opponent_id = state.opponent_id
+    if not opponent_id:
+        return {}
+
+    social = _ensure_social(state)
+    cooperate_probability = compute_markov_expectation(
+        social,
+        state.agent_id,
+        opponent_id,
+    )
+    entropy = _opponent_markov_entropy(social, state.agent_id, opponent_id)
+    text = STRATEGIC_EXPECTATION_TEMPLATE.format(
+        p=cooperate_probability,
+        h=entropy,
+    )
+    updated_context = list(state.retrieval_context)
+    updated_context.append(
+        {
+            STRATEGIC_EXPECTATION_KEY: True,
+            STRATEGIC_EXPECTATION_TEXT_KEY: text,
+        }
+    )
+    return {"retrieval_context": updated_context}
+
+
 def agent_node(state: DAUAgentState) -> dict[str, Any]:
     """Perceive environment and internal state, then decide once.
 
     Biology analogy: the organism first emits an expected outcome from current
     load pressure, then senses niche and body and commits to a short free-form
     action. Traits are not injected — only lived context is visible, and the
-    act becomes an immutable event.
+    act becomes an immutable event. System 1 (NPC) skips costly LLM cognition.
     """
 
     # Anticipate before acting — prediction written into state for evaluator.
     expected_outcome = _build_expected_outcome(state)
+
+    lod = _ensure_lod(state)
+    if not should_run_llm(lod):
+        # System 1 NPC — no ChromaDB, no LangSmith, no LLM.
+        env = _ensure_env(state)
+        pool_ratio = get_pool_ratio(env)
+        dominant = dominant_load_domain(state)
+        npc_domain = DOMINANT_DOMAIN_TO_NPC.get(dominant, dominant)
+        decision = npc_decision(state.agent_id, npc_domain, pool_ratio)
+        clock = EventClock(counter=len(state.event_log))
+        event = build_event(
+            clock,
+            "agent_decision",
+            {
+                "decision": decision,
+                "energy": float(state.internal_state.energy),
+                "expected_outcome": expected_outcome,
+                "cognitive_mode": COGNITIVE_MODE_SYSTEM_1,
+            },
+        )
+        new_state = append_event(state, event)
+        return {
+            "event_log": new_state.event_log,
+            "expected_outcome": expected_outcome,
+        }
 
     memories: list[dict[str, Any]] = []
     if MEMORY_ENABLED:
@@ -414,6 +576,10 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
     memory_block = _format_memory_context(memories)
     if memory_block:
         system_content = f"{SYSTEM_PROMPT}\n\n{memory_block}"
+
+    # Layer 4 — strategic expectation from social_pre_node (SYSTEM_2 only).
+    for expectation_text in _strategic_expectation_texts(state.retrieval_context):
+        system_content = f"{system_content}\n{expectation_text}"
 
     # Layer 2 — somatic markers bias priority (function, not emotion label).
     if state.delta_log:
@@ -500,6 +666,32 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     if not is_trauma(record) and float(record.magnitude) >= HEAL_THRESHOLD:
         new_drift = heal_drift(new_drift, record)
 
+    # Layer 4 — T_cognitive → LOD update; social_load when interacting.
+    social = _ensure_social(state)
+    env = _ensure_env(state)
+    lod = _ensure_lod(state)
+    opponent_id = state.opponent_id
+    friction = (
+        compute_coordination_friction(social, state.agent_id, opponent_id)
+        if opponent_id
+        else FRICTION_SOLO
+    )
+    pool_ratio = get_pool_ratio(env)
+    t_cognitive = compute_t_cognitive(
+        float(record.magnitude),
+        _max_drift_bias(new_drift),
+        friction,
+        pool_ratio,
+    )
+    new_lod = update_lod(lod, t_cognitive, now_counter=int(last_event.timestamp))
+    if opponent_id:
+        after = after.model_copy(deep=True)
+        after.social_load = compute_social_load(
+            social,
+            state.agent_id,
+            opponent_id,
+        )
+
     if MEMORY_ENABLED:
         store = _memory_stores.get(state.agent_id)
         if store is not None:
@@ -512,6 +704,7 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         "internal_state": after,
         "delta_log": list(state.delta_log) + [record],
         "drift_state": new_drift,
+        "lod_state": new_lod,
     }
 
 
@@ -540,22 +733,26 @@ def build_checkpointer(db_path: str = DB_PATH) -> SqliteSaver:
 
 
 def build_graph(checkpointer: SqliteSaver | None = None) -> Any:
-    """Compile agent → evaluator → continue/end with optional SQLite memory.
+    """Compile social_pre → agent → evaluator → continue/end with optional SQLite.
 
     Biology analogy: wire the sense-act-measure cycle into a closed loop that
-    checkpoints after each node and ends when energy is exhausted.
+    checkpoints after each node and ends when energy is exhausted. Social
+    pre-node refreshes strategic expectation before each act when an opponent
+    is present.
     """
 
     graph = StateGraph(DAUAgentState)
+    graph.add_node(NODE_SOCIAL_PRE, social_pre_node)
     graph.add_node(NODE_AGENT, agent_node)
     graph.add_node(NODE_EVALUATOR, evaluator_node)
-    graph.set_entry_point(NODE_AGENT)
+    graph.set_entry_point(NODE_SOCIAL_PRE)
+    graph.add_edge(NODE_SOCIAL_PRE, NODE_AGENT)
     graph.add_edge(NODE_AGENT, NODE_EVALUATOR)
     graph.add_conditional_edges(
         NODE_EVALUATOR,
         should_continue,
         {
-            NODE_AGENT: NODE_AGENT,
+            NODE_AGENT: NODE_SOCIAL_PRE,
             END: END,
         },
     )

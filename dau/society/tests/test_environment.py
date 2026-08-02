@@ -1,0 +1,112 @@
+"""Unit tests for Layer 4 shared resource pool physics."""
+
+from __future__ import annotations
+
+import pytest
+
+from dau.society.environment import (
+    COLLAPSE_EPSILON,
+    EXTRACTION_KEY_AMOUNT,
+    EXTRACTION_KEY_AGENT_ID,
+    EXTRACTION_KEY_EVENT,
+    POOL_INIT,
+    POOL_MAX,
+    POOL_MIN,
+    POOL_REGEN_RATE,
+    EnvironmentState,
+    agent_delta_pool,
+    get_pool_ratio,
+    step_pool,
+)
+
+
+def _regen(pool: float) -> float:
+    """Closed-form logistic regeneration term for expected-value checks."""
+
+    return POOL_REGEN_RATE * pool * (1.0 - pool / POOL_MAX)
+
+
+def test_step_pool_normal_regeneration() -> None:
+    """Zero extraction: pool grows by logistic regen only; history empty add."""
+
+    env = EnvironmentState()
+    next_env = step_pool(env, {})
+
+    expected = POOL_INIT + _regen(POOL_INIT)
+    assert next_env.pool == pytest.approx(expected)
+    assert next_env.event_counter == 1
+    assert next_env.collapsed is False
+    assert next_env.extraction_history == []
+    # Immutable: original unchanged
+    assert env.pool == POOL_INIT
+    assert env.event_counter == 0
+
+
+def test_step_pool_over_extraction_causes_collapse() -> None:
+    """Heavy harvest drives pool to floor and sets collapsed."""
+
+    env = EnvironmentState()
+    # regen(80)=2.4 → extract 90 → clamp(-7.6)=0 ≤ 5.0 → collapsed
+    next_env = step_pool(env, {"a": 90.0})
+
+    assert next_env.pool == POOL_MIN
+    assert next_env.collapsed is True
+    assert next_env.event_counter == 1
+    assert len(next_env.extraction_history) == 1
+    assert next_env.extraction_history[0][EXTRACTION_KEY_AGENT_ID] == "a"
+    assert next_env.extraction_history[0][EXTRACTION_KEY_AMOUNT] == 90.0
+    assert next_env.extraction_history[0][EXTRACTION_KEY_EVENT] == 1
+
+
+def test_step_pool_clamps_at_pool_max_and_pool_min() -> None:
+    """Pool never leaves [POOL_MIN, POOL_MAX]."""
+
+    above = step_pool(EnvironmentState(pool=POOL_MAX + 25.0), {})
+    assert above.pool == POOL_MAX
+
+    below = step_pool(EnvironmentState(pool=POOL_INIT), {"drain": 10_000.0})
+    assert below.pool == POOL_MIN
+
+
+def test_get_pool_ratio_returns_correct_fraction() -> None:
+    """Ratio is pool / POOL_MAX."""
+
+    env = EnvironmentState(pool=40.0)
+    assert get_pool_ratio(env) == pytest.approx(40.0 / POOL_MAX)
+    assert get_pool_ratio(EnvironmentState(pool=POOL_MAX)) == pytest.approx(1.0)
+    assert get_pool_ratio(EnvironmentState(pool=POOL_MIN)) == pytest.approx(0.0)
+
+
+def test_agent_delta_pool_sums_across_multiple_steps() -> None:
+    """Cumulative extraction for one agent ignores others."""
+
+    env = EnvironmentState()
+    env = step_pool(env, {"alice": 3.0, "bob": 5.0})
+    env = step_pool(env, {"alice": 2.0})
+    env = step_pool(env, {"bob": 1.0, "alice": 4.0})
+
+    assert agent_delta_pool(env, "alice") == pytest.approx(9.0)
+    assert agent_delta_pool(env, "bob") == pytest.approx(6.0)
+    assert agent_delta_pool(env, "carol") == pytest.approx(0.0)
+    assert env.event_counter == 3
+    assert len(env.extraction_history) == 5
+
+
+def test_collapsed_flag_at_collapse_epsilon_threshold() -> None:
+    """collapsed iff P_next <= POOL_MAX * COLLAPSE_EPSILON (inclusive)."""
+
+    threshold = POOL_MAX * COLLAPSE_EPSILON  # 5.0
+    base = EnvironmentState(pool=POOL_INIT)
+    regen = _regen(POOL_INIT)
+
+    # Exact threshold → collapsed
+    extract_at = POOL_INIT + regen - threshold
+    at_edge = step_pool(base, {"x": extract_at})
+    assert at_edge.pool == pytest.approx(threshold)
+    assert at_edge.collapsed is True
+
+    # Just above threshold → not collapsed
+    extract_above = POOL_INIT + regen - (threshold + 0.01)
+    above = step_pool(base, {"x": extract_above})
+    assert above.pool == pytest.approx(threshold + 0.01)
+    assert above.collapsed is False

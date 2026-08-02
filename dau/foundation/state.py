@@ -279,6 +279,36 @@ class DAUAgentState(BaseModel):
             "organism, or None at birth."
         ),
     )
+    # Layer 4 — society / cognitive LOD / shared pool.
+    # Typed Any to avoid circular import: state → social/lod/society → state.
+    social_state: Any | None = Field(
+        default=None,
+        description=(
+            "Accumulated dyadic SocialState (interactions + bilateral trust), "
+            "or None until society wiring initializes it."
+        ),
+    )
+    lod_state: Any | None = Field(
+        default=None,
+        description=(
+            "Cognitive LODState (System 1 vs System 2), or None at birth "
+            "(treated as SYSTEM_1 defaults in graph)."
+        ),
+    )
+    env_state: Any | None = Field(
+        default=None,
+        description=(
+            "Shared EnvironmentState resource pool snapshot, or None when "
+            "not running under society physics."
+        ),
+    )
+    opponent_id: str = Field(
+        default="",
+        description=(
+            "Current interaction target agent_id. Empty string means solo "
+            "(social_pre_node skips)."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod
