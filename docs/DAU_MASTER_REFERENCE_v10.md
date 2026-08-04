@@ -1,7 +1,7 @@
 # DAU — Master Reference
 
-**Versiyon 1.0** · 2026-08-04  
-Layer 5 (Metacognition) tamamlandı — closed-loop control aktif.
+**Versiyon 1.0+** · 2026-08-04  
+Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar (convention / Meta A/B) koşuldu · **136 test passed**.
 
 ---
 
@@ -96,15 +96,15 @@ R = exp(-t / S)
 
 ## 7. Layer 1.5 — Prediction Error (tamam)
 
-`evaluator_node` sabit artış yerine beklenen vs gerçekleşen farkını kullanır. Referans: Predictive Minds / Friston; keyword Jaccard overlap geçici duyusal proxy (LLM-as-judge yok).
+`evaluator_node` sabit artış yerine beklenen vs gerçekleşen farkını kullanır. Referans: Predictive Minds / Friston; duyusal eşleşme **sentence-transformers MiniLM** cosine similarity (LLM-as-judge yok). Jaccard kelime kesişimi yalnızca diagnostik karşılaştırma için saklanır.
 
 ```
 agent_node:
-  expected_outcome = f(dominant_load_domain)
+  expected_outcome = f(dominant_load_domain)  # natural-language anticipation
   → karar + expected_outcome event payload
 
 evaluator_node:
-  prediction_error = 1 - keyword_overlap(expected, actual)
+  prediction_error = 1 - cosine_sim_MiniLM(expected, actual)
   after = apply_prediction_error(before, prediction_error)
   delta = compute_delta(before, after)
   drift_state = update_drift(drift_state, delta)
@@ -286,9 +286,12 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node → (lo
 
 `self_model: Any | None = None` (circular import önlemek için Any, `generation_record` patterni)
 
-### Jaccard TODO
+### Semantic sensor (Layer 1.5)
 
-`_keyword_overlap_ratio` üstünde: Layer 5B semantic similarity notu eklendi. Sentence-transformers entegrasyonu scope edilene kadar Jaccard proxy korunuyor.
+`semantic_similarity.py`: frozen `all-MiniLM-L6-v2`, cosine ∈ [0,1], PE = 1 − sim.
+Jaccard `_keyword_overlap_ratio` diagnostik için kaldı; PE yolunda kullanılmıyor.
+Bilinen MiniLM sınırı: negation / polarity zayıf (refuse≈cooperate kısmen yakın).
+Empiric label: `under sentence-transformers MiniLM`.
 
 ---
 
@@ -298,7 +301,7 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node → (lo
 |--------|-------|------|
 | Layer 0 Foundation | ✅ | State, delta, event-clock, constraints, LangGraph döngüsü |
 | Layer 1 Memory | ✅ | ChromaDB+SQLite, Ebbinghaus, retrieval, sleep consolidation, memory_bridge |
-| Layer 1.5 Prediction Error | ✅ | expected vs actual → prediction_error → homeostatic swing |
+| Layer 1.5 Prediction Error | ✅ | expected vs actual → MiniLM cosine PE → homeostatic swing |
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
@@ -306,7 +309,7 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node → (lo
 
 ---
 
-## 12. Kod ağacı (v1.0)
+## 12. Kod ağacı (v1.0+)
 
 ```
 dau/foundation/
@@ -319,6 +322,7 @@ dau/foundation/
  ├── lod.py                — T_cognitive, CognitiveMode, LODState, update_lod, npc_decision
  ├── self_model.py         — SelfModel, build_self_model() (Layer 5A)
  ├── meta_observer.py      — dört aktuatör + meta_observer_node (Layer 5B)
+ ├── semantic_similarity.py — MiniLM cosine PE sensor (Layer 1.5)
  ├── constraints.py        — 5 evrensel kısıt
  ├── time_model.py         — EventClock
  ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
@@ -326,7 +330,7 @@ dau/foundation/
  ├── generation.py         — TransferCandidate, consolidate/apply_generation
  ├── run_demo.py
  └── tests/                — foundation + emotional_weight + drift + lod + social
-                            + generation + meta_observer
+                            + generation + meta_observer + prediction_error
 
 dau/memory/
  ├── store.py / decay.py / retrieval.py / consolidation.py
@@ -338,7 +342,9 @@ dau/generation/
 
 dau/society/
  ├── environment.py        — EnvironmentState, step_pool, get_pool_ratio, agent_delta_pool
- └── tests/
+ ├── run_convention_pilot.py / run_convention_pilot_llm.py
+ ├── run_meta_ab.py / run_nuance_loss_pilot.py
+ └── tests/                — environment + convention + meta_ab + nuance_loss
 ```
 
 ---
@@ -374,16 +380,23 @@ run sonu:
 
 ## 14. Test durumu
 
-- Foundation (Layer 0-1): 32
+- Foundation (Layer 0–1): 32
 - EmotionalWeight: 8
-- Drift: 11 (diminishing returns testi eklendi)
+- Drift: 11
 - LOD: 7
 - Social: 10
+- Prediction Error (MiniLM): 7
 - Memory: 8
-- Generation: 15 (cautionary transfer testi eklendi)
-- Society: 6
-- Meta-Observer: 12 (yeni)
-- **Toplam: 109 passed**
+- Generation (foundation + fitness): 15
+- Society environment: 6
+- Meta-Observer: 13
+- Convention pilot (+ LLM mock): 13
+- Meta A/B: 3
+- Nuance-loss pilot: 3
+- **Toplam: 136 passed**
+
+Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
+(convention LLM, Meta A/B Jaccard + MiniLM, nuance-loss).
 
 ---
 
@@ -430,15 +443,26 @@ run sonu:
 ### Hâlâ Açık
 
 - Spontaneous convention emergence: 8B frozen model kurumsal mekanizma olmadan kendi kendine anlaşma yapabilir mi?
+  - Empirik not (v1.0+): açık kanalda **format sync** (aynı cümle iskeleti) görüldü; **restraint sync** (cooperate/coordinate) LLM 25r pilotunda görülmedi — hepsi defect. Metrikler ayrıldı: `format_convention_detected` vs `restraint_convention_detected`.
 - Felaket eşiği: pool=0 anında W_transfer eşikleri nasıl otomatik ayarlanır?
 - System 2→1 geçişinde nüans kaybı: LLM deneyimi state machine'e özetlenirken ne kaybolur?
+  - Empirik not: nüans kaybı mikropilotu doğruladı — System 2 çeşitliliği (10 unique) → System 1 tek NPC aksiyonu.
 
 ---
 
 ## 18. Bilinen Sınırlar
 
-- LOD deescalation: System 2→1 geçişinde LLM karar geçmişi heuristic rule'lara özetlenmiyor (kasıtlı kabul edildi, Layer 5'te ele alınabilir)
-- Pool physics tek havuz: çoklu kaynak havuzu Layer 5 kapsamında
+- LOD deescalation: System 2→1 geçişinde LLM karar geçmişi heuristic rule'lara özetlenmiyor (kasıtlı kabul; nüans-loss pilotu ile ölçüldü)
+- Pool physics tek havuz: çoklu kaynak havuzu ertelendi
+- Layer 1.5: Jaccard **kapatıldı** → MiniLM cosine (`semantic_similarity.py`). Parafraz PE ~0.40 (eski Jaccard 1.0). Negation hâlâ MiniLM zayıf noktası.
+- `W_SEM=0`: ChromaDB embedding skorlamada yok
+- `F_agent`: doğal seçilim değil — tasarımcı tanımlı dışsal fitness (`0.4·E + 0.3·pool + 0.3·survival`)
+- Frozen weights: öğrenme = in-context / DeltaRecord izleri; parametrik plastisite yok
+- Meta-Observer A/B:
+  - Jaccard dönemi (NPC + System2/4c): `delta_mean_diff=0`
+  - MiniLM re-run: NPC System1/20c → diff=0; System2/Groq 8c → `delta_mean_diff≈−0.001`, `m_ratio_mean_diff≈−0.10`, `system2_cycles_diff=+1` (zayıf sinyal; iddia için yetersiz)
+- Convention: format sync ≠ restraint sync; NPC “convention” kıtlık kuralıyla (`pool_ratio<0.3` → conserve) tetiklenebilir
+- A/B protokolü: Jaccard/MiniLM PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta `AB_ENERGY_FLOOR` kullanılıyor (ölçüm protokolü notu)
 
 ---
 
@@ -456,8 +480,9 @@ run sonu:
 | 0.8 | 2026-08-01 | Layer 3 tamamlandı: GenerationConsolidation + DriftHealing + state.py formal fields. 66 test geçiyor. |
 | 0.9 | 2026-08-03 | Layer 4 tamamlandı: Society (environment, social, lod, fitness, graph wiring). 95 test geçiyor. |
 | **1.0** | **2026-08-04** | Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört aktuatör (lod_override, context_prune, drift_healing, trigger_retrieval), graph wiring. Travma birikimi azalan getiri. Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test geçiyor. |
+| **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B (Jaccard=0, MiniLM NPC=0 / S2 zayıf sinyal); nüans-loss; society pilots. **136 test**. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.0 — Layer 5 (Metacognition) tamamlandı; closed-loop control aktif.
+Versiyon 1.0+ — Layer 5 closed-loop + MiniLM duyusal sensör + empirik pilot baseline.

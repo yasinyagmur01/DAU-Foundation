@@ -309,6 +309,41 @@ def test_trigger_retrieval_fires_when_m_ratio_low_and_delta_sufficient(
         unbind_memory_store(agent_id)
 
 
+def test_trigger_retrieval_noop_when_memory_store_unbound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Low m_ratio + sufficient delta still no-ops if no store is bound.
+
+    Diagnostic (audit Adım 2): silent no-op must stay deterministic so
+    Meta-Observer A/B does not mis-attribute missing retrieval to control.
+    """
+
+    def _fail_retrieve(**_kwargs: object) -> list[dict[str, object]]:
+        raise AssertionError("retrieve_relevant must not run without bound store")
+
+    monkeypatch.setattr(
+        "dau.foundation.meta_observer.retrieve_relevant",
+        _fail_retrieve,
+    )
+    agent_id = "meta-ret-unbound-0"
+    unbind_memory_store(agent_id)
+    model = _self_model(
+        delta_current=DELTA_THRESHOLD_NORMAL,
+        delta_history=[0.1, 0.1],
+    )
+    assert model.m_ratio < M_RATIO_LOW_THRESHOLD
+    existing = {"existing": True}
+    state = DAUAgentState(
+        agent_id=agent_id,
+        environment=build_default_constraints(),
+        retrieval_context=[existing],
+        delta_log=[_delta(DELTA_THRESHOLD_NORMAL)],
+    )
+    result = trigger_retrieval(state, model)
+    assert result == [existing]
+    assert len(result) == 1
+
+
 def test_meta_observer_node_returns_dict_with_expected_keys() -> None:
     """Node returns lod_state, retrieval_context, drift_state, self_model."""
 

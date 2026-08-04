@@ -54,6 +54,7 @@ from .memory_bridge import (
     retrieve_relevant,
 )
 from .meta_observer import bind_memory_store, meta_observer_node, unbind_memory_store
+from .semantic_similarity import semantic_prediction_error
 from .social import (
     MARKOV_WINDOW,
     SocialState,
@@ -88,7 +89,8 @@ TEMPERATURE: float = 0.2
 MAX_TOKENS: int = 150
 MEMORY_ENABLED: bool = True
 
-# Prediction-error proxy (keyword overlap) — Layer 1.5, no LLM judge.
+# Prediction-error sensor — sentence-transformers MiniLM (Layer 1.5).
+# Jaccard keyword overlap kept as _keyword_overlap_ratio for diagnostics only.
 # Imprint depth uses DELTA_THRESHOLD_* from delta.py (cursorrules / dau-formulas).
 EMPTY_OVERLAP_RATIO: float = 1.0
 ZERO_OVERLAP_RATIO: float = 0.0
@@ -96,11 +98,17 @@ PREDICTION_ERROR_MIN: float = METRIC_MIN
 PREDICTION_ERROR_MAX: float = METRIC_MAX
 INTERNAL_AXIS_COUNT: float = 4.0
 
-# Pre-action expectations by dominant load (deterministic anticipation).
-EXPECTED_OUTCOME_ENERGY: str = "rest recover energy"
-EXPECTED_OUTCOME_RESOURCE: str = "resource extract take"
-EXPECTED_OUTCOME_SOCIAL: str = "social talk cooperate"
-EXPECTED_OUTCOME_UNCERTAINTY: str = "observe wait uncertain"
+# Pre-action expectations by dominant load (natural-language anticipation).
+EXPECTED_OUTCOME_ENERGY: str = "I rest and recover energy."
+EXPECTED_OUTCOME_RESOURCE: str = (
+    "I will extract and take resources from the commons."
+)
+EXPECTED_OUTCOME_SOCIAL: str = (
+    "I will socialize, talk, and cooperate with others."
+)
+EXPECTED_OUTCOME_UNCERTAINTY: str = (
+    "I observe and wait while uncertainty remains."
+)
 EXPECTED_OUTCOME_BY_DOMAIN: dict[str, str] = {
     "energy": EXPECTED_OUTCOME_ENERGY,
     "resource": EXPECTED_OUTCOME_RESOURCE,
@@ -313,15 +321,13 @@ def _tokenize(text: str) -> set[str]:
     return {token for token in text.lower().split() if token}
 
 
-# TODO Layer 5B: Replace Jaccard with semantic similarity once
-# sentence-transformers integration is scoped. Current proxy breaks
-# when semantically equivalent sentences use different keywords.
-# Intentionally kept as a zero-dependency placeholder until then.
+# Diagnostic only: Jaccard word overlap (pre-semantic sensor). Kept so
+# characterization tests can prove MiniLM improved on the old proxy.
 def _keyword_overlap_ratio(expected: str, actual: str) -> float:
-    """Jaccard word overlap in [0, 1] — deterministic stand-in for similarity.
+    """Jaccard word overlap in [0, 1] — legacy stand-in for similarity.
 
-    Biology analogy: crude sensory match between anticipated and lived
-    signals before a proper semantic cortex exists.
+    Biology analogy: crude sensory match before a semantic cortex existed.
+    Not used by _prediction_error after sentence-transformers wiring.
     """
 
     expected_words = _tokenize(expected)
@@ -347,11 +353,9 @@ def _build_expected_outcome(state: DAUAgentState) -> str:
 
 
 def _prediction_error(expected_outcome: str, actual_outcome: str) -> float:
-    """Return 1 - keyword overlap, clamped to the unit metric interval."""
+    """Return 1 - semantic cosine similarity (MiniLM), unit-interval clamped."""
 
-    overlap_ratio = _keyword_overlap_ratio(expected_outcome, actual_outcome)
-    error = 1.0 - overlap_ratio
-    return max(PREDICTION_ERROR_MIN, min(PREDICTION_ERROR_MAX, error))
+    return semantic_prediction_error(expected_outcome, actual_outcome)
 
 
 def _apply_prediction_error(
