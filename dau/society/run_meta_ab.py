@@ -40,6 +40,14 @@ TERMINATION_ENERGY: float = 0.05
 # so meta on/off remains comparable across AB_N_CYCLES (documented protocol).
 AB_ENERGY_FLOOR: float = 0.35
 M_RATIO_MISSING: float = -1.0
+# Deterministic seed-replay protocol (noise probe): env mirrors graph.py.
+DETERMINISTIC_TEMPERATURE: float = 0.0
+DEFAULT_REPLAY_SEED: int = 42
+LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
+LLM_SEED_ENV: str = "DAU_LLM_SEED"
+META_AB_SYSTEM2_ENV: str = "DAU_META_AB_SYSTEM2"
+META_AB_CYCLES_ENV: str = "DAU_META_AB_CYCLES"
+META_AB_DETERMINISTIC_ENV: str = "DAU_META_AB_DETERMINISTIC"
 
 
 @dataclass
@@ -281,22 +289,54 @@ def comparison_summary(comp: ABComparison) -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    """CLI: Meta A/B. Set DAU_META_AB_SYSTEM2=1 for Groq System-2 arms."""
+def _truthy_env(name: str) -> bool:
+    """Parse common truthy env strings."""
 
     import os
 
-    force_s2 = os.environ.get("DAU_META_AB_SYSTEM2", "").strip() in {
-        "1",
-        "true",
-        "TRUE",
-        "yes",
+    return os.environ.get(name, "").strip() in {"1", "true", "TRUE", "yes"}
+
+
+def _apply_deterministic_env() -> dict[str, Any]:
+    """Force T=0 + fixed seed for Meta A/B noise probe when requested."""
+
+    import os
+
+    protocol: dict[str, Any] = {
+        "deterministic": False,
+        "temperature": os.environ.get(LLM_TEMPERATURE_ENV, "").strip() or None,
+        "seed": os.environ.get(LLM_SEED_ENV, "").strip() or None,
     }
-    n_cycles_raw = os.environ.get("DAU_META_AB_CYCLES", "").strip()
+    if not _truthy_env(META_AB_DETERMINISTIC_ENV):
+        return protocol
+    os.environ[LLM_TEMPERATURE_ENV] = str(DETERMINISTIC_TEMPERATURE)
+    if not os.environ.get(LLM_SEED_ENV, "").strip():
+        os.environ[LLM_SEED_ENV] = str(DEFAULT_REPLAY_SEED)
+    protocol["deterministic"] = True
+    protocol["temperature"] = os.environ[LLM_TEMPERATURE_ENV]
+    protocol["seed"] = os.environ[LLM_SEED_ENV]
+    return protocol
+
+
+def main() -> None:
+    """CLI: Meta A/B. Set DAU_META_AB_SYSTEM2=1 for Groq System-2 arms.
+
+    Noise probe: DAU_META_AB_DETERMINISTIC=1 forces T=0 and seed=42
+    (override seed via DAU_LLM_SEED).
+    """
+
+    import os
+
+    protocol = _apply_deterministic_env()
+    force_s2 = _truthy_env(META_AB_SYSTEM2_ENV)
+    n_cycles_raw = os.environ.get(META_AB_CYCLES_ENV, "").strip()
     n_cycles = int(n_cycles_raw) if n_cycles_raw else AB_N_CYCLES
     label = "System 2 / Groq" if force_s2 else "NPC System 1"
+    if protocol["deterministic"]:
+        label = f"{label} | deterministic T={protocol['temperature']} seed={protocol['seed']}"
     comp = run_meta_ab(n_cycles=n_cycles, force_system_2=force_s2)
     summary = comparison_summary(comp)
+    summary["protocol"] = protocol
     print(f"=== DAU Meta-Observer A/B ({label}) ===")
     for key, value in summary.items():
         print(f"{key}={value}")

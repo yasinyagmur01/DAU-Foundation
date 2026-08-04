@@ -170,6 +170,9 @@ SOCIAL_KEYWORDS: tuple[str, ...] = ("social", "talk", "cooperate")
 THREAD_ID_ENV: str = "DAU_THREAD_ID"
 GROQ_API_KEY_ENV: str = "GROQ_API_KEY"
 ENV_FILE_NAME: str = ".env"
+# Diagnostic overrides for deterministic Meta A/B seed replay (noise probe).
+LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
+LLM_SEED_ENV: str = "DAU_LLM_SEED"
 
 
 def _project_root() -> Path:
@@ -261,6 +264,24 @@ def build_agent_view(state: DAUAgentState) -> AgentView:
     )
 
 
+def _resolve_llm_temperature() -> float:
+    """Return TEMPERATURE, or DAU_LLM_TEMPERATURE when set (noise probe)."""
+
+    raw = os.environ.get(LLM_TEMPERATURE_ENV, "").strip()
+    if not raw:
+        return TEMPERATURE
+    return float(raw)
+
+
+def _resolve_llm_seed() -> int | None:
+    """Return optional Groq seed from DAU_LLM_SEED (deterministic replay)."""
+
+    raw = os.environ.get(LLM_SEED_ENV, "").strip()
+    if not raw:
+        return None
+    return int(raw)
+
+
 def _build_llm() -> ChatGroq:
     """Construct the Groq chat model used only by the agent node."""
 
@@ -271,11 +292,17 @@ def _build_llm() -> ChatGroq:
             f"{GROQ_API_KEY_ENV} is missing. Put it in {_project_root() / ENV_FILE_NAME} "
             f"or export {GROQ_API_KEY_ENV}=..."
         )
+    temperature = _resolve_llm_temperature()
+    seed = _resolve_llm_seed()
+    model_kwargs: dict[str, Any] = {}
+    if seed is not None:
+        model_kwargs["seed"] = seed
     return ChatGroq(
         model=MODEL_NAME,
-        temperature=TEMPERATURE,
+        temperature=temperature,
         max_tokens=MAX_TOKENS,
         api_key=api_key,
+        model_kwargs=model_kwargs,
     )
 
 

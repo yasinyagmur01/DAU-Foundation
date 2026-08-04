@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from dau.society.run_convention_pilot import SENSOR_LABEL
 from dau.society.run_meta_ab import (
     AB_MODE_OFF,
     AB_MODE_ON,
+    _apply_deterministic_env,
     comparison_summary,
     run_ab_arm,
     run_meta_ab,
@@ -53,3 +56,17 @@ def test_lod_not_reset_each_cycle_allows_divergence() -> None:
     assert off.n_cycles == 8
     assert on.system2_cycles >= 0
     assert off.system2_cycles >= 0
+
+
+def test_deterministic_env_forces_temperature_and_seed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Noise-probe flag pins T=0 and default seed without Groq calls."""
+
+    monkeypatch.delenv("DAU_LLM_TEMPERATURE", raising=False)
+    monkeypatch.delenv("DAU_LLM_SEED", raising=False)
+    monkeypatch.setenv("DAU_META_AB_DETERMINISTIC", "1")
+    protocol = _apply_deterministic_env()
+    assert protocol["deterministic"] is True
+    assert protocol["temperature"] == "0.0"
+    assert protocol["seed"] == "42"
