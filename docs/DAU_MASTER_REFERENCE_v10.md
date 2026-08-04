@@ -317,7 +317,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ kod / ❌ empirik kapalı döngü | SelfModel + meta_observer wiring tamam; Meta A/B + T=0 seed replay → sistemik fayda yok (UNSUPPORTED) |
+| Layer 5 Metacognition | ✅ kod / ⚠️ kısmi empirik | SelfModel + meta_observer wiring tamam. lod_override + trigger_retrieval: called=100, triggered=100 (long run). context_prune + trigger_drift_healing: triggered=0 (drift flag TRAUMA gerektiriyor; DAERM+TRAUMA çelişkisi açık). |
 
 ---
 
@@ -446,6 +446,13 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - ✅ Fitness-based transfer filtering ✅
 - ✅ NPC / Gerçek agent geçişi ✅
 - ❌ Closed-loop metacognitive control empirik olarak **UNSUPPORTED** (Layer 5 kod ✅; Meta A/B + T=0 seed replay)
+- DAERM + TRAUMA coexistence: magnitude = mean(eksenler) formülü
+  CROSS_AXIS_SPILLOVER=0.20 ile birlikte TRAUMA'yı erişilemez kılıyor.
+  Seçenekler araştırılıyor:
+  (a) magnitude = 0.6·max(|Δ|) + 0.4·mean(|Δ|)  — peak ağırlıklı
+  (b) domain-specific spillover katsayıları
+  (c) PE'den bağımsız severity index
+  Literatür: PSI theory, MicroPsi, Active Inference spillover modelleri.
 - Continual learning olmadan gerçek iz? (Layer 3)
 - LLM embedding match henüz skor değil (W_SEM=0)
 - "İyi"yi "kötü"den ayıran mekanizma?
@@ -486,7 +493,28 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - Convention: format sync ≠ restraint sync; NPC “restraint” kıtlık kuralıyla (`pool_ratio<0.3` → conserve) tetiklenebilir
 - A/B protokolü: PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta `AB_ENERGY_FLOOR` kullanılıyor (ölçüm protokolü notu; uzun ufuk/tükeniş farkını maskeler)
 - `expected_outcome`: Chroma-gated lived memory (`retrieve_relevant` → past outcomes); boş store / ilk event’te domain şablonuna fall back. PE artık endojen öngörüye yaklaşabilir (S1 düzeltmesi kısmi).
-- InternalState eksen saturasyonu: Event 1 yüksek PE (≥0.75) sonrası loads=1.0, energy=0.0’a yapışıyor. Sonraki PE sinyalleri gerçek ama delta=0 (hareket edecek eksen kalmıyor). 20 event’in 18’i NOISE. Aktüatörler çağrılıyor (`called=20`) ama `triggered=0`. Kök neden: `_apply_prediction_error` tüm eksenlere +PE ekliyor; `_clamp` [0,1] sınırını geçince before≈after → magnitude≈0. Recovery mekanizması yok — sistem bir kez saturasyona girince donuyor. Friston allostasis karşılığı eksik.
+- DAERM (Dynamic Allostatic Equilibrium Recovery Model) eklendi
+  (Faz 5). Saturasyon ve donma çözüldü; 20/20 event magnitude > 0.
+  Formüller:
+    μ_i(t) = min(M_drift_i / (1 + M_drift_i), 0.75)
+    γ(t)   = E(t) / (1 + M_total)
+    L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)
+  Sabitler: ALLOSTATIC_SETPOINT_MAX=0.75, CROSS_AXIS_SPILLOVER=0.20,
+  METABOLIC_FLOOR=0.05 → constraints.py
+- DAERM + TRAUMA çelişkisi (AÇIK): CROSS_AXIS_SPILLOVER=0.20 altında
+  PE uniform dağıtılınca mean magnitude TRAUMA eşiğine (0.7) yapısal
+  olarak ulaşamıyor. Peak PE=0.859 → mean magnitude≈0.344.
+  Kök neden: magnitude = mean(tüm eksenler); peak eksen ezilse bile
+  ortalama düşük kalıyor. Çözüm araştırılıyor (Gemini Deep Research).
+- expected_outcome endojen yapıldı (Faz 4): ChromaDB geçmiş
+  outcome'larından üretiliyor. PE Std=0.256 (öncesi: 0.000).
+  Event 1: fallback (boş store), Event 2+: memory-gated.
+- run_demo → meta_observer_node bağlantısı düzeltildi (Faz 2):
+  Graph wire doğruydu; run_demo farklı instance kullanıyordu.
+  Düzeltme sonrası called=100/100.
+- Event-level PE logging eklendi (Faz 2):
+  dau_runs/overnight_audit_results.json → runs[] array,
+  her event için prediction_error + delta_magnitude + delta_class.
 
 ### 30 gün anti-roadmap (kaynak koruma)
 
@@ -510,8 +538,9 @@ Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · para
 | **1.0** | **2026-08-04** | Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört aktuatör (lod_override, context_prune, drift_healing, trigger_retrieval), graph wiring. Travma birikimi azalan getiri. Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test geçiyor. |
 | **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B; nüans-loss. Deterministic seed replay → S2 zayıf sinyal = gürültü; L5 kapalı döngü **UNSUPPORTED**. **137 test**. |
 | **1.0++** | **2026-08-04** | Memory-cued `expected_outcome` (PE dağılımı açıldı). Bilinen sınır: InternalState saturasyonu → PE canlı / delta=0 / aktüatör `triggered=0`. Açık soru: homeostatic recovery (A/B/C; Friston allostasis). |
+| **1.1** | **2026-08-05** | DAERM implement edildi (Faz 5): allostatic recovery, endojen γ(t), domain PE vektörü. Saturasyon çözüldü. expected_outcome endojen (ChromaDB-gated). PE Std=0.256. lod_override + trigger_retrieval triggered=100/100. DAERM+TRAUMA çelişkisi tespit edildi — açık. 137 test passed. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.0++ — saturasyon sınırı + recovery açık sorusu (L5 UNSUPPORTED, format≠restraint, noise confirmed).
+Versiyon 1.1 — DAERM + endojen PE; DAERM+TRAUMA çelişkisi açık (L5 kısmi empirik, format≠restraint, noise confirmed).
