@@ -278,6 +278,8 @@ def meta_observer_node(state: DAUAgentState) -> dict[str, Any]:
     Pure w.r.t. agent state given a fixed bound memory store.
     """
 
+    print(f"[META] meta_observer_node called, event={len(state.event_log)}")
+
     self_model = build_self_model(state)
 
     lod = lod_override(self_model, _ensure_lod(state))

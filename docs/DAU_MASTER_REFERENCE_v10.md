@@ -461,6 +461,12 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - Felaket eşiği: pool=0 anında W_transfer eşikleri nasıl otomatik ayarlanır?
 - System 2→1 geçişinde nüans kaybı: LLM deneyimi state machine'e özetlenirken ne kaybolur?
   - Empirik not: nüans kaybı mikropilotu doğruladı — System 2 çeşitliliği (10 unique) → System 1 tek NPC aksiyonu (`extract_moderate`).
+- Homeostatic recovery nasıl modellenmeli?
+  - Seçenek A: Sabit `RECOVERY_RATE` (basit, ama tüm agentlar identik)
+  - Seçenek B: Deneyime bağlı recovery — `drift_magnitude` arttıkça recovery yavaşlar (trait injection riski taşımaz; yaşantının sonucu)
+  - Seçenek C: Eksen bağımsızlığı — PE domain-spesifik ekseni etkiler; cross-contamination kaldırılır
+  - Kritik kısıt: recovery dışarıdan inject edilmemeli; deneyimden (delta history, drift birikimi) çıkmalı.
+  - Literatür (araştırılacak): Friston allostasis, Dynamic Affective Dynamics, Synthetic Somatic Markers.
 
 ---
 
@@ -479,7 +485,8 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
   - Protokol: `DAU_META_AB_DETERMINISTIC=1` → `DAU_LLM_TEMPERATURE=0` + `DAU_LLM_SEED` (`graph.py` / `run_meta_ab.py`)
 - Convention: format sync ≠ restraint sync; NPC “restraint” kıtlık kuralıyla (`pool_ratio<0.3` → conserve) tetiklenebilir
 - A/B protokolü: PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta `AB_ENERGY_FLOOR` kullanılıyor (ölçüm protokolü notu; uzun ufuk/tükeniş farkını maskeler)
-- `expected_outcome`: tasarımcı şablonu (`f(dominant_load_domain)`); PE ajanın endojen öngörüsünü değil şablon↔eylem mesafesini ölçer (S1 ölçüm notu)
+- `expected_outcome`: Chroma-gated lived memory (`retrieve_relevant` → past outcomes); boş store / ilk event’te domain şablonuna fall back. PE artık endojen öngörüye yaklaşabilir (S1 düzeltmesi kısmi).
+- InternalState eksen saturasyonu: Event 1 yüksek PE (≥0.75) sonrası loads=1.0, energy=0.0’a yapışıyor. Sonraki PE sinyalleri gerçek ama delta=0 (hareket edecek eksen kalmıyor). 20 event’in 18’i NOISE. Aktüatörler çağrılıyor (`called=20`) ama `triggered=0`. Kök neden: `_apply_prediction_error` tüm eksenlere +PE ekliyor; `_clamp` [0,1] sınırını geçince before≈after → magnitude≈0. Recovery mekanizması yok — sistem bir kez saturasyona girince donuyor. Friston allostasis karşılığı eksik.
 
 ### 30 gün anti-roadmap (kaynak koruma)
 
@@ -502,8 +509,9 @@ Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · para
 | 0.9 | 2026-08-03 | Layer 4 tamamlandı: Society (environment, social, lod, fitness, graph wiring). 95 test geçiyor. |
 | **1.0** | **2026-08-04** | Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört aktuatör (lod_override, context_prune, drift_healing, trigger_retrieval), graph wiring. Travma birikimi azalan getiri. Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test geçiyor. |
 | **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B; nüans-loss. Deterministic seed replay → S2 zayıf sinyal = gürültü; L5 kapalı döngü **UNSUPPORTED**. **137 test**. |
+| **1.0++** | **2026-08-04** | Memory-cued `expected_outcome` (PE dağılımı açıldı). Bilinen sınır: InternalState saturasyonu → PE canlı / delta=0 / aktüatör `triggered=0`. Açık soru: homeostatic recovery (A/B/C; Friston allostasis). |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.0+ — Layer 5 wiring + MiniLM PE + empirik sınırlar (L5 UNSUPPORTED, format≠restraint, noise confirmed).
+Versiyon 1.0++ — saturasyon sınırı + recovery açık sorusu (L5 UNSUPPORTED, format≠restraint, noise confirmed).

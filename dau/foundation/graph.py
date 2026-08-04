@@ -82,12 +82,26 @@ ENERGY_DECAY_PER_EVENT: float = 0.05
 RESOURCE_LOAD_INCREMENT: float = 0.1
 SOCIAL_LOAD_INCREMENT: float = 0.1
 TERMINATION_ENERGY: float = 0.05
+# Fixed-horizon floor: PE shocks cannot collapse a run before actuators act.
+# effective_energy = max(raw_energy, AB_ENERGY_FLOOR); with floor > TERMINATION
+# only MAX_EVENTS ends the loop (same protocol idea as society A/B pilots).
+AB_ENERGY_FLOOR: float = 0.15
+MAX_EVENTS: int = 20
 DB_PATH: str = "dau_foundation.db"
 SNAPSHOT_DIR: str = "dau_runs"
 MODEL_NAME: str = "llama-3.1-8b-instant"
 TEMPERATURE: float = 0.2
 MAX_TOKENS: int = 150
 MEMORY_ENABLED: bool = True
+
+# Lived-experience expectation (Chroma recall → string join; no LLM).
+EXPECTED_OUTCOME_MEMORY_PREFIX: str = "Based on past experience: "
+EXPECTED_OUTCOME_MAX_CHARS: int = 200
+EXPECTED_OUTCOME_MEMORY_K: int = 3
+EXPECTED_SOURCE_FALLBACK: str = "fallback"
+EXPECTED_SOURCE_MEMORY: str = "memory"
+EXPECTED_SOURCE_PAYLOAD_KEY: str = "expected_source"
+MEMORY_OUTCOME_KEYS: tuple[str, ...] = ("actual_outcome", "decision", "outcome")
 
 # Prediction-error sensor — sentence-transformers MiniLM (Layer 1.5).
 # Jaccard keyword overlap kept as _keyword_overlap_ratio for diagnostics only.
@@ -124,6 +138,51 @@ DRIFT_WARNING_TEMPLATE: str = (
 # Module-local vault handles — not on DAUAgentState (Pydantic cannot serialize).
 _memory_stores: dict[str, MemoryStore] = {}
 _memory_written: dict[str, int] = {}
+
+# Event-level PE audit buffer — drained by run_demo / overnight writers.
+# Audit JSON uses NOISE for the NO_TRACE imprint class (histogram schema).
+AUDIT_DELTA_CLASS_NOISE: str = "NOISE"
+_pe_event_log: list[dict[str, Any]] = []
+
+
+def reset_pe_event_log() -> None:
+    """Clear the module-local prediction_error event buffer."""
+
+    _pe_event_log.clear()
+
+
+def get_pe_event_log() -> list[dict[str, Any]]:
+    """Return a shallow copy of recorded event-level PE audit rows."""
+
+    return list(_pe_event_log)
+
+
+def _record_pe_event(
+    *,
+    event_counter: int,
+    prediction_error: float,
+    delta_magnitude: float,
+    delta_class: str,
+) -> None:
+    """Append one event-level PE row to the overnight-audit buffer."""
+
+    _pe_event_log.append(
+        {
+            "event_counter": int(event_counter),
+            "prediction_error": float(prediction_error),
+            "delta_magnitude": float(delta_magnitude),
+            "delta_class": str(delta_class),
+        }
+    )
+
+
+def _audit_delta_class(record: DeltaRecord) -> str:
+    """Map DeltaClassification onto overnight-audit labels (NO_TRACE → NOISE)."""
+
+    classification = classify_delta(record)
+    if classification is DeltaClassification.NO_TRACE:
+        return AUDIT_DELTA_CLASS_NOISE
+    return classification.value
 
 SYSTEM_PROMPT: str = (
     "You are a living being in a simulation universe.\n"
@@ -369,14 +428,108 @@ def _keyword_overlap_ratio(expected: str, actual: str) -> float:
 
 
 def _build_expected_outcome(state: DAUAgentState) -> str:
-    """Anticipate the next act from the loudest current load domain.
+    """Anticipate the next act from lived memory, else dominant-load template.
 
     Biology analogy: before the organism moves, the nervous system emits a
-    provisional prediction shaped by whichever homeostatic burden dominates.
+    provisional prediction — preferably replayed from similar past episodes,
+    otherwise a coarse domain-pressure prior.
     """
 
+    text, _source = resolve_expected_outcome(state)
+    return text
+
+
+def _outcome_text_from_memory_entry(entry: dict[str, Any]) -> str | None:
+    """Pull actual_outcome/decision text from a retrieve_relevant row, if any."""
+
+    for key in MEMORY_OUTCOME_KEYS:
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _recent_decision_outcomes(
+    state: DAUAgentState,
+    *,
+    k: int = EXPECTED_OUTCOME_MEMORY_K,
+) -> list[str]:
+    """Collect the last k non-empty decision strings from the lived event log."""
+
+    outcomes: list[str] = []
+    for event in state.event_log:
+        decision = event.payload.get("decision")
+        if isinstance(decision, str) and decision.strip():
+            outcomes.append(decision.strip())
+    if k <= 0:
+        return []
+    return outcomes[-k:]
+
+
+def _past_outcomes_from_memory(state: DAUAgentState) -> list[str]:
+    """Recall up to k past outcome utterances via Chroma (silent on failure).
+
+    retrieve_relevant rows may lack decision text (DeltaRecord engrams). When
+    engrams exist but carry no utterance, fall back to recent lived decisions
+    from event_log — still memory-gated, never LLM.
+    """
+
+    if not MEMORY_ENABLED:
+        return []
+    store = _memory_stores.get(str(state.agent_id))
+    if store is None:
+        return []
+
+    try:
+        memories = retrieve_relevant(
+            query_domain=dominant_load_domain(state),
+            agent_id=state.agent_id,
+            now_counter=len(state.event_log),
+            store=store,
+            k=EXPECTED_OUTCOME_MEMORY_K,
+        )
+    except Exception:
+        return []
+
+    if not memories:
+        return []
+
+    past_outcomes: list[str] = []
+    for entry in memories:
+        if not isinstance(entry, dict):
+            continue
+        text = _outcome_text_from_memory_entry(entry)
+        if text is not None:
+            past_outcomes.append(text)
+
+    if past_outcomes:
+        return past_outcomes[-EXPECTED_OUTCOME_MEMORY_K:]
+
+    # Engrams hit, but no utterance fields — use lived decisions as outcome text.
+    return _recent_decision_outcomes(state, k=EXPECTED_OUTCOME_MEMORY_K)
+
+
+def resolve_expected_outcome(state: DAUAgentState) -> tuple[str, str]:
+    """Return (expected_outcome, source) with memory-first, template fallback.
+
+    source is EXPECTED_SOURCE_MEMORY when Chroma yields usable past outcomes;
+    otherwise EXPECTED_SOURCE_FALLBACK (designer domain template).
+    """
+
+    past_outcomes = _past_outcomes_from_memory(state)
+    if past_outcomes:
+        joined = EXPECTED_OUTCOME_MEMORY_PREFIX + "; ".join(
+            past_outcomes[-EXPECTED_OUTCOME_MEMORY_K:]
+        )
+        if len(joined) > EXPECTED_OUTCOME_MAX_CHARS:
+            joined = joined[:EXPECTED_OUTCOME_MAX_CHARS]
+        return joined, EXPECTED_SOURCE_MEMORY
+
     domain = dominant_load_domain(state)
-    return EXPECTED_OUTCOME_BY_DOMAIN.get(domain, EXPECTED_OUTCOME_ENERGY)
+    return (
+        EXPECTED_OUTCOME_BY_DOMAIN.get(domain, EXPECTED_OUTCOME_ENERGY),
+        EXPECTED_SOURCE_FALLBACK,
+    )
 
 
 def _prediction_error(expected_outcome: str, actual_outcome: str) -> float:
@@ -569,12 +722,12 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
     act becomes an immutable event. System 1 (NPC) skips costly LLM cognition.
     """
 
-    # Anticipate before acting — prediction written into state for evaluator.
-    expected_outcome = _build_expected_outcome(state)
+    # Anticipate before acting — memory replay when available, else domain prior.
+    expected_outcome, expected_source = resolve_expected_outcome(state)
 
     lod = _ensure_lod(state)
     if not should_run_llm(lod):
-        # System 1 NPC — no ChromaDB, no LangSmith, no LLM.
+        # System 1 NPC — no LangSmith, no LLM (Chroma may cue expectation).
         env = _ensure_env(state)
         pool_ratio = get_pool_ratio(env)
         dominant = dominant_load_domain(state)
@@ -588,6 +741,7 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
                 "decision": decision,
                 "energy": float(state.internal_state.energy),
                 "expected_outcome": expected_outcome,
+                EXPECTED_SOURCE_PAYLOAD_KEY: expected_source,
                 "cognitive_mode": COGNITIVE_MODE_SYSTEM_1,
             },
         )
@@ -654,6 +808,7 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
             "decision": decision,
             "energy": float(state.internal_state.energy),
             "expected_outcome": expected_outcome,
+            EXPECTED_SOURCE_PAYLOAD_KEY: expected_source,
         },
     )
     new_state = append_event(state, event)
@@ -685,6 +840,14 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     before = state.internal_state.model_copy(deep=True)
 
     prediction_error = _prediction_error(expected_outcome, actual_outcome)
+    expected_source = str(
+        last_event.payload.get(EXPECTED_SOURCE_PAYLOAD_KEY, EXPECTED_SOURCE_FALLBACK)
+    )
+    print(
+        f"[PE] event={int(last_event.timestamp)} "
+        f"source={expected_source} "
+        f"pe={float(prediction_error):.3f}"
+    )
     after = _apply_prediction_error(before, prediction_error)
 
     affected = _primary_affected_domain(before, after)
@@ -693,6 +856,12 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         after,
         affected_domain=affected,
         timestamp=last_event.timestamp,
+    )
+    _record_pe_event(
+        event_counter=int(last_event.timestamp),
+        prediction_error=float(prediction_error),
+        delta_magnitude=float(record.magnitude),
+        delta_class=_audit_delta_class(record),
     )
 
     current_drift = state.drift_state
@@ -746,13 +915,18 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
 
 
 def should_continue(state: DAUAgentState) -> Literal["agent_node", "__end__"]:
-    """Route on residual energy — keep living or end the run.
+    """Route on residual energy and event budget — keep living or end the run.
 
     Biology analogy: below the viability floor the organism can no longer act;
-    above it, another sense-act cycle begins.
+    above it, another sense-act cycle begins. AB_ENERGY_FLOOR holds effective
+    energy at a fixed-horizon pad so a single PE shock cannot abort the run
+    before Meta-Observer actuators accumulate history; MAX_EVENTS is the hard cap.
     """
 
-    if state.internal_state.energy <= TERMINATION_ENERGY:
+    if len(state.event_log) >= MAX_EVENTS:
+        return END  # type: ignore[return-value]
+    effective_energy = max(float(state.internal_state.energy), AB_ENERGY_FLOOR)
+    if effective_energy <= TERMINATION_ENERGY:
         return END  # type: ignore[return-value]
     return NODE_AGENT
 
