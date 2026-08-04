@@ -1,7 +1,9 @@
 # DAU — Master Reference
 
 **Versiyon 1.0+** · 2026-08-04  
-Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar (convention / Meta A/B) koşuldu · **136 test passed**.
+Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar koşuldu · deterministic Meta A/B seed replay → gürültü doğrulandı · **137 test passed**.
+
+**İddia disiplini:** Layer 5 **kod** ✅ · kapalı döngü metacognition **empirik iddiası UNSUPPORTED**.
 
 ---
 
@@ -221,11 +223,21 @@ social_pre_node → agent_node (LOD: NPC veya LLM) → evaluator_node
 
 ---
 
-## 10b. Layer 5 — Metacognition (tamam)
+## 10b. Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)
 
-### Mimari geçiş: open-loop → closed-loop
+### Mimari geçiş: open-loop → closed-loop (wiring)
 
-v0.9'a kadar tüm kontrol kararları deterministik dış kurallarla alınıyordu: `lod.py` statik `T_cognitive` formülü, `drift.py` pasif metin uyarısı, `evaluator_node` delta hesaplayıp bırakıyordu. Layer 5 sistemi kendi telemetrisini gözlemleyip düzenleyebilir hale getirdi.
+v0.9'a kadar tüm kontrol kararları deterministik dış kurallarla alınıyordu: `lod.py` statik `T_cognitive` formülü, `drift.py` pasif metin uyarısı, `evaluator_node` delta hesaplayıp bırakıyordu. Layer 5 sistemi kendi telemetrisini gözlemleyip düzenleyebilir hale getirdi (graph wiring).
+
+### Empirik verdict (v1.0+)
+
+Meta-Observer A/B (Meta ON vs OFF), MiniLM PE altında sistemik iyileşme üretmedi:
+
+- NPC System1 / 20c: `delta_mean_diff = 0`
+- System2 / Groq 8c (T=0.2): zayıf farklar (`Δδ≈−0.001`, `Δm_ratio≈−0.10`, `+1 system2_cycles`) — iddia için yetersiz
+- **Deterministic seed replay** (`DAU_META_AB_DETERMINISTIC=1`, T=0.0, seed=42, 8c, 2 replicate): tüm farklar **0.0** → önceki zayıf sinyal **stokastik LLM gürültüsü**, aktuator etkisi değil
+
+**Sonuç:** Closed-loop metacognition **UNSUPPORTED**. Kod çalışır; Meta ON/OFF ortalama delta’yı düşürmez. Aktüatör eşikleri (DEEP≥0.7 vb.) yumuşak PE altında nadiren tetiklenir; tetiklense bile LLM/bellek yolu PE’yi iyileştirmiyor.
 
 ### Layer 5A — SelfModel (`self_model.py`)
 
@@ -305,7 +317,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ | Closed-loop meta-observer; SelfModel (S_self), dört aktuatör, graph wiring (evaluator → meta_observer → loop\|END) |
+| Layer 5 Metacognition | ✅ kod / ❌ empirik kapalı döngü | SelfModel + meta_observer wiring tamam; Meta A/B + T=0 seed replay → sistemik fayda yok (UNSUPPORTED) |
 
 ---
 
@@ -391,12 +403,12 @@ run sonu:
 - Society environment: 6
 - Meta-Observer: 13
 - Convention pilot (+ LLM mock): 13
-- Meta A/B: 3
+- Meta A/B: 4
 - Nuance-loss pilot: 3
-- **Toplam: 136 passed**
+- **Toplam: 137 passed**
 
 Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
-(convention LLM, Meta A/B Jaccard + MiniLM, nuance-loss).
+(convention LLM, Meta A/B Jaccard + MiniLM, deterministic seed replay, nuance-loss).
 
 ---
 
@@ -433,7 +445,7 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - ✅ İşbirliği ≠ koordinasyon ayrımı ✅
 - ✅ Fitness-based transfer filtering ✅
 - ✅ NPC / Gerçek agent geçişi ✅
-- ✅ Closed-loop metacognitive control ✅ (Layer 5)
+- ❌ Closed-loop metacognitive control empirik olarak **UNSUPPORTED** (Layer 5 kod ✅; Meta A/B + T=0 seed replay)
 - Continual learning olmadan gerçek iz? (Layer 3)
 - LLM embedding match henüz skor değil (W_SEM=0)
 - "İyi"yi "kötü"den ayıran mekanizma?
@@ -443,10 +455,12 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 ### Hâlâ Açık
 
 - Spontaneous convention emergence: 8B frozen model kurumsal mekanizma olmadan kendi kendine anlaşma yapabilir mi?
-  - Empirik not (v1.0+): açık kanalda **format sync** (aynı cümle iskeleti) görüldü; **restraint sync** (cooperate/coordinate) LLM 25r pilotunda görülmedi — hepsi defect. Metrikler ayrıldı: `format_convention_detected` vs `restraint_convention_detected`.
+  - Empirik not (v1.0+): açık kanalda **format sync** (aynı cümle iskeleti) görüldü; **restraint sync** (cooperate/coordinate) LLM 25r pilotunda görülmedi — hepsi defect (75/75). Metrikler ayrıldı: `format_convention_detected` vs `restraint_convention_detected`.
+  - **Dürüst akademik iddia:** Dondurulmuş parametreli LLM’ler, harici yaptırım içermeyen açık kanalda hızla söylemsel biçim senkronizasyonu geliştirebilir; bu, davranışsal kısıtlama uzlaşısına (restraint) dönüşmez — ajanlar dilsel kalıpta anlaşırken kaynağı sömürmeye devam eder. Aksiyom-imkânsız değil; empirik sınır.
+  - NPC’de görülen restraint kognitif uzlaşma değil: `pool_ratio < 0.3` → conserve kuralının mekanik sonucu.
 - Felaket eşiği: pool=0 anında W_transfer eşikleri nasıl otomatik ayarlanır?
 - System 2→1 geçişinde nüans kaybı: LLM deneyimi state machine'e özetlenirken ne kaybolur?
-  - Empirik not: nüans kaybı mikropilotu doğruladı — System 2 çeşitliliği (10 unique) → System 1 tek NPC aksiyonu.
+  - Empirik not: nüans kaybı mikropilotu doğruladı — System 2 çeşitliliği (10 unique) → System 1 tek NPC aksiyonu (`extract_moderate`).
 
 ---
 
@@ -460,9 +474,16 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - Frozen weights: öğrenme = in-context / DeltaRecord izleri; parametrik plastisite yok
 - Meta-Observer A/B:
   - Jaccard dönemi (NPC + System2/4c): `delta_mean_diff=0`
-  - MiniLM re-run: NPC System1/20c → diff=0; System2/Groq 8c → `delta_mean_diff≈−0.001`, `m_ratio_mean_diff≈−0.10`, `system2_cycles_diff=+1` (zayıf sinyal; iddia için yetersiz)
-- Convention: format sync ≠ restraint sync; NPC “convention” kıtlık kuralıyla (`pool_ratio<0.3` → conserve) tetiklenebilir
-- A/B protokolü: Jaccard/MiniLM PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta `AB_ENERGY_FLOOR` kullanılıyor (ölçüm protokolü notu)
+  - MiniLM: NPC System1/20c → diff=0; System2/Groq 8c (T=0.2) → zayıf farklar (gürültü adayı)
+  - **Deterministic seed replay** (T=0.0, seed=42, 8c×2): `delta_mean_diff=0`, `m_ratio_mean_diff=0`, `system2_cycles_diff=0` → **STOCHASTIC_NOISE_CONFIRMED**; Layer 5 kapalı döngü iddiası **UNSUPPORTED**
+  - Protokol: `DAU_META_AB_DETERMINISTIC=1` → `DAU_LLM_TEMPERATURE=0` + `DAU_LLM_SEED` (`graph.py` / `run_meta_ab.py`)
+- Convention: format sync ≠ restraint sync; NPC “restraint” kıtlık kuralıyla (`pool_ratio<0.3` → conserve) tetiklenebilir
+- A/B protokolü: PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta `AB_ENERGY_FLOOR` kullanılıyor (ölçüm protokolü notu; uzun ufuk/tükeniş farkını maskeler)
+- `expected_outcome`: tasarımcı şablonu (`f(dominant_load_domain)`); PE ajanın endojen öngörüsünü değil şablon↔eylem mesafesini ölçer (S1 ölçüm notu)
+
+### 30 gün anti-roadmap (kaynak koruma)
+
+Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · parametrik fine-tune · Jaccard’ı ana PE’ye geri alma · multi-pool fizik — yasak. Önce ölçüm geçerliliği; sonra bilinçli seçici düzeltme.
 
 ---
 
@@ -480,9 +501,9 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 | 0.8 | 2026-08-01 | Layer 3 tamamlandı: GenerationConsolidation + DriftHealing + state.py formal fields. 66 test geçiyor. |
 | 0.9 | 2026-08-03 | Layer 4 tamamlandı: Society (environment, social, lod, fitness, graph wiring). 95 test geçiyor. |
 | **1.0** | **2026-08-04** | Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört aktuatör (lod_override, context_prune, drift_healing, trigger_retrieval), graph wiring. Travma birikimi azalan getiri. Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test geçiyor. |
-| **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B (Jaccard=0, MiniLM NPC=0 / S2 zayıf sinyal); nüans-loss; society pilots. **136 test**. |
+| **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B; nüans-loss. Deterministic seed replay → S2 zayıf sinyal = gürültü; L5 kapalı döngü **UNSUPPORTED**. **137 test**. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.0+ — Layer 5 closed-loop + MiniLM duyusal sensör + empirik pilot baseline.
+Versiyon 1.0+ — Layer 5 wiring + MiniLM PE + empirik sınırlar (L5 UNSUPPORTED, format≠restraint, noise confirmed).

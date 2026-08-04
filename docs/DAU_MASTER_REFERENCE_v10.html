@@ -1,97 +1,278 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-<meta charset="utf-8"/>
-<title>DAU Master Reference v1.0+</title>
-<style>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DAU Master Reference v1.0+</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
 
 
-  @page { size: A4; margin: 18mm 16mm; }
-  * { box-sizing: border-box; }
-  body {
-    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    font-size: 10.5pt;
-    line-height: 1.45;
-    color: #1a1a1a;
-    max-width: 180mm;
-    margin: 0 auto;
-  }
-  h1 { font-size: 20pt; margin: 0 0 4pt; letter-spacing: 0.02em; }
-  h2 {
-    font-size: 13pt;
-    margin: 18pt 0 8pt;
-    padding-bottom: 3pt;
-    border-bottom: 1.5px solid #222;
-    page-break-after: avoid;
-  }
-  h3 { font-size: 11pt; margin: 12pt 0 6pt; page-break-after: avoid; }
-  p { margin: 0 0 8pt; }
-  .meta { color: #444; font-size: 10pt; margin-bottom: 14pt; }
-  .axiom {
-    background: #f4f4f4;
-    border-left: 4px solid #222;
-    padding: 10pt 12pt;
-    margin: 12pt 0;
-    font-weight: 600;
-  }
-  ul, ol { margin: 0 0 10pt; padding-left: 18pt; }
-  li { margin-bottom: 3pt; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 8pt 0 12pt;
-    font-size: 9.5pt;
-  }
-  th, td {
-    border: 1px solid #bbb;
-    padding: 5pt 6pt;
-    vertical-align: top;
-    text-align: left;
-  }
-  th { background: #eee; }
-  pre, code {
-    font-family: "SF Mono", Consolas, "Courier New", monospace;
-    font-size: 8.8pt;
-  }
-  pre {
-    background: #f6f6f6;
-    border: 1px solid #ddd;
-    padding: 8pt 10pt;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    margin: 6pt 0 12pt;
-  }
-  .status-done { color: #0a6b2d; font-weight: 600; }
-  .status-next { color: #8a5a00; font-weight: 600; }
-  .footer {
-    margin-top: 24pt;
-    padding-top: 8pt;
-    border-top: 1px solid #ccc;
-    font-size: 9pt;
-    color: #555;
-  }
-  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 8.8pt; white-space: pre; }
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 180mm;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20pt; margin: 0 0 4pt; letter-spacing: 0.02em; }
+    h2 {
+      font-size: 13pt;
+      margin: 18pt 0 8pt;
+      padding-bottom: 3pt;
+      border-bottom: 1.5px solid #222;
+      page-break-after: avoid;
+    }
+    h3 { font-size: 11pt; margin: 12pt 0 6pt; page-break-after: avoid; }
+    p { margin: 0 0 8pt; }
+    .meta { color: #444; font-size: 10pt; margin-bottom: 14pt; }
+    .axiom {
+      background: #f4f4f4;
+      border-left: 4px solid #222;
+      padding: 10pt 12pt;
+      margin: 12pt 0;
+      font-weight: 600;
+    }
+    ul, ol { margin: 0 0 10pt; padding-left: 18pt; }
+    li { margin-bottom: 3pt; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0 12pt;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #bbb;
+      padding: 5pt 6pt;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #eee; }
+    pre, code {
+      font-family: "SF Mono", Consolas, "Courier New", monospace;
+      font-size: 8.8pt;
+    }
+    pre {
+      background: #f6f6f6;
+      border: 1px solid #ddd;
+      padding: 8pt 10pt;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin: 6pt 0 12pt;
+    }
+    .status-done { color: #0a6b2d; font-weight: 600; }
+    .status-next { color: #8a5a00; font-weight: 600; }
+    .footer {
+      margin-top: 24pt;
+      padding-top: 8pt;
+      border-top: 1px solid #ccc;
+      font-size: 9pt;
+      color: #555;
+    }
+    .tree { font-family: "SF Mono", Consolas, monospace; font-size: 8.8pt; white-space: pre; }
 
 
-</style>
+  </style>
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">DAU Master Reference v1.0+</h1>
+</header>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
 <p><strong>Versiyon 1.0+</strong> · 2026-08-04<br />
-Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar (convention / Meta A/B) koşuldu · <strong>136 test passed</strong>.</p>
+Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar koşuldu
+· deterministic Meta A/B seed replay → gürültü doğrulandı · <strong>137
+test passed</strong>.</p>
+<p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
+kapalı döngü metacognition <strong>empirik iddiası
+UNSUPPORTED</strong>.</p>
 <hr />
 <h2 id="aksiyom">1. Aksiyom</h2>
-<p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle değil, yaşantı yoluyla iç dünya inşa ettiği bir simülasyon evrenidir.</p>
-<p>AMADS’ın temel bulgusundan doğdu: <code>cooperation = 0.8</code> atadık, agent farklı davrandı. Dışarıdan enjekte edilen trait çalışmıyor. İçten gelen bir “ben” lazım.</p>
+<p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
+değil, yaşantı yoluyla iç dünya inşa ettiği bir simülasyon
+evrenidir.</p>
+<p>AMADS’ın temel bulgusundan doğdu: <code>cooperation = 0.8</code>
+atadık, agent farklı davrandı. Dışarıdan enjekte edilen trait
+çalışmıyor. İçten gelen bir “ben” lazım.</p>
 <blockquote>
-<p><strong>Bir agent’a trait veremezsin. Sadece yaşam verebilirsin. Trait oradan çıkar.</strong></p>
+<p><strong>Bir agent’a trait veremezsin. Sadece yaşam verebilirsin.
+Trait oradan çıkar.</strong></p>
 </blockquote>
-<p>Caron &amp; Srivastava, Hartley et al., Bodroža et al., Dubedy — dört bağımsız çalışma trait injection’ın tutarsız, yüzeysel ve davranışa bağlanmayan sonuçlar ürettiğini gösteriyor. DAU’nun aksiyomu empirik destekli.</p>
+<p>Caron &amp; Srivastava, Hartley et al., Bodroža et al., Dubedy — dört
+bağımsız çalışma trait injection’ın tutarsız, yüzeysel ve davranışa
+bağlanmayan sonuçlar ürettiğini gösteriyor. DAU’nun aksiyomu empirik
+destekli.</p>
 <h3 id="değiştirilemez-yasaklar">Değiştirilemez yasaklar</h3>
 <ol type="1">
 <li>Trait injection yok</li>
 <li>LLM-as-judge yok — tüm metrikler deterministik Python</li>
-<li>Clock-driven zaman yok — event sırası (<code>int</code>, <code>now_counter</code>)</li>
+<li>Clock-driven zaman yok — event sırası (<code>int</code>,
+<code>now_counter</code>)</li>
 <li>Her sabit <code>UPPER_CASE</code>, tek yerde</li>
 <li>Magic number yok — semantic field isimleri</li>
 </ol>
@@ -101,22 +282,33 @@ Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar (conventi
 <li>Kapalı simülasyon — agent’lar yapay zeka olduklarını bilmiyor</li>
 <li>Az sayıda LLM-powered tam kognisyon agent</li>
 <li>Büyük çoğunluk: deterministik mock NPC (Layer 4)</li>
-<li>Farklı katmanlarda roller (Mimar / Kahin benzeri karar mekanizmaları)</li>
+<li>Farklı katmanlarda roller (Mimar / Kahin benzeri karar
+mekanizmaları)</li>
 </ul>
-<p><strong>Üç temel mücadele:</strong> kaynak, evrimleşme, “Bu gerçek mi?” öz sorgusu.</p>
+<p><strong>Üç temel mücadele:</strong> kaynak, evrimleşme, “Bu gerçek
+mi?” öz sorgusu.</p>
 <hr />
 <h2 id="zaman-ve-free-energy">3. Zaman ve Free Energy</h2>
-<p>Reaktif LLM (−t: geçmiş pattern) yerine proaktif anticipation (+t): deneyim → internal model → tahmin → eylem → yeni deneyim.</p>
-<p>Friston Free Energy: organizma sürprizi minimize eder. <strong>Delta = tahmin hatası.</strong> Layer 1.5 bunu graph döngüsüne bağladı.</p>
+<p>Reaktif LLM (−t: geçmiş pattern) yerine proaktif anticipation (+t):
+deneyim → internal model → tahmin → eylem → yeni deneyim.</p>
+<p>Friston Free Energy: organizma sürprizi minimize eder. <strong>Delta
+= tahmin hatası.</strong> Layer 1.5 bunu graph döngüsüne bağladı.</p>
 <hr />
-<h2 id="duygu-ve-drift-layer-2-tamam">4. Duygu ve drift (Layer 2 — tamam)</h2>
-<p>Damasio: duygu = önceliklendirme. Dubedy 2025: <code>emotion: "anxious"</code> JSON etiketi kararı değiştirmiyor. Duygu etiket değil, fonksiyondur.</p>
+<h2 id="duygu-ve-drift-layer-2-tamam">4. Duygu ve drift (Layer 2 —
+tamam)</h2>
+<p>Damasio: duygu = önceliklendirme. Dubedy 2025:
+<code>emotion: "anxious"</code> JSON etiketi kararı değiştirmiyor. Duygu
+etiket değil, fonksiyondur.</p>
 <pre><code>Uyaran → delta(iç durum) → EmotionalWeight → etkilenen karar bölgesi → drift</code></pre>
 <ul>
-<li><code>EmotionalWeight.somatic_markers</code>: threat, reward, novelty, social, loss ∈ [0, 1]</li>
-<li><code>apply_emotional_weight</code>: en yüksek marker → <code>You are currently prioritizing: {top_marker}</code></li>
-<li>Travma (<code>magnitude ≥ 0.7</code>) → <code>update_drift</code> → kalıcı domain flag + magnitude birikimi</li>
-<li>Drift healing: <code>heal_drift</code> Layer 3’te eklendi (<code>HEAL_RATE=0.3</code>, ~5 güçlü deneyim)</li>
+<li><code>EmotionalWeight.somatic_markers</code>: threat, reward,
+novelty, social, loss ∈ [0, 1]</li>
+<li><code>apply_emotional_weight</code>: en yüksek marker →
+<code>You are currently prioritizing: {top_marker}</code></li>
+<li>Travma (<code>magnitude ≥ 0.7</code>) → <code>update_drift</code> →
+kalıcı domain flag + magnitude birikimi</li>
+<li>Drift healing: <code>heal_drift</code> Layer 3’te eklendi
+(<code>HEAL_RATE=0.3</code>, ~5 güçlü deneyim)</li>
 </ul>
 <hr />
 <h2 id="delta-eşikleri">5. Delta eşikleri</h2>
@@ -128,8 +320,10 @@ DELTA_THRESHOLD_DEEP   = 0.7  # DEEP
 delta orta      → kısa süreli / NORMAL
 delta büyük     → DEEP → disk
 delta çok büyük → TRAUMA → drift tetiklenir</code></pre>
-<p>Travma birikimi: <code>magnitudes[domain] = current + magnitude × exp(−current / TRAUMA_DECAY_BASE)</code><br />
-<code>TRAUMA_DECAY_BASE = 1.0</code> — azalan getiri; beşinci travma birinciden materyal olarak küçük.</p>
+<p>Travma birikimi:
+<code>magnitudes[domain] = current + magnitude × exp(−current / TRAUMA_DECAY_BASE)</code><br />
+<code>TRAUMA_DECAY_BASE = 1.0</code> — azalan getiri; beşinci travma
+birinciden materyal olarak küçük.</p>
 <hr />
 <h2 id="hafıza-formülleri-layer-1">6. Hafıza formülleri (Layer 1)</h2>
 <pre><code>memory_score = 0.3·recency + 0.4·magnitude + 0.3·domain_match
@@ -140,8 +334,13 @@ S = max(1, round(record.magnitude / S_UNIT))  # S_UNIT=0.1
 R = exp(-t / S)
 # Recall: S += 1 · Travma silinmez (TRAUMA_S_BASE = 10)</code></pre>
 <hr />
-<h2 id="layer-1.5-prediction-error-tamam">7. Layer 1.5 — Prediction Error (tamam)</h2>
-<p><code>evaluator_node</code> sabit artış yerine beklenen vs gerçekleşen farkını kullanır. Referans: Predictive Minds / Friston; duyusal eşleşme <strong>sentence-transformers MiniLM</strong> cosine similarity (LLM-as-judge yok). Jaccard kelime kesişimi yalnızca diagnostik karşılaştırma için saklanır.</p>
+<h2 id="layer-1.5-prediction-error-tamam">7. Layer 1.5 — Prediction
+Error (tamam)</h2>
+<p><code>evaluator_node</code> sabit artış yerine beklenen vs
+gerçekleşen farkını kullanır. Referans: Predictive Minds / Friston;
+duyusal eşleşme <strong>sentence-transformers MiniLM</strong> cosine
+similarity (LLM-as-judge yok). Jaccard kelime kesişimi yalnızca
+diagnostik karşılaştırma için saklanır.</p>
 <pre><code>agent_node:
   expected_outcome = f(dominant_load_domain)  # natural-language anticipation
   → karar + expected_outcome event payload
@@ -152,16 +351,21 @@ evaluator_node:
   delta = compute_delta(before, after)
   drift_state = update_drift(drift_state, delta)
   → memory record_delta</code></pre>
-<p>Prediction error tüm homeostatic eksenleri kaydırır; energy için metabolik taban (<code>ENERGY_DECAY_PER_EVENT</code>) korunur. Böylece anlamlı delta sınıfları (NORMAL/DEEP/TRAUMA) üretilebilir — Layer 0/1’deki sabit artış NO_TRACE sınırı aşıldı.</p>
+<p>Prediction error tüm homeostatic eksenleri kaydırır; energy için
+metabolik taban (<code>ENERGY_DECAY_PER_EVENT</code>) korunur. Böylece
+anlamlı delta sınıfları (NORMAL/DEEP/TRAUMA) üretilebilir — Layer
+0/1’deki sabit artış NO_TRACE sınırı aşıldı.</p>
 <hr />
-<h2 id="layer-2-emotionalweight-drift-tamam">8. Layer 2 — EmotionalWeight + Drift (tamam)</h2>
+<h2 id="layer-2-emotionalweight-drift-tamam">8. Layer 2 —
+EmotionalWeight + Drift (tamam)</h2>
 <h3 id="emotionalweight">EmotionalWeight</h3>
 <pre><code>threat  = clamp(magnitude · resource_load, 0, 1)
 reward  = clamp((1 − magnitude) · energy, 0, 1)
 novelty = clamp(magnitude · uncertainty_load, 0, 1)
 social  = clamp(social_load, 0, 1)
 loss    = 1.0 if is_trauma(delta) else 0.0</code></pre>
-<p><code>agent_node</code> son delta üzerinden marker üretir ve system prompt’a tek satır bias enjekte eder.</p>
+<p><code>agent_node</code> son delta üzerinden marker üretir ve system
+prompt’a tek satır bias enjekte eder.</p>
 <h3 id="drift">Drift</h3>
 <pre><code>DriftState(flags: dict[str,bool], magnitudes: dict[str,float])
 update_drift: travma → flags[domain]=True,
@@ -169,48 +373,72 @@ update_drift: travma → flags[domain]=True,
   # TRAUMA_DECAY_BASE = 1.0
 get_drift_bias: flagged ise magnitude, değilse 0.0
 # kalıcı — healing için heal_drift (Layer 3, HEAL_THRESHOLD=0.6)</code></pre>
-<p>Bias &gt; 0 ise prompt uyarısı: <code>Warning: drift detected in {domain} (bias={bias:.2f})</code></p>
+<p>Bias &gt; 0 ise prompt uyarısı:
+<code>Warning: drift detected in {domain} (bias={bias:.2f})</code></p>
 <hr />
-<h2 id="layer-3-nesil-konsolidasyonu-drift-healing-tamam">9. Layer 3 — Nesil Konsolidasyonu + Drift Healing (tamam)</h2>
-<h3 id="dau-generation-generation.py">DAU-Generation (<code>generation.py</code>)</h3>
+<h2 id="layer-3-nesil-konsolidasyonu-drift-healing-tamam">9. Layer 3 —
+Nesil Konsolidasyonu + Drift Healing (tamam)</h2>
+<h3 id="dau-generation-generation.py">DAU-Generation
+(<code>generation.py</code>)</h3>
 <ul>
-<li><code>TransferCandidate</code>: DeltaRecord + memory_score + recall_count wrapper</li>
-<li><code>select_for_transfer</code>: memory_score &gt;= 0.6, recall_count &gt;= 1, trauma sadece drift &gt;= 1.5 ise geçer</li>
-<li><code>consolidate_generation</code>: store’dan tüm izleri çeker, filtreler, GenerationRecord paketler</li>
-<li><code>apply_generation</code>: drift kopyalar, generation sayacı artırır, retrieval_context’e inherited izleri yazar</li>
-<li>Constants: <code>GENERATION_TRANSFER_THRESHOLD=0.6</code>, <code>GENERATION_MIN_RECALL=1</code>, <code>DRIFT_TRANSFER_MIN=1.5</code></li>
-<li>Fitness yolu (<code>f_agent</code> verildiğinde): <code>F_agent &lt; 0.35</code> → travma izleri silinmez; <code>inherited_warning=True</code>, <code>somatic_scale=-0.3</code> ile cautionary trace olarak sonraki nesle aktarılır. <code>retrieval_context</code>’e <code>inherited_warning</code> ve <code>somatic_scale</code> alanları eklenerek geçer.</li>
+<li><code>TransferCandidate</code>: DeltaRecord + memory_score +
+recall_count wrapper</li>
+<li><code>select_for_transfer</code>: memory_score &gt;= 0.6,
+recall_count &gt;= 1, trauma sadece drift &gt;= 1.5 ise geçer</li>
+<li><code>consolidate_generation</code>: store’dan tüm izleri çeker,
+filtreler, GenerationRecord paketler</li>
+<li><code>apply_generation</code>: drift kopyalar, generation sayacı
+artırır, retrieval_context’e inherited izleri yazar</li>
+<li>Constants: <code>GENERATION_TRANSFER_THRESHOLD=0.6</code>,
+<code>GENERATION_MIN_RECALL=1</code>,
+<code>DRIFT_TRANSFER_MIN=1.5</code></li>
+<li>Fitness yolu (<code>f_agent</code> verildiğinde):
+<code>F_agent &lt; 0.35</code> → travma izleri silinmez;
+<code>inherited_warning=True</code>, <code>somatic_scale=-0.3</code> ile
+cautionary trace olarak sonraki nesle aktarılır.
+<code>retrieval_context</code>’e <code>inherited_warning</code> ve
+<code>somatic_scale</code> alanları eklenerek geçer.</li>
 </ul>
-<h3 id="dau-drifthealing-drift.py-eklentisi">DAU-DriftHealing (<code>drift.py</code> eklentisi)</h3>
+<h3 id="dau-drifthealing-drift.py-eklentisi">DAU-DriftHealing
+(<code>drift.py</code> eklentisi)</h3>
 <ul>
-<li><code>heal_drift</code>: flagged domain + magnitude &gt;= 0.6 + is_trauma=False → magnitudes azalır</li>
-<li><code>HEAL_RATE=0.3</code> → bir travmayı temizlemek ~5 güçlü deneyim gerektirir</li>
+<li><code>heal_drift</code>: flagged domain + magnitude &gt;= 0.6 +
+is_trauma=False → magnitudes azalır</li>
+<li><code>HEAL_RATE=0.3</code> → bir travmayı temizlemek ~5 güçlü
+deneyim gerektirir</li>
 <li>magnitude=0 olunca flag kalkar</li>
-<li>Constants: <code>HEAL_THRESHOLD=0.6</code>, <code>HEAL_RATE=0.3</code></li>
+<li>Constants: <code>HEAL_THRESHOLD=0.6</code>,
+<code>HEAL_RATE=0.3</code></li>
 </ul>
 <h3 id="state.py"><code>state.py</code></h3>
 <ul>
-<li><code>retrieval_context: list[dict[str, Any]]</code> — inherited memory path</li>
-<li><code>generation_record: Any | None</code> — konsolidasyon kaydı, checkpoint’e yazılıyor</li>
+<li><code>retrieval_context: list[dict[str, Any]]</code> — inherited
+memory path</li>
+<li><code>generation_record: Any | None</code> — konsolidasyon kaydı,
+checkpoint’e yazılıyor</li>
 </ul>
 <hr />
 <h2 id="layer-4-society-tamam">10. Layer 4 — Society (tamam)</h2>
-<h3 id="govsim-kaynak-fiziği-environment.py">GovSim Kaynak Fiziği (<code>environment.py</code>)</h3>
+<h3 id="govsim-kaynak-fiziği-environment.py">GovSim Kaynak Fiziği
+(<code>environment.py</code>)</h3>
 <pre><code>P_next = clamp(P + r·P·(1 - P/P_max) - Σe_i, 0, P_max)
 collapse = P_next &lt;= P_max · COLLAPSE_EPSILON
 # Constants: POOL_MAX=100.0, POOL_REGEN_RATE=0.15, COLLAPSE_EPSILON=0.05</code></pre>
-<h3 id="sosyal-yük-ayrımı-social.py">Sosyal Yük Ayrımı (<code>social.py</code>)</h3>
+<h3 id="sosyal-yük-ayrımı-social.py">Sosyal Yük Ayrımı
+(<code>social.py</code>)</h3>
 <pre><code>cooperation_stress = clamp((defect_rate) · (1 - trust), 0, 1)
 coordination_friction = H(outcomes) · I(last_deadlock)
 social_load = clamp(0.5·coop + 0.5·coord, 0, 1)
 # Markov pre-node: P(cooperate) deterministik
 # strategic expectation → retrieval_context</code></pre>
-<h3 id="cognitive-lod-engine-lod.py">Cognitive LOD Engine (<code>lod.py</code>)</h3>
+<h3 id="cognitive-lod-engine-lod.py">Cognitive LOD Engine
+(<code>lod.py</code>)</h3>
 <pre><code>T_cognitive = 0.35·(δ/0.7) + 0.25·max_drift + 0.20·coord_friction + 0.20·(1-pool_ratio)
 T_COGNITIVE_ESCALATE=0.65 → System 2 (LLM)
 T_COGNITIVE_DEESCALATE=0.25, T_COOLDOWN_STEPS=5 → System 1 (NPC)
 # npc_decision: deterministik heuristic, 0 LLM token</code></pre>
-<h3 id="fitness-based-nesil-filtresi-fitness.py">Fitness-Based Nesil Filtresi (<code>fitness.py</code>)</h3>
+<h3 id="fitness-based-nesil-filtresi-fitness.py">Fitness-Based Nesil
+Filtresi (<code>fitness.py</code>)</h3>
 <pre><code>F_agent = 0.4·(E/E_max) + 0.3·(1-|ΔP|/P_max) + 0.3·(t_surv/T_gen)
 W_transfer = memory_score · F_agent · (1 + tanh(reward - threat))
 F_agent &lt; 0.35 → travma izleri silinmez; inherited_warning=True,
@@ -224,54 +452,108 @@ F_agent &gt;= 0.70 + travma → inherited_warning (somatic scale 0.3)</code></pr
 # SYSTEM_1: npc_decision, ChromaDB/LangSmith yok
 # Layer 5: meta_observer_node evaluator&#39;dan sonra (closed-loop)</code></pre>
 <hr />
-<h2 id="b.-layer-5-metacognition-tamam">10b. Layer 5 — Metacognition (tamam)</h2>
-<h3 id="mimari-geçiş-open-loop-closed-loop">Mimari geçiş: open-loop → closed-loop</h3>
-<p>v0.9’a kadar tüm kontrol kararları deterministik dış kurallarla alınıyordu: <code>lod.py</code> statik <code>T_cognitive</code> formülü, <code>drift.py</code> pasif metin uyarısı, <code>evaluator_node</code> delta hesaplayıp bırakıyordu. Layer 5 sistemi kendi telemetrisini gözlemleyip düzenleyebilir hale getirdi.</p>
-<h3 id="layer-5a-selfmodel-self_model.py">Layer 5A — SelfModel (<code>self_model.py</code>)</h3>
-<p>Tüm katmanların telemetrisini tek Pydantic nesnesinde birleştirir (frozen). Alanlar (mevcut state’den okunur, yeni alan üretilmez):</p>
+<h2 id="b.-layer-5-metacognition-kod-tamam-empirik-unsupported">10b.
+Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</h2>
+<h3 id="mimari-geçiş-open-loop-closed-loop-wiring">Mimari geçiş:
+open-loop → closed-loop (wiring)</h3>
+<p>v0.9’a kadar tüm kontrol kararları deterministik dış kurallarla
+alınıyordu: <code>lod.py</code> statik <code>T_cognitive</code> formülü,
+<code>drift.py</code> pasif metin uyarısı, <code>evaluator_node</code>
+delta hesaplayıp bırakıyordu. Layer 5 sistemi kendi telemetrisini
+gözlemleyip düzenleyebilir hale getirdi (graph wiring).</p>
+<h3 id="empirik-verdict-v1.0">Empirik verdict (v1.0+)</h3>
+<p>Meta-Observer A/B (Meta ON vs OFF), MiniLM PE altında sistemik
+iyileşme üretmedi:</p>
 <ul>
-<li><code>delta_current</code>, <code>delta_history</code>, <code>drift_state</code>, <code>emotional_weight</code></li>
-<li><code>t_cognitive</code>, <code>memory_retrieval_scores</code>, <code>f_agent</code>, <code>generation_count</code></li>
+<li>NPC System1 / 20c: <code>delta_mean_diff = 0</code></li>
+<li>System2 / Groq 8c (T=0.2): zayıf farklar (<code>Δδ≈−0.001</code>,
+<code>Δm_ratio≈−0.10</code>, <code>+1 system2_cycles</code>) — iddia
+için yetersiz</li>
+<li><strong>Deterministic seed replay</strong>
+(<code>DAU_META_AB_DETERMINISTIC=1</code>, T=0.0, seed=42, 8c, 2
+replicate): tüm farklar <strong>0.0</strong> → önceki zayıf sinyal
+<strong>stokastik LLM gürültüsü</strong>, aktuator etkisi değil</li>
+</ul>
+<p><strong>Sonuç:</strong> Closed-loop metacognition
+<strong>UNSUPPORTED</strong>. Kod çalışır; Meta ON/OFF ortalama delta’yı
+düşürmez. Aktüatör eşikleri (DEEP≥0.7 vb.) yumuşak PE altında nadiren
+tetiklenir; tetiklense bile LLM/bellek yolu PE’yi iyileştirmiyor.</p>
+<h3 id="layer-5a-selfmodel-self_model.py">Layer 5A — SelfModel
+(<code>self_model.py</code>)</h3>
+<p>Tüm katmanların telemetrisini tek Pydantic nesnesinde birleştirir
+(frozen). Alanlar (mevcut state’den okunur, yeni alan üretilmez):</p>
+<ul>
+<li><code>delta_current</code>, <code>delta_history</code>,
+<code>drift_state</code>, <code>emotional_weight</code></li>
+<li><code>t_cognitive</code>, <code>memory_retrieval_scores</code>,
+<code>f_agent</code>, <code>generation_count</code></li>
 </ul>
 <p>Computed field:</p>
 <pre><code>m_ratio = mean(delta_history) / (delta_current + EPSILON)
 EPSILON = 1e-6, META_HISTORY_SIZE = 10
 M_RATIO_OPTIMAL = 1.0, M_RATIO_LOW_THRESHOLD = 0.6</code></pre>
-<p><code>build_self_model(state)</code> → pure assembly, no LLM, no side effects.</p>
-<h3 id="layer-5b-meta-observer-node-meta_observer.py">Layer 5B — Meta-Observer Node (<code>meta_observer.py</code>)</h3>
-<p>Out-of-band LangGraph node. <code>evaluator_node</code>’dan SONRA çalışır. LLM çıktı metni okumaz. LLM çağrısı yapmaz. Deterministik Python.</p>
+<p><code>build_self_model(state)</code> → pure assembly, no LLM, no side
+effects.</p>
+<h3 id="layer-5b-meta-observer-node-meta_observer.py">Layer 5B —
+Meta-Observer Node (<code>meta_observer.py</code>)</h3>
+<p>Out-of-band LangGraph node. <code>evaluator_node</code>’dan SONRA
+çalışır. LLM çıktı metni okumaz. LLM çağrısı yapmaz. Deterministik
+Python.</p>
 <p>Dört aktuatör (sırayla):</p>
-<p><strong>1. <code>lod_override(self_model, lod_state) → LODState</code></strong></p>
+<p><strong>1.
+<code>lod_override(self_model, lod_state) → LODState</code></strong></p>
 <ul>
-<li>Koşul: <code>delta_current ≥ DELTA_THRESHOLD_DEEP</code> AND <code>m_ratio &lt; M_RATIO_LOW_THRESHOLD</code></li>
-<li>Eylem: <code>CognitiveMode.SYSTEM_2</code> zorla, <code>T_cognitive</code> formülünü bypass et</li>
+<li>Koşul: <code>delta_current ≥ DELTA_THRESHOLD_DEEP</code> AND
+<code>m_ratio &lt; M_RATIO_LOW_THRESHOLD</code></li>
+<li>Eylem: <code>CognitiveMode.SYSTEM_2</code> zorla,
+<code>T_cognitive</code> formülünü bypass et</li>
 <li>Sabit: <code>META_LOD_OVERRIDE_ENABLED = True</code></li>
 </ul>
-<p><strong>2. <code>context_prune(retrieval_context, self_model) → list[dict]</code></strong></p>
+<p><strong>2.
+<code>context_prune(retrieval_context, self_model) → list[dict]</code></strong></p>
 <ul>
-<li>Koşul: <code>variance(memory_retrieval_scores) &gt; META_RETRIEVAL_VARIANCE_THRESHOLD</code></li>
-<li>Eylem: <code>memory_score &lt; META_RETRIEVAL_MIN_SCORE</code> girdileri at</li>
-<li>Sabitler: <code>META_RETRIEVAL_VARIANCE_THRESHOLD = 0.3</code>, <code>META_RETRIEVAL_MIN_SCORE = 0.4</code></li>
+<li>Koşul:
+<code>variance(memory_retrieval_scores) &gt; META_RETRIEVAL_VARIANCE_THRESHOLD</code></li>
+<li>Eylem: <code>memory_score &lt; META_RETRIEVAL_MIN_SCORE</code>
+girdileri at</li>
+<li>Sabitler: <code>META_RETRIEVAL_VARIANCE_THRESHOLD = 0.3</code>,
+<code>META_RETRIEVAL_MIN_SCORE = 0.4</code></li>
 </ul>
-<p><strong>3. <code>trigger_drift_healing(drift_state, self_model) → DriftState</code></strong></p>
+<p><strong>3.
+<code>trigger_drift_healing(drift_state, self_model) → DriftState</code></strong></p>
 <ul>
-<li>Koşul: flagged domain var AND <code>f_agent &lt; META_DRIFT_HEAL_FITNESS_THRESHOLD</code> AND <code>somatic_markers["reward"] &gt; META_DRIFT_HEAL_REWARD_MIN</code></li>
-<li>Eylem: <code>heal_drift()</code> çağır (<code>drift.py</code>, Layer 2)</li>
-<li>Sabitler: <code>META_DRIFT_HEAL_FITNESS_THRESHOLD = 0.5</code>, <code>META_DRIFT_HEAL_REWARD_MIN = 0.4</code></li>
+<li>Koşul: flagged domain var AND
+<code>f_agent &lt; META_DRIFT_HEAL_FITNESS_THRESHOLD</code> AND
+<code>somatic_markers["reward"] &gt; META_DRIFT_HEAL_REWARD_MIN</code></li>
+<li>Eylem: <code>heal_drift()</code> çağır (<code>drift.py</code>, Layer
+2)</li>
+<li>Sabitler: <code>META_DRIFT_HEAL_FITNESS_THRESHOLD = 0.5</code>,
+<code>META_DRIFT_HEAL_REWARD_MIN = 0.4</code></li>
 </ul>
-<p><strong>4. <code>trigger_retrieval(state, self_model) → list[dict]</code></strong></p>
+<p><strong>4.
+<code>trigger_retrieval(state, self_model) → list[dict]</code></strong></p>
 <ul>
-<li>Koşul: <code>m_ratio &lt; M_RATIO_LOW_THRESHOLD</code> AND <code>delta_current ≥ DELTA_THRESHOLD_NORMAL</code></li>
-<li>Eylem: ChromaDB supplementary query, <code>retrieval_context</code>’e ekle</li>
-<li>Not: <code>bind_memory_store(agent_id, store)</code> bağlı değilse deterministic no-op</li>
+<li>Koşul: <code>m_ratio &lt; M_RATIO_LOW_THRESHOLD</code> AND
+<code>delta_current ≥ DELTA_THRESHOLD_NORMAL</code></li>
+<li>Eylem: ChromaDB supplementary query,
+<code>retrieval_context</code>’e ekle</li>
+<li>Not: <code>bind_memory_store(agent_id, store)</code> bağlı değilse
+deterministic no-op</li>
 </ul>
 <h3 id="graph-wiring-1">Graph wiring</h3>
 <pre><code>social_pre_node → agent_node → evaluator_node → meta_observer_node → (loop | END)</code></pre>
-<p><code>should_continue</code> <code>evaluator_node</code>’dan <code>meta_observer_node</code>’a taşındı.</p>
+<p><code>should_continue</code> <code>evaluator_node</code>’dan
+<code>meta_observer_node</code>’a taşındı.</p>
 <h3 id="state.py-eklentisi"><code>state.py</code> eklentisi</h3>
-<p><code>self_model: Any | None = None</code> (circular import önlemek için Any, <code>generation_record</code> patterni)</p>
+<p><code>self_model: Any | None = None</code> (circular import önlemek
+için Any, <code>generation_record</code> patterni)</p>
 <h3 id="semantic-sensor-layer-1.5">Semantic sensor (Layer 1.5)</h3>
-<p><code>semantic_similarity.py</code>: frozen <code>all-MiniLM-L6-v2</code>, cosine ∈ [0,1], PE = 1 − sim. Jaccard <code>_keyword_overlap_ratio</code> diagnostik için kaldı; PE yolunda kullanılmıyor. Bilinen MiniLM sınırı: negation / polarity zayıf (refuse≈cooperate kısmen yakın). Empiric label: <code>under sentence-transformers MiniLM</code>.</p>
+<p><code>semantic_similarity.py</code>: frozen
+<code>all-MiniLM-L6-v2</code>, cosine ∈ [0,1], PE = 1 − sim. Jaccard
+<code>_keyword_overlap_ratio</code> diagnostik için kaldı; PE yolunda
+kullanılmıyor. Bilinen MiniLM sınırı: negation / polarity zayıf
+(refuse≈cooperate kısmen yakın). Empiric label:
+<code>under sentence-transformers MiniLM</code>.</p>
 <hr />
 <h2 id="mimari-durum">11. Mimari durum</h2>
 <table style="width:100%;">
@@ -296,7 +578,8 @@ M_RATIO_OPTIMAL = 1.0, M_RATIO_LOW_THRESHOLD = 0.6</code></pre>
 <tr>
 <td>Layer 1 Memory</td>
 <td>✅</td>
-<td>ChromaDB+SQLite, Ebbinghaus, retrieval, sleep consolidation, memory_bridge</td>
+<td>ChromaDB+SQLite, Ebbinghaus, retrieval, sleep consolidation,
+memory_bridge</td>
 </tr>
 <tr>
 <td>Layer 1.5 Prediction Error</td>
@@ -311,17 +594,21 @@ M_RATIO_OPTIMAL = 1.0, M_RATIO_LOW_THRESHOLD = 0.6</code></pre>
 <tr>
 <td>Layer 3 Generation</td>
 <td>✅</td>
-<td>Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4’e kaldı</td>
+<td>Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer
+4’e kaldı</td>
 </tr>
 <tr>
 <td>Layer 4 Society</td>
 <td>✅</td>
-<td>GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring</td>
+<td>GovSim pool fiziği, cooperation_stress + coordination_friction,
+T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi,
+graph wiring</td>
 </tr>
 <tr>
 <td>Layer 5 Metacognition</td>
-<td>✅</td>
-<td>Closed-loop meta-observer; SelfModel (S_self), dört aktuatör, graph wiring (evaluator → meta_observer → loop|END)</td>
+<td>✅ kod / ❌ empirik kapalı döngü</td>
+<td>SelfModel + meta_observer wiring tamam; Meta A/B + T=0 seed replay →
+sistemik fayda yok (UNSUPPORTED)</td>
 </tr>
 </tbody>
 </table>
@@ -382,7 +669,8 @@ should_continue (meta_observer sonrası):
 
 run sonu:
   consolidate_run → düşük R sil, TRAUMA güçlendir, edge kur</code></pre>
-<p><strong>Stack:</strong> LangGraph · Pydantic v2 · ChromaDB · SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · LangSmith</p>
+<p><strong>Stack:</strong> LangGraph · Pydantic v2 · ChromaDB ·
+SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · LangSmith</p>
 <hr />
 <h2 id="test-durumu">14. Test durumu</h2>
 <ul>
@@ -397,13 +685,16 @@ run sonu:
 <li>Society environment: 6</li>
 <li>Meta-Observer: 13</li>
 <li>Convention pilot (+ LLM mock): 13</li>
-<li>Meta A/B: 3</li>
+<li>Meta A/B: 4</li>
 <li>Nuance-loss pilot: 3</li>
-<li><strong>Toplam: 136 passed</strong></li>
+<li><strong>Toplam: 137 passed</strong></li>
 </ul>
-<p>Empirik koşular (unit dışı): <code>dau_runs/overnight_audit_results.json</code> (convention LLM, Meta A/B Jaccard + MiniLM, nuance-loss).</p>
+<p>Empirik koşular (unit dışı):
+<code>dau_runs/overnight_audit_results.json</code> (convention LLM, Meta
+A/B Jaccard + MiniLM, deterministic seed replay, nuance-loss).</p>
 <hr />
-<h2 id="amads-govsim-karşılaştırma">15. AMADS / GovSim karşılaştırma</h2>
+<h2 id="amads-govsim-karşılaştırma">15. AMADS / GovSim
+karşılaştırma</h2>
 <table>
 <thead>
 <tr>
@@ -477,12 +768,15 @@ run sonu:
 <ul>
 <li>✅ Duygu fonksiyonu ne? → EmotionalWeight (Layer 2 ✅)</li>
 <li>✅ Delta = tahmin hatası nasıl bağlanır? → Layer 1.5 ✅</li>
-<li>✅ Her şeyin bir sonu var → Nesil sonu, konsolidasyon tetikleyicisi ✅</li>
+<li>✅ Her şeyin bir sonu var → Nesil sonu, konsolidasyon tetikleyicisi
+✅</li>
 <li>✅ Drift healing mekanizması ✅</li>
 <li>✅ İşbirliği ≠ koordinasyon ayrımı ✅</li>
 <li>✅ Fitness-based transfer filtering ✅</li>
 <li>✅ NPC / Gerçek agent geçişi ✅</li>
-<li>✅ Closed-loop metacognitive control ✅ (Layer 5)</li>
+<li>❌ Closed-loop metacognitive control empirik olarak
+<strong>UNSUPPORTED</strong> (Layer 5 kod ✅; Meta A/B + T=0 seed
+replay)</li>
 <li>Continual learning olmadan gerçek iz? (Layer 3)</li>
 <li>LLM embedding match henüz skor değil (W_SEM=0)</li>
 <li>“İyi”yi “kötü”den ayıran mekanizma?</li>
@@ -491,33 +785,79 @@ run sonu:
 </ul>
 <h3 id="hâlâ-açık">Hâlâ Açık</h3>
 <ul>
-<li>Spontaneous convention emergence: 8B frozen model kurumsal mekanizma olmadan kendi kendine anlaşma yapabilir mi?
+<li>Spontaneous convention emergence: 8B frozen model kurumsal mekanizma
+olmadan kendi kendine anlaşma yapabilir mi?
 <ul>
-<li>Empirik not (v1.0+): açık kanalda <strong>format sync</strong> (aynı cümle iskeleti) görüldü; <strong>restraint sync</strong> (cooperate/coordinate) LLM 25r pilotunda görülmedi — hepsi defect. Metrikler ayrıldı: <code>format_convention_detected</code> vs <code>restraint_convention_detected</code>.</li>
+<li>Empirik not (v1.0+): açık kanalda <strong>format sync</strong> (aynı
+cümle iskeleti) görüldü; <strong>restraint sync</strong>
+(cooperate/coordinate) LLM 25r pilotunda görülmedi — hepsi defect
+(75/75). Metrikler ayrıldı: <code>format_convention_detected</code> vs
+<code>restraint_convention_detected</code>.</li>
+<li><strong>Dürüst akademik iddia:</strong> Dondurulmuş parametreli
+LLM’ler, harici yaptırım içermeyen açık kanalda hızla söylemsel biçim
+senkronizasyonu geliştirebilir; bu, davranışsal kısıtlama uzlaşısına
+(restraint) dönüşmez — ajanlar dilsel kalıpta anlaşırken kaynağı
+sömürmeye devam eder. Aksiyom-imkânsız değil; empirik sınır.</li>
+<li>NPC’de görülen restraint kognitif uzlaşma değil:
+<code>pool_ratio &lt; 0.3</code> → conserve kuralının mekanik
+sonucu.</li>
 </ul></li>
-<li>Felaket eşiği: pool=0 anında W_transfer eşikleri nasıl otomatik ayarlanır?</li>
-<li>System 2→1 geçişinde nüans kaybı: LLM deneyimi state machine’e özetlenirken ne kaybolur?
+<li>Felaket eşiği: pool=0 anında W_transfer eşikleri nasıl otomatik
+ayarlanır?</li>
+<li>System 2→1 geçişinde nüans kaybı: LLM deneyimi state machine’e
+özetlenirken ne kaybolur?
 <ul>
-<li>Empirik not: nüans kaybı mikropilotu doğruladı — System 2 çeşitliliği (10 unique) → System 1 tek NPC aksiyonu.</li>
+<li>Empirik not: nüans kaybı mikropilotu doğruladı — System 2
+çeşitliliği (10 unique) → System 1 tek NPC aksiyonu
+(<code>extract_moderate</code>).</li>
 </ul></li>
 </ul>
 <hr />
 <h2 id="bilinen-sınırlar">18. Bilinen Sınırlar</h2>
 <ul>
-<li>LOD deescalation: System 2→1 geçişinde LLM karar geçmişi heuristic rule’lara özetlenmiyor (kasıtlı kabul; nüans-loss pilotu ile ölçüldü)</li>
+<li>LOD deescalation: System 2→1 geçişinde LLM karar geçmişi heuristic
+rule’lara özetlenmiyor (kasıtlı kabul; nüans-loss pilotu ile
+ölçüldü)</li>
 <li>Pool physics tek havuz: çoklu kaynak havuzu ertelendi</li>
-<li>Layer 1.5: Jaccard <strong>kapatıldı</strong> → MiniLM cosine (<code>semantic_similarity.py</code>). Parafraz PE ~0.40 (eski Jaccard 1.0). Negation hâlâ MiniLM zayıf noktası.</li>
+<li>Layer 1.5: Jaccard <strong>kapatıldı</strong> → MiniLM cosine
+(<code>semantic_similarity.py</code>). Parafraz PE ~0.40 (eski Jaccard
+1.0). Negation hâlâ MiniLM zayıf noktası.</li>
 <li><code>W_SEM=0</code>: ChromaDB embedding skorlamada yok</li>
-<li><code>F_agent</code>: doğal seçilim değil — tasarımcı tanımlı dışsal fitness (<code>0.4·E + 0.3·pool + 0.3·survival</code>)</li>
-<li>Frozen weights: öğrenme = in-context / DeltaRecord izleri; parametrik plastisite yok</li>
+<li><code>F_agent</code>: doğal seçilim değil — tasarımcı tanımlı dışsal
+fitness (<code>0.4·E + 0.3·pool + 0.3·survival</code>)</li>
+<li>Frozen weights: öğrenme = in-context / DeltaRecord izleri;
+parametrik plastisite yok</li>
 <li>Meta-Observer A/B:
 <ul>
-<li>Jaccard dönemi (NPC + System2/4c): <code>delta_mean_diff=0</code></li>
-<li>MiniLM re-run: NPC System1/20c → diff=0; System2/Groq 8c → <code>delta_mean_diff≈−0.001</code>, <code>m_ratio_mean_diff≈−0.10</code>, <code>system2_cycles_diff=+1</code> (zayıf sinyal; iddia için yetersiz)</li>
+<li>Jaccard dönemi (NPC + System2/4c):
+<code>delta_mean_diff=0</code></li>
+<li>MiniLM: NPC System1/20c → diff=0; System2/Groq 8c (T=0.2) → zayıf
+farklar (gürültü adayı)</li>
+<li><strong>Deterministic seed replay</strong> (T=0.0, seed=42, 8c×2):
+<code>delta_mean_diff=0</code>, <code>m_ratio_mean_diff=0</code>,
+<code>system2_cycles_diff=0</code> →
+<strong>STOCHASTIC_NOISE_CONFIRMED</strong>; Layer 5 kapalı döngü
+iddiası <strong>UNSUPPORTED</strong></li>
+<li>Protokol: <code>DAU_META_AB_DETERMINISTIC=1</code> →
+<code>DAU_LLM_TEMPERATURE=0</code> + <code>DAU_LLM_SEED</code>
+(<code>graph.py</code> / <code>run_meta_ab.py</code>)</li>
 </ul></li>
-<li>Convention: format sync ≠ restraint sync; NPC “convention” kıtlık kuralıyla (<code>pool_ratio&lt;0.3</code> → conserve) tetiklenebilir</li>
-<li>A/B protokolü: Jaccard/MiniLM PE tek adımda energy’yi sıfırlayabildiği için sabit ufukta <code>AB_ENERGY_FLOOR</code> kullanılıyor (ölçüm protokolü notu)</li>
+<li>Convention: format sync ≠ restraint sync; NPC “restraint” kıtlık
+kuralıyla (<code>pool_ratio&lt;0.3</code> → conserve)
+tetiklenebilir</li>
+<li>A/B protokolü: PE tek adımda energy’yi sıfırlayabildiği için sabit
+ufukta <code>AB_ENERGY_FLOOR</code> kullanılıyor (ölçüm protokolü notu;
+uzun ufuk/tükeniş farkını maskeler)</li>
+<li><code>expected_outcome</code>: tasarımcı şablonu
+(<code>f(dominant_load_domain)</code>); PE ajanın endojen öngörüsünü
+değil şablon↔︎eylem mesafesini ölçer (S1 ölçüm notu)</li>
 </ul>
+<h3 id="gün-anti-roadmap-kaynak-koruma">30 gün anti-roadmap (kaynak
+koruma)</h3>
+<p>Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman
+· parametrik fine-tune · Jaccard’ı ana PE’ye geri alma · multi-pool
+fizik — yasak. Önce ölçüm geçerliliği; sonra bilinçli seçici
+düzeltme.</p>
 <hr />
 <h2 id="versiyon-geçmişi">19. Versiyon geçmişi</h2>
 <table>
@@ -567,33 +907,43 @@ run sonu:
 <tr>
 <td>0.7</td>
 <td>2026-08-01</td>
-<td>Layer 1.5 prediction_error; Layer 2 EmotionalWeight + DriftState; graph wiring; 53 test geçiyor</td>
+<td>Layer 1.5 prediction_error; Layer 2 EmotionalWeight + DriftState;
+graph wiring; 53 test geçiyor</td>
 </tr>
 <tr>
 <td>0.8</td>
 <td>2026-08-01</td>
-<td>Layer 3 tamamlandı: GenerationConsolidation + DriftHealing + state.py formal fields. 66 test geçiyor.</td>
+<td>Layer 3 tamamlandı: GenerationConsolidation + DriftHealing +
+state.py formal fields. 66 test geçiyor.</td>
 </tr>
 <tr>
 <td>0.9</td>
 <td>2026-08-03</td>
-<td>Layer 4 tamamlandı: Society (environment, social, lod, fitness, graph wiring). 95 test geçiyor.</td>
+<td>Layer 4 tamamlandı: Society (environment, social, lod, fitness,
+graph wiring). 95 test geçiyor.</td>
 </tr>
 <tr>
 <td><strong>1.0</strong></td>
 <td><strong>2026-08-04</strong></td>
-<td>Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört aktuatör (lod_override, context_prune, drift_healing, trigger_retrieval), graph wiring. Travma birikimi azalan getiri. Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test geçiyor.</td>
+<td>Layer 5 tamamlandı: SelfModel (S_self), meta_observer_node, dört
+aktuatör (lod_override, context_prune, drift_healing,
+trigger_retrieval), graph wiring. Travma birikimi azalan getiri.
+Başarısız agent travmaları cautionary trace olarak korunuyor. 109 test
+geçiyor.</td>
 </tr>
 <tr>
 <td><strong>1.0+</strong></td>
 <td><strong>2026-08-04</strong></td>
-<td>Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B (Jaccard=0, MiniLM NPC=0 / S2 zayıf sinyal); nüans-loss; society pilots. <strong>136 test</strong>.</td>
+<td>Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B;
+nüans-loss. Deterministic seed replay → S2 zayıf sinyal = gürültü; L5
+kapalı döngü <strong>UNSUPPORTED</strong>. <strong>137
+test</strong>.</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <p>Bu döküman her önemli katman tamamlanınca güncellenir.<br />
-Versiyon 1.0+ — Layer 5 closed-loop + MiniLM duyusal sensör + empirik pilot baseline.</p>
-
+Versiyon 1.0+ — Layer 5 wiring + MiniLM PE + empirik sınırlar (L5
+UNSUPPORTED, format≠restraint, noise confirmed).</p>
 </body>
 </html>
