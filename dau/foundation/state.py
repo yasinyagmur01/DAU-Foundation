@@ -309,6 +309,15 @@ class DAUAgentState(BaseModel):
             "(social_pre_node skips)."
         ),
     )
+    # Layer 5 — unified self-model (SelfModel lives in self_model.py).
+    # Typed Any to avoid circular import: state → self_model → state.
+    self_model: Any | None = Field(
+        default=None,
+        description=(
+            "Layer 5 S_self telemetry consolidation (SelfModel), or None "
+            "until meta_observer_node builds it."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod

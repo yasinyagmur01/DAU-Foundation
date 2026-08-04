@@ -21,7 +21,7 @@ FITNESS_W_ENERGY: float = 0.4  # weight: remaining energy
 FITNESS_W_POOL: float = 0.3  # weight: pool preservation
 FITNESS_W_SURVIVAL: float = 0.3  # weight: time survived
 
-FITNESS_LOW_THRESHOLD: float = 0.35  # below: purge all trauma traces
+FITNESS_LOW_THRESHOLD: float = 0.35  # below: trauma → cautionary inherited_warning
 FITNESS_HIGH_THRESHOLD: float = 0.70  # above: trauma → inherited warning
 
 ENERGY_MAX: float = 1.0

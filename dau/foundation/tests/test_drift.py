@@ -55,13 +55,19 @@ def test_trauma_sets_flag_and_magnitude() -> None:
 
 
 def test_magnitude_accumulates_across_multiple_traumas() -> None:
-    """Repeated traumas in the same domain add magnitudes; flag stays set."""
+    """Repeated traumas accumulate with diminishing returns; flag stays set."""
+
+    import math
+
+    from dau.foundation.drift import TRAUMA_DECAY_BASE
 
     state = DriftState()
     state = update_drift(state, _delta(0.7, domain="social"))
     state = update_drift(state, _delta(0.85, domain="social"))
+    first = 0.7
+    expected = first + 0.85 * math.exp(-first / TRAUMA_DECAY_BASE)
     assert state.flags["social"] is True
-    assert state.magnitudes["social"] == pytest.approx(0.7 + 0.85)
+    assert state.magnitudes["social"] == pytest.approx(expected)
 
 
 def test_get_drift_bias_flagged_vs_unflagged() -> None:
@@ -144,3 +150,19 @@ def test_trauma_cannot_heal_trauma() -> None:
     assert after is drifted
     assert after.magnitudes["resource"] == pytest.approx(0.8)
     assert after.flags["resource"] is True
+
+
+def test_trauma_accumulation_diminishing_returns():
+    import math
+    from dau.foundation.drift import TRAUMA_DECAY_BASE
+    magnitude = 0.8
+    accumulated = 0.0
+    increments = []
+    for _ in range(5):
+        inc = magnitude * math.exp(-accumulated / TRAUMA_DECAY_BASE)
+        accumulated += inc
+        increments.append(inc)
+    for i in range(1, 5):
+        assert increments[i] < increments[i - 1]
+    assert accumulated < 5 * magnitude
+    assert increments[4] < increments[0] * 0.8

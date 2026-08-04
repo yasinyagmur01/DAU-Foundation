@@ -122,7 +122,7 @@ def test_compute_w_transfer_formula() -> None:
 
 
 def test_low_fitness_excludes_trauma() -> None:
-    """Below FITNESS_LOW_THRESHOLD: all trauma purged; non-trauma can pass."""
+    """Below FITNESS_LOW_THRESHOLD: trauma kept as cautionary inherited_warning."""
 
     f_low = FITNESS_LOW_THRESHOLD - 0.01
     trauma = _candidate(
@@ -150,9 +150,14 @@ def test_low_fitness_excludes_trauma() -> None:
         threat_marker=0.0,
     )
     ids = [c.record_id for c in selected]
-    assert "trauma-low-f" not in ids
+    assert "trauma-low-f" in ids
     assert "keep-normal" in ids
-    assert all(c.transfer_kind == TRANSFER_KIND_STANDARD for c in selected)
+    caution = next(c for c in selected if c.record_id == "trauma-low-f")
+    assert caution.inherited_warning is True
+    assert caution.somatic_scale == -WARNING_SOMATIC_SCALE
+    normal_sel = next(c for c in selected if c.record_id == "keep-normal")
+    assert normal_sel.transfer_kind == TRANSFER_KIND_STANDARD
+    assert normal_sel.inherited_warning is False
 
 
 def test_high_fitness_trauma_becomes_inherited_warning() -> None:

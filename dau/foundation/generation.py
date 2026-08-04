@@ -5,8 +5,9 @@ passes to the next generation. Trauma scars transfer only if they reshaped
 the organism enough to matter. Packaging inheritance is not birth — the
 new agent is created elsewhere and then receives this package.
 
-Layer 4 adds F_agent / W_transfer: low-fitness lives purge trauma; high-fitness
-lives convert trauma into inherited warnings with scaled somatic weight.
+Layer 4 adds F_agent / W_transfer: low-fitness lives keep trauma as cautionary
+inherited warnings; high-fitness lives convert trauma into inherited warnings
+with scaled somatic weight.
 """
 
 from __future__ import annotations
@@ -62,6 +63,8 @@ class TransferCandidate:
     memory_score: float
     recall_count: int
     transfer_kind: str = TRANSFER_KIND_STANDARD
+    inherited_warning: bool = False
+    somatic_scale: float = 0.0
 
 
 @dataclass
@@ -79,6 +82,7 @@ class GenerationRecord:
     inherited_drift: DriftState = field(default_factory=DriftState)
     transfer_timestamp: int = 0
     inherited_warning_ids: list[str] = field(default_factory=list)
+    inherited_somatic_scales: dict[str, float] = field(default_factory=dict)
 
 
 def _legacy_select_for_transfer(
@@ -129,6 +133,9 @@ def select_for_transfer(
 
         trauma = is_trauma(candidate.record)
         if f_value < FITNESS_LOW_THRESHOLD and trauma:
+            candidate.inherited_warning = True
+            candidate.somatic_scale = -WARNING_SOMATIC_SCALE
+            selected.append(candidate)
             continue
 
         w_transfer = compute_w_transfer(
@@ -256,6 +263,11 @@ def consolidate_generation(
         reward_marker=reward_marker,
         threat_marker=threat_marker,
     )
+    warning_candidates = [
+        c
+        for c in selected
+        if c.transfer_kind == TRANSFER_KIND_INHERITED_WARNING or c.inherited_warning
+    ]
     return GenerationRecord(
         agent_id=agent_state.agent_id,
         generation=int(agent_state.generation),
@@ -265,11 +277,13 @@ def consolidate_generation(
             magnitudes=dict(drift.magnitudes),
         ),
         transfer_timestamp=now_counter,
-        inherited_warning_ids=[
-            c.record_id
-            for c in selected
-            if c.transfer_kind == TRANSFER_KIND_INHERITED_WARNING
-        ],
+        inherited_warning_ids=[c.record_id for c in warning_candidates],
+        inherited_somatic_scales={
+            c.record_id: (
+                c.somatic_scale if c.inherited_warning else WARNING_SOMATIC_SCALE
+            )
+            for c in warning_candidates
+        },
     )
 
 
@@ -292,6 +306,7 @@ def apply_generation(
         magnitudes=dict(record.inherited_drift.magnitudes),
     )
     warning_ids = set(record.inherited_warning_ids)
+    warning_scales = dict(record.inherited_somatic_scales)
     retrieval_context: list[dict[str, Any]] = []
     for memory_id in record.inherited_memories:
         entry: dict[str, Any] = {
@@ -300,7 +315,9 @@ def apply_generation(
         }
         if memory_id in warning_ids:
             entry[INHERITED_WARNING_KEY] = True
-            entry[SOMATIC_SCALE_KEY] = WARNING_SOMATIC_SCALE
+            entry[SOMATIC_SCALE_KEY] = warning_scales.get(
+                memory_id, WARNING_SOMATIC_SCALE
+            )
         retrieval_context.append(entry)
     return new_agent_state.model_copy(
         update={

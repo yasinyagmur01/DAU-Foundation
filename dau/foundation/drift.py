@@ -7,6 +7,7 @@ not decay here — Layer 3 healing is the only path back.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from .delta import is_trauma
@@ -21,6 +22,7 @@ MAGNITUDE_ACCUMULATOR_INIT: float = 0.0
 FLAG_SET_ON_TRAUMA: bool = True
 HEAL_THRESHOLD: float = 0.6  # strong positive experience required to heal
 HEAL_RATE: float = 0.3  # slow: ~3+ strong experiences to clear one trauma
+TRAUMA_DECAY_BASE: float = 1.0
 HEALED_MAGNITUDE: float = 0.0
 
 
@@ -51,8 +53,10 @@ def update_drift(drift_state: DriftState, delta: DeltaRecord) -> DriftState:
     new_flags = dict(drift_state.flags)
     new_magnitudes = dict(drift_state.magnitudes)
     new_flags[domain] = FLAG_SET_ON_TRAUMA
-    new_magnitudes[domain] = (
-        new_magnitudes.get(domain, MAGNITUDE_ACCUMULATOR_INIT) + float(delta.magnitude)
+    current = new_magnitudes.get(domain, MAGNITUDE_ACCUMULATOR_INIT)
+    magnitude = float(delta.magnitude)
+    new_magnitudes[domain] = current + magnitude * math.exp(
+        -current / TRAUMA_DECAY_BASE
     )
     return DriftState(flags=new_flags, magnitudes=new_magnitudes)
 

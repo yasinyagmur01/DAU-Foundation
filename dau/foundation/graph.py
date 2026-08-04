@@ -53,6 +53,7 @@ from .memory_bridge import (
     record_delta,
     retrieve_relevant,
 )
+from .meta_observer import bind_memory_store, meta_observer_node, unbind_memory_store
 from .social import (
     MARKOV_WINDOW,
     SocialState,
@@ -128,6 +129,7 @@ SYSTEM_PROMPT: str = (
 
 NODE_AGENT: str = "agent_node"
 NODE_EVALUATOR: str = "evaluator_node"
+NODE_META_OBSERVER: str = "meta_observer_node"
 NODE_SOCIAL_PRE: str = "social_pre_node"
 
 # Layer 4 — strategic expectation injection + LOD domain bridge
@@ -311,6 +313,10 @@ def _tokenize(text: str) -> set[str]:
     return {token for token in text.lower().split() if token}
 
 
+# TODO Layer 5B: Replace Jaccard with semantic similarity once
+# sentence-transformers integration is scoped. Current proxy breaks
+# when semantically equivalent sentences use different keywords.
+# Intentionally kept as a zero-dependency placeholder until then.
 def _keyword_overlap_ratio(expected: str, actual: str) -> float:
     """Jaccard word overlap in [0, 1] — deterministic stand-in for similarity.
 
@@ -733,23 +739,26 @@ def build_checkpointer(db_path: str = DB_PATH) -> SqliteSaver:
 
 
 def build_graph(checkpointer: SqliteSaver | None = None) -> Any:
-    """Compile social_pre → agent → evaluator → continue/end with optional SQLite.
+    """Compile social_pre → agent → evaluator → meta_observer → continue/end.
 
-    Biology analogy: wire the sense-act-measure cycle into a closed loop that
-    checkpoints after each node and ends when energy is exhausted. Social
-    pre-node refreshes strategic expectation before each act when an opponent
-    is present.
+    Biology analogy: wire the sense-act-measure-regulate cycle into a closed
+    loop that checkpoints after each node and ends when energy is exhausted.
+    Meta-Observer runs after Delta is measured; its interventions apply on the
+    next iteration. Social pre-node refreshes strategic expectation before each
+    act when an opponent is present.
     """
 
     graph = StateGraph(DAUAgentState)
     graph.add_node(NODE_SOCIAL_PRE, social_pre_node)
     graph.add_node(NODE_AGENT, agent_node)
     graph.add_node(NODE_EVALUATOR, evaluator_node)
+    graph.add_node(NODE_META_OBSERVER, meta_observer_node)
     graph.set_entry_point(NODE_SOCIAL_PRE)
     graph.add_edge(NODE_SOCIAL_PRE, NODE_AGENT)
     graph.add_edge(NODE_AGENT, NODE_EVALUATOR)
+    graph.add_edge(NODE_EVALUATOR, NODE_META_OBSERVER)
     graph.add_conditional_edges(
-        NODE_EVALUATOR,
+        NODE_META_OBSERVER,
         should_continue,
         {
             NODE_AGENT: NODE_SOCIAL_PRE,
@@ -945,7 +954,9 @@ if __name__ == "__main__":
     _ = clock  # event timestamps advance inside agent_node via EventClock
 
     if MEMORY_ENABLED:
-        _memory_stores[agent_id] = initialize_memory(agent_id)
+        store = initialize_memory(agent_id)
+        _memory_stores[agent_id] = store
+        bind_memory_store(agent_id, store)
         _memory_written[agent_id] = 0
 
     checkpointer = build_checkpointer(DB_PATH)
@@ -991,6 +1002,7 @@ if __name__ == "__main__":
             print("PARTIAL — checkpoint preserved; resume after quota resets")
         else:
             print("No checkpoint yet — nothing to resume for this thread_id.")
+        unbind_memory_store(agent_id)
         raise SystemExit(1) from exc
 
     snapshot_path = persist_run_snapshot(result, agent_id)
@@ -1010,6 +1022,8 @@ if __name__ == "__main__":
             memory_deleted = report.deleted_count
             edges_created = report.edges_created
             drift_flags = report.drift_flag_count
+
+    unbind_memory_store(agent_id)
 
     _print_summary(
         event_log,
