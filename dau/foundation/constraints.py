@@ -26,6 +26,12 @@ WEIGHT_SOCIAL_PRESSURE: float = 0.2
 WEIGHT_UNCERTAINTY: float = 0.2
 WEIGHT_GENERATION_END: float = 0.2
 
+# DAERM — Dynamic Allostatic Equilibrium Recovery Model
+ALLOSTATIC_SETPOINT_MAX: float = 0.75
+CROSS_AXIS_SPILLOVER: float = 0.20
+METABOLIC_FLOOR: float = 0.05
+MAGNITUDE_PEAK_WEIGHT: float = 0.70
+
 
 def build_default_constraints() -> EnvironmentConstraints:
     """Build the default read-only EnvironmentConstraints snapshot.

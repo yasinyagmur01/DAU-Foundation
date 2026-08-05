@@ -28,6 +28,18 @@ DEFAULT_SOCIAL_LOAD: float = 0.0
 DEFAULT_GENERATION: int = 0
 DEFAULT_EVENT_TIMESTAMP: int = 0
 
+# DAERM load axes ↔ DriftState AffectedDomain keys
+ALLOSTATIC_LOAD_DOMAINS: tuple[str, ...] = (
+    "resource_load",
+    "social_load",
+    "uncertainty_load",
+)
+DRIFT_KEY_BY_LOAD_DOMAIN: dict[str, str] = {
+    "resource_load": "resource",
+    "social_load": "social",
+    "uncertainty_load": "uncertainty",
+}
+
 AffectedDomain = Literal["energy", "resource", "social", "uncertainty"]
 
 
@@ -157,6 +169,50 @@ class InternalState(BaseModel):
                     f"outside [{METRIC_MIN}, {METRIC_MAX}]"
                 )
         return value
+
+    def get_allostatic_setpoints(self, drift_state: Any) -> dict[str, float]:
+        """Derive per-load setpoints from lived drift magnitudes (DAERM).
+
+        Biology analogy: allostasis — the organism's 'normal' load floor rises
+        with accumulated trauma scars, capped so setpoints cannot monopolize
+        the unit interval. Drift keys are AffectedDomain labels; load fields
+        use *_load names.
+        """
+
+        # Lazy import avoids circular import: constraints → state.
+        from .constraints import ALLOSTATIC_SETPOINT_MAX
+
+        empty = {domain: METRIC_MIN for domain in ALLOSTATIC_LOAD_DOMAINS}
+        if drift_state is None or not hasattr(drift_state, "magnitudes"):
+            return empty
+        magnitudes = drift_state.magnitudes
+        if not isinstance(magnitudes, dict):
+            return empty
+
+        setpoints: dict[str, float] = {}
+        for load_domain in ALLOSTATIC_LOAD_DOMAINS:
+            drift_key = DRIFT_KEY_BY_LOAD_DOMAIN[load_domain]
+            raw = float(magnitudes.get(drift_key, METRIC_MIN))
+            setpoints[load_domain] = min(
+                raw / (1.0 + raw),
+                ALLOSTATIC_SETPOINT_MAX,
+            )
+        return setpoints
+
+    def compute_endogenous_recovery_rate(self, drift_state: Any) -> float:
+        """γ(t) = E(t) / (1 + M_total) — recovery from runtime state only.
+
+        Biology analogy: residual energy fuels return toward allostatic
+        setpoints; total scar burden slows that return. No injected trait.
+        """
+
+        if drift_state is None or not hasattr(drift_state, "magnitudes"):
+            return float(self.energy)
+        magnitudes = drift_state.magnitudes
+        if not isinstance(magnitudes, dict):
+            return float(self.energy)
+        total_drift = sum(float(value) for value in magnitudes.values())
+        return float(self.energy) / (1.0 + total_drift)
 
 
 class DeltaRecord(BaseModel):

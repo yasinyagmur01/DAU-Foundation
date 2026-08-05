@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from .constraints import CROSS_AXIS_SPILLOVER, MAGNITUDE_PEAK_WEIGHT
 from .state import (
     METRIC_MAX,
     METRIC_MIN,
@@ -64,27 +65,44 @@ def _internal_snapshot(state: InternalState) -> dict[str, float]:
 def compute_delta(
     before: InternalState,
     after: InternalState,
-    affected_domain: AffectedDomain,
-    timestamp: int,
+    affected_domain: str | None = None,
+    timestamp: int | None = None,
+    raw_pe: float | None = None,
 ) -> DeltaRecord:
-    """Measure mean absolute change across all homeostatic axes and freeze snapshots.
+    """Measure imprint magnitude and freeze before/after snapshots.
 
-    Biology analogy: compare the full vital panel before and after a stimulus;
-    magnitude is the average bodily swing. affected_domain only tags which axis
-    triggered the event — it does not enter the magnitude formula.
+    Biology analogy: compare the full vital panel before and after a stimulus.
+    When raw_pe is given, magnitude is peak-weighted surprise (independent of
+    DAERM recovery). Otherwise magnitude is mean absolute axis swing (legacy).
+    affected_domain only tags which axis triggered the event.
     """
 
-    magnitude = (
-        abs(after.energy - before.energy)
-        + abs(after.resource_load - before.resource_load)
-        + abs(after.social_load - before.social_load)
-        + abs(after.uncertainty_load - before.uncertainty_load)
-    ) / 4.0
+    if raw_pe is not None:
+        # Peak-weighted: DAERM recovery'den bağımsız şiddet ölçümü
+        # Uniform spillover varsayımı (CROSS_AXIS_SPILLOVER=0.20)
+        pe_primary = raw_pe
+        pe_secondary = raw_pe * CROSS_AXIS_SPILLOVER
+        pe_vec = [pe_primary, pe_secondary, pe_secondary, pe_secondary]
+        peak = max(pe_vec)
+        mean_pe = sum(pe_vec) / len(pe_vec)
+        magnitude = (
+            MAGNITUDE_PEAK_WEIGHT * peak
+            + (1.0 - MAGNITUDE_PEAK_WEIGHT) * mean_pe
+        )
+    else:
+        # Geriye dönük uyumluluk — raw_pe verilmezse eski hesap
+        axes = ["energy", "resource_load", "social_load", "uncertainty_load"]
+        deltas = [abs(getattr(after, a) - getattr(before, a)) for a in axes]
+        magnitude = sum(deltas) / len(deltas)
     magnitude = max(METRIC_MIN, min(METRIC_MAX, magnitude))
+    resolved_domain: AffectedDomain = (
+        "resource" if affected_domain is None else affected_domain  # type: ignore[assignment]
+    )
+    resolved_timestamp = 0 if timestamp is None else int(timestamp)
     return DeltaRecord(
-        timestamp=timestamp,
+        timestamp=resolved_timestamp,
         magnitude=magnitude,
-        affected_domain=affected_domain,
+        affected_domain=resolved_domain,
         snapshot_before=_internal_snapshot(before),
         snapshot_after=_internal_snapshot(after),
     )

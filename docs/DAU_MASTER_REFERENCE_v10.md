@@ -317,7 +317,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ kod / ⚠️ kısmi empirik | SelfModel + meta_observer wiring tamam. lod_override + trigger_retrieval: called=100, triggered=100 (long run). context_prune + trigger_drift_healing: triggered=0 (drift flag TRAUMA gerektiriyor; DAERM+TRAUMA çelişkisi açık). |
+| Layer 5 Metacognition | ✅ kod / ⚠️ kısmi empirik | SelfModel + meta_observer wiring tamam. lod_override + trigger_retrieval: called=100, triggered=100. context_prune: triggered=0 (variance eşiği altında). trigger_drift_healing: evaluator üzerinden çalışıyor; meta_observer aktüatörü triggered=0 (eşik kalibrasyonu açık). |
 
 ---
 
@@ -446,13 +446,15 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - ✅ Fitness-based transfer filtering ✅
 - ✅ NPC / Gerçek agent geçişi ✅
 - ❌ Closed-loop metacognitive control empirik olarak **UNSUPPORTED** (Layer 5 kod ✅; Meta A/B + T=0 seed replay)
-- DAERM + TRAUMA coexistence: magnitude = mean(eksenler) formülü
-  CROSS_AXIS_SPILLOVER=0.20 ile birlikte TRAUMA'yı erişilemez kılıyor.
-  Seçenekler araştırılıyor:
-  (a) magnitude = 0.6·max(|Δ|) + 0.4·mean(|Δ|)  — peak ağırlıklı
-  (b) domain-specific spillover katsayıları
-  (c) PE'den bağımsız severity index
-  Literatür: PSI theory, MicroPsi, Active Inference spillover modelleri.
+- Energy floor ve uzun ufuk: gamma=0 erken kapanıyor.
+  Uzun koşularda agent'ın hayatta kalması için energy recovery
+  mekanizması yeterli mi? METABOLIC_FLOOR · (1 - mean_load) formülü
+  düşük yük altında enerji kazandırıyor ama yüksek yük altında
+  yetersiz kalıyor. Açık.
+- trigger_drift_healing (meta_observer): 100 event long_run'da
+  evaluator heal_drift çalışıyor ama meta_observer aktüatörü
+  triggered=0. F_agent < 0.5 AND reward > 0.4 koşulları aynı anda
+  karşılanmıyor. Eşik kalibrasyonu gerekebilir. Açık.
 - Continual learning olmadan gerçek iz? (Layer 3)
 - LLM embedding match henüz skor değil (W_SEM=0)
 - "İyi"yi "kötü"den ayıran mekanizma?
@@ -501,11 +503,18 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
     L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)
   Sabitler: ALLOSTATIC_SETPOINT_MAX=0.75, CROSS_AXIS_SPILLOVER=0.20,
   METABOLIC_FLOOR=0.05 → constraints.py
-- DAERM + TRAUMA çelişkisi (AÇIK): CROSS_AXIS_SPILLOVER=0.20 altında
-  PE uniform dağıtılınca mean magnitude TRAUMA eşiğine (0.7) yapısal
-  olarak ulaşamıyor. Peak PE=0.859 → mean magnitude≈0.344.
-  Kök neden: magnitude = mean(tüm eksenler); peak eksen ezilse bile
-  ortalama düşük kalıyor. Çözüm araştırılıyor (Gemini Deep Research).
+- DAERM + magnitude decoupling (Faz 6, v1.2): magnitude hesabı
+  DAERM recovery'den ayrıldı. Ham PE vektörü üzerinden peak-weighted
+  formül:
+    M = 0.70 · max(PE_vec) + 0.30 · mean(PE_vec)
+    Uniform spillover (S=0.20): M ≈ 0.82 · PE
+  PE≥0.854 → M≥0.70 → TRAUMA reachable. ✅
+  Sabit: MAGNITUDE_PEAK_WEIGHT=0.70 → constraints.py
+  compute_delta(..., raw_pe=float) — raw_pe verilmezse legacy fallback.
+- Energy exhaustion + gamma collapse: Final gamma=E/(1+M_total).
+  Energy=0 → gamma=0 → recovery durur. Biyolojik olarak doğru;
+  enerjisiz agent toparlanamaz. AB_ENERGY_FLOOR sadece
+  should_continue için — InternalState.energy'yi yükseltmez.
 - expected_outcome endojen yapıldı (Faz 4): ChromaDB geçmiş
   outcome'larından üretiliyor. PE Std=0.256 (öncesi: 0.000).
   Event 1: fallback (boş store), Event 2+: memory-gated.
@@ -539,8 +548,9 @@ Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · para
 | **1.0+** | **2026-08-04** | Empirik denetim + MiniLM PE: convention format≠restraint; Meta A/B; nüans-loss. Deterministic seed replay → S2 zayıf sinyal = gürültü; L5 kapalı döngü **UNSUPPORTED**. **137 test**. |
 | **1.0++** | **2026-08-04** | Memory-cued `expected_outcome` (PE dağılımı açıldı). Bilinen sınır: InternalState saturasyonu → PE canlı / delta=0 / aktüatör `triggered=0`. Açık soru: homeostatic recovery (A/B/C; Friston allostasis). |
 | **1.1** | **2026-08-05** | DAERM implement edildi (Faz 5): allostatic recovery, endojen γ(t), domain PE vektörü. Saturasyon çözüldü. expected_outcome endojen (ChromaDB-gated). PE Std=0.256. lod_override + trigger_retrieval triggered=100/100. DAERM+TRAUMA çelişkisi tespit edildi — açık. 137 test passed. |
+| **1.2** | **2026-08-05** | Magnitude decoupling (Faz 6): peak-weighted M = 0.70·peak + 0.30·mean, raw_pe bağımsız. TRAUMA reachable (PE=0.876 → M=0.718). Production spillover pin kaldırıldı. Energy/γ collapse + meta heal eşiği açık. 137 test passed. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.1 — DAERM + endojen PE; DAERM+TRAUMA çelişkisi açık (L5 kısmi empirik, format≠restraint, noise confirmed).
+Versiyon 1.2 — Magnitude decoupling; TRAUMA reachable; energy/γ + meta heal eşiği açık (L5 kısmi empirik, format≠restraint, noise confirmed).

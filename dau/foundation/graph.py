@@ -24,8 +24,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from dau.society.environment import EnvironmentState, get_pool_ratio
 
-from .constraints import build_default_constraints
-from .delta import DeltaClassification, classify_delta, compute_delta, is_trauma
+from .constraints import (
+    CROSS_AXIS_SPILLOVER,
+    METABOLIC_FLOOR,
+    build_default_constraints,
+)
+from .delta import (
+    DOMAIN_ATTR,
+    DeltaClassification,
+    classify_delta,
+    compute_delta,
+    is_trauma,
+)
 from .drift import (
     DRIFT_BIAS_ABSENT,
     HEAL_THRESHOLD,
@@ -102,6 +112,15 @@ EXPECTED_SOURCE_FALLBACK: str = "fallback"
 EXPECTED_SOURCE_MEMORY: str = "memory"
 EXPECTED_SOURCE_PAYLOAD_KEY: str = "expected_source"
 MEMORY_OUTCOME_KEYS: tuple[str, ...] = ("actual_outcome", "decision", "outcome")
+
+# DAERM load-axis names (InternalState fields) and birth-default primary.
+DAERM_LOAD_DOMAINS: tuple[str, ...] = (
+    "resource_load",
+    "social_load",
+    "uncertainty_load",
+)
+DAERM_DEFAULT_TARGET_DOMAIN: str = "resource_load"
+DAERM_LOAD_AXIS_COUNT: float = 3.0
 
 # Prediction-error sensor — sentence-transformers MiniLM (Layer 1.5).
 # Jaccard keyword overlap kept as _keyword_overlap_ratio for diagnostics only.
@@ -541,25 +560,77 @@ def _prediction_error(expected_outcome: str, actual_outcome: str) -> float:
 def _apply_prediction_error(
     before: InternalState,
     prediction_error: float,
+    drift_state: Any = None,
+    target_domain: str | None = None,
 ) -> InternalState:
-    """Move all homeostatic axes by prediction_error (metabolic floor on energy).
+    """Apply DAERM update: domain PE + spillover − endogenous recovery.
 
-    Biology analogy: unmet prediction revises the whole vital panel. Each axis
-    shifts by the surprise magnitude so compute_delta's mean absolute change
-    equals prediction_error when clamps do not bind. Energy never drops by
-    less than the basal metabolic floor, so perfect prediction still ages the
-    organism. INTERNAL_AXIS_COUNT matches delta.py's four-axis mean.
+    Biology analogy: allostatic free-energy revision — surprise hits the
+    primary load axis hardest, leaks weakly across axes, then residual
+    energy pulls loads toward drift-shaped setpoints. Energy decays by the
+    strongest PE shock but recovers slightly when mean load is below max.
     """
 
-    metabolic_floor = ENERGY_DECAY_PER_EVENT * (1.0 + (1.0 - before.energy))
-    energy_drop = max(prediction_error, metabolic_floor)
+    primary = (
+        target_domain
+        if target_domain in DAERM_LOAD_DOMAINS
+        else DAERM_DEFAULT_TARGET_DOMAIN
+    )
+    pe_vector = {
+        domain: (
+            prediction_error
+            if domain == primary
+            else prediction_error * CROSS_AXIS_SPILLOVER
+        )
+        for domain in DAERM_LOAD_DOMAINS
+    }
+
+    setpoints = before.get_allostatic_setpoints(drift_state)
+    gamma = before.compute_endogenous_recovery_rate(drift_state)
+
+    new_loads: dict[str, float] = {}
+    for domain in DAERM_LOAD_DOMAINS:
+        load_current = float(getattr(before, domain))
+        pe_axis = float(pe_vector[domain])
+        setpoint = float(setpoints[domain])
+        load_next = load_current + pe_axis - (gamma * (load_current - setpoint))
+        new_loads[domain] = max(setpoint, min(METRIC_MAX, load_next))
+
+    max_pe = max(pe_vector.values())
+    mean_load = sum(new_loads.values()) / DAERM_LOAD_AXIS_COUNT
+    energy_decay = max(float(max_pe), METABOLIC_FLOOR)
+    energy_recovery = METABOLIC_FLOOR * (1.0 - mean_load)
+    new_energy = max(
+        METRIC_MIN,
+        min(METRIC_MAX, before.energy - energy_decay + energy_recovery),
+    )
+
     return InternalState(
-        energy=_clamp(before.energy - energy_drop),
-        resource_load=_clamp(before.resource_load + prediction_error),
-        social_load=_clamp(before.social_load + prediction_error),
-        uncertainty_load=_clamp(before.uncertainty_load + prediction_error),
+        energy=new_energy,
+        resource_load=new_loads["resource_load"],
+        social_load=new_loads["social_load"],
+        uncertainty_load=new_loads["uncertainty_load"],
         somatic_markers=dict(before.somatic_markers),
     )
+
+
+def _pe_target_load_domain(state: DAUAgentState) -> str | None:
+    """Map current dominant pressure to a DAERM load-axis name.
+
+    Tied loads / energy-dominant birth → last lived affected domain, else
+    DAERM_DEFAULT_TARGET_DOMAIN so spillover (not full uniform) applies.
+    """
+
+    dominant = dominant_load_domain(state)
+    mapped = DOMAIN_ATTR.get(dominant)
+    if mapped in DAERM_LOAD_DOMAINS:
+        return mapped
+    if state.delta_log:
+        last_domain = str(state.delta_log[-1].affected_domain)
+        mapped_last = DOMAIN_ATTR.get(last_domain)
+        if mapped_last in DAERM_LOAD_DOMAINS:
+            return mapped_last
+    return DAERM_DEFAULT_TARGET_DOMAIN
 
 
 def _primary_affected_domain(
@@ -843,12 +914,12 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     expected_source = str(
         last_event.payload.get(EXPECTED_SOURCE_PAYLOAD_KEY, EXPECTED_SOURCE_FALLBACK)
     )
-    print(
-        f"[PE] event={int(last_event.timestamp)} "
-        f"source={expected_source} "
-        f"pe={float(prediction_error):.3f}"
+    after = _apply_prediction_error(
+        before,
+        prediction_error,
+        drift_state=state.drift_state,
+        target_domain=_pe_target_load_domain(state),
     )
-    after = _apply_prediction_error(before, prediction_error)
 
     affected = _primary_affected_domain(before, after)
     record = compute_delta(
@@ -856,6 +927,13 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         after,
         affected_domain=affected,
         timestamp=last_event.timestamp,
+        raw_pe=prediction_error,  # ham PE — DAERM öncesi
+    )
+    print(
+        f"[PE] event={int(last_event.timestamp)} "
+        f"source={expected_source} "
+        f"pe={float(prediction_error):.3f} "
+        f"mag={float(record.magnitude):.3f}"
     )
     _record_pe_event(
         event_counter=int(last_event.timestamp),
