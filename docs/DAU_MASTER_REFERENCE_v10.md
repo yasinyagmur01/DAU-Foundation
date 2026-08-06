@@ -7,7 +7,13 @@ Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **provisional null** (
 
 **Faz 0 kilit:** Frozen Protocol C null kapalı; full Groq Protocol C tekrar yok. LoRA = leading testable path (garanti değil).
 
-**Spike durumu (v1.4+):** `DAU_LLM_BACKEND` + `DAU_LORA_ENABLED=0` default. Backend soyutlama + local/LoRA iskelet + C′ harness kodda. Bu ortamda CUDA yok → VRAM spike `CUDA_UNAVAILABLE`; C′ mini `DEFERRED_NO_GPU_GO` (empirik ΔPE iddiası yok).
+**Spike durumu (v1.4+):** `DAU_LLM_BACKEND` + `DAU_LORA_ENABLED=0` default.
+Backend soyutlama + local/LoRA iskelet + C′ harness kodda.
+VRAM spike **GO** (Llama-3.1-8B, ~6.4 GiB, RTX 4070).
+Protocol C′ mini live (N=3, 50 event, T=0.2, local, shared adapter):
+mean ΔPE_lived≈0.001 · null≈−0.008 · shuffle≈0.010 · wall≈97 dk →
+**WEAK_LORA_HYPOTHESIS** (flag off; frozen null güçlenir; omurga aynı).
+LoRA = leading testable path kaldı; mini pilot başarı iddiası yok.
 
 ---
 

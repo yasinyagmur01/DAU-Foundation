@@ -29,7 +29,6 @@ alwaysApply: true
 - Layer 3 GenerationConsolidation + DriftHealing ✅
 - Layer 4 Society ✅
 - Layer 5 Metacognition ✅ kod / ❌ empirik (Protocol C provisional null)
-- Faz 0–4 spike kod ✅ (`llm_backend`, `local_llm`, `lora_update`, C′ harness)
-- Bu host: VRAM CUDA_UNAVAILABLE; C′ DEFERRED_NO_GPU_GO; `DAU_LORA_ENABLED=0`
-- Sıradaki: GPU’da `run_vram_spike` GO → live Protocol C′
-  (LoRA = leading testable path, garanti değil)
+- Faz 0–4 spike kod ✅; VRAM GO (Llama-3.1-8B ~6.4GiB)
+- Protocol C′ mini (N=3, local): ΔPE≈0 → WEAK_LORA_HYPOTHESIS; `DAU_LORA_ENABLED=0`
+- Sıradaki: frozen null’u güçlendir / paper; LoRA hipotezi zayıf (garanti değil)
