@@ -1,9 +1,13 @@
 # DAU — Master Reference
 
-**Versiyon 1.4** · 2026-08-06  
-Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **provisional null** (ΔPE≈0, N≈35 temiz çift) · **137 test passed**.
+**Versiyon 1.4+** · 2026-08-06  
+Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **provisional null** (ΔPE≈0, N≈35 temiz çift) · **162 test passed**.
 
-**İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü metacognition **empirik iddiası UNSUPPORTED (provisional)** · sıradaki araştırma: **lokal LLM + yaşantı-koşullu LoRA**.
+**İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü metacognition **empirik iddiası UNSUPPORTED (provisional)** · sıradaki: **GPU VRAM GO → live Protocol C′**.
+
+**Faz 0 kilit:** Frozen Protocol C null kapalı; full Groq Protocol C tekrar yok. LoRA = leading testable path (garanti değil).
+
+**Spike durumu (v1.4+):** `DAU_LLM_BACKEND` + `DAU_LORA_ENABLED=0` default. Backend soyutlama + local/LoRA iskelet + C′ harness kodda. Bu ortamda CUDA yok → VRAM spike `CUDA_UNAVAILABLE`; C′ mini `DEFERRED_NO_GPU_GO` (empirik ΔPE iddiası yok).
 
 ---
 
@@ -317,7 +321,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ kod / ❌ empirik (provisional null) | SelfModel + meta_observer wiring tamam. Meta A/B v1: SUBSTRATE_ABSENT (T=0, System2=0). Protocol C (T=0.2, seed-locked): checkpoint ΔPE≈0 (5…35/40); TPD 500k → pair~32+ System1 kirlenmesi; run 40/40 tamamlanmadan abort. Full 40 tekrar koşulmayacak. Publishable negative finding çerçevesi. Sıradaki: lokal LLM araştırması → LoRA plastisite → Protocol C′. |
+| Layer 5 Metacognition | ✅ kod / ❌ empirik (provisional null) | SelfModel + meta_observer wiring tamam. Meta A/B v1: SUBSTRATE_ABSENT (T=0, System2=0). Protocol C (T=0.2, seed-locked): checkpoint ΔPE≈0 (5…35/40); TPD 500k → pair~32+ System1 kirlenmesi; run 40/40 tamamlanmadan abort. Full 40 tekrar koşulmayacak. Publishable negative finding çerçevesi. **Faz 0–4 spike kod:** `llm_backend` / `local_llm` / `lora_update` / `run_protocol_c_prime`. VRAM: CUDA_UNAVAILABLE (bu host). C′: DEFERRED_NO_GPU_GO. Rollback: `DAU_LLM_BACKEND=groq`, `DAU_LORA_ENABLED=0`. |
 
 ---
 
@@ -337,12 +341,15 @@ dau/foundation/
  ├── semantic_similarity.py — MiniLM cosine PE sensor (Layer 1.5)
  ├── constraints.py        — 5 evrensel kısıt
  ├── time_model.py         — EventClock
- ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
+  ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
+ │                            (+ DAU_LLM_BACKEND thin wire; default groq)
+ ├── llm_backend.py        — complete() Protocol; GroqBackend; LocalBackend
+ ├── local_llm.py          — 4-bit load + QLoRA micro-train + VRAM spike report
+ ├── lora_update.py        — nesil sonu lived-trace hook (DAU_LORA_ENABLED=0 default)
  ├── memory_bridge.py      — graph ↔ memory köprüsü
  ├── generation.py         — TransferCandidate, consolidate/apply_generation
  ├── run_demo.py
- └── tests/                — foundation + emotional_weight + drift + lod + social
-                            + generation + meta_observer + prediction_error
+ └── tests/                — + llm_backend + local_llm + lora_update
 
 dau/memory/
  ├── store.py / decay.py / retrieval.py / consolidation.py
@@ -357,6 +364,10 @@ dau/society/
  ├── run_convention_pilot.py / run_convention_pilot_llm.py
  ├── run_meta_ab.py / run_nuance_loss_pilot.py
  └── tests/                — environment + convention + meta_ab + nuance_loss
+
+dau/diagnostics/
+ ├── run_protocol_c.py / run_protocol_c_prime.py / run_vram_spike.py
+ └── tests/                — protocol_c_prime harness
 ```
 
 ---
@@ -561,22 +572,23 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
   → publishable negative finding. Paper + çalışan sistem hedefi:
   bu bulgu frozen dönemi kapatır; lokal LLM+LoRA devam bölümüdür.
 
-### Roadmap (v1.4 — sıradaki)
+### Roadmap (v1.4+ — spike kod; empirik GPU bekliyor)
 
-Frozen Groq Layer 0–5 empirik dönemi **belgelendi**. Sıradaki:
+Frozen Groq Layer 0–5 empirik dönemi **belgelendi**. Spike Faz 0–4 **kodda**:
 
-1. **Belgeleme sabitleme (bu sürüm)** — Protocol C provisional null +
-   limitasyonlar Master’da; full Groq Protocol C tekrar koşusu yok.
-2. **Lokal LLM araştırması** — Hugging Face / transformers +
-   bitsandbytes; Llama-3.1-8B (4-bit) hedef GPU: RTX 4070 Notebook (~8GB).
-   Lokal inference tek başına null’u çözmez (yine frozen).
-3. **Yaşantı-koşullu LoRA** — peft adapter; nesil sonu delta history →
-   training signal. Trait injection yasak; sinyal yalnızca yaşantıdan.
-   Layer 3 sınırına `lora_update` adayı. Omurga (state/delta/DAERM/LOD)
-   korunur; backend + plastisite sözleşmesi değişir (smooth swap değil).
-4. **Protocol C′** — LoRA sonrası aynı counterfactual protokol;
-   H1 yeniden test. Metacognition sinyali parametrik ize dönüşebilir mi?
-5. **Paper** — paralel: (i) trait injection neden yetmez, (ii) DAERM,
+1. **Faz 0 — Belgeleme kilidi** ✅ — Protocol C provisional null donduruldu;
+   full Groq C tekrar **yok**. LoRA = leading testable path; garanti değil.
+2. **Faz 1 — Backend soyutlama** ✅ — `DAU_LLM_BACKEND=groq|local`
+   (default groq); `complete(messages, seed, temperature)`. Rollback: `groq`.
+3. **Faz 2 — VRAM / load spike** ⏳ kod ✅ / empirik deferred — harness
+   `run_vram_spike`; bu host `CUDA_UNAVAILABLE`. GO kriteri &lt;~7.5GB hâlâ
+   geçerli; GPU’da ölçülmeden plastisite donduk (`DAU_LORA_ENABLED=0`).
+4. **Faz 3 — Nesil sonu `lora_update`** ✅ iskelet — sinyal v1 = PE / delta /
+   trauma / drift ($F_{\text{agent}}$ eşiği yok). Default flag off.
+5. **Faz 4 — Protocol C′ mini** ⏳ harness ✅ / empirik deferred —
+   shared adapter + train-then-A/B + null/shuffle; dry-run
+   `DEFERRED_NO_GPU_GO`. Live koşu GPU GO sonrası.
+6. **Paper** — paralel: (i) trait injection neden yetmez, (ii) DAERM,
    (iii) format≠restraint convention, (iv) metacognition null,
    (v) frozen sınır → LoRA motivasyonu.
 
@@ -612,8 +624,9 @@ Full-weight fine-tune ve dışarıdan trait/personality adapter’ı hâlâ yasa
 | **1.2** | **2026-08-05** | Magnitude decoupling (Faz 6): peak-weighted M = 0.70·peak + 0.30·mean, raw_pe bağımsız. TRAUMA reachable (PE=0.876 → M=0.718). Production spillover pin kaldırıldı. Energy/γ collapse + meta heal eşiği açık. 137 test passed. |
 | **1.3** | **2026-08-06** | Protocol C tasarlandı: seed-locked counterfactual paired sampling, 40 çift × 50 event, T=0.2, seed 1001–1040. Meta A/B v1 null sebebi netleşti: SUBSTRATE_ABSENT (System2=0). Master güncellendi. |
 | **1.4** | **2026-08-06** | Protocol C kısmi koşu: checkpoint ΔPE≈0 (provisional null); TPD 500k → pair~32+ kirlenmesi; 40/40 abort; full tekrar yok. Roadmap: lokal LLM araştırması → yaşantı-koşullu LoRA → Protocol C′. Anti-roadmap: kontrollü LoRA açıldı. 137 test. |
+| **1.4+** | **2026-08-06** | Faz 0–4 spike: `llm_backend` / `local_llm` / `lora_update` / `run_protocol_c_prime` / `run_vram_spike`. Flags: `DAU_LLM_BACKEND=groq` default, `DAU_LORA_ENABLED=0`. Bu host CUDA yok → VRAM `CUDA_UNAVAILABLE`; C′ `DEFERRED_NO_GPU_GO`. **162 test**. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.4 — Protocol C provisional null belgelendi; sıradaki lokal LLM + LoRA araştırması.
+Versiyon 1.4+ — Faz 0–4 spike kodlandı; empirik VRAM GO + live C′ GPU’da; LoRA leading path (garanti değil).

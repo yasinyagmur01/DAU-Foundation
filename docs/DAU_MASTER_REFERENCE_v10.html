@@ -173,14 +173,22 @@
 <h1 class="title">DAU Master Reference v1.4</h1>
 </header>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 1.4</strong> · 2026-08-06<br />
+<p><strong>Versiyon 1.4+</strong> · 2026-08-06<br />
 Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C <strong>provisional
-null</strong> (ΔPE≈0, N≈35 temiz çift) · <strong>137 test
+null</strong> (ΔPE≈0, N≈35 temiz çift) · <strong>162 test
 passed</strong>.</p>
 <p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
 frozen-weight kapalı döngü metacognition <strong>empirik iddiası
-UNSUPPORTED (provisional)</strong> · sıradaki araştırma: <strong>lokal
-LLM + yaşantı-koşullu LoRA</strong>.</p>
+UNSUPPORTED (provisional)</strong> · sıradaki: <strong>GPU VRAM GO →
+live Protocol C′</strong>.</p>
+<p><strong>Faz 0 kilit:</strong> Frozen Protocol C null kapalı; full
+Groq Protocol C tekrar yok. LoRA = leading testable path (garanti
+değil).</p>
+<p><strong>Spike durumu (v1.4+):</strong>
+<code>DAU_LLM_BACKEND</code> + <code>DAU_LORA_ENABLED=0</code> default.
+Backend soyutlama + local/LoRA iskelet + C′ harness kodda. Bu ortamda
+CUDA yok → VRAM spike <code>CUDA_UNAVAILABLE</code>; C′ mini
+<code>DEFERRED_NO_GPU_GO</code> (empirik ΔPE iddiası yok).</p>
 <hr />
 <h2 id="aksiyom">1. Aksiyom</h2>
 <p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
@@ -541,8 +549,11 @@ graph wiring</td>
 SUBSTRATE_ABSENT (T=0, System2=0). Protocol C (T=0.2, seed-locked):
 checkpoint ΔPE≈0 (5…35/40); TPD 500k → pair~32+ System1 kirlenmesi; run
 40/40 tamamlanmadan abort. Full 40 tekrar koşulmayacak. Publishable
-negative finding çerçevesi. Sıradaki: lokal LLM araştırması → LoRA
-plastisite → Protocol C′.</td>
+negative finding çerçevesi. <strong>Faz 0–4 spike kod:</strong>
+<code>llm_backend</code> / <code>local_llm</code> /
+<code>lora_update</code> / <code>run_protocol_c_prime</code>. VRAM:
+CUDA_UNAVAILABLE (bu host). C′: DEFERRED_NO_GPU_GO. Rollback:
+<code>DAU_LLM_BACKEND=groq</code>, <code>DAU_LORA_ENABLED=0</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -869,30 +880,31 @@ plastisite olmadan kapalı döngü kuramıyor” → publishable negative
 finding. Paper + çalışan sistem hedefi: bu bulgu frozen dönemi kapatır;
 lokal LLM+LoRA devam bölümüdür.</li>
 </ul>
-<h3 id="roadmap-v1.4-sıradaki">Roadmap (v1.4 — sıradaki)</h3>
+<h3 id="roadmap-v1.4-sıradaki">Roadmap (v1.4+ — spike kod; empirik GPU
+bekliyor)</h3>
 <p>Frozen Groq Layer 0–5 empirik dönemi <strong>belgelendi</strong>.
-Sıradaki:</p>
+Spike Faz 0–4 <strong>kodda</strong>:</p>
 <ol type="1">
-<li><strong>Belgeleme sabitleme (bu sürüm)</strong> — Protocol C
-provisional null + limitasyonlar Master’da; full Groq Protocol C tekrar
-koşusu yok.</li>
-<li><strong>Lokal LLM araştırması</strong> — Hugging Face / transformers
-+ bitsandbytes; Llama-3.1-8B (4-bit) hedef GPU: RTX 4070 Notebook
-(~8GB). Lokal inference tek başına null’u çözmez (yine frozen).</li>
-<li><strong>Yaşantı-koşullu LoRA</strong> — peft adapter; nesil sonu
-delta history → training signal. Trait injection yasak; sinyal yalnızca
-yaşantıdan. Layer 3 sınırına <code>lora_update</code> adayı. Omurga
-(state/delta/DAERM/LOD) korunur; backend + plastisite sözleşmesi değişir
-(smooth swap değil).</li>
-<li><strong>Protocol C′</strong> — LoRA sonrası aynı counterfactual
-protokol; H1 yeniden test. Metacognition sinyali parametrik ize
-dönüşebilir mi?</li>
+<li><strong>Faz 0 — Belgeleme kilidi</strong> ✅ — Protocol C
+provisional null donduruldu; full Groq C tekrar <strong>yok</strong>.
+LoRA = leading testable path; garanti değil.</li>
+<li><strong>Faz 1 — Backend soyutlama</strong> ✅ —
+<code>DAU_LLM_BACKEND=groq|local</code> (default groq);
+<code>complete(messages, seed, temperature)</code>. Rollback:
+<code>groq</code>.</li>
+<li><strong>Faz 2 — VRAM / load spike</strong> ⏳ kod ✅ / empirik
+deferred — harness <code>run_vram_spike</code>; bu host
+<code>CUDA_UNAVAILABLE</code>. GO &lt;~7.5GB; GPU ölçümü olmadan
+plastisite donuk (<code>DAU_LORA_ENABLED=0</code>).</li>
+<li><strong>Faz 3 — Nesil sonu <code>lora_update</code></strong> ✅
+iskelet — sinyal v1 = PE / delta / trauma / drift (F_agent eşiği yok).
+Default flag off.</li>
+<li><strong>Faz 4 — Protocol C′ mini</strong> ⏳ harness ✅ / empirik
+deferred — shared adapter + train-then-A/B + null/shuffle; dry-run
+<code>DEFERRED_NO_GPU_GO</code>.</li>
 <li><strong>Paper</strong> — paralel: (i) trait injection neden yetmez,
-(ii) DAERM,
-<ol start="3" type="i">
-<li>format≠restraint convention, (iv) metacognition null,</li>
-<li>frozen sınır → LoRA motivasyonu.</li>
-</ol></li>
+(ii) DAERM, (iii) format≠restraint convention, (iv) metacognition null,
+(v) frozen sınır → LoRA motivasyonu.</li>
 </ol>
 <h3 id="anti-roadmap-kaynak-koruma">Anti-roadmap (kaynak koruma)</h3>
 <p>Hâlâ yasak: Layer 6 icat etme · LLM-as-judge · trait injection ·
@@ -1023,11 +1035,21 @@ netleşti: SUBSTRATE_ABSENT (System2=0). Master güncellendi.</td>
 araştırması → yaşantı-koşullu LoRA → Protocol C′. Anti-roadmap:
 kontrollü LoRA açıldı. 137 test.</td>
 </tr>
+<tr>
+<td><strong>1.4+</strong></td>
+<td><strong>2026-08-06</strong></td>
+<td>Faz 0–4 spike: <code>llm_backend</code> / <code>local_llm</code> /
+<code>lora_update</code> / <code>run_protocol_c_prime</code> /
+<code>run_vram_spike</code>. Flags: <code>DAU_LLM_BACKEND=groq</code>
+default, <code>DAU_LORA_ENABLED=0</code>. Bu host CUDA yok → VRAM
+<code>CUDA_UNAVAILABLE</code>; C′ <code>DEFERRED_NO_GPU_GO</code>.
+<strong>162 test</strong>.</td>
+</tr>
 </tbody>
 </table>
 <hr />
 <p>Bu döküman her önemli katman tamamlanınca güncellenir.<br />
-Versiyon 1.4 — Protocol C provisional null belgelendi; sıradaki lokal
-LLM + LoRA araştırması.</p>
+Versiyon 1.4+ — Faz 0–4 spike kodlandı; empirik VRAM GO + live C′
+GPU’da; LoRA leading path (garanti değil).</p>
 </body>
 </html>

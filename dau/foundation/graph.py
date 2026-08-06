@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
-from langchain_groq import ChatGroq
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
@@ -45,6 +44,14 @@ from .drift import (
     update_drift,
 )
 from .emotional_weight import apply_emotional_weight, compute_emotional_weight
+from .llm_backend import (
+    BACKEND_GROQ,
+    BACKEND_LOCAL,
+    DEFAULT_MAX_TOKENS,
+    GroqBackend,
+    get_llm_backend,
+    resolve_backend_name,
+)
 from .lod import (
     DOMAIN_RESOURCE_LOAD,
     DOMAIN_SOCIAL_LOAD,
@@ -55,6 +62,7 @@ from .lod import (
     should_run_llm,
     update_lod,
 )
+from .lora_update import maybe_lora_update_after_life
 from .memory_bridge import (
     MAX_RETRIEVED_MEMORIES,
     MemoryStore,
@@ -101,8 +109,10 @@ DB_PATH: str = "dau_foundation.db"
 SNAPSHOT_DIR: str = "dau_runs"
 MODEL_NAME: str = "llama-3.1-8b-instant"
 TEMPERATURE: float = 0.2
-MAX_TOKENS: int = 150
+MAX_TOKENS: int = DEFAULT_MAX_TOKENS
 MEMORY_ENABLED: bool = True
+# Inference backend flag — groq default; local is opt-in (see llm_backend).
+LLM_BACKEND_ENV: str = "DAU_LLM_BACKEND"
 
 # Lived-experience expectation (Chroma recall → string join; no LLM).
 EXPECTED_OUTCOME_MEMORY_PREFIX: str = "Based on past experience: "
@@ -360,27 +370,30 @@ def _resolve_llm_seed() -> int | None:
     return int(raw)
 
 
-def _build_llm() -> ChatGroq:
-    """Construct the Groq chat model used only by the agent node."""
+def _build_llm() -> Any:
+    """Construct an invoke-compatible LLM client for the agent node.
+
+    Default backend is Groq (unchanged behaviour). Set DAU_LLM_BACKEND=local
+    for the local stub / loader. Diagnostics may monkeypatch this symbol;
+    keep returning an object with .invoke(messages).
+    """
 
     load_env_file()
-    api_key = os.environ.get(GROQ_API_KEY_ENV, "").strip()
-    if not api_key:
-        raise RuntimeError(
-            f"{GROQ_API_KEY_ENV} is missing. Put it in {_project_root() / ENV_FILE_NAME} "
-            f"or export {GROQ_API_KEY_ENV}=..."
-        )
     temperature = _resolve_llm_temperature()
     seed = _resolve_llm_seed()
-    model_kwargs: dict[str, Any] = {}
-    if seed is not None:
-        model_kwargs["seed"] = seed
-    return ChatGroq(
-        model=MODEL_NAME,
+    backend_name = resolve_backend_name()
+    if backend_name == BACKEND_LOCAL:
+        return get_llm_backend(BACKEND_LOCAL).get_invoke_client()
+    if backend_name != BACKEND_GROQ:
+        raise ValueError(
+            f"Unsupported {LLM_BACKEND_ENV}={backend_name!r}; "
+            f"expected {BACKEND_GROQ!r} or {BACKEND_LOCAL!r}."
+        )
+    groq = GroqBackend(model_name=MODEL_NAME)
+    return groq._make_client(
         temperature=temperature,
+        seed=seed,
         max_tokens=MAX_TOKENS,
-        api_key=api_key,
-        model_kwargs=model_kwargs,
     )
 
 
@@ -1305,6 +1318,24 @@ if __name__ == "__main__":
             memory_deleted = report.deleted_count
             edges_created = report.edges_created
             drift_flags = report.drift_flag_count
+
+    # Optional generation-end LoRA (DAU_LORA_ENABLED=0 default → no-op).
+    if isinstance(result, dict):
+        try:
+            life_state = DAUAgentState.model_validate(result)
+            lora_result = maybe_lora_update_after_life(
+                life_state,
+                pe_event_log=get_pe_event_log(),
+            )
+            if lora_result.enabled and not lora_result.skipped:
+                print(
+                    f"lora_update=trained examples={lora_result.example_count} "
+                    f"dir={lora_result.adapter_dir}"
+                )
+            elif lora_result.enabled:
+                print(f"lora_update=skipped reason={lora_result.reason}")
+        except Exception as lora_exc:  # noqa: BLE001 — never fail life teardown
+            print(f"lora_update=error {type(lora_exc).__name__}: {lora_exc}")
 
     unbind_memory_store(agent_id)
 

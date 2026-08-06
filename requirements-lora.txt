@@ -1,0 +1,7 @@
+# Optional deps for local 4-bit inference + generation-end QLoRA spike.
+# Install only when running DAU_LLM_BACKEND=local / VRAM spike / Protocol C′.
+# Core DAU (Groq path) does not require these.
+
+peft>=0.20.0
+bitsandbytes>=0.45.0
+accelerate>=1.0.0
