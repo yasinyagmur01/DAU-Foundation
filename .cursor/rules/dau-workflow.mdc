@@ -29,6 +29,8 @@ alwaysApply: true
 - Layer 3 GenerationConsolidation + DriftHealing ✅
 - Layer 4 Society ✅
 - Layer 5 Metacognition ✅ kod / ❌ empirik (Protocol C provisional null)
-- Faz 0–4 spike kod ✅; VRAM GO (Llama-3.1-8B ~6.4GiB)
-- Protocol C′ mini (N=3, local): ΔPE≈0 → WEAK_LORA_HYPOTHESIS; `DAU_LORA_ENABLED=0`
-- Sıradaki: frozen null’u güçlendir / paper; LoRA hipotezi zayıf (garanti değil)
+- Layer 5 Metacognition ✅ kod / ❌ empirik (Protocol C provisional null
+  + Protocol C′ WEAK_LORA)
+- VRAM GO (Llama-3.1-8B ~6.4GiB); `DAU_LORA_ENABLED=0`
+- Sıradaki: frozen-null paper kilidi; LoRA tekrarı yalnızca sinyal-v2 ile
+  (garanti path değil)
