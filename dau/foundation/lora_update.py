@@ -21,6 +21,13 @@ from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
 from dau.foundation.state import DAUAgentState, DeltaRecord
 
+try:
+    from dau.foundation.nli_filter import is_genuine_polarity_pair
+
+    _NLI_AVAILABLE = True
+except ImportError:
+    _NLI_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # LoRA update flags and signal constants (no magic numbers in logic)
 # ---------------------------------------------------------------------------
@@ -302,15 +309,9 @@ def build_pe_ranked_pairs(
             event_counter=example.event_counter,
         )
         NLI_FILTER_STATS["total_candidates"] += 1
-        # Optional NLI gate — absent on this checkout → accept all.
-        try:
-            from dau.foundation.nli_filter import is_genuine_polarity_pair
-
-            if not is_genuine_polarity_pair(pair.chosen, pair.rejected):
-                NLI_FILTER_STATS["rejected"] += 1
-                continue
-        except ImportError:
-            pass
+        if _NLI_AVAILABLE and not is_genuine_polarity_pair(pair.chosen, pair.rejected):
+            NLI_FILTER_STATS["rejected"] += 1
+            continue
         NLI_FILTER_STATS["passed"] += 1
         pairs.append(pair)
     return pairs
