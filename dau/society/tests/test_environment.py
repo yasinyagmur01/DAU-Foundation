@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import pytest
 
+from dau.foundation.drift import DriftState
+from dau.foundation.state import InternalState
+from dau.generation.fitness import compute_fitness
 from dau.society.environment import (
     COLLAPSE_EPSILON,
     EXTRACTION_KEY_AMOUNT,
@@ -15,6 +18,7 @@ from dau.society.environment import (
     POOL_REGEN_RATE,
     EnvironmentState,
     agent_delta_pool,
+    apply_crisis_trauma,
     get_pool_ratio,
     step_pool,
 )
@@ -110,3 +114,60 @@ def test_collapsed_flag_at_collapse_epsilon_threshold() -> None:
     above = step_pool(base, {"x": extract_above})
     assert above.pool == pytest.approx(threshold + 0.01)
     assert above.collapsed is False
+
+
+def test_pool_at_crisis_threshold_applies_no_crisis_trauma() -> None:
+    """pool_ratio=0.30 → DriftState unchanged."""
+
+    initial = DriftState()
+    result = apply_crisis_trauma(initial, pool_ratio=0.30)
+    assert result is initial
+    assert result.flags == {}
+    assert result.magnitudes == {}
+
+
+def test_pool_above_crisis_threshold_applies_no_crisis_trauma() -> None:
+    """pool_ratio=0.50 → no trauma."""
+
+    initial = DriftState()
+    result = apply_crisis_trauma(initial, pool_ratio=0.50)
+    assert result is initial
+    assert result.flags == {}
+    assert result.magnitudes == {}
+
+
+def test_pool_below_crisis_threshold_applies_multiplied_trauma() -> None:
+    """pool_ratio=0.20 → drift_state.flags['resource'] is True."""
+
+    result = apply_crisis_trauma(DriftState(), pool_ratio=0.20)
+    assert result.flags["resource"] is True
+
+
+def test_crisis_trauma_sets_drift_state_flags() -> None:
+    """pool_ratio=0.10 → flags['resource'] True and magnitudes['resource'] > 0."""
+
+    result = apply_crisis_trauma(DriftState(), pool_ratio=0.10)
+    assert result.flags["resource"] is True
+    assert result.magnitudes["resource"] > 0.0
+
+
+def test_crisis_trauma_flows_to_fitness_path() -> None:
+    """Crisis drift lowers endogenous energy recovery → lower F_agent."""
+
+    baseline_drift = DriftState()
+    crisis_drift = apply_crisis_trauma(DriftState(), pool_ratio=0.10)
+    state = InternalState(energy=1.0)
+
+    f_baseline = compute_fitness(
+        state.compute_endogenous_recovery_rate(baseline_drift),
+        0.0,
+        10,
+        10,
+    )
+    f_crisis = compute_fitness(
+        state.compute_endogenous_recovery_rate(crisis_drift),
+        0.0,
+        10,
+        10,
+    )
+    assert f_crisis < f_baseline

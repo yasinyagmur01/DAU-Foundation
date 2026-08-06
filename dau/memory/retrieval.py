@@ -1,24 +1,36 @@
 """Memory retrieval — score and rank durable traces for the current query.
 
 Biology analogy: cue-driven recall blends how fresh a memory feels, how
-important the original swing was, and whether the queried life domain matches.
+important the original swing was, whether the queried life domain matches,
+and multi-hop associative proximity on the domain co-occurrence graph (PPR).
 """
 
 from __future__ import annotations
 
+from dau.foundation.constraints import PPR_WEIGHT_IN_SCORE
 from dau.foundation.state import AffectedDomain
+from dau.memory.ppr_retrieval import ppr_score_for_domain
 
 from .decay import compute_retention
-from .store import MemoryStore
+from .store import SQLITE_MEMORY_PATH, MemoryStore
 
 # ---------------------------------------------------------------------------
 # Generative-Agents-style weights (embedding cosine weight held at zero)
+# Base trio summed to 1.0; scaled by (1 - PPR_WEIGHT_IN_SCORE) so total = 1.0
 # ---------------------------------------------------------------------------
 
-W_RECENCY: float = 0.3
-W_IMPORTANCE: float = 0.4
-W_RELEVANCE: float = 0.3
+_W_RECENCY_BASE: float = 0.3
+_W_IMPORTANCE_BASE: float = 0.4
+_W_RELEVANCE_BASE: float = 0.3
+_LEGACY_WEIGHT_SCALE: float = 1.0 - PPR_WEIGHT_IN_SCORE
+
+W_RECENCY: float = _W_RECENCY_BASE * _LEGACY_WEIGHT_SCALE  # 0.21
+W_IMPORTANCE: float = _W_IMPORTANCE_BASE * _LEGACY_WEIGHT_SCALE  # 0.28
+W_RELEVANCE: float = _W_RELEVANCE_BASE * _LEGACY_WEIGHT_SCALE  # 0.21
 DOMAIN_SOFT_MATCH: float = 0.5  # edge-linked different domain
+
+# TODO: prefer an explicit db_path arg on retrieve_top_k when API is extended.
+_DEFAULT_PPR_DB_PATH: str = "dau_runs/memory.db"
 
 
 def compute_memory_score(
@@ -27,10 +39,14 @@ def compute_memory_score(
     now_counter: int,
     store: MemoryStore,
 ) -> float:
-    """Weighted memory_score = recency + importance + domain relevance.
+    """Weighted memory_score = recency + importance + domain + PPR.
 
-    Biology analogy: what comes to mind is recent, emotionally charged, and
-    relevant to the current homeostatic concern — not a raw embedding match.
+    Biology analogy: what comes to mind is recent, emotionally charged,
+    relevant to the current homeostatic concern, and associatively close
+    on the domain co-occurrence graph — not a raw embedding match.
+
+    memory_score = W_RECENCY·recency + W_IMPORTANCE·magnitude
+                 + W_RELEVANCE·domain_match + PPR_WEIGHT_IN_SCORE·ppr_score
     """
 
     node = store.get_node(record_id)
@@ -51,10 +67,19 @@ def compute_memory_score(
     else:
         relevance = 0.0
 
+    db_path = getattr(store, "_sqlite_path", None) or _DEFAULT_PPR_DB_PATH
+    if not db_path:
+        db_path = SQLITE_MEMORY_PATH
+    try:
+        ppr = float(ppr_score_for_domain(db_path, q, node.domain))
+    except Exception:
+        ppr = 0.0
+
     return (
         W_RECENCY * recency
         + W_IMPORTANCE * importance
         + W_RELEVANCE * relevance
+        + PPR_WEIGHT_IN_SCORE * ppr
     )
 
 

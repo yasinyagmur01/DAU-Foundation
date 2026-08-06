@@ -32,11 +32,21 @@ CROSS_AXIS_SPILLOVER: float = 0.20
 METABOLIC_FLOOR: float = 0.05
 MAGNITUDE_PEAK_WEIGHT: float = 0.70
 
+# Signal v2 — NLI polarity gate for preference pairs (CPU cross-encoder)
+NLI_CONTRADICTION_THRESHOLD: float = 0.60
+NLI_MODEL_NAME: str = "cross-encoder/nli-deberta-v3-small"
+DAU_NLI_FILTER_ENABLED: bool = True  # override: DAU_NLI_FILTER_ENABLED=0
+
 # Per-agent QLoRA (Punica pattern) — independent adapters, shared frozen base
 PER_AGENT_LORA_RANK: int = 8
 PER_AGENT_LORA_ALPHA: int = 16
 ADAPTER_BASE_DIR: str = "dau_runs/adapters"
 ADAPTER_SWITCH_MAX_MS: int = 1
+
+# HippoRAG 2 — Personalized PageRank over SQLite domain co-occurrence (CPU)
+PPR_ALPHA = 0.85
+PPR_WEIGHT_IN_SCORE = 0.30
+PPR_TOP_K_DOMAINS = 10
 
 
 def build_default_constraints() -> EnvironmentConstraints:
