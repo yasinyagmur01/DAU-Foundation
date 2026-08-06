@@ -1,9 +1,9 @@
 # DAU — Master Reference
 
-**Versiyon 1.0+** · 2026-08-04  
-Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar koşuldu · deterministic Meta A/B seed replay → gürültü doğrulandı · **137 test passed**.
+**Versiyon 1.4** · 2026-08-06  
+Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **provisional null** (ΔPE≈0, N≈35 temiz çift) · **137 test passed**.
 
-**İddia disiplini:** Layer 5 **kod** ✅ · kapalı döngü metacognition **empirik iddiası UNSUPPORTED**.
+**İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü metacognition **empirik iddiası UNSUPPORTED (provisional)** · sıradaki araştırma: **lokal LLM + yaşantı-koşullu LoRA**.
 
 ---
 
@@ -317,7 +317,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ kod / ⚠️ kısmi empirik | SelfModel + meta_observer wiring tamam. lod_override + trigger_retrieval: called=100, triggered=100. context_prune: triggered=0 (variance eşiği altında). trigger_drift_healing: evaluator üzerinden çalışıyor; meta_observer aktüatörü triggered=0 (eşik kalibrasyonu açık). |
+| Layer 5 Metacognition | ✅ kod / ❌ empirik (provisional null) | SelfModel + meta_observer wiring tamam. Meta A/B v1: SUBSTRATE_ABSENT (T=0, System2=0). Protocol C (T=0.2, seed-locked): checkpoint ΔPE≈0 (5…35/40); TPD 500k → pair~32+ System1 kirlenmesi; run 40/40 tamamlanmadan abort. Full 40 tekrar koşulmayacak. Publishable negative finding çerçevesi. Sıradaki: lokal LLM araştırması → LoRA plastisite → Protocol C′. |
 
 ---
 
@@ -445,7 +445,24 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - ✅ İşbirliği ≠ koordinasyon ayrımı ✅
 - ✅ Fitness-based transfer filtering ✅
 - ✅ NPC / Gerçek agent geçişi ✅
-- ❌ Closed-loop metacognitive control empirik olarak **UNSUPPORTED** (Layer 5 kod ✅; Meta A/B + T=0 seed replay)
+- ⚠️ Closed-loop metacognition (frozen Groq): Protocol C **provisional null**.
+  Tasarım: 40 çift × 50 event, T=0.2, seed 1001–1040, seed-locked ON/OFF.
+  Koşu: `dau/diagnostics/run_protocol_c.py` · log: `dau_runs/protocol_c_run.log`.
+  Checkpoint (kümülatif mean_ΔPE):
+    5/40 → +0.000 · 10/40 → +0.000 · 15/40 → −0.000 · 20/40 → −0.004
+    25/40 → +0.009 · 30/40 → −0.000 · 35/40 → +0.000
+  Yorum: ΔPE sıfır etrafında gürültü — sistematik H1 (PE düşüşü) yok.
+  Limitasyon: Groq TPD 500k doldu (~212 TPD fallback); pair~32+ System2
+  substratı bozuldu → temiz çekirdek ~31–32 çift. Run pair=40 META_OFF’ta
+  abort; `protocol_c_results.json` / resmi paired t-test yazılmadı.
+  Karar: full 40 tekrar koşulmayacak (eğilim net + TPD riski). Resmi
+  UNSUPPORTED damgası pair-level vektör olmadan teknik olarak eksik;
+  akademik çerçeve: **provisional null / publishable negative finding**.
+  H0: μ_ΔPE ≥ 0 · H1: μ_ΔPE < 0 · one-tailed paired t-test, α=0.05
+  (tam vektör kurtarılırsa veya Protocol C′ ile yeniden ölçülür).
+- ❌ Parametrik plastisite olmadan “yaşantıdan trait”: frozen 8B’de
+  context-level metacognition kapalı döngü kuramadı. Açık araştırma:
+  lokal LLM + LoRA (delta history → adapter; trait injection yasak).
 - Energy floor ve uzun ufuk: gamma=0 erken kapanıyor.
   Uzun koşularda agent'ın hayatta kalması için energy recovery
   mekanizması yeterli mi? METABOLIC_FLOOR · (1 - mean_load) formülü
@@ -455,7 +472,8 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
   evaluator heal_drift çalışıyor ama meta_observer aktüatörü
   triggered=0. F_agent < 0.5 AND reward > 0.4 koşulları aynı anda
   karşılanmıyor. Eşik kalibrasyonu gerekebilir. Açık.
-- Continual learning olmadan gerçek iz? (Layer 3)
+- Continual learning / parametrik iz? → Roadmap v1.4: lokal LLM + LoRA
+  (frozen dönemde yok; açık araştırma)
 - LLM embedding match henüz skor değil (W_SEM=0)
 - "İyi"yi "kötü"den ayıran mekanizma?
 - Öz sorgu nasıl aktive olur?
@@ -524,10 +542,53 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - Event-level PE logging eklendi (Faz 2):
   dau_runs/overnight_audit_results.json → runs[] array,
   her event için prediction_error + delta_magnitude + delta_class.
+- Meta A/B v1 (DAERM öncesi + sonrası): Her iki dönemde de
+  META_ON = META_OFF (diff=0). DAERM öncesi: sistem donuyordu.
+  DAERM sonrası: T=0 + NPC System1 → system2_cycles=0 → meta_observer
+  etki edemez. Kök neden: deterministik seed kapalı döngüyü değil
+  gürültüyü sıfırlıyor; System2 yoksa metacognition substrat bulamıyor.
+- Protocol C (Seed-Locked Counterfactual) koşuldu (kısmi):
+  T=0.2 + master seed · 40 çift tasarımı · script:
+  `dau/diagnostics/run_protocol_c.py`.
+  ~1139 LLM çağrısı · ~213 rate-limit fallback (1× TPM, ~212× TPD).
+  Checkpoint mean_ΔPE ≈ 0 (gürültü; H1 yok). Temiz çekirdek ~31–32 çift
+  (TPD öncesi). pair=40 META_OFF abort; JSON/t-test yok.
+  Full 40 tekrar **yapılmayacak**. (Bkz. Section 17, Roadmap)
+- Null sonuç akademik çerçevesi (v1.4, provisional):
+  "mimari hatalı" değil —
+  "frozen-weight LLM'de context-level metacognition, parametrik
+  plastisite olmadan kapalı döngü kuramıyor"
+  → publishable negative finding. Paper + çalışan sistem hedefi:
+  bu bulgu frozen dönemi kapatır; lokal LLM+LoRA devam bölümüdür.
 
-### 30 gün anti-roadmap (kaynak koruma)
+### Roadmap (v1.4 — sıradaki)
 
-Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · parametrik fine-tune · Jaccard’ı ana PE’ye geri alma · multi-pool fizik — yasak. Önce ölçüm geçerliliği; sonra bilinçli seçici düzeltme.
+Frozen Groq Layer 0–5 empirik dönemi **belgelendi**. Sıradaki:
+
+1. **Belgeleme sabitleme (bu sürüm)** — Protocol C provisional null +
+   limitasyonlar Master’da; full Groq Protocol C tekrar koşusu yok.
+2. **Lokal LLM araştırması** — Hugging Face / transformers +
+   bitsandbytes; Llama-3.1-8B (4-bit) hedef GPU: RTX 4070 Notebook (~8GB).
+   Lokal inference tek başına null’u çözmez (yine frozen).
+3. **Yaşantı-koşullu LoRA** — peft adapter; nesil sonu delta history →
+   training signal. Trait injection yasak; sinyal yalnızca yaşantıdan.
+   Layer 3 sınırına `lora_update` adayı. Omurga (state/delta/DAERM/LOD)
+   korunur; backend + plastisite sözleşmesi değişir (smooth swap değil).
+4. **Protocol C′** — LoRA sonrası aynı counterfactual protokol;
+   H1 yeniden test. Metacognition sinyali parametrik ize dönüşebilir mi?
+5. **Paper** — paralel: (i) trait injection neden yetmez, (ii) DAERM,
+   (iii) format≠restraint convention, (iv) metacognition null,
+   (v) frozen sınır → LoRA motivasyonu.
+
+### Anti-roadmap (kaynak koruma)
+
+Hâlâ yasak: Layer 6 icat etme · LLM-as-judge · trait injection ·
+wall-clock zaman · Jaccard’ı ana PE’ye geri alma · multi-pool fizik ·
+kuantum-LLM hayali.
+
+**Güncellendi (v1.4):** “parametrik fine-tune yasak” kaldırıldı —
+yerine **kontrollü, yaşantı-koşullu LoRA araştırması** açıldı.
+Full-weight fine-tune ve dışarıdan trait/personality adapter’ı hâlâ yasak.
 
 ---
 
@@ -549,8 +610,10 @@ Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman · para
 | **1.0++** | **2026-08-04** | Memory-cued `expected_outcome` (PE dağılımı açıldı). Bilinen sınır: InternalState saturasyonu → PE canlı / delta=0 / aktüatör `triggered=0`. Açık soru: homeostatic recovery (A/B/C; Friston allostasis). |
 | **1.1** | **2026-08-05** | DAERM implement edildi (Faz 5): allostatic recovery, endojen γ(t), domain PE vektörü. Saturasyon çözüldü. expected_outcome endojen (ChromaDB-gated). PE Std=0.256. lod_override + trigger_retrieval triggered=100/100. DAERM+TRAUMA çelişkisi tespit edildi — açık. 137 test passed. |
 | **1.2** | **2026-08-05** | Magnitude decoupling (Faz 6): peak-weighted M = 0.70·peak + 0.30·mean, raw_pe bağımsız. TRAUMA reachable (PE=0.876 → M=0.718). Production spillover pin kaldırıldı. Energy/γ collapse + meta heal eşiği açık. 137 test passed. |
+| **1.3** | **2026-08-06** | Protocol C tasarlandı: seed-locked counterfactual paired sampling, 40 çift × 50 event, T=0.2, seed 1001–1040. Meta A/B v1 null sebebi netleşti: SUBSTRATE_ABSENT (System2=0). Master güncellendi. |
+| **1.4** | **2026-08-06** | Protocol C kısmi koşu: checkpoint ΔPE≈0 (provisional null); TPD 500k → pair~32+ kirlenmesi; 40/40 abort; full tekrar yok. Roadmap: lokal LLM araştırması → yaşantı-koşullu LoRA → Protocol C′. Anti-roadmap: kontrollü LoRA açıldı. 137 test. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.2 — Magnitude decoupling; TRAUMA reachable; energy/γ + meta heal eşiği açık (L5 kısmi empirik, format≠restraint, noise confirmed).
+Versiyon 1.4 — Protocol C provisional null belgelendi; sıradaki lokal LLM + LoRA araştırması.

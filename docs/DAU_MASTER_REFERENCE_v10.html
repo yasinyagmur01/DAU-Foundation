@@ -4,8 +4,153 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DAU_MASTER_REFERENCE_v10</title>
+  <title>DAU Master Reference v1.4</title>
   <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -22,17 +167,20 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <link rel="stylesheet" href="" />
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">DAU Master Reference v1.4</h1>
+</header>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 1.0+</strong> · 2026-08-04<br />
-Layer 0–5 kod tamam · MiniLM PE sensörü aktif · empirik pilotlar koşuldu
-· deterministic Meta A/B seed replay → gürültü doğrulandı · <strong>137
-test passed</strong>.</p>
+<p><strong>Versiyon 1.4</strong> · 2026-08-06<br />
+Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C <strong>provisional
+null</strong> (ΔPE≈0, N≈35 temiz çift) · <strong>137 test
+passed</strong>.</p>
 <p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
-kapalı döngü metacognition <strong>empirik iddiası
-UNSUPPORTED</strong>.</p>
+frozen-weight kapalı döngü metacognition <strong>empirik iddiası
+UNSUPPORTED (provisional)</strong> · sıradaki araştırma: <strong>lokal
+LLM + yaşantı-koşullu LoRA</strong>.</p>
 <hr />
 <h2 id="aksiyom">1. Aksiyom</h2>
 <p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
@@ -388,9 +536,13 @@ graph wiring</td>
 </tr>
 <tr>
 <td>Layer 5 Metacognition</td>
-<td>✅ kod / ❌ empirik kapalı döngü</td>
-<td>SelfModel + meta_observer wiring tamam; Meta A/B + T=0 seed replay →
-sistemik fayda yok (UNSUPPORTED)</td>
+<td>✅ kod / ❌ empirik (provisional null)</td>
+<td>SelfModel + meta_observer wiring tamam. Meta A/B v1:
+SUBSTRATE_ABSENT (T=0, System2=0). Protocol C (T=0.2, seed-locked):
+checkpoint ΔPE≈0 (5…35/40); TPD 500k → pair~32+ System1 kirlenmesi; run
+40/40 tamamlanmadan abort. Full 40 tekrar koşulmayacak. Publishable
+negative finding çerçevesi. Sıradaki: lokal LLM araştırması → LoRA
+plastisite → Protocol C′.</td>
 </tr>
 </tbody>
 </table>
@@ -556,10 +708,36 @@ karşılaştırma</h2>
 <li>✅ İşbirliği ≠ koordinasyon ayrımı ✅</li>
 <li>✅ Fitness-based transfer filtering ✅</li>
 <li>✅ NPC / Gerçek agent geçişi ✅</li>
-<li>❌ Closed-loop metacognitive control empirik olarak
-<strong>UNSUPPORTED</strong> (Layer 5 kod ✅; Meta A/B + T=0 seed
-replay)</li>
-<li>Continual learning olmadan gerçek iz? (Layer 3)</li>
+<li>⚠️ Closed-loop metacognition (frozen Groq): Protocol C
+<strong>provisional null</strong>. Tasarım: 40 çift × 50 event, T=0.2,
+seed 1001–1040, seed-locked ON/OFF. Koşu:
+<code>dau/diagnostics/run_protocol_c.py</code> · log:
+<code>dau_runs/protocol_c_run.log</code>. Checkpoint (kümülatif
+mean_ΔPE): 5/40 → +0.000 · 10/40 → +0.000 · 15/40 → −0.000 · 20/40 →
+−0.004 25/40 → +0.009 · 30/40 → −0.000 · 35/40 → +0.000 Yorum: ΔPE sıfır
+etrafında gürültü — sistematik H1 (PE düşüşü) yok. Limitasyon: Groq TPD
+500k doldu (~212 TPD fallback); pair~32+ System2 substratı bozuldu →
+temiz çekirdek ~31–32 çift. Run pair=40 META_OFF’ta abort;
+<code>protocol_c_results.json</code> / resmi paired t-test yazılmadı.
+Karar: full 40 tekrar koşulmayacak (eğilim net + TPD riski). Resmi
+UNSUPPORTED damgası pair-level vektör olmadan teknik olarak eksik;
+akademik çerçeve: <strong>provisional null / publishable negative
+finding</strong>. H0: μ_ΔPE ≥ 0 · H1: μ_ΔPE &lt; 0 · one-tailed paired
+t-test, α=0.05 (tam vektör kurtarılırsa veya Protocol C′ ile yeniden
+ölçülür).</li>
+<li>❌ Parametrik plastisite olmadan “yaşantıdan trait”: frozen 8B’de
+context-level metacognition kapalı döngü kuramadı. Açık araştırma: lokal
+LLM + LoRA (delta history → adapter; trait injection yasak).</li>
+<li>Energy floor ve uzun ufuk: gamma=0 erken kapanıyor. Uzun koşularda
+agent’ın hayatta kalması için energy recovery mekanizması yeterli mi?
+METABOLIC_FLOOR · (1 - mean_load) formülü düşük yük altında enerji
+kazandırıyor ama yüksek yük altında yetersiz kalıyor. Açık.</li>
+<li>trigger_drift_healing (meta_observer): 100 event long_run’da
+evaluator heal_drift çalışıyor ama meta_observer aktüatörü triggered=0.
+F_agent &lt; 0.5 AND reward &gt; 0.4 koşulları aynı anda karşılanmıyor.
+Eşik kalibrasyonu gerekebilir. Açık.</li>
+<li>Continual learning / parametrik iz? → Roadmap v1.4: lokal LLM + LoRA
+(frozen dönemde yok; açık araştırma)</li>
 <li>LLM embedding match henüz skor değil (W_SEM=0)</li>
 <li>“İyi”yi “kötü”den ayıran mekanizma?</li>
 <li>Öz sorgu nasıl aktive olur?</li>
@@ -648,22 +826,82 @@ uzun ufuk/tükeniş farkını maskeler)</li>
 (<code>retrieve_relevant</code> → past outcomes); boş store / ilk
 event’te domain şablonuna fall back. PE artık endojen öngörüye
 yaklaşabilir (S1 düzeltmesi kısmi).</li>
-<li>InternalState eksen saturasyonu: Event 1 yüksek PE (≥0.75) sonrası
-loads=1.0, energy=0.0’a yapışıyor. Sonraki PE sinyalleri gerçek ama
-delta=0 (hareket edecek eksen kalmıyor). 20 event’in 18’i NOISE.
-Aktüatörler çağrılıyor (<code>called=20</code>) ama
-<code>triggered=0</code>. Kök neden:
-<code>_apply_prediction_error</code> tüm eksenlere +PE ekliyor;
-<code>_clamp</code> [0,1] sınırını geçince before≈after → magnitude≈0.
-Recovery mekanizması yok — sistem bir kez saturasyona girince donuyor.
-Friston allostasis karşılığı eksik.</li>
+<li>DAERM (Dynamic Allostatic Equilibrium Recovery Model) eklendi (Faz
+5). Saturasyon ve donma çözüldü; 20/20 event magnitude &gt; 0.
+Formüller: μ_i(t) = min(M_drift_i / (1 + M_drift_i), 0.75) γ(t) = E(t) /
+(1 + M_total) L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)
+Sabitler: ALLOSTATIC_SETPOINT_MAX=0.75, CROSS_AXIS_SPILLOVER=0.20,
+METABOLIC_FLOOR=0.05 → constraints.py</li>
+<li>DAERM + magnitude decoupling (Faz 6, v1.2): magnitude hesabı DAERM
+recovery’den ayrıldı. Ham PE vektörü üzerinden peak-weighted formül: M =
+0.70 · max(PE_vec) + 0.30 · mean(PE_vec) Uniform spillover (S=0.20): M ≈
+0.82 · PE PE≥0.854 → M≥0.70 → TRAUMA reachable. ✅ Sabit:
+MAGNITUDE_PEAK_WEIGHT=0.70 → constraints.py compute_delta(…,
+raw_pe=float) — raw_pe verilmezse legacy fallback.</li>
+<li>Energy exhaustion + gamma collapse: Final gamma=E/(1+M_total).
+Energy=0 → gamma=0 → recovery durur. Biyolojik olarak doğru; enerjisiz
+agent toparlanamaz. AB_ENERGY_FLOOR sadece should_continue için —
+InternalState.energy’yi yükseltmez.</li>
+<li>expected_outcome endojen yapıldı (Faz 4): ChromaDB geçmiş
+outcome’larından üretiliyor. PE Std=0.256 (öncesi: 0.000). Event 1:
+fallback (boş store), Event 2+: memory-gated.</li>
+<li>run_demo → meta_observer_node bağlantısı düzeltildi (Faz 2): Graph
+wire doğruydu; run_demo farklı instance kullanıyordu. Düzeltme sonrası
+called=100/100.</li>
+<li>Event-level PE logging eklendi (Faz 2):
+dau_runs/overnight_audit_results.json → runs[] array, her event için
+prediction_error + delta_magnitude + delta_class.</li>
+<li>Meta A/B v1 (DAERM öncesi + sonrası): Her iki dönemde de META_ON =
+META_OFF (diff=0). DAERM öncesi: sistem donuyordu. DAERM sonrası: T=0 +
+NPC System1 → system2_cycles=0 → meta_observer etki edemez. Kök neden:
+deterministik seed kapalı döngüyü değil gürültüyü sıfırlıyor; System2
+yoksa metacognition substrat bulamıyor.</li>
+<li>Protocol C (Seed-Locked Counterfactual) koşuldu (kısmi): T=0.2 +
+master seed · 40 çift tasarımı · script:
+<code>dau/diagnostics/run_protocol_c.py</code>. ~1139 LLM çağrısı · ~213
+rate-limit fallback (1× TPM, ~212× TPD). Checkpoint mean_ΔPE ≈ 0
+(gürültü; H1 yok). Temiz çekirdek ~31–32 çift (TPD öncesi). pair=40
+META_OFF abort; JSON/t-test yok. Full 40 tekrar
+<strong>yapılmayacak</strong>. (Bkz. Section 17, Roadmap)</li>
+<li>Null sonuç akademik çerçevesi (v1.4, provisional): “mimari hatalı”
+değil — “frozen-weight LLM’de context-level metacognition, parametrik
+plastisite olmadan kapalı döngü kuramıyor” → publishable negative
+finding. Paper + çalışan sistem hedefi: bu bulgu frozen dönemi kapatır;
+lokal LLM+LoRA devam bölümüdür.</li>
 </ul>
-<h3 id="gün-anti-roadmap-kaynak-koruma">30 gün anti-roadmap (kaynak
-koruma)</h3>
-<p>Layer 6 icat etme · LLM-as-judge · trait injection · wall-clock zaman
-· parametrik fine-tune · Jaccard’ı ana PE’ye geri alma · multi-pool
-fizik — yasak. Önce ölçüm geçerliliği; sonra bilinçli seçici
-düzeltme.</p>
+<h3 id="roadmap-v1.4-sıradaki">Roadmap (v1.4 — sıradaki)</h3>
+<p>Frozen Groq Layer 0–5 empirik dönemi <strong>belgelendi</strong>.
+Sıradaki:</p>
+<ol type="1">
+<li><strong>Belgeleme sabitleme (bu sürüm)</strong> — Protocol C
+provisional null + limitasyonlar Master’da; full Groq Protocol C tekrar
+koşusu yok.</li>
+<li><strong>Lokal LLM araştırması</strong> — Hugging Face / transformers
++ bitsandbytes; Llama-3.1-8B (4-bit) hedef GPU: RTX 4070 Notebook
+(~8GB). Lokal inference tek başına null’u çözmez (yine frozen).</li>
+<li><strong>Yaşantı-koşullu LoRA</strong> — peft adapter; nesil sonu
+delta history → training signal. Trait injection yasak; sinyal yalnızca
+yaşantıdan. Layer 3 sınırına <code>lora_update</code> adayı. Omurga
+(state/delta/DAERM/LOD) korunur; backend + plastisite sözleşmesi değişir
+(smooth swap değil).</li>
+<li><strong>Protocol C′</strong> — LoRA sonrası aynı counterfactual
+protokol; H1 yeniden test. Metacognition sinyali parametrik ize
+dönüşebilir mi?</li>
+<li><strong>Paper</strong> — paralel: (i) trait injection neden yetmez,
+(ii) DAERM,
+<ol start="3" type="i">
+<li>format≠restraint convention, (iv) metacognition null,</li>
+<li>frozen sınır → LoRA motivasyonu.</li>
+</ol></li>
+</ol>
+<h3 id="anti-roadmap-kaynak-koruma">Anti-roadmap (kaynak koruma)</h3>
+<p>Hâlâ yasak: Layer 6 icat etme · LLM-as-judge · trait injection ·
+wall-clock zaman · Jaccard’ı ana PE’ye geri alma · multi-pool fizik ·
+kuantum-LLM hayali.</p>
+<p><strong>Güncellendi (v1.4):</strong> “parametrik fine-tune yasak”
+kaldırıldı — yerine <strong>kontrollü, yaşantı-koşullu LoRA
+araştırması</strong> açıldı. Full-weight fine-tune ve dışarıdan
+trait/personality adapter’ı hâlâ yasak.</p>
 <hr />
 <h2 id="versiyon-geçmişi">19. Versiyon geçmişi</h2>
 <table>
@@ -753,11 +991,43 @@ Bilinen sınır: InternalState saturasyonu → PE canlı / delta=0 / aktüatör
 <code>triggered=0</code>. Açık soru: homeostatic recovery (A/B/C;
 Friston allostasis).</td>
 </tr>
+<tr>
+<td><strong>1.1</strong></td>
+<td><strong>2026-08-05</strong></td>
+<td>DAERM implement edildi (Faz 5): allostatic recovery, endojen γ(t),
+domain PE vektörü. Saturasyon çözüldü. expected_outcome endojen
+(ChromaDB-gated). PE Std=0.256. lod_override + trigger_retrieval
+triggered=100/100. DAERM+TRAUMA çelişkisi tespit edildi — açık. 137 test
+passed.</td>
+</tr>
+<tr>
+<td><strong>1.2</strong></td>
+<td><strong>2026-08-05</strong></td>
+<td>Magnitude decoupling (Faz 6): peak-weighted M = 0.70·peak +
+0.30·mean, raw_pe bağımsız. TRAUMA reachable (PE=0.876 → M=0.718).
+Production spillover pin kaldırıldı. Energy/γ collapse + meta heal eşiği
+açık. 137 test passed.</td>
+</tr>
+<tr>
+<td><strong>1.3</strong></td>
+<td><strong>2026-08-06</strong></td>
+<td>Protocol C tasarlandı: seed-locked counterfactual paired sampling,
+40 çift × 50 event, T=0.2, seed 1001–1040. Meta A/B v1 null sebebi
+netleşti: SUBSTRATE_ABSENT (System2=0). Master güncellendi.</td>
+</tr>
+<tr>
+<td><strong>1.4</strong></td>
+<td><strong>2026-08-06</strong></td>
+<td>Protocol C kısmi koşu: checkpoint ΔPE≈0 (provisional null); TPD 500k
+→ pair~32+ kirlenmesi; 40/40 abort; full tekrar yok. Roadmap: lokal LLM
+araştırması → yaşantı-koşullu LoRA → Protocol C′. Anti-roadmap:
+kontrollü LoRA açıldı. 137 test.</td>
+</tr>
 </tbody>
 </table>
 <hr />
 <p>Bu döküman her önemli katman tamamlanınca güncellenir.<br />
-Versiyon 1.0++ — saturasyon sınırı + recovery açık sorusu (L5
-UNSUPPORTED, format≠restraint, noise confirmed).</p>
+Versiyon 1.4 — Protocol C provisional null belgelendi; sıradaki lokal
+LLM + LoRA araştırması.</p>
 </body>
 </html>

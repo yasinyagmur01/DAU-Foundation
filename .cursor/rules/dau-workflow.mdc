@@ -17,15 +17,16 @@ alwaysApply: true
 ```
 
 ## Master Reference
-- Kaynak: `docs/DAU_MASTER_REFERENCE_v08.pdf`
-- Kaynak HTML: `docs/DAU_MASTER_REFERENCE_v08.html`
-- Katman tamamlanınca kullanıcıya "master reference güncellenebilir" önerisi ver
+- Kaynak: `docs/DAU_MASTER_REFERENCE_v10.md` (+ `.html` / `.pdf`)
+- Katman / empirik dönüm tamamlanınca kullanıcıya güncelleme önerisi ver
 - Güncelleme ve commit kullanıcı onayına bağlıdır
 
 ## Katman durumu
 - Layer 0 Foundation ✅
 - Layer 1 Memory ✅
-- Layer 1.5 Prediction Error ✅ (`graph.py` / `prediction_error`)
+- Layer 1.5 Prediction Error ✅
 - Layer 2 EmotionalWeight + Drift ✅
 - Layer 3 GenerationConsolidation + DriftHealing ✅
-- Sıradaki: Layer 4 Society
+- Layer 4 Society ✅
+- Layer 5 Metacognition ✅ kod / ❌ empirik (Protocol C provisional null)
+- Sıradaki: lokal LLM araştırması → yaşantı-koşullu LoRA → Protocol C′
