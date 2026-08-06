@@ -10,6 +10,7 @@ from dau.foundation.local_llm import (
     STATUS_CUDA_UNAVAILABLE,
     STATUS_DEPS_MISSING,
     STATUS_GO,
+    STATUS_MODEL_ACCESS,
     STATUS_NOGO,
     VRAM_GO_BUDGET_BYTES,
     VramSpikeReport,
@@ -26,6 +27,25 @@ def test_vram_spike_reports_cuda_unavailable_without_gpu() -> None:
     assert report.status == STATUS_CUDA_UNAVAILABLE
     assert report.cuda_available is False
     assert "DAU_LORA_ENABLED=0" in report.detail
+
+
+def test_vram_spike_reports_model_access_separately_from_oom() -> None:
+    with patch("dau.foundation.local_llm._missing_optional_deps", return_value=[]):
+        with patch("dau.foundation.local_llm.cuda_is_available", return_value=True):
+            with patch(
+                "dau.foundation.local_llm.ensure_minilm_loaded",
+                return_value=True,
+            ):
+                with patch(
+                    "dau.foundation.local_llm.load_base_model_4bit",
+                    side_effect=OSError("gated repo 401 Client Error"),
+                ):
+                    with patch("dau.foundation.local_llm.reset_vram_peak_stats"):
+                        report = run_vram_spike()
+    assert report.status == STATUS_MODEL_ACCESS
+    assert report.oom is False
+    assert report.base_model_loaded is False
+
 
 
 def test_vram_spike_reports_missing_deps() -> None:

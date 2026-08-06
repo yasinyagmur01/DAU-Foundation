@@ -62,6 +62,7 @@ STATUS_GO: str = "GO"
 STATUS_NOGO: str = "NO_GO"
 STATUS_CUDA_UNAVAILABLE: str = "CUDA_UNAVAILABLE"
 STATUS_DEPS_MISSING: str = "DEPS_MISSING"
+STATUS_MODEL_ACCESS: str = "MODEL_ACCESS_DENIED"
 
 RESULTS_DIR_NAME: str = "dau_runs"
 VRAM_SPIKE_RESULTS_FILE: str = "vram_spike_results.json"
@@ -102,13 +103,33 @@ def resolve_local_model_name() -> str:
 
 
 def cuda_is_available() -> bool:
-    """True when torch can see a CUDA device."""
+    """True only when a real CUDA device answers a device-name query.
+
+    Biology analogy: do not trust a rumour that lungs exist — try one breath.
+    Broken drivers can make torch.cuda.is_available() flake true while NVML fails.
+    """
 
     try:
         import torch
     except ImportError:
         return False
-    return bool(torch.cuda.is_available())
+    try:
+        if not bool(torch.cuda.is_available()):
+            return False
+        if int(torch.cuda.device_count()) < 1:
+            return False
+        _ = torch.cuda.get_device_name(0)
+        return True
+    except Exception:
+        return False
+
+
+def _is_gated_model_error(exc: BaseException) -> bool:
+    """True when Hugging Face rejects a gated / unauthenticated model fetch."""
+
+    text = str(exc).lower()
+    markers = ("gated repo", "401 client error", "access to model", "not authenticated")
+    return any(marker in text for marker in markers)
 
 
 def vram_peak_bytes() -> tuple[int, int]:
@@ -422,8 +443,16 @@ def run_vram_spike(*, skip_model_download: bool = False) -> VramSpikeReport:
         report.peak_reserved_bytes = reserved
         report.peak_allocated_mib = allocated / float(BYTES_PER_MIB)
     except Exception as exc:  # noqa: BLE001 — spike must always return a report
-        report.status = STATUS_NOGO
-        report.detail = f"{type(exc).__name__}: {exc}"
+        if _is_gated_model_error(exc):
+            report.status = STATUS_MODEL_ACCESS
+            report.detail = (
+                f"Gated/unauthenticated model fetch for {resolve_local_model_name()}. "
+                "Accept the HF license and `huggingface-cli login`, "
+                f"or set {LOCAL_MODEL_ENV} to an accessible 8B checkpoint. ({exc})"
+            )
+        else:
+            report.status = STATUS_NOGO
+            report.detail = f"{type(exc).__name__}: {exc}"
     return report
 
 
