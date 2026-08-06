@@ -268,6 +268,22 @@ def set_active_adapter(adapter_name: str) -> None:
     _active_adapter = adapter_name
 
 
+def clear_active_adapter() -> None:
+    """Drop PEFT handle so complete_local uses the frozen base model only."""
+
+    global _peft_model, _active_adapter, _model
+
+    if _peft_model is not None and hasattr(_peft_model, "unload"):
+        try:
+            unloaded = _peft_model.unload()
+            if unloaded is not None:
+                _model = unloaded
+        except Exception:
+            pass
+    _peft_model = None
+    _active_adapter = None
+
+
 def save_adapter(path: Path, *, adapter_name: str | None = None) -> Path:
     """Write active (or named) adapter weights to disk."""
 
@@ -278,26 +294,46 @@ def save_adapter(path: Path, *, adapter_name: str | None = None) -> Path:
     if name is not None and hasattr(_peft_model, "set_adapter"):
         _peft_model.set_adapter(name)
     _peft_model.save_pretrained(str(path))
-    return path
+    # PEFT may nest files under path/<adapter_name>/ — return the dir that
+    # actually contains adapter_config.json for a reliable reload.
+    return _resolve_adapter_checkpoint_dir(path, name or DEFAULT_ADAPTER_NAME)
+
+
+def _resolve_adapter_checkpoint_dir(path: Path, adapter_name: str) -> Path:
+    """Return directory that contains adapter_config.json."""
+
+    direct = Path(path)
+    if (direct / "adapter_config.json").is_file():
+        return direct
+    nested = direct / adapter_name
+    if (nested / "adapter_config.json").is_file():
+        return nested
+    raise FileNotFoundError(
+        f"adapter_config.json not found under {direct} or {nested}"
+    )
 
 
 def load_adapter(path: Path, *, adapter_name: str = DEFAULT_ADAPTER_NAME) -> None:
-    """Load adapter from disk onto the PEFT model and activate it."""
+    """Load adapter from a local directory onto the base model and activate it."""
 
-    global _peft_model, _active_adapter
+    global _peft_model, _active_adapter, _model
 
-    if _model is None:
-        load_base_model_4bit()
     from peft import PeftModel
 
-    if _peft_model is None:
-        _peft_model = PeftModel.from_pretrained(
-            _model,
-            str(path),
-            adapter_name=adapter_name,
-        )
-    else:
-        _peft_model.load_adapter(str(path), adapter_name=adapter_name)
+    adapter_dir = str(_resolve_adapter_checkpoint_dir(Path(path), adapter_name).resolve())
+
+    clear_active_adapter()
+    # Prior get_peft_model may have mutated the base; reload clean 4-bit weights.
+    if _model is None or hasattr(_model, "peft_config"):
+        _model = None
+        load_base_model_4bit()
+
+    _peft_model = PeftModel.from_pretrained(
+        _model,
+        adapter_dir,
+        adapter_name=adapter_name,
+        is_trainable=False,
+    )
     _peft_model.set_adapter(adapter_name)
     _active_adapter = adapter_name
 

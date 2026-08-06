@@ -39,7 +39,13 @@ from dau.diagnostics.run_protocol_c import (
 from dau.foundation.constraints import build_default_constraints
 from dau.foundation.local_llm import (
     STATUS_CUDA_UNAVAILABLE,
+    clear_active_adapter,
+    load_adapter,
     lora_plasticity_allowed,
+)
+from dau.foundation.llm_backend import (
+    BACKEND_LOCAL,
+    LLM_BACKEND_ENV,
 )
 from dau.foundation.lora_update import (
     LORA_ENABLED_ENV,
@@ -61,6 +67,11 @@ PRETRAIN_EVENTS: int = 20
 LLM_TEMPERATURE: float = 0.2
 SEED_START: int = 2001
 SEEDS: list[int] = list(range(SEED_START, SEED_START + N_PAIRS))
+
+# Optional runtime overrides (smoke / mini without editing constants).
+CPRIME_N_PAIRS_ENV: str = "DAU_CPRIME_N_PAIRS"
+CPRIME_EVENTS_ENV: str = "DAU_CPRIME_EVENTS"
+CPRIME_SEEDS_ENV: str = "DAU_CPRIME_SEEDS"
 
 ADAPTER_SHARED: str = "shared_lived"
 ADAPTER_NULL: str = "null_control"
@@ -229,7 +240,7 @@ def build_shared_adapter(
         encoding="utf-8",
     )
     trained = False
-    if kind == ADAPTER_SHARED and rows and lora_plasticity_allowed():
+    if kind in (ADAPTER_SHARED, ADAPTER_SHUFFLE) and rows and lora_plasticity_allowed():
         try:
             from dau.foundation.local_llm import (
                 attach_lora_adapter,
@@ -245,8 +256,15 @@ def build_shared_adapter(
                 run_micro_train_step()
                 save_adapter(path, adapter_name=kind)
                 trained = True
+                # Detach so the next condition starts from a clean base.
+                from dau.foundation.local_llm import clear_active_adapter
+
+                clear_active_adapter()
         except Exception:
             trained = False
+            from dau.foundation.local_llm import clear_active_adapter
+
+            clear_active_adapter()
     return AdapterSpec(
         adapter_id=kind,
         kind=kind,
@@ -254,6 +272,37 @@ def build_shared_adapter(
         trained=trained,
         example_count=len(rows),
     )
+
+
+def _resolve_seed_list(seeds: list[int] | None) -> list[int]:
+    """Seeds from arg, else DAU_CPRIME_SEEDS / DAU_CPRIME_N_PAIRS, else default."""
+
+    if seeds is not None:
+        return list(seeds)
+    raw_seeds = os.environ.get(CPRIME_SEEDS_ENV, "").strip()
+    if raw_seeds:
+        return [int(part.strip()) for part in raw_seeds.split(",") if part.strip()]
+    raw_n = os.environ.get(CPRIME_N_PAIRS_ENV, "").strip()
+    if raw_n:
+        n_pairs = max(1, int(raw_n))
+        return list(range(SEED_START, SEED_START + n_pairs))
+    return list(SEEDS)
+
+
+def _resolve_events_per_run() -> int:
+    raw = os.environ.get(CPRIME_EVENTS_ENV, "").strip()
+    if raw:
+        return max(1, int(raw))
+    return EVENTS_PER_RUN
+
+
+def _activate_adapter_for_condition(adapter: AdapterSpec) -> None:
+    """Load shared/shuffle adapter weights, or clear for null control."""
+
+    if adapter.kind == ADAPTER_NULL or not adapter.trained:
+        clear_active_adapter()
+        return
+    load_adapter(Path(adapter.path), adapter_name=adapter.adapter_id)
 
 
 def run_ab_with_shared_adapter(
@@ -306,10 +355,11 @@ def run_ab_with_shared_adapter(
             wall_clock_s=elapsed,
         )
 
-    # Live path: identical adapter_id recorded; arms reuse Protocol C runner.
+    # Live path: shared adapter identity; local backend; same weights ON/OFF.
+    _activate_adapter_for_condition(adapter)
     print(
-        f"[C′] pair={pair_index}/{N_PAIRS} seed={seed} "
-        f"adapter={adapter.adapter_id} META_OFF …",
+        f"[C′] pair={pair_index} seed={seed} "
+        f"adapter={adapter.adapter_id} trained={adapter.trained} META_OFF …",
         flush=True,
     )
     off = run_protocol_c_arm(
@@ -319,7 +369,7 @@ def run_ab_with_shared_adapter(
         n_events=n_events,
     )
     print(
-        f"[C′] pair={pair_index}/{N_PAIRS} seed={seed} "
+        f"[C′] pair={pair_index} seed={seed} "
         f"adapter={adapter.adapter_id} META_ON …",
         flush=True,
     )
@@ -364,24 +414,29 @@ def run_ab_with_shared_adapter(
     )
 
 
+
 def run_protocol_c_prime(
     *,
     seeds: list[int] | None = None,
     dry_run: bool | None = None,
+    n_events: int | None = None,
 ) -> ProtocolCPrimeReport:
     """Mini Protocol C′: pretrain shared adapter → A/B + null + shuffle."""
 
-    seed_list = list(seeds) if seeds is not None else list(SEEDS)
+    seed_list = _resolve_seed_list(seeds)
+    events = int(n_events) if n_events is not None else _resolve_events_per_run()
     use_dry = dry_run if dry_run is not None else (not lora_plasticity_allowed())
     t0 = time.perf_counter()
     conditions: list[ConditionResult] = []
 
-    # Ensure LoRA flag does not mutate production default mid-suite unless GO.
     prior_lora = os.environ.get(LORA_ENABLED_ENV)
+    prior_backend = os.environ.get(LLM_BACKEND_ENV)
     if use_dry:
         os.environ[LORA_ENABLED_ENV] = "0"
     elif lora_plasticity_allowed():
         os.environ[LORA_ENABLED_ENV] = "1"
+        # Live C′ is local-only — no Groq token / TPD cost.
+        os.environ[LLM_BACKEND_ENV] = BACKEND_LOCAL
 
     try:
         for index, seed in enumerate(seed_list, start=1):
@@ -401,7 +456,6 @@ def run_protocol_c_prime(
                 examples=examples,
             )
 
-            # Shared adapter id must match for both arms of lived condition.
             assert shared.adapter_id == ADAPTER_SHARED
 
             for adapter in (shared, null, shuffle):
@@ -409,9 +463,9 @@ def run_protocol_c_prime(
                     seed,
                     adapter,
                     pair_index=index,
+                    n_events=events,
                     dry_run=use_dry,
                 )
-                # Attribution check: recorded adapter_id equals condition kind.
                 assert result.adapter_id == adapter.adapter_id
                 conditions.append(result)
     finally:
@@ -419,6 +473,11 @@ def run_protocol_c_prime(
             os.environ.pop(LORA_ENABLED_ENV, None)
         else:
             os.environ[LORA_ENABLED_ENV] = prior_lora
+        if prior_backend is None:
+            os.environ.pop(LLM_BACKEND_ENV, None)
+        else:
+            os.environ[LLM_BACKEND_ENV] = prior_backend
+        clear_active_adapter()
 
     def _mean_for(kind: str) -> float:
         values = [c.pair.mean_delta_pe for c in conditions if c.condition == kind]
