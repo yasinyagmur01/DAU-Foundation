@@ -41,9 +41,11 @@ LORA_TARGET_MODULES: tuple[str, ...] = (
 )
 
 MICRO_TRAIN_BATCH_SIZE: int = 1
-MICRO_TRAIN_SEQ_LEN: int = 256
+MICRO_TRAIN_SEQ_LEN: int = 128
 MICRO_TRAIN_STEPS: int = 2
 MICRO_TRAIN_LEARNING_RATE: float = 2e-4
+# MiniLM must stay on CPU during local LLM+LoRA so 8GB VRAM is not split.
+MINILM_DEVICE: str = "cpu"
 
 # ~7.5 GiB GO budget for RTX 4070 Laptop peak during train step
 VRAM_GO_BUDGET_BYTES: int = int(7.5 * 1024 * 1024 * 1024)
@@ -165,12 +167,29 @@ def _missing_optional_deps() -> list[str]:
 
 
 def ensure_minilm_loaded() -> bool:
-    """Load MiniLM PE sensor in-process; return True on success."""
+    """Load MiniLM PE sensor on CPU in-process; return True on success.
 
-    from dau.foundation.semantic_similarity import _load_model
+    Same-process coexistence with 4-bit LLM requires the sensor off GPU —
+    otherwise RTX 4070 8GB OOMs before the LoRA micro-train step.
+    """
 
-    _load_model()
-    _ = _load_model().encode([MINILM_PROBE_TEXT])
+    from sentence_transformers import SentenceTransformer
+
+    from dau.foundation.semantic_similarity import SEMANTIC_MODEL_NAME
+
+    try:
+        model = SentenceTransformer(
+            SEMANTIC_MODEL_NAME,
+            device=MINILM_DEVICE,
+            local_files_only=True,
+        )
+    except Exception:
+        model = SentenceTransformer(
+            SEMANTIC_MODEL_NAME,
+            device=MINILM_DEVICE,
+            local_files_only=False,
+        )
+    _ = model.encode([MINILM_PROBE_TEXT])
     return True
 
 
@@ -344,6 +363,11 @@ def run_micro_train_step(model: Any | None = None) -> None:
     if peft_model is None:
         peft_model = attach_lora_adapter()
 
+    if hasattr(peft_model, "gradient_checkpointing_enable"):
+        peft_model.gradient_checkpointing_enable()
+        if hasattr(peft_model, "enable_input_require_grads"):
+            peft_model.enable_input_require_grads()
+
     text = f"{MICRO_TRAIN_PROMPT}\n{MICRO_TRAIN_COMPLETION}"
     encoded = _tokenizer(
         text,
@@ -371,6 +395,8 @@ def run_micro_train_step(model: Any | None = None) -> None:
         loss = outputs.loss
         loss.backward()
         optimizer.step()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     peft_model.eval()
 
 
@@ -412,8 +438,12 @@ def run_vram_spike(*, skip_model_download: bool = False) -> VramSpikeReport:
     try:
         reset_vram_peak_stats()
         report.minilm_loaded = ensure_minilm_loaded()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         load_base_model_4bit()
         report.base_model_loaded = True
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         attach_lora_adapter()
         run_micro_train_step()
         report.micro_train_ran = True
@@ -432,7 +462,8 @@ def run_vram_spike(*, skip_model_download: bool = False) -> VramSpikeReport:
         else:
             report.detail = (
                 f"Peak allocated {report.peak_allocated_mib:.1f} MiB "
-                f"within GO budget."
+                f"within GO budget "
+                f"(model={resolve_local_model_name()}, seq={MICRO_TRAIN_SEQ_LEN})."
             )
     except torch.cuda.OutOfMemoryError as exc:
         report.status = STATUS_NOGO
