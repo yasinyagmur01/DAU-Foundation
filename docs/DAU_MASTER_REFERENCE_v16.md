@@ -705,6 +705,143 @@ LoRA hâlâ **default path değil**; N=15 otomatik açılmaz.
 
 ---
 
+## 20. Yapılacaklar — Gemini Araştırma Raporu Sonrası Mimari Yol Haritası
+
+**Kaynak:** Gemini Deep Research — Sentetik Kognisyon ve Yaşantısal Plastisite Raporu (2026-08)
+**Durum:** Planlanmış · Hiçbir katman henüz değiştirilmedi · DAU_LORA_ENABLED=0 default korunuyor
+
+### Doğrulanan ve Kilitli Kalan Kararlar
+
+- Trait injection yasağı — literatürce kesin doğrulandı
+- Deterministik Layer 0–4 omurgası — nörosembolik mimari olarak onaylandı; korunuyor
+- Nesil sonu micro-QLoRA — per-event online'dan üstün; kilitli
+- Signal v2 preference pairs — lora_update.py kablosu mevcut
+- Protocol C frozen null — paper-locked negative finding; tekrar yok
+- SMOKE_SEPARATION (N=1) — significance yok; N expand tartışmasız değil
+
+### Yanlışlanan ve Kapatılan Hipotezler
+
+- Frozen weight kapalı döngü metacognition — UNSUPPORTED, paper-locked
+- MiniLM tek başına PE sensörü yeterliliği — polarity körü; yetersiz (kilitlendi)
+- Serbest kanalda restraint emergence — yaptırımsız çıkmaz (kilitlendi)
+
+### Yapılacak Adımlar (Öncelik Sırasıyla)
+
+#### ADIM 1 — Layer 4 Somatic Enforcement
+**Dosyalar:** dau/society/environment.py, dau/foundation/social.py
+**VRAM maliyeti:** 0
+**Bağımlılık:** Yok
+
+Pool seviyesi POOL_CRISIS_THRESHOLD = 0.30 altına indiğinde ajanlara
+travma birikimi CRISIS_TRAUMA_MULTIPLIER = 2.5 ile katlanarak uygulanır.
+Bu değişiklik F_agent fitness skoruna cezalandırıcı yansır.
+GovSim / AgentElect (2026) bu yaptırımın zorunluluğunu gösteriyor.
+
+ADIM 1 bitmeden Claude'a danış: eşik değerleri ve update_drift
+imzasıyla uyumluluk birlikte doğrulanacak.
+
+#### ADIM 2 — Signal v2 NLI Polarity Filter
+**Dosyalar:** dau/foundation/lora_update.py, dau/foundation/semantic_similarity.py
+**VRAM maliyeti:** ~200 MB (cross-encoder CPU)
+**Bağımlılık:** ADIM 1 ile paralel başlatılabilir
+
+build_pe_ranked_pairs fonksiyonuna NLI cross-encoder filtresi eklenir.
+NLI_CONTRADICTION_THRESHOLD = 0.6
+Model: cross-encoder/nli-deberta-v3-small (CPU)
+Tercih çifti ancak NLI contradiction skoru eşiği aşıyorsa eğitime girer.
+
+ADIM 2 bitmeden Claude'a danış: NLI model seçimi ve
+build_pe_ranked_pairs imza değişikliği birlikte kararlaştırılacak.
+
+#### ADIM 3 — Per-Agent QLoRA Adapter (Punica Deseni)
+**Dosyalar:** dau/foundation/local_llm.py, dau/foundation/lora_update.py
+**VRAM maliyeti:** ~15 MB per agent; 3 ajan ~45 MB; toplam ~6.5 GiB
+**Bağımlılık:** ADIM 2 tamamlanmalı
+
+Her ajana özel bağımsız adapter dizini:
+  dau_adapters/agent_{id}/adapter_config.json
+  dau_adapters/agent_{id}/adapter_model.safetensors
+
+PER_AGENT_LORA_RANK = 8
+PER_AGENT_LORA_ALPHA = 16
+ADAPTER_SWITCH_MAX_MS = 1
+
+ADIM 3 başlamadan Claude'a danış (mimari karar):
+LocalBackend.complete() imzası agent_id parametresi alacak şekilde
+değişecek; graph.py ve agent_node etkilenecek. Tasarım birlikte yapılacak.
+
+#### ADIM 4 — HippoRAG 2 Personalized PageRank (PPR) Bellek Motoru
+**Dosyalar:** dau/memory/retrieval.py, dau/foundation/memory_bridge.py
+**VRAM maliyeti:** 0 (CPU + NetworkX)
+**Bağımlılık:** ADIM 1 ve 2 tamamlanmış olmalı
+
+Mevcut SQLite domain co-occurrence graph üzerine PPR eklenir.
+PPR_ALPHA = 0.85
+PPR_WEIGHT_IN_SCORE = 0.30
+
+Yeni memory_score:
+memory_score = 0.25·recency + 0.35·magnitude + 0.10·domain_match + 0.30·ppr_score
+
+ADIM 4 bitmeden Claude'a danış: memory_score katsayı değişimi
+mevcut 137 testi etkileyebilir; regresyon birlikte analiz edilecek.
+
+#### ADIM 5 — Precision-Weighted PE (DAERM Entegrasyonu)
+**Dosyalar:** dau/foundation/semantic_similarity.py, dau/foundation/graph.py
+**VRAM maliyeti:** 0
+**Bağımlılık:** ADIM 2 ve 4 tamamlanmalı
+
+π_i = 1 / (variance(delta_history_domain_i) + PRECISION_EPSILON)
+PE_weighted_i = π_i * PE_raw_i
+PRECISION_EPSILON = 1e-6
+PRECISION_HISTORY_WINDOW = 10
+
+ADIM 5 başlamadan Claude'a danış (mimari karar):
+DAERM γ(t) ve μ_i setpoint hesaplamalarıyla çakışma noktaları
+birlikte haritalanacak.
+
+#### ADIM 6 — Protocol C′ N≥15 Koşusu
+**Dosyalar:** dau/diagnostics/run_protocol_c_prime.py
+**VRAM maliyeti:** ~5 saat wall time
+**Bağımlılık:** ADIM 1–5 tamamlanmış olmalı
+
+DAU_CPRIME_N_PAIRS = 15
+DAU_CPRIME_EVENTS = 50
+DAU_CPRIME_SIGNAL = v2
+DAU_CPRIME_PER_AGENT = True
+
+Hedef: paired t-test p < 0.05, OOD Behavioral Probing, H(A) entropy
+
+ADIM 6 başlamadan Claude'a danış:
+tüm entegrasyon sonuçları gözden geçirilecek;
+OOD probing test harness birlikte tasarlanacak.
+
+### Adım Bağımlılık Grafiği
+
+ADIM 1 ──────────────────────────────┐
+ADIM 2 ──────────────────────────────┤
+                                      ↓
+ADIM 3 ← ADIM 2 sonrası ────────────→ ADIM 6
+ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15)
+ADIM 5 ← ADIM 2+4 sonrası ──────────┘
+
+ADIM 1 ve 2 paralel başlatılabilir.
+ADIM 3 Claude'a danışmadan başlanmaz.
+ADIM 6 yalnızca 1–5 sonrası koşulur.
+
+### Anti-Roadmap Eklentisi
+
+- Per-event online LoRA — gradient collapse; yasak
+- EWC — 8GB VRAM'de Fisher matrix maliyeti; yasak
+- Test-Time Training (TTT/PoT) — kalıcılık yok; yasak
+- Prefix/prompt tuning ana plastisite rotası — yetersiz; yasak
+- N<15 ile istatistiksel iddia — SMOKE_SEPARATION caveat kilitlendi; yasak
+
+**Güncellendi (v1.7):** Gemini araştırma raporu entegre edildi.
+6 adımlı yol haritası eklendi. Hiçbir omurga kodu değiştirilmedi.
+DAU_LORA_ENABLED=0 default korunuyor.
+
+---
+
 ## 19. Versiyon geçmişi
 
 | Ver | Tarih | Not |
@@ -728,6 +865,7 @@ LoRA hâlâ **default path değil**; N=15 otomatik açılmaz.
 | **1.4+** | **2026-08-06** | Faz 0–4 spike kod: `llm_backend` / `local_llm` / `lora_update` / C′ harness. Flags default groq + LORA=0. |
 | **1.5** | **2026-08-06** | VRAM **GO** (Llama-3.1-8B ~6.4GiB). Protocol C′ mini live N=3 local: ΔPE_lived≈0.001 → **WEAK_LORA_HYPOTHESIS**; `DAU_LORA_ENABLED=0`; omurga aynı; wall≈97 dk. Sıradaki: frozen-null paper + opsiyonel sinyal-v2 C′. |
 | **1.6** | **2026-08-06** | Paper-locked null; WEAK appendix; lived-train kablosu onarımı; PE-ranked pref v2; C′ smoke N=1 **SMOKE_SEPARATION** (ΔPE_lived≈−0.026 < null/shuffle, wall≈33 dk); placeholder-train caveat; docs yalnızca `v15.{md,html,pdf}`; `DAU_LORA_ENABLED=0`; N=15 otomatik değil. |
+| 1.7 | 2026-08-06 | Gemini Deep Research entegrasyonu: 6 adımlı mimari yol haritası (Section 20). Per-agent adapter, HippoRAG 2 PPR, NLI filter, precision-weighted PE, somatic enforcement, Protocol C′ N≥15 planlandı. Hiçbir omurga kodu değiştirilmedi. DAU_LORA_ENABLED=0 korunuyor. |
 
 ---
 

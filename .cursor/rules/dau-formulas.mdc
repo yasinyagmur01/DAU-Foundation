@@ -55,8 +55,7 @@ get_drift_bias → flagged magnitude else 0.0
 
 ## Katman Durumu
 - Layer 0–5 ✅ kod · L5 empirik: frozen null LOCKED · C′ WEAK · v2 SMOKE_SEPARATION (N=1)
-- Master: `docs/DAU_MASTER_REFERENCE_v15.md` (v1.6) · research:
-  `docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md`
+- Master: `docs/DAU_MASTER_REFERENCE_v15.{md,html,pdf}` (v1.6)
 - Sıradaki: paper yazımı / N expand tartışması (garanti path değil)
 - Flags: `DAU_LORA_ENABLED=0`, `DAU_LLM_BACKEND=groq` default
 

@@ -5,3 +5,6 @@
 peft>=0.20.0
 bitsandbytes>=0.45.0
 accelerate>=1.0.0
+# Signal v2 NLI polarity gate (cross-encoder/nli-deberta-v3-small)
+sentencepiece>=0.2.0
+protobuf>=4.0.0

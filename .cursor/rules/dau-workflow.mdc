@@ -19,7 +19,7 @@ alwaysApply: true
 ## Master Reference
 - Kaynak: `docs/DAU_MASTER_REFERENCE_v15.md` (içerik **v1.6**)
 - Türevler: `docs/DAU_MASTER_REFERENCE_v15.html` / `.pdf`
-- Araştırma: `docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md`
+- Docs klasöründe yalnızca bu üç dosya tutulur
 - Katman / empirik dönüm tamamlanınca kullanıcıya güncelleme önerisi ver
 - Güncelleme ve commit kullanıcı onayına bağlıdır
 

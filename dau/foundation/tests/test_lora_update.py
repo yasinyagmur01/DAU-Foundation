@@ -21,6 +21,7 @@ from dau.foundation.lora_update import (
 )
 from dau.foundation.state import DAUAgentState, InternalState
 from dau.foundation.time_model import EventClock, append_event, build_event
+import dau.foundation.nli_filter as nli_filter
 
 
 def _agent_with_traces() -> DAUAgentState:
@@ -54,6 +55,9 @@ def _agent_with_traces() -> DAUAgentState:
 @pytest.fixture(autouse=True)
 def _lora_flag_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(LORA_ENABLED_ENV, "0")
+    # Synthetic PE-ranked fixtures are not decision-polarity pairs; keep
+    # legacy LoRA unit tests independent of the NLI cross-encoder gate.
+    monkeypatch.setattr(nli_filter, "NLI_ENABLED", False)
 
 
 def test_lora_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:

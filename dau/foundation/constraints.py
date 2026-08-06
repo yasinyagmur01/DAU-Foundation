@@ -32,6 +32,11 @@ CROSS_AXIS_SPILLOVER: float = 0.20
 METABOLIC_FLOOR: float = 0.05
 MAGNITUDE_PEAK_WEIGHT: float = 0.70
 
+# Signal v2 — NLI polarity gate for preference pairs (CPU cross-encoder)
+NLI_CONTRADICTION_THRESHOLD: float = 0.60
+NLI_MODEL_NAME: str = "cross-encoder/nli-deberta-v3-small"
+DAU_NLI_FILTER_ENABLED: bool = True  # override: DAU_NLI_FILTER_ENABLED=0
+
 
 def build_default_constraints() -> EnvironmentConstraints:
     """Build the default read-only EnvironmentConstraints snapshot.

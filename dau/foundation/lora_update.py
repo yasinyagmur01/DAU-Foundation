@@ -22,6 +22,7 @@ from typing import Any
 
 from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
+from dau.foundation.nli_filter import is_genuine_polarity_pair
 from dau.foundation.state import DAUAgentState, DeltaRecord
 
 # ---------------------------------------------------------------------------
@@ -72,6 +73,13 @@ PREF_CONTEXT_TEMPLATE: str = (
     "Context expectation: {expected}\nLived scalars: pe={pe:.3f}"
 )
 PE_RANK_MIN_GAP: float = 1e-6
+
+# NLI polarity filter observability (unit tests; not LangSmith).
+NLI_FILTER_STATS: dict[str, int] = {
+    "total_candidates": 0,
+    "passed": 0,
+    "rejected": 0,
+}
 
 
 @dataclass
@@ -337,16 +345,20 @@ def build_pe_ranked_pairs(
             expected=expected,
             pe=example.prediction_error,
         )
-        pairs.append(
-            PreferencePair(
-                prompt=prompt,
-                chosen=chosen_text,
-                rejected=rejected_text,
-                pe_chosen=pe_chosen,
-                pe_rejected=pe_rejected,
-                event_counter=example.event_counter,
-            )
+        pair = PreferencePair(
+            prompt=prompt,
+            chosen=chosen_text,
+            rejected=rejected_text,
+            pe_chosen=pe_chosen,
+            pe_rejected=pe_rejected,
+            event_counter=example.event_counter,
         )
+        NLI_FILTER_STATS["total_candidates"] += 1
+        if not is_genuine_polarity_pair(pair.chosen, pair.rejected):
+            NLI_FILTER_STATS["rejected"] += 1
+            continue  # surface format variation — reject
+        NLI_FILTER_STATS["passed"] += 1
+        pairs.append(pair)
     return pairs
 
 
