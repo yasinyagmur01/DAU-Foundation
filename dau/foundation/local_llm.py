@@ -22,7 +22,7 @@ from typing import Any
 # Local model / QLoRA / VRAM constants (no magic numbers in logic)
 # ---------------------------------------------------------------------------
 
-LOCAL_MODEL_NAME: str = "meta-llama/Meta-Llama-3.1-8B"
+LOCAL_MODEL_NAME: str = "meta-llama/Llama-3.1-8B"
 LOCAL_MODEL_ENV: str = "DAU_LOCAL_MODEL_NAME"
 ADAPTER_DIR_NAME: str = "dau_lora_adapters"
 DEFAULT_ADAPTER_NAME: str = "gen_lived"
