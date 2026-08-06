@@ -32,6 +32,12 @@ CROSS_AXIS_SPILLOVER: float = 0.20
 METABOLIC_FLOOR: float = 0.05
 MAGNITUDE_PEAK_WEIGHT: float = 0.70
 
+# Per-agent QLoRA (Punica pattern) — independent adapters, shared frozen base
+PER_AGENT_LORA_RANK: int = 8
+PER_AGENT_LORA_ALPHA: int = 16
+ADAPTER_BASE_DIR: str = "dau_runs/adapters"
+ADAPTER_SWITCH_MAX_MS: int = 1
+
 
 def build_default_constraints() -> EnvironmentConstraints:
     """Build the default read-only EnvironmentConstraints snapshot.

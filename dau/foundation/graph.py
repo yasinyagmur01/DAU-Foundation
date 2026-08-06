@@ -84,6 +84,20 @@ from .state import (
 )
 from .time_model import EventClock, append_event, build_event
 
+# Optional local adapter hot-swap — absent/unusable in groq-only envs.
+try:
+    from dau.foundation.local_llm import get_loaded_model, switch_adapter
+
+    _SWITCH_ADAPTER_AVAILABLE = True
+except ImportError:  # pragma: no cover — groq-only installs
+    _SWITCH_ADAPTER_AVAILABLE = False
+
+    def switch_adapter(model: Any, agent_id: str) -> None:
+        return None
+
+    def get_loaded_model() -> Any | None:
+        return None
+
 # ---------------------------------------------------------------------------
 # Homeostatic step sizes, model, and persistence configuration
 # ---------------------------------------------------------------------------
@@ -251,6 +265,9 @@ ENV_FILE_NAME: str = ".env"
 # Diagnostic overrides for deterministic Meta A/B seed replay (noise probe).
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
+LLM_BACKEND_ENV: str = "DAU_LLM_BACKEND"
+LLM_BACKEND_DEFAULT: str = "groq"
+LLM_BACKEND_LOCAL: str = "local"
 
 
 def _project_root() -> Path:
@@ -358,6 +375,15 @@ def _resolve_llm_seed() -> int | None:
     if not raw:
         return None
     return int(raw)
+
+
+def _resolve_llm_backend() -> str:
+    """Return groq|local from DAU_LLM_BACKEND (default groq)."""
+
+    raw = os.environ.get(LLM_BACKEND_ENV, LLM_BACKEND_DEFAULT).strip().lower()
+    if raw == LLM_BACKEND_LOCAL:
+        return LLM_BACKEND_LOCAL
+    return LLM_BACKEND_DEFAULT
 
 
 def _build_llm() -> ChatGroq:
@@ -863,14 +889,30 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
             f"{DRIFT_WARNING_TEMPLATE.format(domain=dominant_domain, bias=drift_bias)}"
         )
 
-    llm = _build_llm()
-    response = llm.invoke(
-        [
-            {"role": "system", "content": system_content},
-            {"role": "user", "content": view.model_dump_json()},
-        ]
-    )
-    decision = _decision_text(response)
+    backend = _resolve_llm_backend()
+    # Per-agent QLoRA hot-swap — local backend only; groq is a no-op.
+    if _SWITCH_ADAPTER_AVAILABLE and backend == LLM_BACKEND_LOCAL:
+        model = get_loaded_model()
+        if model is not None:
+            switch_adapter(model, state.agent_id)
+
+    if backend == LLM_BACKEND_LOCAL:
+        from dau.foundation.llm_backend import LocalBackend
+
+        decision = LocalBackend().complete(
+            system_content,
+            view.model_dump_json(),
+            agent_id=state.agent_id,
+        )
+    else:
+        llm = _build_llm()
+        response = llm.invoke(
+            [
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": view.model_dump_json()},
+            ]
+        )
+        decision = _decision_text(response)
     clock = EventClock(counter=len(state.event_log))
     event = build_event(
         clock,
