@@ -7,6 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from dau.foundation.local_llm import (
+    MICRO_TRAIN_COMPLETION,
+    MICRO_TRAIN_PROMPT,
     STATUS_CUDA_UNAVAILABLE,
     STATUS_DEPS_MISSING,
     STATUS_GO,
@@ -14,10 +16,12 @@ from dau.foundation.local_llm import (
     STATUS_NOGO,
     VRAM_GO_BUDGET_BYTES,
     VramSpikeReport,
+    format_micro_train_texts,
     lora_plasticity_allowed,
     run_vram_spike,
     write_vram_spike_report,
 )
+from dau.foundation.lora_update import LivedTraceExample
 
 
 def test_vram_spike_reports_cuda_unavailable_without_gpu() -> None:
@@ -83,6 +87,31 @@ def test_lora_plasticity_denied_without_report(tmp_path: Path, monkeypatch) -> N
     assert lora_plasticity_allowed(
         VramSpikeReport(status=STATUS_NOGO, cuda_available=True)
     ) is False
+
+
+def test_format_micro_train_texts_uses_lived_examples() -> None:
+    example = LivedTraceExample(
+        event_counter=1,
+        prediction_error=0.2,
+        delta_magnitude=0.1,
+        delta_class="NORMAL",
+        trauma_flag=False,
+        drift_sum=0.0,
+        loss_weight=0.8,
+        prompt="Lived scalars: pe=0.200",
+        completion="share resources with the pool",
+    )
+    texts = format_micro_train_texts([example])
+    assert len(texts) == 1
+    assert "Lived scalars: pe=0.200" in texts[0]
+    assert "share resources with the pool" in texts[0]
+    assert MICRO_TRAIN_PROMPT not in texts[0]
+
+
+def test_format_micro_train_texts_falls_back_without_examples() -> None:
+    texts = format_micro_train_texts(None)
+    assert texts == [f"{MICRO_TRAIN_PROMPT}\n{MICRO_TRAIN_COMPLETION}"]
+    assert format_micro_train_texts([]) == texts
 
 
 def test_local_backend_requires_cuda(monkeypatch) -> None:

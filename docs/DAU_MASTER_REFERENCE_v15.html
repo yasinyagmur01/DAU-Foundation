@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DAU Master Reference v1.4</title>
+  <title>DAU Master Reference v1.6</title>
   <style>
     html {
       color: #1a1a1a;
@@ -170,33 +170,45 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">DAU Master Reference v1.4</h1>
+<h1 class="title">DAU Master Reference v1.6</h1>
 </header>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 1.5</strong> · 2026-08-06<br />
+<p><strong>Versiyon 1.6</strong> · 2026-08-06<br />
 Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C
-<strong>provisional null</strong> (ΔPE≈0, N≈35 temiz çift) · Protocol C′
-mini <strong>WEAK_LORA</strong> · <strong>162+ test</strong>.</p>
+<strong>paper-locked negative finding</strong> (ΔPE≈0, N≈35 temiz çift;
+pair t-test yok — stats caveat) · Protocol C′ mini <strong>WEAK_LORA
+appendix</strong> · C′ v2 smoke <strong>SMOKE_SEPARATION</strong> (N=1;
+significance yok) · <strong>162+ test</strong>.</p>
 <p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
-frozen-weight kapalı döngü metacognition <strong>UNSUPPORTED (provisional
-null)</strong> · yaşantı-LoRA mini pilot
-<strong>WEAK_LORA_HYPOTHESIS</strong> (garanti değil) · sıradaki:
-frozen-null’u güçlendir / paper; LoRA yalnızca sinyal-revizyonlu
-kontrollü tekrar adayı.</p>
-<p><strong>Faz 0 kilit:</strong> Frozen Protocol C null kapalı; full
-Groq Protocol C tekrar yok.</p>
-<p><strong>Lokal / LoRA spike (v1.5):</strong></p>
-<ul>
-<li>Flags: <code>DAU_LLM_BACKEND=groq|local</code> (default groq),
-<code>DAU_LORA_ENABLED=0</code> (default; açık bırakılmadı).</li>
-<li>VRAM spike <strong>GO</strong>: Llama-3.1-8B 4-bit + MiniLM(CPU) +
-QLoRA micro-train; peak ≈ <strong>6.4 GiB</strong> on RTX 4070.</li>
-<li>Protocol C′ mini <strong>live</strong> (local): N=3, 50 event,
-T=0.2, shared adapter, null+shuffle; ΔPE_lived≈<strong>0.001</strong>
-· wall≈<strong>97 dk</strong> →
-<strong>WEAK_LORA_HYPOTHESIS</strong>.</li>
-<li>Omurga (state/delta/PE/drift/LOD/meta_observer) değişmedi.</li>
-</ul>
+frozen-weight kapalı döngü metacognition <strong>UNSUPPORTED
+(paper-locked null)</strong> · yaşantı-LoRA mini
+<strong>WEAK_LORA_HYPOTHESIS</strong> (appendix; default path değil) ·
+C′ v2 1-seed smoke: lived &lt; null/shuffle
+(<strong>SMOKE_SEPARATION</strong>); N=15 otomatik değil — tartışma
+adayı. <code>DAU_LORA_ENABLED=0</code>.</p>
+<p><strong>Faz 0 kilit:</strong> Frozen Protocol C null
+<strong>paper-locked</strong>; full Groq Protocol C tekrar yok.</p>
+<p><strong>Lokal / LoRA spike (v1.5–1.6):</strong> - Flags:
+<code>DAU_LLM_BACKEND=groq|local</code> (default groq),
+<code>DAU_LORA_ENABLED=0</code> (default; <strong>açık
+bırakılmadı</strong>). - VRAM spike <strong>GO</strong>: Llama-3.1-8B
+4-bit + MiniLM(CPU) + QLoRA micro-train (r=16, seq=128); peak ≈
+<strong>6.4 GiB</strong> on RTX 4070 Laptop 8GB. - Protocol C′ mini
+<strong>live</strong> (local, Groq yok): N=3 (seeds 2001–2003), 50
+event/arm, T=0.2, shared adapter, train-then-A/B, null+shuffle. mean
+ΔPE_lived≈<strong>0.001</strong> · null≈<strong>−0.008</strong> ·
+shuffle≈<strong>0.010</strong> · wall≈<strong>97 dk</strong> →
+<strong>WEAK_LORA_HYPOTHESIS</strong> (sinyal v1 / placeholder train). -
+Protocol C′ <strong>v2 smoke</strong> (local): N=1 seed 2001,
+<code>DAU_CPRIME_SIGNAL=v2</code>, PE-ranked pref + lived-train kablosu;
+ΔPE_lived≈<strong>−0.026</strong> · null≈<strong>+0.006</strong> ·
+shuffle≈<strong>+0.016</strong> · wall≈<strong>33 dk</strong> →
+<strong>SMOKE_SEPARATION</strong> (significance claim yok; N expand
+tartışılır). - Omurga (state/delta/PE/drift/LOD/meta_observer)
+değişmedi. - Araştırma raporu:
+<code>docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md</code> (+
+<code>.html</code>). Master türevleri: <code>v15.html</code> /
+<code>v15.pdf</code> (v1.6 senkron).</p>
 <hr />
 <h2 id="aksiyom">1. Aksiyom</h2>
 <p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
@@ -552,13 +564,13 @@ graph wiring</td>
 </tr>
 <tr>
 <td>Layer 5 Metacognition</td>
-<td>✅ kod / ❌ empirik (provisional null + WEAK_LORA)</td>
-<td>SelfModel + meta_observer wiring tamam. Protocol C (Groq, frozen):
-ΔPE≈0 provisional null; full 40 tekrar yok. <strong>Lokal spike:</strong>
-VRAM GO (Llama-3.1-8B ~6.4GiB). <strong>Protocol C′ mini</strong> (N=3,
-local, shared adapter, null+shuffle): ΔPE_lived≈0.001 →
-<strong>WEAK_LORA_HYPOTHESIS</strong>; <code>DAU_LORA_ENABLED=0</code>.
-Rollback: <code>DAU_LLM_BACKEND=groq</code>. Omurga dokunulmadı.</td>
+<td>✅ kod / ❌ empirik: frozen null <strong>LOCKED</strong> · C′
+<strong>WEAK</strong> + v2 <strong>SMOKE_SEPARATION</strong></td>
+<td>SelfModel + meta_observer wiring tamam. Protocol C:
+<strong>paper-locked negative</strong>. C′ mini v1 WEAK. C′ v2 smoke
+N=1: lived ΔPE≈−0.026 &lt; null/shuffle →
+<strong>SMOKE_SEPARATION</strong> (significance yok).
+<code>DAU_LORA_ENABLED=0</code>. Omurga dokunulmadı.</td>
 </tr>
 </tbody>
 </table>
@@ -577,12 +589,20 @@ Rollback: <code>DAU_LLM_BACKEND=groq</code>. Omurga dokunulmadı.</td>
  ├── semantic_similarity.py — MiniLM cosine PE sensor (Layer 1.5)
  ├── constraints.py        — 5 evrensel kısıt
  ├── time_model.py         — EventClock
- ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
+  ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
+ │                            (+ DAU_LLM_BACKEND thin wire; default groq)
+ ├── llm_backend.py        — complete() Protocol; GroqBackend; LocalBackend
+ ├── local_llm.py          — 4-bit load; QLoRA; format_micro_train_texts;
+ │                            run_micro_train_step(examples=…);
+ │                            run_micro_train_preference_step(pairs=…);
+ │                            VRAM spike report
+ ├── lora_update.py        — LivedTraceExample (v1); PreferencePair (v2);
+ │                            build_pe_ranked_pairs; shuffle_preference_pairs;
+ │                            nesil sonu hook (DAU_LORA_ENABLED=0 default)
  ├── memory_bridge.py      — graph ↔ memory köprüsü
  ├── generation.py         — TransferCandidate, consolidate/apply_generation
  ├── run_demo.py
- └── tests/                — foundation + emotional_weight + drift + lod + social
-                            + generation + meta_observer + prediction_error
+ └── tests/                — + llm_backend + local_llm + lora_update
 
 dau/memory/
  ├── store.py / decay.py / retrieval.py / consolidation.py
@@ -596,7 +616,17 @@ dau/society/
  ├── environment.py        — EnvironmentState, step_pool, get_pool_ratio, agent_delta_pool
  ├── run_convention_pilot.py / run_convention_pilot_llm.py
  ├── run_meta_ab.py / run_nuance_loss_pilot.py
- └── tests/                — environment + convention + meta_ab + nuance_loss</code></pre>
+ └── tests/                — environment + convention + meta_ab + nuance_loss
+
+dau/diagnostics/
+ ├── run_protocol_c.py / run_protocol_c_prime.py / run_vram_spike.py
+ │    C′: DAU_CPRIME_SIGNAL=v1|v2, DAU_CPRIME_N_PAIRS, DAU_CPRIME_EVENTS
+ └── tests/                — protocol_c_prime harness (+ v2 preference)
+
+docs/
+ ├── DAU_MASTER_REFERENCE_v15.md   — operasyonel kaynak (içerik v1.6)
+ ├── DAU_MASTER_REFERENCE_v15.html / .pdf — senkron türevler
+ └── DAU_RESEARCH_REPORT_plasticity_2026-08.md</code></pre>
 <hr />
 <h2 id="graph-yaşam-döngüsü">13. Graph yaşam döngüsü</h2>
 <pre><code>social_pre_node:
@@ -724,26 +754,32 @@ karşılaştırma</h2>
 <li>✅ İşbirliği ≠ koordinasyon ayrımı ✅</li>
 <li>✅ Fitness-based transfer filtering ✅</li>
 <li>✅ NPC / Gerçek agent geçişi ✅</li>
-<li>⚠️ Closed-loop metacognition (frozen Groq): Protocol C
-<strong>provisional null</strong>. Tasarım: 40 çift × 50 event, T=0.2,
-seed 1001–1040, seed-locked ON/OFF. Koşu:
+<li>✅ Closed-loop metacognition (frozen Groq): Protocol C
+<strong>paper-locked negative finding</strong> (stats caveat). Tasarım:
+40 çift × 50 event, T=0.2, seed 1001–1040, seed-locked ON/OFF. Koşu:
 <code>dau/diagnostics/run_protocol_c.py</code> · log:
 <code>dau_runs/protocol_c_run.log</code>. Checkpoint (kümülatif
 mean_ΔPE): 5/40 → +0.000 · 10/40 → +0.000 · 15/40 → −0.000 · 20/40 →
 −0.004 25/40 → +0.009 · 30/40 → −0.000 · 35/40 → +0.000 Yorum: ΔPE sıfır
 etrafında gürültü — sistematik H1 (PE düşüşü) yok. Limitasyon: Groq TPD
-500k doldu (~212 TPD fallback); pair~32+ System2 substratı bozuldu →
-temiz çekirdek ~31–32 çift. Run pair=40 META_OFF’ta abort;
-<code>protocol_c_results.json</code> / resmi paired t-test yazılmadı.
-Karar: full 40 tekrar koşulmayacak (eğilim net + TPD riski). Resmi
-UNSUPPORTED damgası pair-level vektör olmadan teknik olarak eksik;
-akademik çerçeve: <strong>provisional null / publishable negative
-finding</strong>. H0: μ_ΔPE ≥ 0 · H1: μ_ΔPE &lt; 0 · one-tailed paired
-t-test, α=0.05 (tam vektör kurtarılırsa veya Protocol C′ ile yeniden
-ölçülür).</li>
-<li>❌ Parametrik plastisite olmadan “yaşantıdan trait”: frozen 8B’de
-context-level metacognition kapalı döngü kuramadı. Açık araştırma: lokal
-LLM + LoRA (delta history → adapter; trait injection yasak).</li>
+500k; temiz çekirdek ~31–32 çift; pair=40 abort; resmi paired t-test
+yok. Full 40 tekrar <strong>yapılmayacak</strong>. Naratif kilit (v1.6):
+claim locked; H0/H1 formal test <em>aspirational</em>
+methods/limitations notu — narrative gate değil.</li>
+<li>⚠️ Parametrik plastisite / yaşantı-LoRA (<strong>v1.6
+durumu</strong>):
+<ul>
+<li>C′ mini (sinyal v1 / fiilen placeholder train): <strong>WEAK_LORA
+appendix</strong>.</li>
+<li>C′ v2 smoke (PE-ranked pref + lived-train kablosu, N=1):
+<strong>SMOKE_SEPARATION</strong> — lived ΔPE≈−0.026 &lt; null≈+0.006 /
+shuffle≈+0.016; <strong>significance yok</strong>; N=15 otomatik
+değil.</li>
+<li>Default path değil (<code>DAU_LORA_ENABLED=0</code>). Trait
+injection yasak.</li>
+<li>Detay: §18 Plastisite günlüğü +
+<code>DAU_RESEARCH_REPORT_plasticity_2026-08.md</code>.</li>
+</ul></li>
 <li>Energy floor ve uzun ufuk: gamma=0 erken kapanıyor. Uzun koşularda
 agent’ın hayatta kalması için energy recovery mekanizması yeterli mi?
 METABOLIC_FLOOR · (1 - mean_load) formülü düşük yük altında enerji
@@ -752,8 +788,8 @@ kazandırıyor ama yüksek yük altında yetersiz kalıyor. Açık.</li>
 evaluator heal_drift çalışıyor ama meta_observer aktüatörü triggered=0.
 F_agent &lt; 0.5 AND reward &gt; 0.4 koşulları aynı anda karşılanmıyor.
 Eşik kalibrasyonu gerekebilir. Açık.</li>
-<li>Continual learning / parametrik iz? → Roadmap v1.4: lokal LLM + LoRA
-(frozen dönemde yok; açık araştırma)</li>
+<li>Continual learning / parametrik iz? → Appendix / sinyal-v2 only
+(frozen dönem kapalı; smoke separation var, default path değil)</li>
 <li>LLM embedding match henüz skor değil (W_SEM=0)</li>
 <li>“İyi”yi “kötü”den ayıran mekanizma?</li>
 <li>Öz sorgu nasıl aktive olur?</li>
@@ -879,40 +915,225 @@ rate-limit fallback (1× TPM, ~212× TPD). Checkpoint mean_ΔPE ≈ 0
 (gürültü; H1 yok). Temiz çekirdek ~31–32 çift (TPD öncesi). pair=40
 META_OFF abort; JSON/t-test yok. Full 40 tekrar
 <strong>yapılmayacak</strong>. (Bkz. Section 17, Roadmap)</li>
-<li>Null sonuç akademik çerçevesi (v1.4, provisional): “mimari hatalı”
-değil — “frozen-weight LLM’de context-level metacognition, parametrik
-plastisite olmadan kapalı döngü kuramıyor” → publishable negative
-finding. Paper + çalışan sistem hedefi: bu bulgu frozen dönemi kapatır.
-Lokal LLM+LoRA denendi (C′ mini); WEAK_LORA → frozen null güçlenir; LoRA
-yalnızca sinyal-revizyonlu kontrollü tekrar adayı.</li>
+<li>Null sonuç akademik çerçevesi (<strong>v1.6 paper-locked</strong>):
+“mimari hatalı” değil — “frozen-weight LLM’de context-level
+metacognition, parametrik plastisite olmadan kapalı döngü kuramıyor” →
+<strong>paper-locked negative finding</strong>. Lokal LLM+LoRA (C′ mini)
+<strong>WEAK_LORA appendix</strong>; C′ v2 smoke
+<strong>SMOKE_SEPARATION</strong> (N=1 caveat); frozen null’u
+güçlendirir; default path değil.</li>
 </ul>
-<h3 id="roadmap-v1.5">Roadmap (v1.5 — C′ mini sonrası)</h3>
-<p>Frozen Groq empirik dönem <strong>kapalı</strong> (provisional null).
-Lokal plastisite spike <strong>koşuldu</strong>. Durum:</p>
+<h3 id="plastisite-günlüğü-v1.6-detay">Plastisite günlüğü (v1.6 —
+detay)</h3>
+<h4 id="a.-placeholder-train-bulgusu-c-mini-yorum-düzeltmesi">A.
+Placeholder-train bulgusu (C′ mini yorum düzeltmesi)</h4>
+<p>Protocol C′ mini (N=3, wall≈97 dk) sırasında
+<code>build_lived_trace_examples</code> yaşantı satırlarını diske
+yazıyordu; ancak <code>run_micro_train_step()</code> sabit
+<code>MICRO_TRAIN_PROMPT</code> / <code>MICRO_TRAIN_COMPLETION</code>
+üzerinde 2 adım SFT yapıyordu. Yani <strong>WEAK_LORA</strong> sonucu
+“sinyal v1 skalarları yetersiz” teşhisinden önce <strong>eğitim
+kablosunun kopuk</strong> olduğunun da kanıtıdır. v1.6’da kablo
+onarıldı: örnekler varsa onların
+<code>prompt</code>/<code>completion</code> (+ <code>loss_weight</code>)
+CE’ye girer; yoksa VRAM spike geriye uyumlu placeholder.</p>
+<h4 id="b.-sinyal-v1-vs-v2">B. Sinyal v1 vs v2</h4>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 44%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>Sinyal v1</th>
+<th>Sinyal v2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kimlik</td>
+<td><code>pe_delta_trauma_drift_v1</code></td>
+<td><code>pe_ranked_pref_v2</code></td>
+</tr>
+<tr>
+<td>Girdi</td>
+<td>PE / delta / trauma / drift skalar → prompt metni</td>
+<td>Aynı expected altında iki aday aksiyon</td>
+</tr>
+<tr>
+<td>Etiket</td>
+<td>Yok (yalnız CE)</td>
+<td>MiniLM <code>PE(chosen) &lt; PE(rejected)</code></td>
+</tr>
+<tr>
+<td>Kayıp</td>
+<td>Causal LM CE (± loss_weight)</td>
+<td>Chosen CE − α·CE(rejected) (unlikelihood;
+α=<code>PREF_UNLIKELIHOOD_COEF=0.5</code>)</td>
+</tr>
+<tr>
+<td>Hakem</td>
+<td>—</td>
+<td>Yalnız Python MiniLM (LLM-as-judge yok)</td>
+</tr>
+<tr>
+<td>Env</td>
+<td>default C′</td>
+<td><code>DAU_CPRIME_SIGNAL=v2</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>PreferencePair</code>: <code>prompt</code>,
+<code>chosen</code>, <code>rejected</code>, <code>pe_chosen</code>,
+<code>pe_rejected</code>. Builder: <code>build_pe_ranked_pairs</code>
+(<code>lora_update.py</code>). Shuffle kontrolü:
+<code>shuffle_preference_pairs</code> (chosen↔︎rejected). Null: train
+yok.</p>
+<h4 id="c.-empirik-tablo">C. Empirik tablo</h4>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 3%" />
+<col style="width: 10%" />
+<col style="width: 19%" />
+<col style="width: 13%" />
+<col style="width: 12%" />
+<col style="width: 15%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr>
+<th>Deney</th>
+<th>N</th>
+<th>Backend</th>
+<th>Sinyal / train</th>
+<th>ΔPE_lived</th>
+<th>ΔPE_null</th>
+<th>ΔPE_shuffle</th>
+<th>Wall</th>
+<th>Karar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Protocol C (Groq frozen)</td>
+<td>~35 temiz</td>
+<td>groq</td>
+<td>— (meta ON/OFF)</td>
+<td>≈0</td>
+<td>—</td>
+<td>—</td>
+<td>TPD limit</td>
+<td><strong>paper-locked null</strong></td>
+</tr>
+<tr>
+<td>C′ mini</td>
+<td>3 (2001–03)</td>
+<td>local</td>
+<td>v1 + <strong>placeholder</strong> train</td>
+<td>≈0.001</td>
+<td>≈−0.008</td>
+<td>≈0.010</td>
+<td>≈97 dk</td>
+<td><strong>WEAK_LORA</strong></td>
+</tr>
+<tr>
+<td>C′ v2 smoke</td>
+<td>1 (2001)</td>
+<td>local</td>
+<td>v2 + <strong>lived</strong> train</td>
+<td><strong>−0.0264</strong></td>
+<td>+0.0062</td>
+<td>+0.0159</td>
+<td>≈32.7 dk</td>
+<td><strong>SMOKE_SEPARATION</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Artefaktlar: -
+<code>dau_runs/protocol_c_prime_v2_smoke_results.json</code> -
+<code>dau_runs/protocol_c_prime_v2_smoke.log</code> -
+<code>dau_runs/vram_spike_results.json</code> (GO) - Araştırma:
+<code>docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md</code></p>
+<h4 id="d.-smoke_separation-yorumu-dürüst-sınır">D. SMOKE_SEPARATION
+yorumu (dürüst sınır)</h4>
+<ul>
+<li>Lived mean ΔPE kontrollerin <strong>altında</strong> (PE düşüşü
+yönü) — tek seed.</li>
+<li><strong>İstatistik iddiası yok</strong> (N=1; paired t-test / CI
+yok).</li>
+<li>Ürün iddiası yok: <code>DAU_LORA_ENABLED</code> default
+<strong>0</strong>; omurga değişmedi.</li>
+<li>Bu, “evrim alındı” değildir; “doğru sinyal + gerçek train ile
+ayrışma <em>mümkün görünebilir</em>” hipotezine <strong>yeşil ışık
+adayı</strong>dır.</li>
+<li>N expand (ör. 5→15) yalnızca bilinçli tartışma sonrası; otomatik
+değil.</li>
+<li>Aynı micro-train’i (seq/epoch) büyütüp sinyal değiştirmeden koşmak
+anti-roadmap’e yakındır.</li>
+</ul>
+<h4 id="e.-paper-naratif-iskeleti-kilitli">E. Paper naratif iskeleti
+(kilitli)</h4>
 <ol type="1">
-<li><strong>Faz 0 — Belgeleme kilidi</strong> ✅ — Protocol C provisional
-null; Groq C tekrar <strong>yok</strong>.</li>
+<li><strong>Ana katkı:</strong> Frozen-weight in-context metacognition
+null (Protocol C).</li>
+<li><strong>Mimari:</strong> Trait injection yasağı, MiniLM PE, DAERM,
+LOD, format≠restraint.</li>
+<li><strong>Appendix A:</strong> C′ mini WEAK (+ placeholder-train
+caveat).</li>
+<li><strong>Appendix B / methods note:</strong> C′ v2 smoke separation
+(N=1); open question: replicate with N≥10 under same signal.</li>
+<li><strong>Non-claims:</strong> persona LoRA, LLM-as-judge, per-event
+online LoRA, Layer 6, full Groq C rerun.</li>
+</ol>
+<h3 id="roadmap-v1.6-paper-kilidi-sinyal-v2-smoke">Roadmap (v1.6 — paper
+kilidi + sinyal-v2 smoke)</h3>
+<p>Frozen Groq empirik dönem <strong>paper-locked</strong>. Lokal
+plastisite spike <strong>koşuldu</strong> (WEAK appendix + v2 smoke).
+Durum:</p>
+<ol type="1">
+<li><strong>Faz 0 — Belgeleme kilidi</strong> ✅ — Protocol C
+paper-locked null; Groq C tekrar <strong>yok</strong>.</li>
 <li><strong>Faz 1 — Backend soyutlama</strong> ✅ —
-<code>DAU_LLM_BACKEND=groq|local</code> (default groq).</li>
+<code>DAU_LLM_BACKEND=groq|local</code> (default groq). Rollback:
+<code>groq</code>.</li>
 <li><strong>Faz 2 — VRAM / load spike</strong> ✅ <strong>GO</strong> —
-Llama-3.1-8B 4-bit + MiniLM(CPU) + QLoRA; peak ≈6.4 GiB RTX 4070.</li>
-<li><strong>Faz 3 — Nesil sonu <code>lora_update</code></strong> ✅
-iskelet — sinyal v1 PE/delta/trauma/drift; default flag off.</li>
+Llama-3.1-8B 4-bit + MiniLM(CPU) + QLoRA micro-train; peak ≈6.4 GiB
+(&lt;~7.5 GiB) RTX 4070.</li>
+<li><strong>Faz 3 — Nesil sonu <code>lora_update</code></strong> ✅ —
+sinyal v1 + v2 preference; default flag off; lived-train kablosu
+onarıldı.</li>
 <li><strong>Faz 4 — Protocol C′ mini</strong> ✅ <strong>RAN /
-WEAK_LORA_HYPOTHESIS</strong> — N=3, 50 event, T=0.2, local; ΔPE≈0.001;
-wall≈97 dk; <code>DAU_LORA_ENABLED=0</code>.</li>
-<li><strong>Sıradaki</strong> — frozen-null + WEAK_LORA paper kilidi;
-LoRA tekrarı yalnızca sinyal/eğitim protokolü değişince.</li>
-<li><strong>Paper</strong> — trait / DAERM / convention / frozen null /
-LoRA weak-hypothesis appendix.</li>
+WEAK_LORA_HYPOTHESIS</strong> — N=3, 50 event, T=0.2, local, shared
+adapter, train-then-A/B, null+shuffle; ΔPE_lived≈0.001; wall≈97 dk;
+<code>DAU_LORA_ENABLED=0</code>.</li>
+<li><strong>Paper naratif kilidi</strong> ✅ (v1.6) — frozen-null +
+WEAK_LORA appendix.</li>
+<li><strong>Sinyal-v2 kablo + 1-seed smoke</strong> ✅ — lived examples
+→ train; PE-ranked pref; N=1 seed 2001: ΔPE_lived≈−0.026 &lt;
+null/shuffle → <strong>SMOKE_SEPARATION</strong> (significance yok).
+<code>DAU_LORA_ENABLED=0</code>.</li>
+<li><strong>Sıradaki</strong> — N expand <strong>yalnızca tartışma
+sonrası</strong> (otomatik N=15 yok); omurga rewrite yok. Replay /
+seq_len=512 ikincil.</li>
+<li><strong>Paper</strong> — (i) trait injection neden yetmez, (ii)
+DAERM,
+<ol start="3" type="i">
+<li>format≠restraint, (iv) frozen metacognition null (ana),</li>
+<li>LoRA WEAK appendix + v2 smoke separation (methods caveat).</li>
+</ol></li>
 </ol>
 <h3 id="anti-roadmap-kaynak-koruma">Anti-roadmap (kaynak koruma)</h3>
-<p>Hâlâ yasak: Layer 6 · LLM-as-judge · trait injection · wall-clock
-simülasyon zamanı · Groq Protocol C tekrarı · per-event online LoRA ·
-full-weight FT · persona adapter.</p>
-<p><strong>Güncellendi (v1.5):</strong> Yaşantı-LoRA mini pilot koşuldu;
-sonuç zayıf. Kontrollü LoRA kapanmadı ama <strong>default path
-değil</strong> — kanıt eşiği yükseldi (sinyal v2 + daha büyük N).</p>
+<p>Hâlâ yasak: Layer 6 icat etme · LLM-as-judge · trait injection ·
+wall-clock simülasyon zamanı · Jaccard’ı ana PE’ye geri alma ·
+multi-pool fizik · kuantum-LLM hayali · Groq Protocol C tekrarı ·
+per-event online LoRA · full-weight FT · persona/trait adapter.</p>
+<p><strong>Güncellendi (v1.6):</strong> Paper kilit + v2 smoke
+<strong>SMOKE_SEPARATION</strong>. LoRA hâlâ <strong>default path
+değil</strong>; N=15 otomatik açılmaz.</p>
 <hr />
 <h2 id="versiyon-geçmişi">19. Versiyon geçmişi</h2>
 <table>
@@ -1037,24 +1258,32 @@ kontrollü LoRA açıldı. 137 test.</td>
 <tr>
 <td><strong>1.4+</strong></td>
 <td><strong>2026-08-06</strong></td>
-<td>Faz 0–4 spike kod: <code>llm_backend</code> /
-<code>local_llm</code> / <code>lora_update</code> / C′ harness. Flags
-default groq + LORA=0.</td>
+<td>Faz 0–4 spike kod: <code>llm_backend</code> / <code>local_llm</code>
+/ <code>lora_update</code> / C′ harness. Flags default groq +
+LORA=0.</td>
 </tr>
 <tr>
 <td><strong>1.5</strong></td>
 <td><strong>2026-08-06</strong></td>
 <td>VRAM <strong>GO</strong> (Llama-3.1-8B ~6.4GiB). Protocol C′ mini
-live N=3 local: ΔPE_lived≈0.001 →
-<strong>WEAK_LORA_HYPOTHESIS</strong>; <code>DAU_LORA_ENABLED=0</code>;
-omurga aynı; wall≈97 dk. Sıradaki: frozen-null paper + opsiyonel
-sinyal-v2 C′.</td>
+live N=3 local: ΔPE_lived≈0.001 → <strong>WEAK_LORA_HYPOTHESIS</strong>;
+<code>DAU_LORA_ENABLED=0</code>; omurga aynı; wall≈97 dk. Sıradaki:
+frozen-null paper + opsiyonel sinyal-v2 C′.</td>
+</tr>
+<tr>
+<td><strong>1.6</strong></td>
+<td><strong>2026-08-06</strong></td>
+<td>Paper-locked null; WEAK appendix; lived-train kablosu onarımı;
+PE-ranked pref v2; C′ smoke N=1 <strong>SMOKE_SEPARATION</strong>
+(ΔPE_lived≈−0.026 &lt; null/shuffle, wall≈33 dk); placeholder-train
+caveat belgelendi; research report; <code>DAU_LORA_ENABLED=0</code>;
+N=15 otomatik değil.</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <p>Bu döküman her önemli katman tamamlanınca güncellenir.<br />
-Versiyon 1.5 — Frozen null + lokal LoRA mini weak hypothesis belgelendi;
-default path Groq + LORA off.</p>
+Versiyon 1.6 — Frozen null paper-locked; C′ v2 smoke separation (N=1
+caveat); docs HTML/PDF <code>v15</code> ile senkron.</p>
 </body>
 </html>

@@ -1,18 +1,21 @@
 # DAU — Master Reference
 
-**Versiyon 1.5** · 2026-08-06  
-Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **provisional null**
-(ΔPE≈0, N≈35 temiz çift) · Protocol C′ mini **WEAK_LORA** · **162+ test**.
+**Versiyon 1.6** · 2026-08-06  
+Layer 0–5 kod tamam · MiniLM PE · DAERM · Protocol C **paper-locked
+negative finding** (ΔPE≈0, N≈35 temiz çift; pair t-test yok — stats
+caveat) · Protocol C′ mini **WEAK_LORA appendix** · C′ v2 smoke
+**SMOKE_SEPARATION** (N=1; significance yok) · **162+ test**.
 
 **İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü
-metacognition **UNSUPPORTED (provisional null)** · yaşantı-LoRA mini pilot
-**WEAK_LORA_HYPOTHESIS** (garanti değil) · sıradaki: frozen-null’u
-güçlendir / paper; LoRA yalnızca sinyal-revizyonlu kontrollü tekrar adayı.
+metacognition **UNSUPPORTED (paper-locked null)** · yaşantı-LoRA mini
+**WEAK_LORA_HYPOTHESIS** (appendix; default path değil) · C′ v2
+1-seed smoke: lived < null/shuffle (**SMOKE_SEPARATION**); N=15
+otomatik değil — tartışma adayı. `DAU_LORA_ENABLED=0`.
 
-**Faz 0 kilit:** Frozen Protocol C null kapalı; full Groq Protocol C tekrar
-yok.
+**Faz 0 kilit:** Frozen Protocol C null **paper-locked**; full Groq
+Protocol C tekrar yok.
 
-**Lokal / LoRA spike (v1.5):**
+**Lokal / LoRA spike (v1.5–1.6):**
 - Flags: `DAU_LLM_BACKEND=groq|local` (default groq), `DAU_LORA_ENABLED=0`
   (default; **açık bırakılmadı**).
 - VRAM spike **GO**: Llama-3.1-8B 4-bit + MiniLM(CPU) + QLoRA micro-train
@@ -20,8 +23,14 @@ yok.
 - Protocol C′ mini **live** (local, Groq yok): N=3 (seeds 2001–2003),
   50 event/arm, T=0.2, shared adapter, train-then-A/B, null+shuffle.
   mean ΔPE_lived≈**0.001** · null≈**−0.008** · shuffle≈**0.010** ·
-  wall≈**97 dk** (eski ~8 dk tahmini geçersiz) → **WEAK_LORA_HYPOTHESIS**.
+  wall≈**97 dk** → **WEAK_LORA_HYPOTHESIS** (sinyal v1 / placeholder train).
+- Protocol C′ **v2 smoke** (local): N=1 seed 2001, `DAU_CPRIME_SIGNAL=v2`,
+  PE-ranked pref + lived-train kablosu; ΔPE_lived≈**−0.026** ·
+  null≈**+0.006** · shuffle≈**+0.016** · wall≈**33 dk** →
+  **SMOKE_SEPARATION** (significance claim yok; N expand tartışılır).
 - Omurga (state/delta/PE/drift/LOD/meta_observer) değişmedi.
+- Araştırma raporu: `docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md`
+  (+ `.html`). Master türevleri: `v15.html` / `v15.pdf` (v1.6 senkron).
 
 ---
 
@@ -335,7 +344,7 @@ Empiric label: `under sentence-transformers MiniLM`.
 | Layer 2 Emotion + Drift | ✅ | EmotionalWeight fonksiyonu + kalıcı DriftState graph'ta |
 | Layer 3 Generation | ✅ | Nesil konsolidasyonu, miras, drift healing; fitness filtresi Layer 4'e kaldı |
 | Layer 4 Society | ✅ | GovSim pool fiziği, cooperation_stress + coordination_friction, T_cognitive LOD engine, F_agent fitness, W_transfer nesil filtresi, graph wiring |
-| Layer 5 Metacognition | ✅ kod / ❌ empirik (provisional null + WEAK_LORA) | SelfModel + meta_observer wiring tamam. Meta A/B v1: SUBSTRATE_ABSENT. Protocol C (Groq, frozen): ΔPE≈0 provisional null; full 40 tekrar yok. **Lokal spike:** VRAM GO (Llama-3.1-8B ~6.4GiB). **Protocol C′ mini** (N=3, local, shared adapter, null+shuffle): ΔPE_lived≈0.001 → **WEAK_LORA_HYPOTHESIS**; `DAU_LORA_ENABLED=0`. Rollback: `DAU_LLM_BACKEND=groq`. Omurga dokunulmadı. |
+| Layer 5 Metacognition | ✅ kod / ❌ empirik: frozen null **LOCKED** · C′ **WEAK** + v2 **SMOKE_SEPARATION** | SelfModel + meta_observer wiring tamam. Protocol C: **paper-locked negative**. C′ mini v1 WEAK. C′ v2 smoke N=1: lived ΔPE≈−0.026 < null/shuffle → **SMOKE_SEPARATION** (significance yok). `DAU_LORA_ENABLED=0`. Omurga dokunulmadı. |
 
 ---
 
@@ -358,8 +367,13 @@ dau/foundation/
   ├── graph.py              — LangGraph: social_pre → agent → evaluator → meta_observer
  │                            (+ DAU_LLM_BACKEND thin wire; default groq)
  ├── llm_backend.py        — complete() Protocol; GroqBackend; LocalBackend
- ├── local_llm.py          — 4-bit load + QLoRA micro-train + VRAM spike report
- ├── lora_update.py        — nesil sonu lived-trace hook (DAU_LORA_ENABLED=0 default)
+ ├── local_llm.py          — 4-bit load; QLoRA; format_micro_train_texts;
+ │                            run_micro_train_step(examples=…);
+ │                            run_micro_train_preference_step(pairs=…);
+ │                            VRAM spike report
+ ├── lora_update.py        — LivedTraceExample (v1); PreferencePair (v2);
+ │                            build_pe_ranked_pairs; shuffle_preference_pairs;
+ │                            nesil sonu hook (DAU_LORA_ENABLED=0 default)
  ├── memory_bridge.py      — graph ↔ memory köprüsü
  ├── generation.py         — TransferCandidate, consolidate/apply_generation
  ├── run_demo.py
@@ -381,7 +395,13 @@ dau/society/
 
 dau/diagnostics/
  ├── run_protocol_c.py / run_protocol_c_prime.py / run_vram_spike.py
- └── tests/                — protocol_c_prime harness
+ │    C′: DAU_CPRIME_SIGNAL=v1|v2, DAU_CPRIME_N_PAIRS, DAU_CPRIME_EVENTS
+ └── tests/                — protocol_c_prime harness (+ v2 preference)
+
+docs/
+ ├── DAU_MASTER_REFERENCE_v15.md   — operasyonel kaynak (içerik v1.6)
+ ├── DAU_MASTER_REFERENCE_v15.html / .pdf — senkron türevler
+ └── DAU_RESEARCH_REPORT_plasticity_2026-08.md
 ```
 
 ---
@@ -470,24 +490,25 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
 - ✅ İşbirliği ≠ koordinasyon ayrımı ✅
 - ✅ Fitness-based transfer filtering ✅
 - ✅ NPC / Gerçek agent geçişi ✅
-- ⚠️ Closed-loop metacognition (frozen Groq): Protocol C **provisional null**.
+- ✅ Closed-loop metacognition (frozen Groq): Protocol C **paper-locked
+  negative finding** (stats caveat).
   Tasarım: 40 çift × 50 event, T=0.2, seed 1001–1040, seed-locked ON/OFF.
   Koşu: `dau/diagnostics/run_protocol_c.py` · log: `dau_runs/protocol_c_run.log`.
   Checkpoint (kümülatif mean_ΔPE):
     5/40 → +0.000 · 10/40 → +0.000 · 15/40 → −0.000 · 20/40 → −0.004
     25/40 → +0.009 · 30/40 → −0.000 · 35/40 → +0.000
   Yorum: ΔPE sıfır etrafında gürültü — sistematik H1 (PE düşüşü) yok.
-  Limitasyon: Groq TPD 500k doldu (~212 TPD fallback); pair~32+ System2
-  substratı bozuldu → temiz çekirdek ~31–32 çift. Run pair=40 META_OFF’ta
-  abort; `protocol_c_results.json` / resmi paired t-test yazılmadı.
-  Karar: full 40 tekrar koşulmayacak (eğilim net + TPD riski). Resmi
-  UNSUPPORTED damgası pair-level vektör olmadan teknik olarak eksik;
-  akademik çerçeve: **provisional null / publishable negative finding**.
-  H0: μ_ΔPE ≥ 0 · H1: μ_ΔPE < 0 · one-tailed paired t-test, α=0.05
-  (tam vektör kurtarılırsa veya Protocol C′ ile yeniden ölçülür).
-- ❌ Parametrik plastisite olmadan “yaşantıdan trait”: frozen 8B’de
-  context-level metacognition kapalı döngü kuramadı. Açık araştırma:
-  lokal LLM + LoRA (delta history → adapter; trait injection yasak).
+  Limitasyon: Groq TPD 500k; temiz çekirdek ~31–32 çift; pair=40 abort;
+  resmi paired t-test yok. Full 40 tekrar **yapılmayacak**.
+  Naratif kilit (v1.6): claim locked; H0/H1 formal test *aspirational*
+  methods/limitations notu — narrative gate değil.
+- ⚠️ Parametrik plastisite / yaşantı-LoRA (**v1.6 durumu**):
+  - C′ mini (sinyal v1 / fiilen placeholder train): **WEAK_LORA appendix**.
+  - C′ v2 smoke (PE-ranked pref + lived-train kablosu, N=1):
+    **SMOKE_SEPARATION** — lived ΔPE≈−0.026 < null≈+0.006 /
+    shuffle≈+0.016; **significance yok**; N=15 otomatik değil.
+  - Default path değil (`DAU_LORA_ENABLED=0`). Trait injection yasak.
+  - Detay: §18 Plastisite günlüğü + `DAU_RESEARCH_REPORT_plasticity_2026-08.md`.
 - Energy floor ve uzun ufuk: gamma=0 erken kapanıyor.
   Uzun koşularda agent'ın hayatta kalması için energy recovery
   mekanizması yeterli mi? METABOLIC_FLOOR · (1 - mean_load) formülü
@@ -497,8 +518,8 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
   evaluator heal_drift çalışıyor ama meta_observer aktüatörü
   triggered=0. F_agent < 0.5 AND reward > 0.4 koşulları aynı anda
   karşılanmıyor. Eşik kalibrasyonu gerekebilir. Açık.
-- Continual learning / parametrik iz? → Roadmap v1.4: lokal LLM + LoRA
-  (frozen dönemde yok; açık araştırma)
+- Continual learning / parametrik iz? → Appendix / sinyal-v2 only
+  (frozen dönem kapalı; smoke separation var, default path değil)
 - LLM embedding match henüz skor değil (W_SEM=0)
 - "İyi"yi "kötü"den ayıran mekanizma?
 - Öz sorgu nasıl aktive olur?
@@ -579,37 +600,101 @@ Empirik koşular (unit dışı): `dau_runs/overnight_audit_results.json`
   Checkpoint mean_ΔPE ≈ 0 (gürültü; H1 yok). Temiz çekirdek ~31–32 çift
   (TPD öncesi). pair=40 META_OFF abort; JSON/t-test yok.
   Full 40 tekrar **yapılmayacak**. (Bkz. Section 17, Roadmap)
-- Null sonuç akademik çerçevesi (v1.4, provisional):
+- Null sonuç akademik çerçevesi (**v1.6 paper-locked**):
   "mimari hatalı" değil —
   "frozen-weight LLM'de context-level metacognition, parametrik
   plastisite olmadan kapalı döngü kuramıyor"
-  → publishable negative finding. Paper + çalışan sistem hedefi:
-  bu bulgu frozen dönemi kapatır. Lokal LLM+LoRA denendi (C′ mini);
-  WEAK_LORA → frozen null güçlenir; LoRA yalnızca sinyal-revizyonlu
-  kontrollü tekrar adayı (garanti path değil).
+  → **paper-locked negative finding**. Lokal LLM+LoRA (C′ mini)
+  **WEAK_LORA appendix**; C′ v2 smoke **SMOKE_SEPARATION** (N=1 caveat);
+  frozen null’u güçlendirir; default path değil.
 
-### Roadmap (v1.5 — C′ mini sonrası)
+### Plastisite günlüğü (v1.6 — detay)
 
-Frozen Groq empirik dönem **kapalı** (provisional null). Lokal plastisite
-spike **koşuldu**. Durum:
+#### A. Placeholder-train bulgusu (C′ mini yorum düzeltmesi)
 
-1. **Faz 0 — Belgeleme kilidi** ✅ — Protocol C provisional null;
+Protocol C′ mini (N=3, wall≈97 dk) sırasında `build_lived_trace_examples`
+yaşantı satırlarını diske yazıyordu; ancak `run_micro_train_step()` sabit
+`MICRO_TRAIN_PROMPT` / `MICRO_TRAIN_COMPLETION` üzerinde 2 adım SFT
+yapıyordu. Yani **WEAK_LORA** sonucu “sinyal v1 skalarları yetersiz”
+teşhisinden önce **eğitim kablosunun kopuk** olduğunun da kanıtıdır.
+v1.6’da kablo onarıldı: örnekler varsa onların `prompt`/`completion`
+(+ `loss_weight`) CE’ye girer; yoksa VRAM spike geriye uyumlu placeholder.
+
+#### B. Sinyal v1 vs v2
+
+| | Sinyal v1 | Sinyal v2 |
+|---|-----------|-----------|
+| Kimlik | `pe_delta_trauma_drift_v1` | `pe_ranked_pref_v2` |
+| Girdi | PE / delta / trauma / drift skalar → prompt metni | Aynı expected altında iki aday aksiyon |
+| Etiket | Yok (yalnız CE) | MiniLM `PE(chosen) < PE(rejected)` |
+| Kayıp | Causal LM CE (± loss_weight) | Chosen CE − α·CE(rejected) (unlikelihood; α=`PREF_UNLIKELIHOOD_COEF=0.5`) |
+| Hakem | — | Yalnız Python MiniLM (LLM-as-judge yok) |
+| Env | default C′ | `DAU_CPRIME_SIGNAL=v2` |
+
+`PreferencePair`: `prompt`, `chosen`, `rejected`, `pe_chosen`, `pe_rejected`.
+Builder: `build_pe_ranked_pairs` (`lora_update.py`). Shuffle kontrolü:
+`shuffle_preference_pairs` (chosen↔rejected). Null: train yok.
+
+#### C. Empirik tablo
+
+| Deney | N | Backend | Sinyal / train | ΔPE_lived | ΔPE_null | ΔPE_shuffle | Wall | Karar |
+|-------|---|---------|----------------|-----------|----------|-------------|------|-------|
+| Protocol C (Groq frozen) | ~35 temiz | groq | — (meta ON/OFF) | ≈0 | — | — | TPD limit | **paper-locked null** |
+| C′ mini | 3 (2001–03) | local | v1 + **placeholder** train | ≈0.001 | ≈−0.008 | ≈0.010 | ≈97 dk | **WEAK_LORA** |
+| C′ v2 smoke | 1 (2001) | local | v2 + **lived** train | **−0.0264** | +0.0062 | +0.0159 | ≈32.7 dk | **SMOKE_SEPARATION** |
+
+Artefaktlar:
+- `dau_runs/protocol_c_prime_v2_smoke_results.json`
+- `dau_runs/protocol_c_prime_v2_smoke.log`
+- `dau_runs/vram_spike_results.json` (GO)
+- Araştırma: `docs/DAU_RESEARCH_REPORT_plasticity_2026-08.md`
+
+#### D. SMOKE_SEPARATION yorumu (dürüst sınır)
+
+- Lived mean ΔPE kontrollerin **altında** (PE düşüşü yönü) — tek seed.
+- **İstatistik iddiası yok** (N=1; paired t-test / CI yok).
+- Ürün iddiası yok: `DAU_LORA_ENABLED` default **0**; omurga değişmedi.
+- Bu, “evrim alındı” değildir; “doğru sinyal + gerçek train ile ayrışma
+  *mümkün görünebilir*” hipotezine **yeşil ışık adayı**dır.
+- N expand (ör. 5→15) yalnızca bilinçli tartışma sonrası; otomatik değil.
+- Aynı micro-train’i (seq/epoch) büyütüp sinyal değiştirmeden koşmak
+  anti-roadmap’e yakındır.
+
+#### E. Paper naratif iskeleti (kilitli)
+
+1. **Ana katkı:** Frozen-weight in-context metacognition null (Protocol C).
+2. **Mimari:** Trait injection yasağı, MiniLM PE, DAERM, LOD, format≠restraint.
+3. **Appendix A:** C′ mini WEAK (+ placeholder-train caveat).
+4. **Appendix B / methods note:** C′ v2 smoke separation (N=1); open
+   question: replicate with N≥10 under same signal.
+5. **Non-claims:** persona LoRA, LLM-as-judge, per-event online LoRA,
+   Layer 6, full Groq C rerun.
+
+### Roadmap (v1.6 — paper kilidi + sinyal-v2 smoke)
+
+Frozen Groq empirik dönem **paper-locked**. Lokal plastisite spike
+**koşuldu** (WEAK appendix + v2 smoke). Durum:
+
+1. **Faz 0 — Belgeleme kilidi** ✅ — Protocol C paper-locked null;
    Groq C tekrar **yok**.
 2. **Faz 1 — Backend soyutlama** ✅ — `DAU_LLM_BACKEND=groq|local`
    (default groq). Rollback: `groq`.
 3. **Faz 2 — VRAM / load spike** ✅ **GO** — Llama-3.1-8B 4-bit +
    MiniLM(CPU) + QLoRA micro-train; peak ≈6.4 GiB (<~7.5 GiB) RTX 4070.
-4. **Faz 3 — Nesil sonu `lora_update`** ✅ iskelet — sinyal v1 =
-   PE/delta/trauma/drift; `$F_{\text{agent}}$` eşiği yok; default flag off.
+4. **Faz 3 — Nesil sonu `lora_update`** ✅ — sinyal v1 + v2 preference;
+   default flag off; lived-train kablosu onarıldı.
 5. **Faz 4 — Protocol C′ mini** ✅ **RAN / WEAK_LORA_HYPOTHESIS** —
    N=3, 50 event, T=0.2, local, shared adapter, train-then-A/B,
    null+shuffle; ΔPE_lived≈0.001; wall≈97 dk; `DAU_LORA_ENABLED=0`.
-6. **Sıradaki** — (a) frozen-null + WEAK_LORA’yı paper naratifinde kilitle;
-   (b) LoRA tekrarı **yalnızca** sinyal/eğitim protokolü değişince
-   (aynı micro-train’i büyütmek yeterli sayılmaz); (c) omurga rewrite yok.
-7. **Paper** — (i) trait injection neden yetmez, (ii) DAERM,
-   (iii) format≠restraint, (iv) frozen metacognition null,
-   (v) lokal LoRA mini negative / weak hypothesis appendix.
+6. **Paper naratif kilidi** ✅ (v1.6) — frozen-null + WEAK_LORA appendix.
+7. **Sinyal-v2 kablo + 1-seed smoke** ✅ — lived examples → train;
+   PE-ranked pref; N=1 seed 2001: ΔPE_lived≈−0.026 < null/shuffle →
+   **SMOKE_SEPARATION** (significance yok). `DAU_LORA_ENABLED=0`.
+8. **Sıradaki** — N expand **yalnızca tartışma sonrası** (otomatik N=15
+   yok); omurga rewrite yok. Replay / seq_len=512 ikincil.
+9. **Paper** — (i) trait injection neden yetmez, (ii) DAERM,
+   (iii) format≠restraint, (iv) frozen metacognition null (ana),
+   (v) LoRA WEAK appendix + v2 smoke separation (methods caveat).
 
 ### Anti-roadmap (kaynak koruma)
 
@@ -618,9 +703,8 @@ wall-clock simülasyon zamanı · Jaccard’ı ana PE’ye geri alma ·
 multi-pool fizik · kuantum-LLM hayali · Groq Protocol C tekrarı ·
 per-event online LoRA · full-weight FT · persona/trait adapter.
 
-**Güncellendi (v1.5):** Yaşantı-LoRA mini pilot koşuldu; sonuç zayıf.
-Kontrollü LoRA araştırması kapanmadı ama **default path değil** —
-kanıt eşiği yükseldi (sinyal v2 + daha büyük N şart).
+**Güncellendi (v1.6):** Paper kilit + v2 smoke **SMOKE_SEPARATION**.
+LoRA hâlâ **default path değil**; N=15 otomatik açılmaz.
 
 ---
 
@@ -646,8 +730,10 @@ kanıt eşiği yükseldi (sinyal v2 + daha büyük N şart).
 | **1.4** | **2026-08-06** | Protocol C kısmi koşu: checkpoint ΔPE≈0 (provisional null); TPD 500k → pair~32+ kirlenmesi; 40/40 abort; full tekrar yok. Roadmap: lokal LLM araştırması → yaşantı-koşullu LoRA → Protocol C′. Anti-roadmap: kontrollü LoRA açıldı. 137 test. |
 | **1.4+** | **2026-08-06** | Faz 0–4 spike kod: `llm_backend` / `local_llm` / `lora_update` / C′ harness. Flags default groq + LORA=0. |
 | **1.5** | **2026-08-06** | VRAM **GO** (Llama-3.1-8B ~6.4GiB). Protocol C′ mini live N=3 local: ΔPE_lived≈0.001 → **WEAK_LORA_HYPOTHESIS**; `DAU_LORA_ENABLED=0`; omurga aynı; wall≈97 dk. Sıradaki: frozen-null paper + opsiyonel sinyal-v2 C′. |
+| **1.6** | **2026-08-06** | Paper-locked null; WEAK appendix; lived-train kablosu onarımı; PE-ranked pref v2; C′ smoke N=1 **SMOKE_SEPARATION** (ΔPE_lived≈−0.026 < null/shuffle, wall≈33 dk); placeholder-train caveat belgelendi; research report; `DAU_LORA_ENABLED=0`; N=15 otomatik değil. |
 
 ---
 
 Bu döküman her önemli katman tamamlanınca güncellenir.  
-Versiyon 1.5 — Frozen null + lokal LoRA mini weak hypothesis belgelendi; default path Groq + LORA off.
+Versiyon 1.6 — Frozen null paper-locked; C′ v2 smoke separation (N=1 caveat);
+docs HTML/PDF `v15` ile senkron.

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,21 @@ COMPLETION_FALLBACK: str = "continue"
 DECISION_PAYLOAD_KEY: str = "decision"
 EVENT_TYPE_DECISION: str = "agent_decision"
 
+# Signal v2 — PE-ranked preference (MiniLM judge only; no LLM-as-judge).
+SIGNAL_V1_ID: str = "pe_delta_trauma_drift_v1"
+SIGNAL_V2_ID: str = "pe_ranked_pref_v2"
+PREF_TRACES_FILE_NAME: str = "preference_pairs.jsonl"
+PREF_EXPECTED_OUTCOME: str = (
+    "extract resources carefully while preserving the shared commons"
+)
+PREF_REJECT_CANDIDATE: str = (
+    "abandon all care and drain the pool for maximum short-term gain"
+)
+PREF_CONTEXT_TEMPLATE: str = (
+    "Context expectation: {expected}\nLived scalars: pe={pe:.3f}"
+)
+PE_RANK_MIN_GAP: float = 1e-6
+
 
 @dataclass
 class LivedTraceExample:
@@ -71,6 +87,18 @@ class LivedTraceExample:
     loss_weight: float
     prompt: str
     completion: str
+
+
+@dataclass
+class PreferencePair:
+    """PE-ranked preference row — chosen has lower MiniLM PE than rejected."""
+
+    prompt: str
+    chosen: str
+    rejected: str
+    pe_chosen: float
+    pe_rejected: float
+    event_counter: int = 0
 
 
 @dataclass
@@ -256,6 +284,109 @@ def write_lived_traces(
     return path
 
 
+def write_preference_pairs(
+    pairs: list[PreferencePair],
+    directory: Path,
+) -> Path:
+    """Persist PE-ranked preference JSONL beside the adapter checkpoint."""
+
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / PREF_TRACES_FILE_NAME
+    with path.open("w", encoding="utf-8") as handle:
+        for pair in pairs:
+            handle.write(json.dumps(asdict(pair), ensure_ascii=True) + "\n")
+    return path
+
+
+def build_pe_ranked_pairs(
+    examples: list[LivedTraceExample],
+    *,
+    expected_outcome: str = PREF_EXPECTED_OUTCOME,
+    reject_candidate: str = PREF_REJECT_CANDIDATE,
+    pe_fn: Any | None = None,
+) -> list[PreferencePair]:
+    """Rank (completion, reject_candidate) by MiniLM PE vs expected_outcome.
+
+    ``pe_fn(expected, actual) -> float`` defaults to ``semantic_prediction_error``.
+    Ties / non-strict gaps are skipped. No trait / persona text.
+    """
+
+    if pe_fn is None:
+        from dau.foundation.semantic_similarity import semantic_prediction_error
+
+        pe_fn = semantic_prediction_error
+
+    pairs: list[PreferencePair] = []
+    expected = expected_outcome.strip()
+    reject = reject_candidate.strip()
+    for example in examples:
+        chosen_raw = (example.completion or COMPLETION_FALLBACK).strip()
+        if not chosen_raw or not reject or chosen_raw == reject:
+            continue
+        pe_a = float(pe_fn(expected, chosen_raw))
+        pe_b = float(pe_fn(expected, reject))
+        if abs(pe_a - pe_b) < PE_RANK_MIN_GAP:
+            continue
+        if pe_a < pe_b:
+            chosen_text, rejected_text = chosen_raw, reject
+            pe_chosen, pe_rejected = pe_a, pe_b
+        else:
+            chosen_text, rejected_text = reject, chosen_raw
+            pe_chosen, pe_rejected = pe_b, pe_a
+        prompt = PREF_CONTEXT_TEMPLATE.format(
+            expected=expected,
+            pe=example.prediction_error,
+        )
+        pairs.append(
+            PreferencePair(
+                prompt=prompt,
+                chosen=chosen_text,
+                rejected=rejected_text,
+                pe_chosen=pe_chosen,
+                pe_rejected=pe_rejected,
+                event_counter=example.event_counter,
+            )
+        )
+    return pairs
+
+
+def shuffle_preference_pairs(
+    pairs: list[PreferencePair],
+    *,
+    seed: int,
+) -> list[PreferencePair]:
+    """Control: swap chosen/rejected (wrong PE preference direction)."""
+
+    rng = random.Random(seed)
+    out: list[PreferencePair] = []
+    for pair in pairs:
+        if rng.random() < 0.5:
+            out.append(
+                PreferencePair(
+                    prompt=pair.prompt,
+                    chosen=pair.rejected,
+                    rejected=pair.chosen,
+                    pe_chosen=pair.pe_rejected,
+                    pe_rejected=pair.pe_chosen,
+                    event_counter=pair.event_counter,
+                )
+            )
+        else:
+            out.append(pair)
+    # Force at least one swap when possible so shuffle ≠ lived.
+    if pairs and out == pairs:
+        first = pairs[0]
+        out[0] = PreferencePair(
+            prompt=first.prompt,
+            chosen=first.rejected,
+            rejected=first.chosen,
+            pe_chosen=first.pe_rejected,
+            pe_rejected=first.pe_chosen,
+            event_counter=first.event_counter,
+        )
+    return out
+
+
 def lora_update(
     agent_state: DAUAgentState,
     *,
@@ -291,7 +422,7 @@ def lora_update(
         "agent_id": agent_state.agent_id,
         "generation": generation,
         "example_count": len(examples),
-        "signal": "pe_delta_trauma_drift_v1",
+        "signal": SIGNAL_V1_ID,
         "f_agent_threshold": None,
     }
     (out_dir / ADAPTER_META_FILE_NAME).write_text(
@@ -335,7 +466,7 @@ def lora_update(
     try:
         load_base_model_4bit()
         attach_lora_adapter()
-        run_micro_train_step()
+        run_micro_train_step(examples=examples)
         save_adapter(out_dir)
     except Exception as exc:  # noqa: BLE001 — hook must not crash life teardown
         return LoraUpdateResult(

@@ -12,10 +12,12 @@ from dau.foundation.drift import DriftState, update_drift
 from dau.foundation.lora_update import (
     LORA_ENABLED_ENV,
     build_lived_trace_examples,
+    build_pe_ranked_pairs,
     compute_loss_weight,
     is_lora_enabled,
     lora_update,
     maybe_lora_update_after_life,
+    shuffle_preference_pairs,
 )
 from dau.foundation.state import DAUAgentState, InternalState
 from dau.foundation.time_model import EventClock, append_event, build_event
@@ -96,6 +98,52 @@ def test_build_examples_includes_trauma_not_dropped() -> None:
     assert "trait" not in examples[0].prompt.lower()
     assert "persona" not in examples[0].prompt.lower()
     assert examples[0].completion.startswith("I extract")
+
+
+def test_build_pe_ranked_pairs_orders_by_injected_pe() -> None:
+    state = _agent_with_traces()
+    pe_log = [
+        {
+            "event_counter": state.delta_log[0].timestamp,
+            "prediction_error": 0.55,
+            "delta_magnitude": float(state.delta_log[0].magnitude),
+            "delta_class": "NORMAL",
+        }
+    ]
+    examples = build_lived_trace_examples(state, pe_log)
+
+    def fake_pe(expected: str, actual: str) -> float:
+        if "drain" in actual:
+            return 0.9
+        return 0.2
+
+    pairs = build_pe_ranked_pairs(examples, pe_fn=fake_pe)
+    assert len(pairs) == 1
+    assert pairs[0].pe_chosen < pairs[0].pe_rejected
+    assert "drain" in pairs[0].rejected
+    assert "trait" not in pairs[0].prompt.lower()
+
+
+def test_shuffle_preference_pairs_swaps_direction() -> None:
+    state = _agent_with_traces()
+    examples = build_lived_trace_examples(
+        state,
+        [
+            {
+                "event_counter": state.delta_log[0].timestamp,
+                "prediction_error": 0.4,
+                "delta_magnitude": 0.4,
+                "delta_class": "NORMAL",
+            }
+        ],
+    )
+    pairs = build_pe_ranked_pairs(
+        examples,
+        pe_fn=lambda _e, actual: 0.9 if "drain" in actual else 0.1,
+    )
+    shuffled = shuffle_preference_pairs(pairs, seed=42)
+    assert shuffled[0].chosen == pairs[0].rejected
+    assert shuffled[0].rejected == pairs[0].chosen
 
 
 def test_lora_update_noop_when_flag_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

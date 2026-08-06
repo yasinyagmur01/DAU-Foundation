@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DAU Plasticity Research Report</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">DAU Plasticity Research Report</h1>
+</header>
+<h1
+id="dau-teşhis-mimari-inceleme-ve-parametrik-plastisite-araştırma-raporu">DAU
+— Teşhis, Mimari İnceleme ve Parametrik Plastisite Araştırma Raporu</h1>
+<p><strong>Tarih:</strong> 2026-08-06 · <strong>Master içerik:</strong>
+v1.6 · <strong>Dosya:</strong>
+<code>DAU_MASTER_REFERENCE_v15.md</code><br />
+<strong>Durum:</strong> Referans artefakt (operasyonel kilit
+Master’dadır)</p>
+<hr />
+<h2 id="bir-cümlelik-özet">0. Bir cümlelik özet</h2>
+<p>DAU Layer 0–5 omurgası çalışıyor; <strong>frozen LLM’de bağlamsal
+üstbiliş PE’yi düşürmüyor</strong> (paper-locked null). Yaşantı-LoRA
+mini pilot <strong>WEAK</strong> kaldı (üstelik eğitim kablosu kopuktu).
+Sinyal v2 + gerçek train ile <strong>N=1 smoke’ta ayrışma</strong>
+görüldü — bu evrim kanıtı değil; N büyütme tartışması için zayıf yeşil
+ışık. Default: <code>DAU_LORA_ENABLED=0</code>.</p>
+<hr />
+<h2 id="executive-diagnosis-12-madde-v1.6-güncel">1. Executive Diagnosis
+(12 madde, v1.6 güncel)</h2>
+<ol type="1">
+<li><strong>Mimari tamamlılık:</strong> Layer 0–5 (State, Delta, Memory,
+PE, EmotionalWeight/Drift, Generation, Society, Meta-Observer) kodda
+tamam; 162+ test.</li>
+<li><strong>Frozen metacognition null (paper-locked):</strong> Groq
+Llama-3.1-8B Protocol C — Meta ON vs OFF, ΔPE ≈ 0 (N≈35 temiz çift;
+resmi paired t-test yok — stats caveat). Full 40 tekrar yok (TPD +
+eğilim net).</li>
+<li><strong>Literatür hizası:</strong> Harici hakem olmadan in-context
+self-correction başarısızlığı (Huang et al. 2023) ile nedensel
+uyum.</li>
+<li><strong>VRAM GO:</strong> RTX 4070 Laptop 8GB — 4-bit Llama-3.1-8B +
+MiniLM(CPU) + QLoRA (r=16, seq=128); peak ≈ 6.4 GiB &lt; 7.5 GiB
+bütçe.</li>
+<li><strong>HARDWARE_NOGO:</strong> Per-event online LoRA reddedildi;
+nesil sonu / train-then-A/B tek uygulanabilir yol.</li>
+<li><strong>WEAK_LORA_HYPOTHESIS (C′ mini):</strong> N=3 (seeds
+2001–2003), wall≈97 dk — ΔPE_lived≈+0.001, null≈−0.008,
+shuffle≈+0.010.</li>
+<li><strong>Placeholder-train caveat:</strong> C′ mini döneminde
+<code>run_micro_train_step</code> yaşantı JSONL’ini yok sayıp sabit
+micro-train metninde SFT yapıyordu. WEAK sonucu “yalnızca zayıf sinyal”
+değil, <strong>kopuk kablo</strong> da içerir. v1.6’da onarıldı.</li>
+<li><strong>Sinyal v2 + SMOKE_SEPARATION:</strong> N=1 seed 2001,
+<code>DAU_CPRIME_SIGNAL=v2</code>, wall≈1959 s (≈32.7 dk) —
+ΔPE_lived≈<strong>−0.0264</strong>, null≈<strong>+0.0062</strong>,
+shuffle≈<strong>+0.0159</strong>. Lived &lt; kontroller;
+<strong>significance claim yok</strong>.</li>
+<li><strong>Naratif evrimi:</strong> “Parametrik iz yokken frozen
+bağlamsal üstbiliş null” → “mikro LoRA + yanlış/kopuk sinyalde WEAK” →
+“doğru kablo + PE-ranked pref ile tek-seed ayrışma adayı”.</li>
+<li><strong>Sinyal v1 yetersizliği (tasarım):</strong> Skalar
+PE/delta/trauma/drift SFT, aksiyon uzayında PE minimizasyonunu doğrudan
+hedeflemez.</li>
+<li><strong>Operasyonel güvenlik:</strong>
+<code>DAU_LORA_ENABLED=0</code>, <code>DAU_LLM_BACKEND=groq</code>
+default; omurga dokunulmaz.</li>
+<li><strong>Bilimsel hedef:</strong> Ana paper = frozen null
+(publishable negative). LoRA = appendix; v2 smoke methods note; N expand
+opsiyonel araştırma.</li>
+</ol>
+<hr />
+<h2 id="architecture-critique">2. Architecture Critique</h2>
+<h3 id="pe-free-energy-daerm">2.1 PE, Free Energy, DAERM</h3>
+<p>Layer 1.5 MiniLM PE: (PE = 1 - ()). DAERM:</p>
+<p>[ _i(t)=!(,,0.75), (t)= ]</p>
+<p>[ L_i(t+1)=(L_i + PE_i - (L_i-_i),,_i,,1.0) ]</p>
+<p>Saturasyon/donma çözüldü. Meta-Observer aktüatörleri (lod_override,
+context_prune, trigger_drift_healing, trigger_retrieval) deterministik
+Python’dır; frozen LLM’in generative distribution’ını
+<strong>kalıcı</strong> iyileştirmez → açık döngü müdahalesi, kapalı
+döngü evrim değil.</p>
+<h3 id="lod-karıştırıcısı">2.2 LOD karıştırıcısı</h3>
+<p>(T_{}) System1 (NPC, 0 token) / System2 (LLM) ayrımı. Meta ON →
+lod_override System2’ye zorlar → stokastik gürültü PE ölçümüne girer.
+Deterministik seed replay’de System2=0 → SUBSTRATE_ABSENT.</p>
+<h3 id="expected_outcome">2.3 expected_outcome</h3>
+<p>Bellek zayıf → yapay yüksek PE; bellek çok güçlü → totolojik düşük
+PE. PE Std≈0.256 (endojen recovery sonrası). Her iki uç Meta etkisini
+maskeleyebilir.</p>
+<h3 id="aksiyom-tablosu">2.4 Aksiyom tablosu</h3>
+<table>
+<thead>
+<tr>
+<th>Katman</th>
+<th>Uyumlu iyileştirme</th>
+<th>Yasak anti-pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1.5</td>
+<td>PE-ranked / loss-weighted sinyal</td>
+<td>LLM-as-judge PE</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>Somatik × PE</td>
+<td>Prompt persona</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>Yaşantı → nesil sonu QLoRA</td>
+<td>Trait/persona LoRA</td>
+</tr>
+<tr>
+<td>L4</td>
+<td>Kontrollü T A/B</td>
+<td>Hakem ajan LLM</td>
+</tr>
+<tr>
+<td>L5</td>
+<td>Python eşik kalibrasyonu</td>
+<td>Aktüatörü serbest metinden parse</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="local-llm-lora-deep-dive">3. Local LLM &amp; LoRA Deep Dive</h2>
+<h3 id="inference">3.1 Inference</h3>
+<p>Lokal 4-bit Llama-3.1-8B; Groq TPD/TPM’siz. Kuantizasyon gürültüsü +
+T=0.2 stokastisite.</p>
+<h3 id="plastisite">3.2 Plastisite</h3>
+<p>QLoRA r=16, α=32, seq_len=128, steps=2, lr=2e-4. Generation-end /
+train-then-A/B. Per-event online = HARDWARE_NOGO.</p>
+<h3 id="eğitim-kablosu-v1.6-kritik">3.3 Eğitim kablosu (v1.6
+kritik)</h3>
+<ul>
+<li><code>format_micro_train_texts(examples)</code> → lived
+<code>prompt\ncompletion</code></li>
+<li><code>run_micro_train_step(examples=…)</code> CE (+
+loss_weight)</li>
+<li><code>run_micro_train_preference_step(pairs=…)</code>:<br />
+(L = L_{}() - , L_{}()), ()</li>
+</ul>
+<h3 id="sinyal-v2-veri">3.4 Sinyal v2 veri</h3>
+<p><code>build_pe_ranked_pairs</code>: expected_outcome sabit şablon +
+completion vs reject adayı; MiniLM PE sıralar. Trait/persona yok. Meta:
+<code>pe_ranked_pref_v2</code>.</p>
+<h3 id="kontroller">3.5 Kontroller</h3>
+<table>
+<thead>
+<tr>
+<th>Adapter</th>
+<th>Anlamı</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>shared_lived</td>
+<td>Doğru sinyal ile train</td>
+</tr>
+<tr>
+<td>null_control</td>
+<td>Train yok</td>
+</tr>
+<tr>
+<td>shuffle_pe_control</td>
+<td>v1: PE skalar karıştır; v2: chosen↔︎rejected</td>
+</tr>
+</tbody>
+</table>
+<h3 id="empirik-sonuçlar">3.6 Empirik sonuçlar</h3>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 6%" />
+<col style="width: 22%" />
+<col style="width: 12%" />
+<col style="width: 18%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th>Deney</th>
+<th>N</th>
+<th>ΔPE_lived</th>
+<th>null</th>
+<th>shuffle</th>
+<th>Wall</th>
+<th>Karar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C frozen</td>
+<td>~35</td>
+<td>≈0 (ON−OFF)</td>
+<td>—</td>
+<td>—</td>
+<td>TPD</td>
+<td>paper-locked null</td>
+</tr>
+<tr>
+<td>C′ mini</td>
+<td>3</td>
+<td>+0.001</td>
+<td>−0.008</td>
+<td>+0.010</td>
+<td>~97 dk</td>
+<td>WEAK_LORA</td>
+</tr>
+<tr>
+<td>C′ v2 smoke</td>
+<td>1</td>
+<td><strong>−0.0264</strong></td>
+<td>+0.0062</td>
+<td>+0.0159</td>
+<td>~33 dk</td>
+<td>SMOKE_SEPARATION</td>
+</tr>
+</tbody>
+</table>
+<p>Log/JSON:
+<code>dau_runs/protocol_c_prime_v2_smoke_*.json|.log</code></p>
+<h3 id="ne-bulduk-ne-bulmadık">3.7 Ne bulduk / ne bulmadık</h3>
+<p><strong>Buldık:</strong> Frozen null; VRAM GO; kablo bug’ı; v2
+pipeline; N=1’de lived &lt; kontroller.</p>
+<p><strong>Bulmadık:</strong> Kapalı döngü evrim garantisi;
+istatistiksel anlamlı LoRA etkisi; production LoRA açma gerekçesi.</p>
+<hr />
+<h2 id="literature-map">4. Literature Map</h2>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 36%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>Alan</th>
+<th>Çalışmalar</th>
+<th>DAU karşılığı</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Intrinsic self-correction</td>
+<td>Huang et al. 2023</td>
+<td>Protocol C paper-locked null</td>
+</tr>
+<tr>
+<td>Quantized continual learning</td>
+<td>Luo, Dettmers</td>
+<td>C′ QLoRA; replay henüz uygulanmadı</td>
+</tr>
+<tr>
+<td>Hakemsiz tercih</td>
+<td>DPO/SFT equivalence 2024/25</td>
+<td>Sinyal v2 MiniLM PE-ranked unlikelihood</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="prioritized-next-experiments">5. Prioritized Next
+Experiments</h2>
+<h3 id="kova-a-omurgayı-koru">Kova A (omurgayı koru)</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 27%" />
+<col style="width: 9%" />
+<col style="width: 36%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Hipotez</th>
+<th>N</th>
+<th>GO / NO-GO</th>
+<th>Not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H-A1</td>
+<td>v2 smoke ayrışması N≥5–15’te tutulur</td>
+<td>tartışma sonrası</td>
+<td>lived &lt; null &amp; shuffle, p&lt;0.05 adayı</td>
+<td>Otomatik değil</td>
+</tr>
+<tr>
+<td>H-A2</td>
+<td>%10 somatik replay stabilize eder</td>
+<td>10</td>
+<td>varyans ↓</td>
+<td>VRAM +~0.3 GiB</td>
+</tr>
+<tr>
+<td>H-A3</td>
+<td>Frozen null paper gövdesi</td>
+<td>mevcut</td>
+<td>—</td>
+<td><strong>Öncelik: yazım</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="kova-b-mühendislik-ikincil">Kova B (mühendislik, ikincil)</h3>
+<p>seq_len=512, epoch↑ — yalnızca sinyal sabitken ve H-A1 kararı
+sonrası.</p>
+<h3 id="kova-c-yasak">Kova C (yasak)</h3>
+<p>Persona LoRA · LLM-as-judge · per-event online LoRA · full FT · Groq
+C tekrarı · Layer 6.</p>
+<hr />
+<h2 id="paper-narrative-outline">6. Paper Narrative Outline</h2>
+<ol type="1">
+<li><strong>Title (taslak):</strong> Limits of In-Context Metacognition
+and Experience-Conditioned Parametric Adaptation in Autonomous LLM
+Agents</li>
+<li><strong>Study 1 (ana):</strong> Protocol C frozen null</li>
+<li><strong>Study 2 / App A:</strong> C′ mini WEAK + placeholder-train
+caveat</li>
+<li><strong>App B:</strong> C′ v2 smoke SMOKE_SEPARATION (N=1; no
+significance)</li>
+<li><strong>Discussion:</strong> Yaşantı omurgası ≠ parametrik evrim;
+sinyal tasarımı kritik köprü</li>
+<li><strong>Explicit non-recommendations:</strong> trait LoRA,
+LLM-as-judge, online LoRA, omurga rewrite</li>
+</ol>
+<hr />
+<h2 id="decision-framework-v1.6-sonrası">7. Decision Framework (v1.6
+sonrası)</h2>
+<table>
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 28%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th>Seçenek</th>
+<th>Anlam</th>
+<th>Tavsiye</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>LoRA’yı appendix bırak, paper yaz</td>
+<td><strong>Ana yol (kaynak/bilim)</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>N expand v2 (5→15)</td>
+<td>Yalnızca bilinçli onay; smoke yeşil ışık ama zayıf</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Lokal LLM sadece araç</td>
+<td>Zaten default runtime böyle</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ürün evrimi:</strong> Hâlâ alınmadı. <strong>Bilimsel
+fayda:</strong> Negatif bulgu kilit + ölçülebilir LoRA hipotezi + dürüst
+caveat’ler.</p>
+<hr />
+<h2 id="operasyonel-bayraklar">8. Operasyonel bayraklar</h2>
+<pre><code>DAU_LLM_BACKEND=groq|local     # default groq
+DAU_LORA_ENABLED=0|1           # default 0
+DAU_CPRIME_SIGNAL=v1|v2        # C′ harness
+DAU_CPRIME_N_PAIRS / EVENTS / SEEDS</code></pre>
+<p>Plasticity gate: <code>dau_runs/vram_spike_results.json</code>
+status=GO.</p>
+<hr />
+<p><em>Bu rapor Master v1.6 ile senkron tutulmalıdır. Çelişki halinde
+Master üstündür.</em></p>
+</body>
+</html>

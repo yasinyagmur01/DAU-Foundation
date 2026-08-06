@@ -59,6 +59,8 @@ QUANT_BNB_4BIT_USE_DOUBLE_QUANT: bool = True
 MINILM_PROBE_TEXT: str = "local vram coexistence probe"
 MICRO_TRAIN_PROMPT: str = "Lived trace: extract resource under scarcity."
 MICRO_TRAIN_COMPLETION: str = "I take resources carefully from the commons."
+# Preference unlikelihood: minimize CE(chosen) and maximize CE(rejected).
+PREF_UNLIKELIHOOD_COEF: float = 0.5
 
 STATUS_GO: str = "GO"
 STATUS_NOGO: str = "NO_GO"
@@ -387,8 +389,44 @@ def complete_local(
     return _tokenizer.decode(generated, skip_special_tokens=True).strip()
 
 
-def run_micro_train_step(model: Any | None = None) -> None:
-    """One tiny causal-LM train step (batch=1) for VRAM peak measurement."""
+def format_micro_train_texts(examples: list[Any] | None = None) -> list[str]:
+    """Build causal-LM texts from lived examples; else placeholder spike text.
+
+    Lived rows must expose ``prompt`` and ``completion``. Empty / None examples
+    keep VRAM-spike backward compatibility (fixed MICRO_TRAIN_* strings).
+    """
+
+    texts: list[str] = []
+    if examples:
+        for row in examples:
+            prompt = str(getattr(row, "prompt", "") or "")
+            completion = str(getattr(row, "completion", "") or "")
+            if prompt or completion:
+                texts.append(f"{prompt}\n{completion}")
+    if not texts:
+        return [f"{MICRO_TRAIN_PROMPT}\n{MICRO_TRAIN_COMPLETION}"]
+    return texts
+
+
+def _example_loss_weight(row: Any | None) -> float:
+    if row is None:
+        return 1.0
+    weight = getattr(row, "loss_weight", None)
+    if weight is None:
+        return 1.0
+    return float(weight)
+
+
+def run_micro_train_step(
+    model: Any | None = None,
+    examples: list[Any] | None = None,
+) -> None:
+    """Tiny causal-LM train loop (batch=1).
+
+    When ``examples`` is provided, trains on lived prompt/completion strings
+    (and optional ``loss_weight``). Otherwise uses MICRO_TRAIN_* placeholders
+    for the VRAM spike path.
+    """
 
     import torch
     from torch.optim import AdamW
@@ -404,31 +442,103 @@ def run_micro_train_step(model: Any | None = None) -> None:
         if hasattr(peft_model, "enable_input_require_grads"):
             peft_model.enable_input_require_grads()
 
-    text = f"{MICRO_TRAIN_PROMPT}\n{MICRO_TRAIN_COMPLETION}"
-    encoded = _tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=MICRO_TRAIN_SEQ_LEN,
-        padding="max_length",
-    )
-    if torch.cuda.is_available():
-        encoded = {key: value.cuda() for key, value in encoded.items()}
-    labels = encoded["input_ids"].clone()
-
+    texts = format_micro_train_texts(examples)
     peft_model.train()
     optimizer = AdamW(
         (param for param in peft_model.parameters() if param.requires_grad),
         lr=MICRO_TRAIN_LEARNING_RATE,
     )
-    for _ in range(MICRO_TRAIN_STEPS):
+    for step_index in range(MICRO_TRAIN_STEPS):
+        row_index = step_index % len(texts)
+        text = texts[row_index]
+        row = examples[row_index] if examples and row_index < len(examples) else None
+        weight = _example_loss_weight(row)
+        encoded = _tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=MICRO_TRAIN_SEQ_LEN,
+            padding="max_length",
+        )
+        if torch.cuda.is_available():
+            encoded = {key: value.cuda() for key, value in encoded.items()}
+        labels = encoded["input_ids"].clone()
+
         optimizer.zero_grad(set_to_none=True)
         outputs = peft_model(
             input_ids=encoded["input_ids"],
             attention_mask=encoded["attention_mask"],
             labels=labels,
         )
-        loss = outputs.loss
+        loss = outputs.loss * weight
+        loss.backward()
+        optimizer.step()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    peft_model.eval()
+
+
+def run_micro_train_preference_step(
+    model: Any | None = None,
+    pairs: list[Any] | None = None,
+) -> None:
+    """Chosen CE + rejected unlikelihood (no TRL DPO; MiniLM labels only).
+
+    Falls back to ``run_micro_train_step`` when ``pairs`` is empty.
+    """
+
+    import torch
+    from torch.optim import AdamW
+
+    if not pairs:
+        run_micro_train_step(model=model)
+        return
+
+    if _tokenizer is None:
+        raise RuntimeError("Tokenizer missing; load_base_model_4bit first.")
+    peft_model = model if model is not None else _peft_model
+    if peft_model is None:
+        peft_model = attach_lora_adapter()
+
+    if hasattr(peft_model, "gradient_checkpointing_enable"):
+        peft_model.gradient_checkpointing_enable()
+        if hasattr(peft_model, "enable_input_require_grads"):
+            peft_model.enable_input_require_grads()
+
+    peft_model.train()
+    optimizer = AdamW(
+        (param for param in peft_model.parameters() if param.requires_grad),
+        lr=MICRO_TRAIN_LEARNING_RATE,
+    )
+
+    def _ce_loss(prompt: str, completion: str) -> Any:
+        text = f"{prompt}\n{completion}"
+        encoded = _tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=MICRO_TRAIN_SEQ_LEN,
+            padding="max_length",
+        )
+        if torch.cuda.is_available():
+            encoded = {key: value.cuda() for key, value in encoded.items()}
+        labels = encoded["input_ids"].clone()
+        outputs = peft_model(
+            input_ids=encoded["input_ids"],
+            attention_mask=encoded["attention_mask"],
+            labels=labels,
+        )
+        return outputs.loss
+
+    for step_index in range(MICRO_TRAIN_STEPS):
+        pair = pairs[step_index % len(pairs)]
+        prompt = str(getattr(pair, "prompt", "") or "")
+        chosen = str(getattr(pair, "chosen", "") or "")
+        rejected = str(getattr(pair, "rejected", "") or "")
+        optimizer.zero_grad(set_to_none=True)
+        loss_chosen = _ce_loss(prompt, chosen)
+        loss_rejected = _ce_loss(prompt, rejected)
+        loss = loss_chosen - (PREF_UNLIKELIHOOD_COEF * loss_rejected)
         loss.backward()
         optimizer.step()
         if torch.cuda.is_available():

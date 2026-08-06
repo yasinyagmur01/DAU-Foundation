@@ -9,12 +9,13 @@ from dau.diagnostics.run_protocol_c_prime import (
     ADAPTER_NULL,
     ADAPTER_SHARED,
     ADAPTER_SHUFFLE,
+    SIGNAL_V2,
     STATUS_DEFERRED,
     build_shared_adapter,
     run_protocol_c_prime,
     write_report,
 )
-from dau.foundation.lora_update import LivedTraceExample
+from dau.foundation.lora_update import LivedTraceExample, PreferencePair, SIGNAL_V2_ID
 
 
 def _example(pe: float = 0.3) -> LivedTraceExample:
@@ -70,3 +71,38 @@ def test_protocol_c_prime_dry_run_report(tmp_path: Path, monkeypatch) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["status"] == STATUS_DEFERRED
     assert "DEFER" in payload["decision"]
+
+
+def test_v2_adapter_writes_preference_pairs(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    pairs = [
+        PreferencePair(
+            prompt="Context expectation: care\nLived scalars: pe=0.200",
+            chosen="share carefully",
+            rejected="drain the pool",
+            pe_chosen=0.1,
+            pe_rejected=0.9,
+            event_counter=1,
+        )
+    ]
+    spec = build_shared_adapter(
+        2001,
+        kind=ADAPTER_SHARED,
+        examples=[_example()],
+        pairs=pairs,
+        signal=SIGNAL_V2,
+    )
+    pref_path = Path(spec.path) / "preference_pairs.jsonl"
+    assert pref_path.is_file()
+    meta = json.loads((Path(spec.path) / "adapter_meta.json").read_text(encoding="utf-8"))
+    assert meta["signal"] == SIGNAL_V2_ID
+    assert spec.example_count == 1
+
+
+def test_protocol_c_prime_v2_dry_run_smoke_n1(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DAU_CPRIME_SIGNAL", "v2")
+    report = run_protocol_c_prime(seeds=[2001], dry_run=True, signal=SIGNAL_V2)
+    assert report.status == STATUS_DEFERRED
+    assert report.n_pairs == 1
+    assert report.signal == SIGNAL_V2_ID
