@@ -51,8 +51,7 @@ from dau.foundation.state import (
     DAUAgentState,
     InternalState,
 )
-from dau.society.environment import EnvironmentState, get_pool_ratio, step_pool
-from dau.society.run_convention_pilot import decision_to_extraction
+from dau.society.environment import EnvironmentState, get_pool_ratio
 from langchain_groq import ChatGroq
 
 # ---------------------------------------------------------------------------
@@ -66,7 +65,8 @@ POOL_REGEN_RATE: float = 0.15
 INITIAL_POOL: float = 60.0
 
 SOCIAL_PRESSURE_STEP: float = 0.01
-STREAM_NODES_PER_EVENT: int = 4
+# social_pre → agent → evaluator → meta_observer → pool_step
+STREAM_NODES_PER_EVENT: int = 5
 STREAM_RECURSION_HEADROOM: int = 10
 STREAM_RECURSION_LIMIT: int = (
     MAX_EVENTS * STREAM_NODES_PER_EVENT + STREAM_RECURSION_HEADROOM
@@ -335,33 +335,14 @@ def _wrap_agent_node(original: Any) -> Any:
 
 
 def _wrap_meta_observer_node(original: Any) -> Any:
-    """After Meta-Observer: harvest → step_pool, raise social pressure, log."""
+    """After Meta-Observer: raise social hostility and log PE vitals.
+
+    Pool advance + crisis trauma are production graph duties (pool_step_node).
+    This harness must not call step_pool here — that would double-step the commons.
+    """
 
     def wrapper(state: DAUAgentState) -> dict[str, Any]:
         patch = dict(original(state))
-
-        decision = ""
-        if state.event_log:
-            decision = str(state.event_log[-1].payload.get("decision", ""))
-        extraction = float(decision_to_extraction(decision)) if decision else METRIC_MIN
-
-        env = state.env_state
-        if not isinstance(env, EnvironmentState):
-            env = EnvironmentState(pool=INITIAL_POOL)
-        env = step_pool(env, {state.agent_id: extraction})
-
-        constraints = state.environment
-        pool_ratio = get_pool_ratio(env)
-        scarcity = max(METRIC_MIN, min(METRIC_MAX, 1.0 - pool_ratio))
-        social = max(
-            METRIC_MIN,
-            min(METRIC_MAX, float(constraints.social_pressure) + SOCIAL_PRESSURE_STEP),
-        )
-        constraints = update_constraints(
-            constraints,
-            resource_scarcity=scarcity,
-            social_pressure=social,
-        )
 
         # Ongoing social hostility: opponent keeps defecting / deadlocking.
         social = state.social_state
@@ -380,9 +361,6 @@ def _wrap_meta_observer_node(original: Any) -> Any:
                 event_counter=event_n,
             ),
         )
-
-        patch["env_state"] = env
-        patch["environment"] = constraints
         patch["social_state"] = social
 
         # Post-meta vitals: PE row from evaluator + drift after actuators.
@@ -405,6 +383,35 @@ def _wrap_meta_observer_node(original: Any) -> Any:
                 internal=internal,
                 drift=drift,
             )
+        return patch
+
+    return wrapper
+
+
+def _wrap_pool_step_node(original: Any) -> Any:
+    """After production pool_step: sync scarcity / social_pressure from new pool."""
+
+    def wrapper(state: DAUAgentState) -> dict[str, Any]:
+        patch = dict(original(state))
+
+        env = patch.get("env_state", state.env_state)
+        if not isinstance(env, EnvironmentState):
+            env = EnvironmentState(pool=INITIAL_POOL)
+
+        constraints = state.environment
+        if "environment" in patch and patch["environment"] is not None:
+            constraints = patch["environment"]
+        pool_ratio = get_pool_ratio(env)
+        scarcity = max(METRIC_MIN, min(METRIC_MAX, 1.0 - pool_ratio))
+        social_pressure = max(
+            METRIC_MIN,
+            min(METRIC_MAX, float(constraints.social_pressure) + SOCIAL_PRESSURE_STEP),
+        )
+        patch["environment"] = update_constraints(
+            constraints,
+            resource_scarcity=scarcity,
+            social_pressure=social_pressure,
+        )
         return patch
 
     return wrapper
@@ -513,6 +520,7 @@ def run_long() -> int:
 
     original_agent = graph_mod.agent_node
     original_meta = graph_mod.meta_observer_node
+    original_pool_step = graph_mod.pool_step_node
     original_build_llm = graph_mod._build_llm
     original_max_events = graph_mod.MAX_EVENTS
     original_energy_floor = graph_mod.AB_ENERGY_FLOOR
@@ -523,6 +531,7 @@ def run_long() -> int:
     install_actuator_patches()
     graph_mod.agent_node = _wrap_agent_node(original_agent)
     graph_mod.meta_observer_node = _wrap_meta_observer_node(original_meta)
+    graph_mod.pool_step_node = _wrap_pool_step_node(original_pool_step)
     graph_mod._build_llm = _wrap_build_llm(original_build_llm)
 
     reset_pe_event_log()
@@ -580,6 +589,7 @@ def run_long() -> int:
         graph_mod._memory_written.pop(LONG_RUN_AGENT_ID, None)
         graph_mod.agent_node = original_agent
         graph_mod.meta_observer_node = original_meta
+        graph_mod.pool_step_node = original_pool_step
         graph_mod._build_llm = original_build_llm
         graph_mod.MAX_EVENTS = original_max_events
         graph_mod.AB_ENERGY_FLOOR = original_energy_floor
