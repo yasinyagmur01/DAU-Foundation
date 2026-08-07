@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from dau.foundation.drift import DriftState, update_drift
+from dau.foundation.state import METRIC_MAX, METRIC_MIN, DeltaRecord
+
 # ---------------------------------------------------------------------------
 # Resource pool parameters (no magic numbers in logic)
 # ---------------------------------------------------------------------------
@@ -19,9 +22,23 @@ POOL_INIT: float = 80.0
 COLLAPSE_EPSILON: float = 0.05
 POOL_MIN: float = 0.0
 
+# Somatic enforcement — pool crisis → amplified resource trauma
+POOL_CRISIS_THRESHOLD: float = 0.30
+CRISIS_TRAUMA_MULTIPLIER: float = 2.5
+CRISIS_BASE_MAGNITUDE: float = 0.4
+CRISIS_AFFECTED_DOMAIN: str = "resource"
+CRISIS_EVENT_COUNTER: int = 0
+
 EXTRACTION_KEY_AGENT_ID: str = "agent_id"
 EXTRACTION_KEY_AMOUNT: str = "amount"
 EXTRACTION_KEY_EVENT: str = "event"
+
+_CRISIS_SNAPSHOT: dict[str, float] = {
+    "energy": 1.0,
+    "resource_load": 0.0,
+    "uncertainty_load": 0.0,
+    "social_load": 0.0,
+}
 
 
 @dataclass
@@ -96,3 +113,47 @@ def agent_delta_pool(env: EnvironmentState, agent_id: str) -> float:
         for entry in env.extraction_history
         if str(entry[EXTRACTION_KEY_AGENT_ID]) == target
     )
+
+
+def apply_crisis_trauma(
+    drift_state: DriftState,
+    pool_ratio: float,
+    base_magnitude: float = CRISIS_BASE_MAGNITUDE,
+) -> DriftState:
+    """Apply multiplied resource trauma when pool_ratio < crisis threshold.
+
+    Biology analogy: famine below the survival floor leaves a somatic scar —
+    not a label, but a permanent domain shift via update_drift.
+    """
+
+    if pool_ratio >= POOL_CRISIS_THRESHOLD:
+        return drift_state
+
+    crisis_magnitude = max(
+        METRIC_MIN,
+        min(METRIC_MAX, float(base_magnitude) * CRISIS_TRAUMA_MULTIPLIER),
+    )
+    dummy_delta = DeltaRecord(
+        timestamp=CRISIS_EVENT_COUNTER,
+        magnitude=crisis_magnitude,
+        affected_domain=CRISIS_AFFECTED_DOMAIN,  # type: ignore[arg-type]
+        snapshot_before=dict(_CRISIS_SNAPSHOT),
+        snapshot_after=dict(_CRISIS_SNAPSHOT),
+    )
+    return update_drift(drift_state, dummy_delta)
+
+
+def step_pool_with_crisis(
+    env_state: EnvironmentState,
+    extractions: dict[str, float],
+    drift_states: dict[str, DriftState],
+) -> tuple[EnvironmentState, dict[str, DriftState]]:
+    """Advance the pool, then apply somatic crisis trauma to each agent."""
+
+    new_env = step_pool(env_state, extractions)
+    pool_ratio = get_pool_ratio(new_env)
+    updated_drifts = {
+        agent_id: apply_crisis_trauma(ds, pool_ratio)
+        for agent_id, ds in drift_states.items()
+    }
+    return new_env, updated_drifts

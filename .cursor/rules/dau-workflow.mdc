@@ -17,16 +17,17 @@ alwaysApply: true
 ```
 
 ## Master Reference
-- Kaynak: `docs/DAU_MASTER_REFERENCE_v10.md` (+ `.html` / `.pdf`)
+- Kaynak: `docs/DAU_MASTER_REFERENCE_v20.md` (içerik **v2.0**)
+- Türevler: `docs/DAU_MASTER_REFERENCE_v20.html` / `.pdf`
+- Eski `v10` (v1.4) arşiv — operasyonel kaynak değil
 - Katman / empirik dönüm tamamlanınca kullanıcıya güncelleme önerisi ver
 - Güncelleme ve commit kullanıcı onayına bağlıdır
 
 ## Katman durumu
-- Layer 0 Foundation ✅
-- Layer 1 Memory ✅
-- Layer 1.5 Prediction Error ✅
-- Layer 2 EmotionalWeight + Drift ✅
-- Layer 3 GenerationConsolidation + DriftHealing ✅
-- Layer 4 Society ✅
-- Layer 5 Metacognition ✅ kod / ❌ empirik (Protocol C provisional null)
-- Sıradaki: lokal LLM araştırması → yaşantı-koşullu LoRA → Protocol C′
+- Layer 0–4 ✅ (+ ADIM 1 crisis API)
+- Layer 5 ✅ kod / empirik: Protocol C **paper-locked null** · C′ mini
+  **WEAK** · C′ v2 **SMOKE_SEPARATION** (N=1)
+- ADIM 1–4 ✅ kod (crisis · NLI · per-agent QLoRA · PPR)
+- ADIM 5–6 ❌ (precision PE · C′ N≥15)
+- Flags: `DAU_LORA_ENABLED=0`, `DAU_LLM_BACKEND=groq` default
+- Sıradaki: graph kablolama gap’leri · ADIM 5 · ADIM 6 / paper

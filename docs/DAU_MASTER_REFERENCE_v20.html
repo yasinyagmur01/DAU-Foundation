@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DAU Master Reference v2.0</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">DAU Master Reference v2.0</h1>
+</header>
+<h1 id="dau-master-reference">DAU — Master Reference</h1>
+<p><strong>Versiyon 2.0</strong> · 2026-08-07<br />
+<strong>Dosya:</strong>
+<code>docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}</code><br />
+<em>(eski <code>v10</code> / Versiyon 1.x belge ailesi süpersede edildi
+— arşiv olarak kalabilir)</em></p>
+<p>Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C
+<strong>paper-locked negative finding</strong> · Protocol C′ mini
+<strong>WEAK_LORA</strong> · C′ v2 smoke
+<strong>SMOKE_SEPARATION</strong> (N=1) · <strong>ADIM 1–4
+kodlandı</strong> (crisis trauma · NLI filter · per-agent QLoRA ·
+HippoRAG PPR) · <strong>ADIM 5–6 henüz yok</strong> · bu branch’te
+<strong>159 test collect</strong>.</p>
+<p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
+frozen-weight kapalı döngü metacognition <strong>UNSUPPORTED
+(paper-locked null)</strong> · yaşantı-LoRA mini
+<strong>WEAK_LORA_HYPOTHESIS</strong> (appendix) · C′ v2 1-seed smoke:
+lived ΔPE &lt; null/shuffle (<strong>SMOKE_SEPARATION</strong>;
+significance yok). <code>DAU_LORA_ENABLED=0</code> ·
+<code>DAU_LLM_BACKEND=groq</code> default.</p>
+<p><strong>Faz 0 kilit:</strong> Frozen Protocol C null
+<strong>paper-locked</strong>; full Groq Protocol C tekrar yok.</p>
+<p><strong>Plastisite / ADIM durumu (v2.0):</strong> - Flags:
+<code>DAU_LLM_BACKEND=groq|local</code> (default groq),
+<code>DAU_LORA_ENABLED=0</code>, <code>DAU_NLI_FILTER_ENABLED=1</code>
+(default; <code>=0</code> ile kapatılır). - VRAM spike
+<strong>GO</strong>: Llama-3.1-8B 4-bit + MiniLM(CPU) + QLoRA
+micro-train; peak ≈ <strong>6.4 GiB</strong> (RTX 4070 Laptop 8GB). -
+ADIM 1 (somatic crisis) · ADIM 2 (NLI polarity) · ADIM 3 (per-agent
+adapter) · ADIM 4 (PPR memory) — <strong>kod + unit test</strong> bu
+branch’te. - ADIM 5 (precision-weighted PE) · ADIM 6 (Protocol C′ N≥15)
+— <strong>planlı, kodlanmadı</strong>. - Bilinen gap:
+<code>apply_crisis_trauma</code> / <code>step_pool_with_crisis</code>
+API hazır; production <code>graph.py</code> henüz otomatik çağırmıyor.
+<code>maybe_lora_update_after_life</code> generation-end helper; graph
+consolidate path’e henüz kablolanmadı.</p>
+<hr />
+<h2 id="aksiyom">1. Aksiyom</h2>
+<p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
+değil, yaşantı yoluyla iç dünya inşa ettiği bir simülasyon
+evrenidir.</p>
+<p>AMADS’ın temel bulgusundan doğdu: <code>cooperation = 0.8</code>
+atadık, agent farklı davrandı. Dışarıdan enjekte edilen trait
+çalışmıyor. İçten gelen bir “ben” lazım.</p>
+<blockquote>
+<p><strong>Bir agent’a trait veremezsin. Sadece yaşam verebilirsin.
+Trait oradan çıkar.</strong></p>
+</blockquote>
+<p>Caron &amp; Srivastava, Hartley et al., Bodroža et al., Dubedy — dört
+bağımsız çalışma trait injection’ın tutarsız, yüzeysel ve davranışa
+bağlanmayan sonuçlar ürettiğini gösteriyor. Gemini 2026 Deep Research
+raporu bu yasağı literatürce yeniden doğruladı.</p>
+<h3 id="değiştirilemez-yasaklar">Değiştirilemez yasaklar</h3>
+<ol type="1">
+<li>Trait injection yok</li>
+<li>LLM-as-judge yok — tüm metrikler deterministik Python</li>
+<li>Clock-driven zaman yok — event sırası (<code>int</code>,
+<code>now_counter</code>)</li>
+<li>Her sabit <code>UPPER_CASE</code>, tek yerde (tercihen
+<code>constraints.py</code> veya modül başı)</li>
+<li>Magic number yok — semantic field isimleri</li>
+</ol>
+<hr />
+<h2 id="evren-modeli">2. Evren modeli</h2>
+<ul>
+<li>Kapalı simülasyon — agent’lar yapay zeka olduklarını bilmiyor</li>
+<li>Az sayıda LLM-powered tam kognisyon agent</li>
+<li>Büyük çoğunluk: deterministik mock NPC (Layer 4)</li>
+<li>Farklı katmanlarda roller (Mimar / Kahin benzeri karar
+mekanizmaları)</li>
+</ul>
+<p><strong>Üç temel mücadele:</strong> kaynak, evrimleşme, “Bu gerçek
+mi?” öz sorgusu.</p>
+<p><strong>Çok-ajan gerçekliği (Layer 4 + ADIM 3):</strong> Convention
+pilot <code>N_AGENTS=3</code>. Graph life-loop tek <code>agent_id</code>
+/ <code>thread_id</code> ile çalışır; per-agent LoRA adapter dizini
+<code>dau_runs/adapters/{agent_id}/</code> ile ajana özel plastisite
+hazır (Punica deseni).</p>
+<hr />
+<h2 id="zaman-ve-free-energy">3. Zaman ve Free Energy</h2>
+<p>Reaktif LLM (−t: geçmiş pattern) yerine proaktif anticipation (+t):
+deneyim → internal model → tahmin → eylem → yeni deneyim.</p>
+<p>Friston Free Energy: organizma sürprizi minimize eder. <strong>Delta
+= tahmin hatası.</strong> Layer 1.5 bunu graph döngüsüne bağladı.</p>
+<hr />
+<h2 id="duygu-ve-drift-layer-2-tamam">4. Duygu ve drift (Layer 2 —
+tamam)</h2>
+<p>Damasio: duygu = önceliklendirme. Dubedy 2025:
+<code>emotion: "anxious"</code> JSON etiketi kararı değiştirmiyor. Duygu
+etiket değil, fonksiyondur.</p>
+<pre><code>Uyaran → delta(iç durum) → EmotionalWeight → etkilenen karar bölgesi → drift</code></pre>
+<ul>
+<li><code>EmotionalWeight.somatic_markers</code>: threat, reward,
+novelty, social, loss ∈ [0, 1]</li>
+<li><code>apply_emotional_weight</code>: en yüksek marker →
+<code>You are currently prioritizing: {top_marker}</code></li>
+<li>Travma (<code>magnitude ≥ 0.7</code>) → <code>update_drift</code> →
+kalıcı domain flag + magnitude birikimi</li>
+<li>Drift healing: <code>heal_drift</code> (<code>HEAL_RATE=0.3</code>,
+~5 güçlü deneyim)</li>
+<li><strong>ADIM 1 eklentisi:</strong> pool krizinde
+(<code>pool_ratio &lt; 0.30</code>) resource domain’e çarpanlı travma
+(<code>CRISIS_TRAUMA_MULTIPLIER=2.5</code>) — bkz. §10 / §20</li>
+</ul>
+<hr />
+<h2 id="delta-eşikleri">5. Delta eşikleri</h2>
+<pre><code>DELTA_THRESHOLD_NOISE  = 0.1  # NO_TRACE
+DELTA_THRESHOLD_NORMAL = 0.4  # NORMAL
+DELTA_THRESHOLD_DEEP   = 0.7  # DEEP
+# ≥ DEEP → TRAUMA → drift</code></pre>
+<pre><code>delta küçük     → hafızaya yazılmaz
+delta orta      → kısa süreli / NORMAL
+delta büyük     → DEEP → disk
+delta çok büyük → TRAUMA → drift tetiklenir</code></pre>
+<p>Travma birikimi:
+<code>magnitudes[domain] = current + magnitude × exp(−current / TRAUMA_DECAY_BASE)</code><br />
+<code>TRAUMA_DECAY_BASE = 1.0</code> — azalan getiri.</p>
+<p><strong>Magnitude (v1.2+ peak-weighted, DAERM’den
+bağımsız):</strong></p>
+<pre><code>M = 0.70 · max(PE_vec) + 0.30 · mean(PE_vec)
+# MAGNITUDE_PEAK_WEIGHT = 0.70
+# Uniform spillover S=0.20 → M ≈ 0.82 · PE
+# PE ≥ 0.854 → M ≥ 0.70 → TRAUMA reachable</code></pre>
+<hr />
+<h2 id="hafıza-formülleri-layer-1-adim-4">6. Hafıza formülleri (Layer 1
++ ADIM 4)</h2>
+<h3 id="ebbinghaus-değişmedi">Ebbinghaus (değişmedi)</h3>
+<pre><code>t = now_counter - record.last_activated_counter
+S = max(1, round(record.magnitude / S_UNIT))  # S_UNIT=0.1
+R = exp(-t / S)
+# Recall: S += 1 · Travma silinmez (TRAUMA_S_BASE = 10)</code></pre>
+<h3 id="memory_score-v2.0-hipporag-2-ppr-entegre">memory_score (v2.0 —
+HippoRAG 2 PPR entegre)</h3>
+<p>Legacy üçlü (0.3 / 0.4 / 0.3) <code>PPR_WEIGHT_IN_SCORE=0.30</code>
+ile ölçeklenir (<code>× 0.70</code>), böylece toplam ağırlık 1.0
+kalır:</p>
+<pre><code>W_RECENCY    = 0.3 × 0.7 = 0.21
+W_IMPORTANCE = 0.4 × 0.7 = 0.28
+W_RELEVANCE  = 0.3 × 0.7 = 0.21
+PPR_WEIGHT   = 0.30
+
+memory_score = 0.21·recency + 0.28·magnitude
+             + 0.21·domain_match + 0.30·ppr_score</code></pre>
+<p>PPR sabitleri (<code>constraints.py</code>):</p>
+<pre><code>PPR_ALPHA = 0.85
+PPR_WEIGHT_IN_SCORE = 0.30
+PPR_TOP_K_DOMAINS = 10</code></pre>
+<p>Modül: <code>dau/memory/ppr_retrieval.py</code> — SQLite domain
+co-occurrence grafı üzerinde Personalized PageRank (CPU; NetworkX
+bağımlılığı yoksa saf Python yolu). <code>W_SEM=0</code> — ChromaDB
+embedding hâlâ skor değil, depo.</p>
+<hr />
+<h2 id="layer-1.5-prediction-error-tamam">7. Layer 1.5 — Prediction
+Error (tamam)</h2>
+<pre><code>agent_node:
+  expected_outcome = memory-gated (Chroma) veya domain fallback
+  → karar + expected_outcome event payload
+
+evaluator_node:
+  prediction_error = 1 - cosine_sim_MiniLM(expected, actual)
+  after = apply_prediction_error(before, prediction_error)  # DAERM
+  delta = compute_delta(before, after, raw_pe=PE)
+  drift_state = update_drift(drift_state, delta)
+  → memory record_delta</code></pre>
+<p>Sensör: <code>semantic_similarity.py</code> — frozen
+<code>all-MiniLM-L6-v2</code>, cosine ∈ [0,1]. Jaccard yalnızca
+diagnostik. Bilinen MiniLM sınırı: negation / polarity zayıf →
+<strong>ADIM 2 NLI filtresi</strong> preference çiftlerinde bunu telafi
+eder.</p>
+<h3 id="daerm-dynamic-allostatic-equilibrium-recovery-model">DAERM
+(Dynamic Allostatic Equilibrium Recovery Model)</h3>
+<pre><code>μ_i(t) = min(M_drift_i / (1 + M_drift_i), 0.75)
+γ(t)   = E(t) / (1 + M_total)
+L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)</code></pre>
+<p>Sabitler: <code>ALLOSTATIC_SETPOINT_MAX=0.75</code>,
+<code>CROSS_AXIS_SPILLOVER=0.20</code>,
+<code>METABOLIC_FLOOR=0.05</code>.</p>
+<hr />
+<h2 id="layer-2-emotionalweight-drift-tamam">8. Layer 2 —
+EmotionalWeight + Drift (tamam)</h2>
+<h3 id="emotionalweight">EmotionalWeight</h3>
+<pre><code>threat  = clamp(magnitude · resource_load, 0, 1)
+reward  = clamp((1 − magnitude) · energy, 0, 1)
+novelty = clamp(magnitude · uncertainty_load, 0, 1)
+social  = clamp(social_load, 0, 1)
+loss    = 1.0 if is_trauma(delta) else 0.0</code></pre>
+<h3 id="drift">Drift</h3>
+<pre><code>DriftState(flags: dict[str,bool], magnitudes: dict[str,float])
+update_drift: travma → flags[domain]=True,
+  magnitudes[domain] = current + magnitude × exp(−current / TRAUMA_DECAY_BASE)
+heal_drift: flagged + magnitude≥0.6 + non-trauma → magnitudes azalır (HEAL_RATE=0.3)
+get_drift_bias: flagged ise magnitude, değilse 0.0</code></pre>
+<hr />
+<h2 id="layer-3-nesil-konsolidasyonu-drift-healing-tamam">9. Layer 3 —
+Nesil Konsolidasyonu + Drift Healing (tamam)</h2>
+<ul>
+<li><code>select_for_transfer</code>: memory_score ≥ 0.6, recall_count ≥
+1; travma yalnızca drift ≥ 1.5 ise (veya F_agent bandına göre
+cautionary)</li>
+<li><code>F_agent &lt; 0.35</code> → travma cautionary
+(<code>inherited_warning=True</code>,
+<code>somatic_scale=-0.3</code>)</li>
+<li>Constants: <code>GENERATION_TRANSFER_THRESHOLD=0.6</code>,
+<code>GENERATION_MIN_RECALL=1</code>,
+<code>DRIFT_TRANSFER_MIN=1.5</code>, <code>HEAL_THRESHOLD=0.6</code>,
+<code>HEAL_RATE=0.3</code></li>
+</ul>
+<hr />
+<h2 id="layer-4-society-tamam-adim-1">10. Layer 4 — Society (tamam +
+ADIM 1)</h2>
+<h3 id="govsim-kaynak-fiziği-environment.py">GovSim Kaynak Fiziği
+(<code>environment.py</code>)</h3>
+<pre><code>P_next = clamp(P + r·P·(1 - P/P_max) - Σe_i, 0, P_max)
+collapse = P_next &lt;= P_max · COLLAPSE_EPSILON
+# POOL_MAX=100, POOL_REGEN_RATE=0.15, COLLAPSE_EPSILON=0.05</code></pre>
+<h3 id="adim-1-somatic-enforcement-kodlandı">ADIM 1 — Somatic
+Enforcement (kodlandı)</h3>
+<pre><code>POOL_CRISIS_THRESHOLD   = 0.30
+CRISIS_TRAUMA_MULTIPLIER = 2.5
+CRISIS_BASE_MAGNITUDE    = 0.4   # × 2.5 → 1.0 TRAUMA (clamp)
+CRISIS_AFFECTED_DOMAIN   = &quot;resource&quot;</code></pre>
+<p>API:</p>
+<pre><code>apply_crisis_trauma(drift_state, pool_ratio, base_magnitude=…) -&gt; DriftState
+step_pool_with_crisis(env, extractions, drift_states) -&gt; (env, drift_states)</code></pre>
+<p><code>pool_ratio &lt; 0.30</code> → sentetik <code>DeltaRecord</code>
++ <code>update_drift</code> (mevcut imza). Eşik ve üstü: no-op. Unit
+testler: <code>dau/society/tests/test_environment.py</code> (crisis 5
+test). <strong>Gap:</strong> <code>graph.py</code> henüz her adımda
+otomatik çağırmıyor — pilot / harness /
+<code>step_pool_with_crisis</code> üzerinden.</p>
+<h3 id="sosyal-yük-lod-fitness">Sosyal yük / LOD / Fitness</h3>
+<pre><code>social_load = 0.5·cooperation_stress + 0.5·coordination_friction
+T_cognitive = 0.35·(δ/0.7) + 0.25·max_drift + 0.20·coord_friction + 0.20·(1-pool_ratio)
+F_agent = 0.4·(E/E_max) + 0.3·(1-|ΔP|/P_max) + 0.3·(t_surv/T_gen)</code></pre>
+<p>NPC conserve kuralı: <code>NPC_POOL_RATIO_CONSERVE=0.3</code> (crisis
+eşiği ile hizalı).</p>
+<h3 id="graph-wiring">Graph wiring</h3>
+<pre><code>social_pre_node → agent_node → evaluator_node → meta_observer_node
+  → (social_pre | END)</code></pre>
+<hr />
+<h2 id="b.-layer-5-metacognition-kod-tamam-empirik-unsupported">10b.
+Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</h2>
+<h3 id="empirik-verdict-kilitli">Empirik verdict (kilitli)</h3>
+<ul>
+<li>Meta A/B: deterministic seed replay → tüm farklar 0 →
+<strong>STOCHASTIC_NOISE_CONFIRMED</strong></li>
+<li>Closed-loop metacognition <strong>UNSUPPORTED
+(paper-locked)</strong></li>
+<li>Protocol C (Groq frozen): ΔPE≈0 gürültü → <strong>paper-locked
+negative finding</strong> (temiz çekirdek ~31–35 çift; resmi paired
+t-test yok; full 40 tekrar yok)</li>
+</ul>
+<h3 id="aktüatörler-deterministik-python-llm-okumaz">Aktüatörler
+(deterministik Python, LLM okumaz)</h3>
+<ol type="1">
+<li><code>lod_override</code> — DEEP + düşük m_ratio → System 2
+zorla</li>
+<li><code>context_prune</code> — yüksek retrieval variance → düşük skor
+at</li>
+<li><code>trigger_drift_healing</code> — düşük F_agent + reward →
+<code>heal_drift</code></li>
+<li><code>trigger_retrieval</code> — düşük m_ratio + NORMAL+ → Chroma ek
+sorgu</li>
+</ol>
+<hr />
+<h2 id="mimari-durum-v2.0">11. Mimari durum (v2.0)</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 33%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr>
+<th>Katman</th>
+<th>Durum</th>
+<th>Özet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Layer 0 Foundation</td>
+<td>✅</td>
+<td>State, delta, event-clock, constraints, LangGraph</td>
+</tr>
+<tr>
+<td>Layer 1 Memory</td>
+<td>✅ + ADIM 4</td>
+<td>Chroma+SQLite, Ebbinghaus, <strong>PPR memory_score</strong></td>
+</tr>
+<tr>
+<td>Layer 1.5 PE</td>
+<td>✅</td>
+<td>MiniLM cosine PE → DAERM → magnitude decoupling</td>
+</tr>
+<tr>
+<td>Layer 2 Emotion+Drift</td>
+<td>✅ + ADIM 1 API</td>
+<td>EmotionalWeight + DriftState + crisis trauma API</td>
+</tr>
+<tr>
+<td>Layer 3 Generation</td>
+<td>✅</td>
+<td>Konsolidasyon, miras, heal; fitness filtresi</td>
+</tr>
+<tr>
+<td>Layer 4 Society</td>
+<td>✅ + ADIM 1</td>
+<td>GovSim, social, LOD, F_agent, crisis constants</td>
+</tr>
+<tr>
+<td>Layer 5 Metacognition</td>
+<td>✅ kod / ❌ empirik</td>
+<td>Protocol C <strong>paper-locked null</strong> · C′
+<strong>WEAK</strong> + <strong>SMOKE_SEPARATION</strong></td>
+</tr>
+<tr>
+<td>Plastisite (ADIM 2–3)</td>
+<td>✅ kod / ⚠ default off</td>
+<td>NLI filter · per-agent QLoRA · <code>DAU_LORA_ENABLED=0</code></td>
+</tr>
+<tr>
+<td>ADIM 5–6</td>
+<td>❌</td>
+<td>Precision-weighted PE · Protocol C′ N≥15 — planlı</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="kod-ağacı-v2.0">12. Kod ağacı (v2.0)</h2>
+<pre><code>dau/foundation/
+ ├── state.py              — DAUAgentState (+ drift, social, lod, env, self_model)
+ ├── delta.py              — compute_delta / classify / is_trauma (peak-weighted)
+ ├── emotional_weight.py   — EmotionalWeight
+ ├── drift.py              — DriftState, update_drift, heal_drift
+ ├── social.py             — cooperation_stress, coordination_friction, Markov
+ ├── lod.py                — T_cognitive, NPC heuristics
+ ├── self_model.py         — SelfModel / build_self_model
+ ├── meta_observer.py      — dört aktüatör + meta_observer_node
+ ├── semantic_similarity.py — MiniLM PE sensor
+ ├── constraints.py        — pressures + DAERM + NLI + LoRA + PPR constants
+ ├── time_model.py         — EventClock
+ ├── graph.py              — social_pre → agent → evaluator → meta_observer
+ │                          (+ DAU_LLM_BACKEND; local → switch_adapter)
+ ├── llm_backend.py        — complete() Protocol; GroqBackend; LocalBackend
+ ├── local_llm.py          — 4-bit load; per-agent adapter path/switch/save;
+ │                          run_micro_train_preference_step
+ ├── lora_update.py        — LivedTrace / PreferencePair; build_pe_ranked_pairs
+ │                          (+ optional NLI gate); generation-end hook
+ ├── nli_filter.py         — contradiction_score / is_genuine_polarity_pair
+ ├── memory_bridge.py      — graph ↔ memory
+ ├── generation.py         — consolidate / apply_generation
+ └── tests/                — foundation + NLI + per-agent adapter + …
+
+dau/memory/
+ ├── store.py / decay.py / retrieval.py / consolidation.py
+ ├── ppr_retrieval.py      — HippoRAG-style PPR (ADIM 4)
+ └── tests/                — + test_ppr_retrieval
+
+dau/generation/
+ └── fitness.py            — F_agent, W_transfer
+
+dau/society/
+ ├── environment.py        — pool physics + apply_crisis_trauma (ADIM 1)
+ ├── run_convention_pilot*.py / run_meta_ab.py / run_nuance_loss_pilot.py
+ └── tests/
+
+dau/diagnostics/
+ ├── run_protocol_c.py     — frozen Meta ON/OFF (paper-locked)
+ ├── long_run.py / pe_histogram.py / actuator_audit.py
+ └── (C′ harness: main’de / bu branch’te artefaktlar diskte)
+
+docs/
+ └── DAU_MASTER_REFERENCE_v20.{md,html,pdf}  — operasyonel kaynak (v2.0)
+ └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)</code></pre>
+<p><strong>Adapter kökleri (dikkat):</strong> - Runtime Punica path:
+<code>dau_runs/adapters/{agent_id}/</code>
+(<code>ADAPTER_BASE_DIR</code>) - C′ disk artefaktları (untracked):
+<code>dau_lora_adapters/cprime_seed…</code></p>
+<hr />
+<h2 id="graph-yaşam-döngüsü">13. Graph yaşam döngüsü</h2>
+<pre><code>social_pre_node:
+  opponent varsa Markov P(cooperate) + entropy → retrieval_context
+
+agent_node:
+  expected_outcome → retrieve_relevant → EmotionalWeight / drift bias
+  → if DAU_LLM_BACKEND=local: switch_adapter(model, agent_id)
+  → LLM (Groq veya LocalBackend.complete) veya npc_decision → Event
+
+evaluator_node:
+  MiniLM PE → DAERM InternalState → compute_delta(raw_pe)
+  → update_drift → T_cognitive/LOD → record_delta
+
+meta_observer_node:
+  build_self_model → lod_override → context_prune
+  → trigger_drift_healing → trigger_retrieval
+
+should_continue:
+  energy ≤ TERMINATION_ENERGY → END else → social_pre_node</code></pre>
+<p><strong>Stack:</strong> LangGraph · Pydantic v2 · ChromaDB ·
+SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · (ops.) local 4-bit
+Llama-3.1-8B + peft · LangSmith</p>
+<hr />
+<h2 id="test-durumu-bu-branch">14. Test durumu (bu branch)</h2>
+<table>
+<thead>
+<tr>
+<th>Alan</th>
+<th>Not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Foundation + PE + Emotion + Drift + LOD + Social</td>
+<td>mevcut</td>
+</tr>
+<tr>
+<td>Generation + Fitness</td>
+<td>mevcut</td>
+</tr>
+<tr>
+<td>Meta-Observer + Convention + Meta A/B + Nuance</td>
+<td>mevcut</td>
+</tr>
+<tr>
+<td>Society environment (+ crisis ADIM 1)</td>
+<td>genişletildi</td>
+</tr>
+<tr>
+<td>NLI filter (ADIM 2)</td>
+<td><code>test_nli_filter.py</code></td>
+</tr>
+<tr>
+<td>Per-agent adapter (ADIM 3)</td>
+<td><code>test_per_agent_adapter.py</code></td>
+</tr>
+<tr>
+<td>PPR retrieval (ADIM 4)</td>
+<td><code>test_ppr_retrieval.py</code></td>
+</tr>
+<tr>
+<td><strong>Collect (v2.0 branch)</strong></td>
+<td><strong>159</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>(Master v1.4’teki “137” ve main v1.6’daki “162+” sayıları farklı
+ağaç kesitleri; bu belge <strong>bu branch collect=159</strong> ile
+kilitlenir.)</em></p>
+<p>Empirik artefaktlar (<code>dau_runs/</code>): -
+<code>protocol_c_run.log</code> — provisional/paper-locked null izi -
+<code>protocol_c_prime_v2_smoke_results.json</code> — SMOKE_SEPARATION -
+<code>vram_spike_results.json</code> — GO (~6386 MiB) -
+<code>overnight_audit_results.json</code></p>
+<hr />
+<h2 id="amads-govsim-karşılaştırma">15. AMADS / GovSim
+karşılaştırma</h2>
+<table>
+<colgroup>
+<col style="width: 76%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>AMADS / klasik</th>
+<th>DAU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trait dışarıdan atanıyor</td>
+<td>Trait yaşantıdan inşa ediliyor</td>
+</tr>
+<tr>
+<td>Her run sıfır</td>
+<td>Sonraki run değişmiş başlıyor (memory + drift + ops. adapter)</td>
+</tr>
+<tr>
+<td>Kaynak var, agent değişmiyor</td>
+<td>Kaynak → travma → drift → (kriz çarpanı) → evrim</td>
+</tr>
+<tr>
+<td>Duygu etiketi</td>
+<td>EmotionalWeight fonksiyonu</td>
+</tr>
+<tr>
+<td>Zaman = round</td>
+<td>Zaman = event + delta</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="beş-evrensel-kısıt">16. Beş evrensel kısıt</h2>
+<table>
+<thead>
+<tr>
+<th>Kısıt</th>
+<th>Anlam</th>
+<th>DAU karşılığı</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>time_pressure</td>
+<td>Her şeyin sonu var</td>
+<td>Nesil sonu / konsolidasyon</td>
+</tr>
+<tr>
+<td>resource_scarcity</td>
+<td>Her şey sınırlı</td>
+<td>CPR / GovSim + crisis trauma</td>
+</tr>
+<tr>
+<td>social_pressure</td>
+<td>Başkaları var</td>
+<td>İşbirliği ≠ koordinasyon</td>
+</tr>
+<tr>
+<td>uncertainty</td>
+<td>Bilgi eksik</td>
+<td>Eksik bilgiyle karar</td>
+</tr>
+<tr>
+<td>generation_end</td>
+<td>Nesil kapanır</td>
+<td>Miras + ops. per-agent LoRA</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="açık-sorular-güncel">17. Açık sorular (güncel)</h2>
+<h3 id="kilitli-kapanmış">Kilitli / kapanmış</h3>
+<ul>
+<li>✅ EmotionalWeight, Layer 1.5 PE, nesil, drift heal, LOD,
+fitness</li>
+<li>✅ Protocol C frozen: <strong>paper-locked negative
+finding</strong></li>
+<li>✅ C′ mini: <strong>WEAK_LORA</strong> (placeholder-train caveat +
+sinyal v1)</li>
+<li>✅ C′ v2 smoke N=1: <strong>SMOKE_SEPARATION</strong> (significance
+yok; N=15 otomatik değil)</li>
+<li>✅ Trait injection yasağı — Gemini raporu ile yeniden
+doğrulandı</li>
+<li>✅ MiniLM tek başına polarity için yetersiz → NLI filter (ADIM 2)
+kodlandı</li>
+<li>✅ Serbest kanalda restraint emergence yaptırımsız çıkmaz → crisis
+API (ADIM 1)</li>
+</ul>
+<h3 id="hâlâ-açık">Hâlâ açık</h3>
+<ul>
+<li><code>apply_crisis_trauma</code> /
+<code>maybe_lora_update_after_life</code> → production graph kablolama
+tamamlanacak mı?</li>
+<li>Energy floor / γ=0 erken kapanma; homeostatic recovery
+seçenekleri</li>
+<li>Meta <code>trigger_drift_healing</code> eşik kalibrasyonu (uzun
+koşuda triggered=0)</li>
+<li>Spontaneous convention: format sync ≠ restraint sync (dürüst
+sınır)</li>
+<li>ADIM 5 precision-weighted PE ↔︎ DAERM γ/μ çakışma haritası</li>
+<li>ADIM 6 Protocol C′ N≥15 + OOD Behavioral Probing harness</li>
+<li><code>W_SEM=0</code> — embedding skorlamaya alınacak mı?</li>
+<li>Dual adapter root (<code>dau_runs/adapters</code> vs
+<code>dau_lora_adapters</code>) tekilleştirme</li>
+</ul>
+<hr />
+<h2 id="bilinen-sınırlar-plastisite-günlüğü">18. Bilinen Sınırlar +
+Plastisite günlüğü</h2>
+<h3 id="bilinen-sınırlar-özet">Bilinen sınırlar (özet)</h3>
+<ul>
+<li>LOD System2→1 nüans kaybı ölçüldü (kasıtlı)</li>
+<li>MiniLM negation zayıf; NLI gate yalnızca preference çiftlerinde</li>
+<li><code>F_agent</code> dışsal tasarım skoru (doğal seçilim değil)</li>
+<li>Frozen weights: parametrik öğrenme default
+<strong>kapalı</strong></li>
+<li>Protocol C: TPD kirlenmesi; pair t-test yok; claim locked</li>
+<li>C′ v2: N=1 — istatistik iddiası yok</li>
+<li>Crisis / LoRA generation-end: API var, graph otomatik çağrı
+kısmi</li>
+</ul>
+<h3 id="plastisite-günlüğü">Plastisite günlüğü</h3>
+<h4 id="sinyal-v1-vs-v2">Sinyal v1 vs v2</h4>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 44%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>Sinyal v1</th>
+<th>Sinyal v2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kimlik</td>
+<td><code>pe_delta_trauma_drift_v1</code></td>
+<td><code>pe_ranked_pref_v2</code></td>
+</tr>
+<tr>
+<td>Girdi</td>
+<td>PE/delta/trauma/drift skalar</td>
+<td>Aynı expected altında iki aday</td>
+</tr>
+<tr>
+<td>Kayıp</td>
+<td>Causal LM CE</td>
+<td>Chosen CE − α·CE(rejected)</td>
+</tr>
+<tr>
+<td>Hakem</td>
+<td>—</td>
+<td>MiniLM PE (+ ops. NLI contradiction)</td>
+</tr>
+<tr>
+<td>Env</td>
+<td>default C′</td>
+<td><code>DAU_CPRIME_SIGNAL=v2</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="empirik-tablo">Empirik tablo</h4>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 4%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 16%" />
+<col style="width: 14%" />
+<col style="width: 19%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr>
+<th>Deney</th>
+<th>N</th>
+<th>Backend</th>
+<th>Sinyal</th>
+<th>ΔPE_lived</th>
+<th>ΔPE_null</th>
+<th>ΔPE_shuffle</th>
+<th>Karar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Protocol C (Groq)</td>
+<td>~35 temiz</td>
+<td>groq</td>
+<td>meta ON/OFF</td>
+<td>≈0</td>
+<td>—</td>
+<td>—</td>
+<td><strong>paper-locked null</strong></td>
+</tr>
+<tr>
+<td>C′ mini</td>
+<td>3</td>
+<td>local</td>
+<td>v1 + placeholder train</td>
+<td>≈0.001</td>
+<td>≈−0.008</td>
+<td>≈0.010</td>
+<td><strong>WEAK_LORA</strong></td>
+</tr>
+<tr>
+<td>C′ v2 smoke</td>
+<td>1 (2001)</td>
+<td>local</td>
+<td>v2 + lived train</td>
+<td><strong>−0.0264</strong></td>
+<td>+0.0062</td>
+<td>+0.0159</td>
+<td><strong>SMOKE_SEPARATION</strong></td>
+</tr>
+</tbody>
+</table>
+<p>VRAM: peak allocated ≈ <strong>6386 MiB</strong> →
+<strong>GO</strong>.</p>
+<h4 id="paper-naratif-iskeleti-kilitli">Paper naratif iskeleti
+(kilitli)</h4>
+<ol type="1">
+<li>Ana katkı: frozen-weight in-context metacognition null (Protocol
+C)</li>
+<li>Mimari: trait yasağı, MiniLM PE, DAERM, LOD, format≠restraint</li>
+<li>Appendix A: C′ mini WEAK (+ placeholder caveat)</li>
+<li>Appendix B: C′ v2 smoke separation (N=1); open: N≥10–15
+replicate</li>
+<li>Non-claims: persona LoRA, LLM-as-judge, per-event online LoRA, Layer
+6, full Groq C rerun, N&lt;15 istatistik iddiası</li>
+</ol>
+<hr />
+<h2 id="adim-uygulama-kaydı-v2.0-bu-branch">19. ADIM uygulama kaydı
+(v2.0 — bu branch)</h2>
+<h3 id="adim-1-layer-4-somatic-enforcement-kod">ADIM 1 — Layer 4 Somatic
+Enforcement ✅ kod</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>dau/society/environment.py</code> (+ tests)</td>
+</tr>
+<tr>
+<td>Sabitler</td>
+<td><code>POOL_CRISIS_THRESHOLD=0.30</code>,
+<code>CRISIS_TRAUMA_MULTIPLIER=2.5</code>,
+<code>CRISIS_BASE_MAGNITUDE=0.4</code></td>
+</tr>
+<tr>
+<td>Davranış</td>
+<td><code>pool_ratio &lt; 0.30</code> → resource TRAUMA via
+<code>update_drift</code></td>
+</tr>
+<tr>
+<td>Test</td>
+<td>crisis 5 unit test</td>
+</tr>
+<tr>
+<td>Gap</td>
+<td>graph otomatik çağrı yok</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adim-2-signal-v2-nli-polarity-filter-kod">ADIM 2 — Signal v2 NLI
+Polarity Filter ✅ kod</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>nli_filter.py</code>, <code>constraints.py</code>,
+<code>lora_update.build_pe_ranked_pairs</code></td>
+</tr>
+<tr>
+<td>Model</td>
+<td><code>cross-encoder/nli-deberta-v3-small</code> (CPU; transformers
+path)</td>
+</tr>
+<tr>
+<td>Eşik</td>
+<td><code>NLI_CONTRADICTION_THRESHOLD=0.60</code></td>
+</tr>
+<tr>
+<td>Flag</td>
+<td><code>DAU_NLI_FILTER_ENABLED</code> (default on;
+<code>_NLI_AVAILABLE</code> soft-import)</td>
+</tr>
+<tr>
+<td>Test</td>
+<td><code>test_nli_filter.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="adim-3-per-agent-qlora-punica-kod">ADIM 3 — Per-Agent QLoRA
+(Punica) ✅ kod</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>local_llm.py</code>, <code>llm_backend.py</code>,
+<code>lora_update.py</code>, <code>graph.py</code></td>
+</tr>
+<tr>
+<td>Path</td>
+<td><code>dau_runs/adapters/{agent_id}/</code></td>
+</tr>
+<tr>
+<td>Rank/α</td>
+<td><code>PER_AGENT_LORA_RANK=8</code>,
+<code>PER_AGENT_LORA_ALPHA=16</code></td>
+</tr>
+<tr>
+<td>Inference</td>
+<td><code>DAU_LLM_BACKEND=local</code> → <code>switch_adapter</code> +
+<code>LocalBackend.complete</code></td>
+</tr>
+<tr>
+<td>Train</td>
+<td><code>run_micro_train_preference_step(..., agent_id=)</code> →
+<code>save_agent_adapter</code></td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>DAU_LORA_ENABLED=0</code></td>
+</tr>
+<tr>
+<td>Test</td>
+<td><code>test_per_agent_adapter.py</code></td>
+</tr>
+<tr>
+<td>Gap</td>
+<td>generation-end hook graph’a tam bağlı değil</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adim-4-hipporag-2-ppr-kod">ADIM 4 — HippoRAG 2 PPR ✅ kod</h3>
+<table>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>dau/memory/ppr_retrieval.py</code>,
+<code>retrieval.py</code></td>
+</tr>
+<tr>
+<td>Formül</td>
+<td>§6 memory_score</td>
+</tr>
+<tr>
+<td>Test</td>
+<td><code>test_ppr_retrieval.py</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="adim-5-precision-weighted-pe">ADIM 5 — Precision-Weighted PE
+❌</h3>
+<p>Plan: <code>π_i = 1/(var(delta_history_i)+ε)</code>,
+<code>PE_weighted = π·PE_raw</code>. Bağımlılık: ADIM 2+4. DAERM
+çakışması haritalanacak.</p>
+<h3 id="adim-6-protocol-c-n15">ADIM 6 — Protocol C′ N≥15 ❌</h3>
+<p>Plan: <code>DAU_CPRIME_N_PAIRS=15</code>, signal v2, per-agent True;
+paired t-test + OOD probing. Bağımlılık: ADIM 1–5.</p>
+<h3 id="bağımlılık-grafiği">Bağımlılık grafiği</h3>
+<pre><code>ADIM 1 ──────────────────────────────┐
+ADIM 2 ──────────────────────────────┤
+                                      ↓
+ADIM 3 ← ADIM 2 sonrası ────────────→ ADIM 6
+ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15)
+ADIM 5 ← ADIM 2+4 sonrası ──────────┘</code></pre>
+<p>ADIM 1–4: <strong>kodlandı</strong> (bu branch). ADIM 5–6:
+<strong>bekliyor</strong>.</p>
+<hr />
+<h2 id="yol-haritası-anti-roadmap-v2.0">20. Yol haritası + Anti-roadmap
+(v2.0)</h2>
+<h3 id="doğrulanan-kilitli">Doğrulanan / kilitli</h3>
+<ul>
+<li>Trait injection yasağı</li>
+<li>Deterministik Layer 0–4 omurgası</li>
+<li>Nesil sonu micro-QLoRA ≫ per-event online</li>
+<li>Signal v2 preference + NLI gate kablosu</li>
+<li>Protocol C paper-locked null</li>
+<li>SMOKE_SEPARATION (N=1) — N expand tartışmalı</li>
+</ul>
+<h3 id="yanlışlanan-kapatılan">Yanlışlanan / kapatılan</h3>
+<ul>
+<li>Frozen-weight kapalı döngü metacognition</li>
+<li>MiniLM tek başına PE polarity yeterliliği</li>
+<li>Yaptırımsız restraint emergence</li>
+</ul>
+<h3 id="sıradaki-öncelik">Sıradaki (öncelik)</h3>
+<ol type="1">
+<li>Crisis + LoRA generation-end’i graph’a kablola (gap kapat)</li>
+<li>ADIM 5 — precision-weighted PE (DAERM haritası ile)</li>
+<li>C′ harness’i bu branch’e hizala / main merge kararı</li>
+<li>ADIM 6 — Protocol C′ N≥15 + OOD harness</li>
+<li>Paper gövdesi (frozen-null ana; WEAK + SMOKE appendix)</li>
+</ol>
+<h3 id="anti-roadmap-yasak">Anti-roadmap (yasak)</h3>
+<ul>
+<li>Per-event online LoRA</li>
+<li>EWC (8GB Fisher maliyeti)</li>
+<li>TTT / PoT (kalıcılık yok)</li>
+<li>Prefix/prompt tuning ana plastisite rotası</li>
+<li>N&lt;15 ile istatistiksel iddia</li>
+<li>Layer 6 icadı · LLM-as-judge · trait injection · wall-clock
+zaman</li>
+<li>Jaccard’ı ana PE’ye geri alma · multi-pool fizik · full-weight
+FT</li>
+<li>Persona/trait adapter · Groq Protocol C tekrarı</li>
+</ul>
+<hr />
+<h2 id="ortam-bayrakları-referans">21. Ortam bayrakları (referans)</h2>
+<table>
+<thead>
+<tr>
+<th>Env</th>
+<th>Default</th>
+<th>Anlam</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DAU_LLM_BACKEND</code></td>
+<td><code>groq</code></td>
+<td><code>groq</code> | <code>local</code></td>
+</tr>
+<tr>
+<td><code>DAU_LORA_ENABLED</code></td>
+<td><code>0</code></td>
+<td>generation-end train/save</td>
+</tr>
+<tr>
+<td><code>DAU_NLI_FILTER_ENABLED</code></td>
+<td><code>1</code></td>
+<td>preference polarity gate</td>
+</tr>
+<tr>
+<td><code>DAU_LLM_TEMPERATURE</code></td>
+<td>(model)</td>
+<td>override</td>
+</tr>
+<tr>
+<td><code>DAU_LLM_SEED</code></td>
+<td>—</td>
+<td>deterministic replay</td>
+</tr>
+<tr>
+<td><code>DAU_THREAD_ID</code></td>
+<td>—</td>
+<td>checkpoint resume</td>
+</tr>
+<tr>
+<td><code>DAU_META_AB_*</code></td>
+<td>—</td>
+<td>Meta A/B protokol</td>
+</tr>
+<tr>
+<td><code>GROQ_API_KEY</code></td>
+<td>—</td>
+<td>remote LLM</td>
+</tr>
+<tr>
+<td><code>DAU_CPRIME_*</code></td>
+<td>(C′ harness)</td>
+<td>N_PAIRS / EVENTS / SIGNAL / SEEDS</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="versiyon-geçmişi">22. Versiyon geçmişi</h2>
+<table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 41%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr>
+<th>Ver</th>
+<th>Tarih</th>
+<th>Not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.1–0.9</td>
+<td>2026-07/08</td>
+<td>Taslak → Layer 0–4</td>
+</tr>
+<tr>
+<td><strong>1.0</strong></td>
+<td>2026-08-04</td>
+<td>Layer 5 kod; 109 test</td>
+</tr>
+<tr>
+<td><strong>1.0+</strong></td>
+<td>2026-08-04</td>
+<td>Empirik: format≠restraint; L5 UNSUPPORTED; <strong>137
+test</strong></td>
+</tr>
+<tr>
+<td><strong>1.1</strong></td>
+<td>2026-08-05</td>
+<td>DAERM</td>
+</tr>
+<tr>
+<td><strong>1.2</strong></td>
+<td>2026-08-05</td>
+<td>Magnitude decoupling; TRAUMA reachable</td>
+</tr>
+<tr>
+<td><strong>1.3</strong></td>
+<td>2026-08-06</td>
+<td>Protocol C tasarımı</td>
+</tr>
+<tr>
+<td><strong>1.4</strong></td>
+<td>2026-08-06</td>
+<td>Protocol C kısmi null; lokal LoRA roadmap (<code>v10</code>
+docs)</td>
+</tr>
+<tr>
+<td><strong>1.5</strong></td>
+<td>2026-08-06</td>
+<td>VRAM GO; C′ mini WEAK_LORA</td>
+</tr>
+<tr>
+<td><strong>1.6</strong></td>
+<td>2026-08-06</td>
+<td>Paper-locked null; v2 smoke SMOKE_SEPARATION (<code>v15</code>
+docs)</td>
+</tr>
+<tr>
+<td><strong>1.7</strong></td>
+<td>2026-08-06</td>
+<td>Gemini roadmap Section 20 planı (6 ADIM)</td>
+</tr>
+<tr>
+<td><strong>2.0</strong></td>
+<td><strong>2026-08-07</strong></td>
+<td><strong>Yeni belge ailesi <code>v20</code>.</strong> ADIM 1–4
+kodlandı (crisis, NLI, per-agent QLoRA, PPR). memory_score PPR formülü.
+159 test (bu branch). ADIM 5–6 açık. <code>DAU_LORA_ENABLED=0</code>
+korunuyor. <code>v10</code> süpersede.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Güncellendi (v2.0):</strong> Master artık
+<code>DAU_MASTER_REFERENCE_v20</code> — isim ailesi 1.0/<code>v10</code>
+değil. Kod gerçeği (ADIM 1–4 + empirik kilitler) detaylı yazıldı. Omurga
+default’ları değişmedi: LoRA kapalı, Groq default, trait yasak.</p>
+<p>Bu döküman her önemli katman / empirik dönüm tamamlanınca
+güncellenir.<br />
+Versiyon 2.0 — ADIM 1–4 kod; ADIM 5–6 plan; Protocol C paper-locked; C′
+WEAK + SMOKE_SEPARATION appendix.</p>
+</body>
+</html>

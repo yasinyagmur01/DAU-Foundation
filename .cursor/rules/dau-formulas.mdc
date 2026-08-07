@@ -12,11 +12,14 @@ DELTA_THRESHOLD_NOISE  = 0.1  # NO_TRACE
 DELTA_THRESHOLD_NORMAL = 0.4  # NORMAL
 DELTA_THRESHOLD_DEEP   = 0.7  # DEEP
 # üstü: TRAUMA → drift
+M = 0.70·max(PE_vec) + 0.30·mean(PE_vec)  # MAGNITUDE_PEAK_WEIGHT
 ```
 
-## Memory Score
+## Memory Score (v2.0 — PPR)
 ```
-memory_score = 0.3·recency + 0.4·magnitude + 0.3·domain_match
+memory_score = 0.21·recency + 0.28·magnitude
+             + 0.21·domain_match + 0.30·ppr_score
+# PPR_ALPHA=0.85, PPR_WEIGHT_IN_SCORE=0.30
 ```
 
 ## Ebbinghaus
@@ -27,14 +30,15 @@ R = exp(-t / S)
 # Recall: S += 1 · Travma silinmez (TRAUMA_S_BASE = 10)
 ```
 
-## InternalState
+## InternalState / DAERM
 - `energy` (setpoint 1.0)
-- `resource_load` / `uncertainty_load` / `social_load` (setpoint 0.0)
+- `resource_load` / `uncertainty_load` / `social_load`
+- `γ(t) = E/(1+M_total)` · `μ_i = min(M_i/(1+M_i), 0.75)`
 
 ## Layer 1.5 Prediction Error
 ```
-prediction_error = 1 - keyword_overlap(expected_outcome, actual_outcome)
-# tüm eksenler prediction_error ile kayar; energy metabolik taban korur
+prediction_error = 1 - cosine_sim_MiniLM(expected, actual)
+# Jaccard diagnostik only; NLI gate preference pairs (ADIM 2)
 ```
 
 ## Layer 2 EmotionalWeight
@@ -46,13 +50,14 @@ social  = clamp(social_load, 0, 1)
 loss    = 1.0 if is_trauma else 0.0
 ```
 
-## Layer 2 Drift
+## Layer 2 Drift + ADIM 1 crisis
 ```
-trauma → flags[domain]=True; magnitudes[domain] += magnitude
-get_drift_bias → flagged magnitude else 0.0
-# kalıcı; healing Layer 3
+trauma → flags[domain]=True; magnitudes[domain] += magnitude×exp(−current)
+pool_ratio < 0.30 → resource trauma × CRISIS_TRAUMA_MULTIPLIER(2.5)
 ```
 
 ## Katman Durumu
-- Layer 0–2 ✅ · Layer 1.5 ✅ · Sıradaki Layer 3
-- Master reference: `docs/DAU_MASTER_REFERENCE_v08.pdf`
+- Layer 0–5 ✅ kod · L5 empirik: paper-locked null · C′ WEAK · SMOKE_SEPARATION
+- ADIM 1–4 ✅ kod · ADIM 5–6 plan
+- Master: `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}` (v2.0)
+- Flags: `DAU_LORA_ENABLED=0`, `DAU_LLM_BACKEND=groq` default
