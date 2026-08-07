@@ -19,4 +19,8 @@ DAU (Dynamic Agent Universe): LLM agent'lar trait almadan, yaşantı yoluyla iç
 - Bir seferde bir dosya — onay gelmeden bir sonrakine geçilmez
 
 ## Stack
-LangGraph · Pydantic v2 · ChromaDB · SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · LangSmith
+LangGraph · Pydantic v2 · ChromaDB · SQLite/SqliteSaver · Groq Llama-3.1-8b-instant · (ops.) local 4-bit + peft · LangSmith
+
+## Master
+Operasyonel kaynak: `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}` (Versiyon **2.0**)
+

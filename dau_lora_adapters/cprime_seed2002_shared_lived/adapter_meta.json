@@ -1,0 +1,8 @@
+{
+  "seed": 2002,
+  "adapter_id": "shared_lived",
+  "kind": "shared_lived",
+  "example_count": 20,
+  "shared_for_ab": true,
+  "train_then_ab": true
+}

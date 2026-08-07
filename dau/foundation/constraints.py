@@ -48,6 +48,11 @@ PPR_ALPHA = 0.85
 PPR_WEIGHT_IN_SCORE = 0.30
 PPR_TOP_K_DOMAINS = 10
 
+# ADIM 5 — precision-weighted PE (global scalar from pe_vector variance)
+PRECISION_EPSILON = 1e-6
+PRECISION_HISTORY_WINDOW = 10
+PRECISION_MAX_WEIGHT = 3.0
+
 
 def build_default_constraints() -> EnvironmentConstraints:
     """Build the default read-only EnvironmentConstraints snapshot.

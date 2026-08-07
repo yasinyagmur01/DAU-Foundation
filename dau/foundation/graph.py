@@ -64,7 +64,7 @@ from .memory_bridge import (
     retrieve_relevant,
 )
 from .meta_observer import bind_memory_store, meta_observer_node, unbind_memory_store
-from .semantic_similarity import semantic_prediction_error
+from .semantic_similarity import apply_precision_weighting, semantic_prediction_error
 from .social import (
     MARKOV_WINDOW,
     SocialState,
@@ -952,7 +952,24 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     )
     before = state.internal_state.model_copy(deep=True)
 
-    prediction_error = _prediction_error(expected_outcome, actual_outcome)
+    raw_pe = _prediction_error(expected_outcome, actual_outcome)
+    target_domain = _pe_target_load_domain(state)
+    primary = (
+        target_domain
+        if target_domain in DAERM_LOAD_DOMAINS
+        else DAERM_DEFAULT_TARGET_DOMAIN
+    )
+    pe_vector = {
+        domain: (
+            raw_pe if domain == primary else raw_pe * CROSS_AXIS_SPILLOVER
+        )
+        for domain in DAERM_LOAD_DOMAINS
+    }
+    try:
+        precision_pe = apply_precision_weighting(raw_pe, pe_vector)
+    except Exception:
+        precision_pe = raw_pe
+    prediction_error = precision_pe
     expected_source = str(
         last_event.payload.get(EXPECTED_SOURCE_PAYLOAD_KEY, EXPECTED_SOURCE_FALLBACK)
     )
@@ -960,7 +977,7 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         before,
         prediction_error,
         drift_state=state.drift_state,
-        target_domain=_pe_target_load_domain(state),
+        target_domain=target_domain,
     )
 
     affected = _primary_affected_domain(before, after)
@@ -969,7 +986,7 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         after,
         affected_domain=affected,
         timestamp=last_event.timestamp,
-        raw_pe=prediction_error,  # ham PE — DAERM öncesi
+        raw_pe=precision_pe,  # precision-weighted PE (ADIM 5)
     )
     print(
         f"[PE] event={int(last_event.timestamp)} "

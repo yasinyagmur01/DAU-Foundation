@@ -80,3 +80,44 @@ def semantic_prediction_error(expected: str, actual: str) -> float:
     similarity = semantic_similarity(expected, actual)
     error = 1.0 - similarity
     return max(METRIC_MIN, min(METRIC_MAX, error))
+
+
+def compute_precision_weight(pe_vector: dict[str, float]) -> float:
+    """
+    Computes global precision scalar from current pe_vector variance.
+    Low variance (stable agent) → high precision → amplifies PE signal.
+    High variance (crisis) → low precision → dampens PE signal.
+
+    Seçenek B: uses current pe_vector only, no history needed.
+    No state changes required.
+
+    Formula:
+      variance = var(pe_vector.values())
+      pi = 1 / (variance + PRECISION_EPSILON)
+      pi_clamped = min(pi, PRECISION_MAX_WEIGHT)
+    """
+    import statistics
+
+    from dau.foundation.constraints import PRECISION_EPSILON, PRECISION_MAX_WEIGHT
+
+    values = list(pe_vector.values())
+    if len(values) < 2:
+        return 1.0  # neutral weight — not enough data
+    variance = statistics.variance(values)
+    pi = 1.0 / (variance + PRECISION_EPSILON)
+    return min(pi, PRECISION_MAX_WEIGHT)
+
+
+def apply_precision_weighting(
+    raw_pe: float,
+    pe_vector: dict[str, float],
+) -> float:
+    """
+    Applies precision weighting to raw PE scalar.
+    Returns precision-weighted PE, clamped to [0.0, 1.0].
+
+    Usage: call after compute_pe, before passing to DAERM.
+    """
+    pi = compute_precision_weight(pe_vector)
+    weighted = raw_pe * pi
+    return min(weighted, 1.0)
