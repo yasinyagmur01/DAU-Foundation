@@ -19,6 +19,12 @@ from typing import Any
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
     ADAPTER_SWITCH_MAX_MS,
+    DPO_BATCH_SIZE,
+    DPO_BETA,
+    DPO_EPOCHS,
+    DPO_LEARNING_RATE,
+    DPO_MAX_GRAD_NORM,
+    DPO_MAX_SEQUENCE_TOKENS,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
 )
@@ -338,6 +344,195 @@ def generate_completion(
     return tokenizer.decode(generated, skip_special_tokens=True).strip()
 
 
+def _encode_pair_side(
+    tokenizer: Any,
+    prompt: str,
+    completion: str,
+) -> tuple[list[int], int]:
+    """Return (token_ids, prompt_length) for one prompt+completion sequence.
+
+    prompt_length marks where the completion starts so the loss ignores tokens
+    the policy did not choose.
+    """
+
+    prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
+    completion_ids = tokenizer(completion, add_special_tokens=False)["input_ids"]
+    eos_id = getattr(tokenizer, "eos_token_id", None)
+    if eos_id is not None:
+        completion_ids = list(completion_ids) + [eos_id]
+    sequence = list(prompt_ids) + list(completion_ids)
+    if len(sequence) > DPO_MAX_SEQUENCE_TOKENS:
+        # Keep the completion intact; the prompt head is the expendable part.
+        overflow = len(sequence) - DPO_MAX_SEQUENCE_TOKENS
+        prompt_ids = list(prompt_ids)[overflow:]
+        sequence = list(prompt_ids) + list(completion_ids)
+    return sequence, len(prompt_ids)
+
+
+def _sequence_logprob(
+    model: Any,
+    token_ids: list[int],
+    prompt_length: int,
+    device: Any,
+) -> Any:
+    """Sum log p(token | prefix) over completion tokens only."""
+
+    import torch
+
+    input_ids = torch.tensor([token_ids], device=device)
+    logits = model(input_ids=input_ids).logits[0, :-1, :]
+    targets = input_ids[0, 1:]
+    log_probs = torch.log_softmax(logits.float(), dim=-1)
+    token_log_probs = log_probs.gather(-1, targets.unsqueeze(-1)).squeeze(-1)
+    # targets[i] is token i+1, so completion tokens start at prompt_length - 1.
+    return token_log_probs[prompt_length - 1 :].sum()
+
+
+def _reference_logprobs(
+    model: Any,
+    encoded_batch: list[tuple[list[int], int, list[int], int]],
+    device: Any,
+) -> list[tuple[Any, Any]]:
+    """Log-probs under the frozen base — same model, adapters disabled."""
+
+    import torch
+
+    disable_adapter = getattr(model, "disable_adapter", None)
+    reference: list[tuple[Any, Any]] = []
+    with torch.no_grad():
+        if callable(disable_adapter):
+            with disable_adapter():
+                for chosen_ids, chosen_len, rejected_ids, rejected_len in encoded_batch:
+                    reference.append(
+                        (
+                            _sequence_logprob(model, chosen_ids, chosen_len, device),
+                            _sequence_logprob(
+                                model, rejected_ids, rejected_len, device
+                            ),
+                        )
+                    )
+        else:
+            for chosen_ids, chosen_len, rejected_ids, rejected_len in encoded_batch:
+                reference.append(
+                    (
+                        _sequence_logprob(model, chosen_ids, chosen_len, device),
+                        _sequence_logprob(model, rejected_ids, rejected_len, device),
+                    )
+                )
+    return reference
+
+
+def _enable_adapter_training(model: Any) -> None:
+    """Re-arm LoRA gradients before a train step.
+
+    Inference paths call disable_adapter_layers(), and peft's enable_adapters
+    (False) clears requires_grad on every adapter tensor. Without re-arming,
+    the optimizer would see no parameters and the adapter would stay at its
+    zero-initialised lora_B — an identity transform.
+    """
+
+    enable = getattr(model, "enable_adapter_layers", None)
+    if callable(enable):
+        try:
+            enable()
+        except Exception:  # noqa: BLE001 — fall through to manual re-arm
+            pass
+    active = getattr(model, "active_adapter", None)
+    set_adapter = getattr(model, "set_adapter", None)
+    if callable(set_adapter) and active:
+        try:
+            set_adapter(active)
+        except Exception:  # noqa: BLE001 — fall through to manual re-arm
+            pass
+    for name, parameter in model.named_parameters():
+        if "lora_" in name:
+            parameter.requires_grad_(True)
+
+
+def _run_dpo_epochs(
+    model: Any,
+    tokenizer: Any,
+    pairs: list[Any],
+) -> dict[str, Any]:
+    """DPO micro-train over PE-ranked pairs; updates LoRA weights in place.
+
+    Reference policy is this same model with adapters disabled, which is exact
+    for LoRA: disabling the adapter restores the frozen base.
+    """
+
+    import torch
+
+    device = getattr(model, "device", None) or torch.device("cpu")
+    _enable_adapter_training(model)
+    trainable = [p for p in model.parameters() if p.requires_grad]
+    if not trainable:
+        raise RuntimeError("no trainable LoRA parameters — adapter not attached")
+
+    optimizer = torch.optim.AdamW(trainable, lr=DPO_LEARNING_RATE)
+    was_training = model.training
+    model.train()
+
+    total_loss = 0.0
+    total_accuracy = 0.0
+    step_count = 0
+    try:
+        for _ in range(DPO_EPOCHS):
+            for start in range(0, len(pairs), DPO_BATCH_SIZE):
+                batch = pairs[start : start + DPO_BATCH_SIZE]
+                encoded = []
+                for pair in batch:
+                    chosen_ids, chosen_len = _encode_pair_side(
+                        tokenizer, pair.prompt, pair.chosen
+                    )
+                    rejected_ids, rejected_len = _encode_pair_side(
+                        tokenizer, pair.prompt, pair.rejected
+                    )
+                    encoded.append(
+                        (chosen_ids, chosen_len, rejected_ids, rejected_len)
+                    )
+
+                reference = _reference_logprobs(model, encoded, device)
+
+                optimizer.zero_grad()
+                batch_loss = None
+                for (chosen_ids, chosen_len, rejected_ids, rejected_len), (
+                    ref_chosen,
+                    ref_rejected,
+                ) in zip(encoded, reference):
+                    policy_chosen = _sequence_logprob(
+                        model, chosen_ids, chosen_len, device
+                    )
+                    policy_rejected = _sequence_logprob(
+                        model, rejected_ids, rejected_len, device
+                    )
+                    logits = (policy_chosen - policy_rejected) - (
+                        ref_chosen - ref_rejected
+                    )
+                    loss = -torch.nn.functional.logsigmoid(DPO_BETA * logits)
+                    batch_loss = loss if batch_loss is None else batch_loss + loss
+                    total_accuracy += float(logits.item() > 0.0)
+                    step_count += 1
+
+                if batch_loss is None:
+                    continue
+                batch_loss = batch_loss / len(encoded)
+                batch_loss.backward()
+                torch.nn.utils.clip_grad_norm_(trainable, DPO_MAX_GRAD_NORM)
+                optimizer.step()
+                total_loss += float(batch_loss.item()) * len(encoded)
+    finally:
+        if not was_training:
+            model.eval()
+
+    if step_count == 0:
+        raise RuntimeError("no DPO steps executed")
+    return {
+        "dpo_loss": total_loss / step_count,
+        "dpo_accuracy": total_accuracy / step_count,
+        "dpo_steps": step_count,
+    }
+
+
 def run_micro_train_preference_step(
     pairs: list[Any] | None = None,
     *,
@@ -368,8 +563,6 @@ def run_micro_train_preference_step(
             "agent_id": agent_id,
         }
 
-    # Training body is intentionally thin here: Protocol C′ / peft trainer
-    # hooks attach later. Persist adapter directory for the living agent.
     pair_count = len(pairs) if pairs is not None else 0
     if pair_count == 0:
         return {
@@ -377,6 +570,28 @@ def run_micro_train_preference_step(
             "skipped": True,
             "reason": "no preference pairs",
             "agent_id": agent_id,
+        }
+
+    tokenizer = _tokenizer
+    if tokenizer is None:
+        return {
+            "trained": False,
+            "skipped": True,
+            "reason": "no tokenizer",
+            "agent_id": agent_id,
+            "pair_count": pair_count,
+        }
+
+    try:
+        stats = _run_dpo_epochs(active, tokenizer, list(pairs or []))
+    except Exception as exc:  # noqa: BLE001 — generation end must not crash
+        logger.warning("DPO micro-train failed for %s: %s", agent_id, exc)
+        return {
+            "trained": False,
+            "skipped": True,
+            "reason": f"train failed: {exc}",
+            "agent_id": agent_id,
+            "pair_count": pair_count,
         }
 
     save_agent_adapter(active, agent_id)
@@ -387,6 +602,7 @@ def run_micro_train_preference_step(
         "agent_id": agent_id,
         "pair_count": pair_count,
         "adapter_dir": str(get_adapter_path(agent_id)),
+        **stats,
     }
 
 

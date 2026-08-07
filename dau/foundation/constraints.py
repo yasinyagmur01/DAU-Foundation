@@ -43,6 +43,16 @@ PER_AGENT_LORA_ALPHA: int = 16
 ADAPTER_BASE_DIR: str = "dau_runs/adapters"
 ADAPTER_SWITCH_MAX_MS: int = 1
 
+# ADIM 3 — DPO preference micro-train at generation end. The reference policy
+# is the same model with adapters disabled, so no second set of base weights
+# is held in memory.
+DPO_BETA: float = 0.10
+DPO_LEARNING_RATE: float = 5e-5
+DPO_EPOCHS: int = 1
+DPO_BATCH_SIZE: int = 2
+DPO_MAX_SEQUENCE_TOKENS: int = 256
+DPO_MAX_GRAD_NORM: float = 1.0
+
 # HippoRAG 2 — Personalized PageRank over SQLite domain co-occurrence (CPU)
 PPR_ALPHA = 0.85
 PPR_WEIGHT_IN_SCORE = 0.30
