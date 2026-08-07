@@ -1,9 +1,0 @@
-{
-  "seed": 2001,
-  "adapter_id": "null_control",
-  "kind": "null_control",
-  "example_count": 0,
-  "shared_for_ab": true,
-  "train_then_ab": true,
-  "signal": "pe_delta_trauma_drift_v1"
-}

@@ -549,8 +549,9 @@ docs/
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)</code></pre>
 <p><strong>Adapter kökleri (dikkat):</strong> - Runtime Punica path:
 <code>dau_runs/adapters/{agent_id}/</code>
-(<code>ADAPTER_BASE_DIR</code>) - C′ disk artefaktları (untracked):
-<code>dau_lora_adapters/cprime_seed…</code></p>
+(<code>ADAPTER_BASE_DIR</code>) — tek runtime kök.
+Eski <code>ADAPTER_ROOT_DIR</code> / <code>dau_lora_adapters</code>
+koddan kaldırıldı; legacy disk arşivi ayrı karar.</p>
 <hr />
 <h2 id="graph-yaşam-döngüsü">13. Graph yaşam döngüsü</h2>
 <pre><code>social_pre_node:
@@ -734,8 +735,8 @@ sınır)</li>
 <li>ADIM 5 precision-weighted PE ↔︎ DAERM γ/μ çakışma haritası</li>
 <li>ADIM 6 Protocol C′ N≥15 + OOD Behavioral Probing harness</li>
 <li><code>W_SEM=0</code> — embedding skorlamaya alınacak mı?</li>
-<li>Dual adapter root (<code>dau_runs/adapters</code> vs
-<code>dau_lora_adapters</code>) tekilleştirme</li>
+<li>Legacy disk <code>dau_lora_adapters/</code> arşiv/taşıma kararı
+(kod kökü tekilleşti)</li>
 </ul>
 <hr />
 <h2 id="bilinen-sınırlar-plastisite-günlüğü">18. Bilinen Sınırlar +

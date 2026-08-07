@@ -29,7 +29,6 @@ LORA_ENABLED_ENV: str = "DAU_LORA_ENABLED"
 LORA_ENABLED_DEFAULT: str = "0"
 LORA_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "YES"})
 
-ADAPTER_ROOT_DIR: str = "dau_lora_adapters"
 LIVED_TRACES_FILE_NAME: str = "lived_traces.jsonl"
 ADAPTER_META_FILE_NAME: str = "lora_update_meta.json"
 

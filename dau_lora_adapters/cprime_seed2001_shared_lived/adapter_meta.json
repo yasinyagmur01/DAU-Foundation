@@ -1,9 +1,0 @@
-{
-  "seed": 2001,
-  "adapter_id": "shared_lived",
-  "kind": "shared_lived",
-  "example_count": 20,
-  "shared_for_ab": true,
-  "train_then_ab": true,
-  "signal": "pe_ranked_pref_v2"
-}

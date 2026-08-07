@@ -146,3 +146,29 @@ def test_save_agent_adapter_warns_without_lora() -> None:
     agent_id = "no-lora-model"
     save_agent_adapter(SimpleNamespace(), agent_id)
     assert adapter_exists(agent_id) is False
+
+
+DEAD_ADAPTER_ROOT_NAME: str = "dau_lora_adapters"
+DEAD_ADAPTER_ROOT_CONSTANT: str = "ADAPTER_ROOT_DIR"
+
+
+def test_no_dead_adapter_root_reference() -> None:
+    """Runtime adapter I/O must not reference the dead dau_lora_adapters root."""
+
+    from dau.foundation import constraints, lora_update
+
+    runtime_sources = (
+        Path(local_llm.__file__),
+        Path(constraints.__file__),
+        Path(lora_update.__file__),
+    )
+    for source in runtime_sources:
+        text = source.read_text(encoding="utf-8")
+        assert DEAD_ADAPTER_ROOT_NAME not in text, source.name
+        assert DEAD_ADAPTER_ROOT_CONSTANT not in text, source.name
+
+    assert ADAPTER_BASE_DIR == "dau_runs/adapters"
+    assert "dau_lora_adapters" not in get_adapter_path("probe-agent").as_posix()
+    assert get_adapter_path.__code__.co_filename == local_llm.__file__
+    assert save_agent_adapter.__code__.co_filename == local_llm.__file__
+    assert switch_adapter.__code__.co_filename == local_llm.__file__

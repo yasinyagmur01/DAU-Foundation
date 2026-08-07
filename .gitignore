@@ -7,6 +7,7 @@ dau_foundation.db
 dau_runs/
 dau_runs/protocol_c_prime_checkpoint.json
 dau_runs/protocol_c_prime_heartbeat.json
+archive/
 dau_memory_chroma/
 *.db
 **/adapter_model.safetensors
