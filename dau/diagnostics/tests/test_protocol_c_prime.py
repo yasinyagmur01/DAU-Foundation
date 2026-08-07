@@ -63,8 +63,46 @@ def test_arm_result_delta_pe_computed_correctly() -> None:
 
 
 def test_compute_stats_h1_supported() -> None:
-    # Lived consistently below null; tiny jitter avoids zero-variance t-test warn.
-    lived_null = [
+    # Primary contrast is lived vs shuffle; a clean NULL arm replays exactly.
+    arms = [
+        (-0.050, 0.0, 0.010),
+        (-0.048, 0.0, 0.011),
+        (-0.052, 0.0, 0.009),
+        (-0.049, 0.0, 0.012),
+        (-0.051, 0.0, 0.008),
+    ]
+    results = [
+        _pair(2001 + i, lived_dpe=ld, null_dpe=nd, shuffle_dpe=sd)
+        for i, (ld, nd, sd) in enumerate(arms)
+    ]
+    stats = _compute_stats(results)
+    assert stats["verdict"] == "H1_SUPPORTED"
+    assert stats["primary_contrast"] == "lived_vs_shuffle"
+    assert stats["null_arm_clean"] is True
+    assert stats["mean_delta_pe_lived"] < stats["mean_delta_pe_shuffle"]
+
+
+def test_compute_stats_rejects_zero_variance_as_significant() -> None:
+    """Identical seeds must not read as an overwhelming result.
+
+    Every seed producing the same ΔPE means N is effectively 1; ttest_rel would
+    return t=inf and p=0.0 on those paired differences.
+    """
+
+    results = [
+        _pair(2001 + i, lived_dpe=-0.05, null_dpe=0.0, shuffle_dpe=0.01)
+        for i in range(5)
+    ]
+    stats = _compute_stats(results)
+    assert stats["degenerate"] is True
+    assert stats["verdict"] == "INCONCLUSIVE"
+    assert "distinct lives" in stats["degenerate_reason"]
+
+
+def test_compute_stats_flags_disturbed_null_arm() -> None:
+    """A NULL arm that moved means the control was trained — refuse a verdict."""
+
+    arms = [
         (-0.050, 0.020, 0.010),
         (-0.048, 0.021, 0.011),
         (-0.052, 0.019, 0.009),
@@ -73,11 +111,11 @@ def test_compute_stats_h1_supported() -> None:
     ]
     results = [
         _pair(2001 + i, lived_dpe=ld, null_dpe=nd, shuffle_dpe=sd)
-        for i, (ld, nd, sd) in enumerate(lived_null)
+        for i, (ld, nd, sd) in enumerate(arms)
     ]
     stats = _compute_stats(results)
-    assert stats["verdict"] == "H1_SUPPORTED"
-    assert stats["mean_delta_pe_lived"] < stats["mean_delta_pe_null"]
+    assert stats["null_arm_clean"] is False
+    assert stats["verdict"] == "INCONCLUSIVE"
 
 
 def test_compute_stats_inconclusive() -> None:

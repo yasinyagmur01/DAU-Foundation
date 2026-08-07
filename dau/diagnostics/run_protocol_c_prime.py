@@ -42,6 +42,7 @@ from dau.foundation.constraints import (
     PPR_ALPHA,
     PPR_WEIGHT_IN_SCORE,
     build_default_constraints,
+    update_constraints,
 )
 from dau.foundation.graph import (
     build_graph,
@@ -52,7 +53,11 @@ from dau.foundation.lod import CognitiveMode, LODState
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
 from dau.foundation.state import DAUAgentState, InternalState
 from dau.memory.store import MemoryStore
-from dau.society.environment import EnvironmentState
+from dau.society.environment import (
+    POOL_CRISIS_THRESHOLD,
+    POOL_MAX,
+    EnvironmentState,
+)
 
 # ---------------------------------------------------------------------------
 # Protocol C′ constants (no magic numbers in logic)
@@ -76,6 +81,11 @@ ALPHA: float = 0.05
 EMPTY_COUNT: int = 0
 EMPTY_MEAN: float = 0.0
 EMPTY_STD: float = 0.0
+# Below this spread the paired differences carry no information and ttest_rel
+# reports t=inf / p=0.0 — an overwhelming result from no variation at all.
+PAIRED_DIFF_MIN_STD: float = 1e-12
+# NULL takes no training, so with the harness clean its replay is exact.
+NULL_ARM_MAX_ABS_DELTA: float = 1e-9
 
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
@@ -94,6 +104,19 @@ TORCH_DETERMINISTIC_WARN_ONLY: bool = True
 STREAM_NODES_PER_EVENT: int = 4
 STREAM_RECURSION_HEADROOM: int = 10
 
+# Per-seed niche. Decoding is greedy and the world is deterministic, so a seed
+# that only touches RNG changes nothing: every seed in the N=15 overnight run
+# produced pe_before = 0.3885. The seed has to vary the life itself. Organisms
+# are still born identical (InternalState defaults) — only the niche differs,
+# so this varies experience rather than trait.
+NICHE_SCARCITY_RANGE: tuple[float, float] = (0.10, 0.70)
+NICHE_UNCERTAINTY_RANGE: tuple[float, float] = (0.20, 0.80)
+NICHE_SOCIAL_PRESSURE_RANGE: tuple[float, float] = (0.00, 0.60)
+NICHE_TIME_PRESSURE_RANGE: tuple[float, float] = (0.00, 0.60)
+# Birth pool stays clear of the crisis threshold so ADIM 1 crisis trauma is not
+# a per-seed confound at event 1.
+NICHE_POOL_FRACTION_RANGE: tuple[float, float] = (0.40, 1.00)
+
 OPPONENT_ID: str = "cprime-npc-opponent"
 ARM_LIVED: str = "lived"
 ARM_NULL: str = "null"
@@ -107,6 +130,10 @@ VERDICT_INCONCLUSIVE: str = "INCONCLUSIVE"
 assert AB_ENERGY_FLOOR > graph_mod.TERMINATION_ENERGY, (
     f"AB_ENERGY_FLOOR ({AB_ENERGY_FLOOR}) must exceed "
     f"TERMINATION_ENERGY ({graph_mod.TERMINATION_ENERGY})"
+)
+assert NICHE_POOL_FRACTION_RANGE[0] > POOL_CRISIS_THRESHOLD, (
+    f"birth pool fraction floor ({NICHE_POOL_FRACTION_RANGE[0]}) must exceed "
+    f"POOL_CRISIS_THRESHOLD ({POOL_CRISIS_THRESHOLD})"
 )
 
 # Constraint snapshot — documents ADIM wiring without silent magic.
@@ -197,14 +224,37 @@ def _lock_seeds(seed: int) -> None:
     os.environ[LLM_TEMPERATURE_ENV] = str(TEMPERATURE)
 
 
-def _initial_state(agent_id: str) -> DAUAgentState:
-    """Fresh agent with System 2 substrate (LLM path required)."""
+def _seed_niche(seed: int) -> tuple[Any, EnvironmentState]:
+    """Draw this seed's niche from the pre-registered ranges.
 
+    Uses a private Random so the niche does not depend on how much global RNG
+    anything else happened to consume first.
+    """
+
+    rng = random.Random(seed)
+    constraints = update_constraints(
+        build_default_constraints(),
+        resource_scarcity=rng.uniform(*NICHE_SCARCITY_RANGE),
+        uncertainty=rng.uniform(*NICHE_UNCERTAINTY_RANGE),
+        social_pressure=rng.uniform(*NICHE_SOCIAL_PRESSURE_RANGE),
+        time_pressure=rng.uniform(*NICHE_TIME_PRESSURE_RANGE),
+    )
+    pool = POOL_MAX * rng.uniform(*NICHE_POOL_FRACTION_RANGE)
+    return constraints, EnvironmentState(pool=pool)
+
+
+def _initial_state(agent_id: str, seed: int) -> DAUAgentState:
+    """Fresh agent with System 2 substrate (LLM path required).
+
+    Body starts at birth defaults for every seed; only the niche varies.
+    """
+
+    constraints, env_state = _seed_niche(seed)
     return DAUAgentState(
         agent_id=agent_id,
         opponent_id=OPPONENT_ID,
-        environment=build_default_constraints(),
-        env_state=EnvironmentState(),
+        environment=constraints,
+        env_state=env_state,
         lod_state=LODState(
             mode=CognitiveMode.SYSTEM_2,
             t_cognitive=1.0,
@@ -325,7 +375,6 @@ def _collect_pe_events(
     Pads remaining slots with last PE when energy floor ends the life early.
     """
 
-    _ = seed  # seed locked by caller; kept for API clarity / future audits
     graph_mod.load_env_file()
 
     original_agent = graph_mod.agent_node
@@ -359,7 +408,7 @@ def _collect_pe_events(
         graph_mod._memory_written[agent_id] = 0
         bind_memory_store(agent_id, store)
 
-        initial = _initial_state(agent_id)
+        initial = _initial_state(agent_id, seed)
         stream_limit = n_events * STREAM_NODES_PER_EVENT + STREAM_RECURSION_HEADROOM
         result: Any = initial
         app = build_graph(checkpointer=None)
@@ -447,11 +496,34 @@ def _train_adapter(
             seed=_seed_from_agent_id(agent_id),
         )
 
+    # A skipped train step used to be invisible: the arm still reported the NLI
+    # pass count as n_pairs_trained, so a run where DPO never fired looked
+    # identical to one where it did.
     try:
-        run_micro_train_preference_step(pairs, agent_id=agent_id)
-    except Exception:  # noqa: BLE001 — train failure must not abort protocol
-        pass
+        result = run_micro_train_preference_step(pairs, agent_id=agent_id)
+    except Exception as exc:  # noqa: BLE001 — train failure must not abort protocol
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] {agent_id}: train raised {exc!r} — "
+            f"arm continues untrained",
+            flush=True,
+        )
+        return EMPTY_COUNT, EMPTY_COUNT
 
+    trained = bool(result.get("trained", False))
+    if not trained:
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] {agent_id}: no training happened "
+            f"({result.get('reason', 'no reason given')}) — arm is untrained",
+            flush=True,
+        )
+        return EMPTY_COUNT, EMPTY_COUNT
+
+    print(
+        f"[PROTOCOL_C_PRIME] {agent_id}: trained on {len(pairs)} pairs "
+        f"(shuffled={shuffled}) loss={result.get('dpo_loss')} "
+        f"acc={result.get('dpo_accuracy')}",
+        flush=True,
+    )
     return max(EMPTY_COUNT, n_pairs_trained), max(EMPTY_COUNT, n_pairs_rejected)
 
 
@@ -644,8 +716,62 @@ def run_protocol_c_prime() -> list[PairResult]:
     return results
 
 
+def _paired_test(treatment: list[float], control: list[float]) -> dict[str, Any]:
+    """Paired t-test plus Wilcoxon, with an explicit zero-variance guard.
+
+    ΔPE is nearly discrete — the adapter either flips the greedy decision or it
+    does not — so identical paired differences are a real possibility. In that
+    case ttest_rel returns t=inf and p=0.0, which reads as an overwhelming
+    result produced by no variation at all. Report that instead of testing it.
+    """
+
+    n_pairs = len(treatment)
+    out: dict[str, Any] = {
+        "n": n_pairs,
+        "t_stat": EMPTY_MEAN,
+        "p_value": 1.0,
+        "wilcoxon_p": 1.0,
+        # The smallest two-sided signed-rank p reachable at this n is 2/2**n,
+        # so below ~6 pairs Wilcoxon cannot clear ALPHA whatever the data says.
+        "wilcoxon_gateable": bool(
+            n_pairs > 0 and (2.0 / float(2**n_pairs)) <= ALPHA
+        ),
+        "degenerate": False,
+        "degenerate_reason": "",
+    }
+    if len(treatment) < 2:
+        out["degenerate"] = True
+        out["degenerate_reason"] = "fewer than two pairs"
+        return out
+
+    diffs = [t - c for t, c in zip(treatment, control)]
+    if _std(diffs) <= PAIRED_DIFF_MIN_STD:
+        out["degenerate"] = True
+        out["degenerate_reason"] = (
+            "paired differences have no spread — the seeds are not producing "
+            "distinct lives, so N is effectively 1"
+        )
+        return out
+
+    t_result = stats.ttest_rel(treatment, control)
+    out["t_stat"] = float(t_result.statistic)
+    out["p_value"] = float(t_result.pvalue)
+    try:
+        out["wilcoxon_p"] = float(stats.wilcoxon(diffs).pvalue)
+    except ValueError:
+        # scipy refuses an all-zero difference vector.
+        out["wilcoxon_p"] = 1.0
+    return out
+
+
 def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
-    """Summary means/stds + paired t-test (lived ΔPE vs null ΔPE)."""
+    """Summary means/stds + paired tests.
+
+    Primary contrast is LIVED vs SHUFFLE: both arms take the same training
+    machinery and differ only in preference direction. LIVED vs NULL is kept as
+    a secondary read-out, but NULL is an integrity check rather than a
+    statistical arm — with the harness clean its ΔPE is exactly zero.
+    """
 
     lived = [r.lived.delta_pe for r in results]
     null = [r.null.delta_pe for r in results]
@@ -658,16 +784,21 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
     std_delta_pe_null = _std(null)
     std_delta_pe_shuffle = _std(shuffle)
 
-    if len(results) < 2:
-        t_stat = EMPTY_MEAN
-        p_value = 1.0
-    else:
-        t_result = stats.ttest_rel(lived, null)
-        t_stat = float(t_result.statistic)
-        p_value = float(t_result.pvalue)
+    primary = _paired_test(lived, shuffle)
+    secondary = _paired_test(lived, null)
+    t_stat = primary["t_stat"]
+    p_value = primary["p_value"]
 
-    significant = bool(p_value < ALPHA)
-    if significant and mean_delta_pe_lived < mean_delta_pe_null:
+    null_arm_clean = all(abs(value) <= NULL_ARM_MAX_ABS_DELTA for value in null)
+
+    significant = bool(
+        not primary["degenerate"]
+        and p_value < ALPHA
+        and (not primary["wilcoxon_gateable"] or primary["wilcoxon_p"] < ALPHA)
+    )
+    if primary["degenerate"] or not null_arm_clean:
+        verdict = VERDICT_INCONCLUSIVE
+    elif significant and mean_delta_pe_lived < mean_delta_pe_shuffle:
         verdict = VERDICT_H1_SUPPORTED
     elif significant:
         verdict = VERDICT_H1_REJECTED
@@ -675,6 +806,20 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
         verdict = VERDICT_INCONCLUSIVE
 
     return {
+        "primary_contrast": "lived_vs_shuffle",
+        "primary": primary,
+        "secondary_lived_vs_null": secondary,
+        "null_arm_clean": null_arm_clean,
+        "wilcoxon_p": primary["wilcoxon_p"],
+        "degenerate": primary["degenerate"],
+        "degenerate_reason": primary["degenerate_reason"],
+        "niche_ranges": {
+            "resource_scarcity": list(NICHE_SCARCITY_RANGE),
+            "uncertainty": list(NICHE_UNCERTAINTY_RANGE),
+            "social_pressure": list(NICHE_SOCIAL_PRESSURE_RANGE),
+            "time_pressure": list(NICHE_TIME_PRESSURE_RANGE),
+            "pool_fraction": list(NICHE_POOL_FRACTION_RANGE),
+        },
         "mean_delta_pe_lived": mean_delta_pe_lived,
         "mean_delta_pe_null": mean_delta_pe_null,
         "mean_delta_pe_shuffle": mean_delta_pe_shuffle,
@@ -732,13 +877,34 @@ def main() -> None:
     path = write_results_json(results, stats_out)
 
     print("\n=== RESULTS ===", flush=True)
-    print(f"mean ΔPE lived:   {stats_out['mean_delta_pe_lived']:.4f}", flush=True)
-    print(f"mean ΔPE null:    {stats_out['mean_delta_pe_null']:.4f}", flush=True)
-    print(f"mean ΔPE shuffle: {stats_out['mean_delta_pe_shuffle']:.4f}", flush=True)
     print(
-        f"t={stats_out['t_stat']:.3f}  p={stats_out['p_value']:.4f}",
+        f"mean ΔPE lived:   {stats_out['mean_delta_pe_lived']:.4f} "
+        f"(sd {stats_out['std_delta_pe_lived']:.4f})",
         flush=True,
     )
+    print(
+        f"mean ΔPE shuffle: {stats_out['mean_delta_pe_shuffle']:.4f} "
+        f"(sd {stats_out['std_delta_pe_shuffle']:.4f})",
+        flush=True,
+    )
+    print(f"mean ΔPE null:    {stats_out['mean_delta_pe_null']:.4f}", flush=True)
+    print(
+        f"primary lived vs shuffle: t={stats_out['t_stat']:.3f} "
+        f"p={stats_out['p_value']:.4f} wilcoxon_p={stats_out['wilcoxon_p']:.4f}",
+        flush=True,
+    )
+    if stats_out["degenerate"]:
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] test not run: "
+            f"{stats_out['degenerate_reason']}",
+            flush=True,
+        )
+    if not stats_out["null_arm_clean"]:
+        print(
+            "[PROTOCOL_C_PRIME][WARN] NULL arm ΔPE is not zero — the control "
+            "was disturbed; treat every arm as contaminated",
+            flush=True,
+        )
     print(f"Verdict: {stats_out['verdict']}", flush=True)
     print(f"Results: {path}", flush=True)
 
