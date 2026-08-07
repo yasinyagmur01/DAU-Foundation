@@ -21,13 +21,6 @@ from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
 from dau.foundation.state import DAUAgentState, DeltaRecord
 
-try:
-    from dau.foundation.nli_filter import is_genuine_polarity_pair
-
-    _NLI_AVAILABLE = True
-except ImportError:
-    _NLI_AVAILABLE = False
-
 # ---------------------------------------------------------------------------
 # LoRA update flags and signal constants (no magic numbers in logic)
 # ---------------------------------------------------------------------------
@@ -64,15 +57,11 @@ EVENT_TYPE_DECISION: str = "agent_decision"
 SIGNAL_V1_ID: str = "pe_delta_trauma_drift_v1"
 SIGNAL_V2_ID: str = "pe_ranked_pref_v2"
 PREF_TRACES_FILE_NAME: str = "preference_pairs.jsonl"
-PREF_EXPECTED_OUTCOME: str = (
-    "extract resources carefully while preserving the shared commons"
-)
-# Must share the agent's terse action register and negate it explicitly: the
-# NLI cross-encoder scores surface negation, so prose in a different register
-# reads as non-contradictory and every pair is filtered out.
-PREF_REJECT_CANDIDATE: str = "do not extract resource"
-PREF_CONTEXT_TEMPLATE: str = (
-    "Context expectation: {expected}\nLived scalars: pe={pe:.3f}"
+# Endogenous preference: lower lived PE beats higher lived PE. No designer
+# value sentence, no fixed reject template (those were recipe A — trait-
+# adjacent and mini-tested to inflate PE without teaching contrast).
+PREF_LIVED_CONTEXT_TEMPLATE: str = (
+    "Lived preference: pe={pe_chosen:.3f} decision over pe={pe_rejected:.3f}"
 )
 PE_RANK_MIN_GAP: float = 1e-6
 
@@ -100,7 +89,7 @@ class LivedTraceExample:
 
 @dataclass
 class PreferencePair:
-    """PE-ranked preference row — chosen has lower MiniLM PE than rejected."""
+    """Lived-PE preference row — chosen has lower life PE than rejected."""
 
     prompt: str
     chosen: str
@@ -268,54 +257,56 @@ def build_lived_trace_examples(
 
 def build_pe_ranked_pairs(
     examples: list[LivedTraceExample],
-    *,
-    expected_outcome: str = PREF_EXPECTED_OUTCOME,
-    reject_candidate: str = PREF_REJECT_CANDIDATE,
-    pe_fn: Any | None = None,
 ) -> list[PreferencePair]:
-    """Rank (completion, reject_candidate) by MiniLM PE vs expected_outcome."""
+    """Rank the agent's own decisions by the PE they produced in life.
 
-    if pe_fn is None:
-        from dau.foundation.semantic_similarity import semantic_prediction_error
+    Chosen = lower lived prediction_error, rejected = higher. One strongest-
+    contrast pair is kept per low-PE event so the train set stays O(n) rather
+    than O(n²). Linguistic NLI is not applied: the preference is defined by
+    measured PE, not by surface negation.
+    """
 
-        pe_fn = semantic_prediction_error
-
-    pairs: list[PreferencePair] = []
-    expected = expected_outcome.strip()
-    reject = reject_candidate.strip()
-    for example in examples:
-        chosen_raw = (example.completion or COMPLETION_FALLBACK).strip()
-        if not chosen_raw or not reject or chosen_raw == reject:
-            continue
-        pe_a = float(pe_fn(expected, chosen_raw))
-        pe_b = float(pe_fn(expected, reject))
-        if abs(pe_a - pe_b) < PE_RANK_MIN_GAP:
-            continue
-        if pe_a < pe_b:
-            chosen_text, rejected_text = chosen_raw, reject
-            pe_chosen, pe_rejected = pe_a, pe_b
-        else:
-            chosen_text, rejected_text = reject, chosen_raw
-            pe_chosen, pe_rejected = pe_b, pe_a
-        prompt = PREF_CONTEXT_TEMPLATE.format(
-            expected=expected,
-            pe=example.prediction_error,
-        )
-        pair = PreferencePair(
-            prompt=prompt,
-            chosen=chosen_text,
-            rejected=rejected_text,
-            pe_chosen=pe_chosen,
-            pe_rejected=pe_rejected,
-            event_counter=example.event_counter,
-        )
-        NLI_FILTER_STATS["total_candidates"] += 1
-        if _NLI_AVAILABLE and not is_genuine_polarity_pair(pair.chosen, pair.rejected):
-            NLI_FILTER_STATS["rejected"] += 1
-            continue
-        NLI_FILTER_STATS["passed"] += 1
-        pairs.append(pair)
-    return pairs
+    usable = [
+        ex
+        for ex in examples
+        if (ex.completion or COMPLETION_FALLBACK).strip()
+        and (ex.completion or COMPLETION_FALLBACK).strip() != COMPLETION_FALLBACK
+    ]
+    best_by_event: dict[int, PreferencePair] = {}
+    for index, left in enumerate(usable):
+        for right in usable[index + 1 :]:
+            pe_left = float(left.prediction_error)
+            pe_right = float(right.prediction_error)
+            if abs(pe_left - pe_right) < PE_RANK_MIN_GAP:
+                continue
+            if pe_left <= pe_right:
+                low, high = left, right
+            else:
+                low, high = right, left
+            chosen = (low.completion or COMPLETION_FALLBACK).strip()
+            rejected = (high.completion or COMPLETION_FALLBACK).strip()
+            if not chosen or not rejected or chosen == rejected:
+                continue
+            pe_chosen = float(low.prediction_error)
+            pe_rejected = float(high.prediction_error)
+            gap = pe_rejected - pe_chosen
+            pair = PreferencePair(
+                prompt=PREF_LIVED_CONTEXT_TEMPLATE.format(
+                    pe_chosen=pe_chosen,
+                    pe_rejected=pe_rejected,
+                ),
+                chosen=chosen,
+                rejected=rejected,
+                pe_chosen=pe_chosen,
+                pe_rejected=pe_rejected,
+                event_counter=int(low.event_counter),
+            )
+            NLI_FILTER_STATS["total_candidates"] += 1
+            previous = best_by_event.get(pair.event_counter)
+            if previous is None or gap > (previous.pe_rejected - previous.pe_chosen):
+                best_by_event[pair.event_counter] = pair
+    NLI_FILTER_STATS["passed"] += len(best_by_event)
+    return list(best_by_event.values())
 
 
 def shuffle_preference_pairs(
