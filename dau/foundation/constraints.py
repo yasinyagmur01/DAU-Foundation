@@ -61,13 +61,15 @@ PPR_ALPHA = 0.85
 PPR_WEIGHT_IN_SCORE = 0.30
 PPR_TOP_K_DOMAINS = 10
 
-# ADIM 5 — precision-weighted PE (global scalar from pe_vector variance)
+# ADIM 5 — precision-weighted PE (rolling raw-PE history variance)
 PRECISION_EPSILON = 1e-6
 PRECISION_HISTORY_WINDOW = 10
-# Ceiling on the amplification gain. Measured raw PE peaks near 0.81, so a gain
-# above ~1.23 clamps most events to exactly 1.0 and erases the delta the
-# protocols measure. Sample variance of PE in [0, 1] never exceeds 0.5, so pi
-# never falls below 2.0 and this ceiling is always the binding value.
+PRECISION_MIN_HISTORY = 2  # cold start: fewer samples → neutral π=1.0
+# Uniform[0,1] population variance — scales history var into an adaptive band.
+PRECISION_VAR_REF = 1.0 / 12.0
+PRECISION_MIN_WEIGHT = 0.5  # crisis / high-variance floor
+# Ceiling on amplification. Measured raw PE peaks near 0.81; 1.2 keeps
+# PE_w = min(raw·π, 1.0) from saturating the majority of events at 1.0.
 PRECISION_MAX_WEIGHT = 1.2
 
 

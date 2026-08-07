@@ -82,42 +82,46 @@ def semantic_prediction_error(expected: str, actual: str) -> float:
     return max(METRIC_MIN, min(METRIC_MAX, error))
 
 
-def compute_precision_weight(pe_vector: dict[str, float]) -> float:
-    """
-    Computes global precision scalar from current pe_vector variance.
-    Low variance (stable agent) → high precision → amplifies PE signal.
-    High variance (crisis) → low precision → dampens PE signal.
+def compute_precision_weight(pe_history: list[float]) -> float:
+    """Compute precision gain from rolling raw-PE history variance.
 
-    Seçenek B: uses current pe_vector only, no history needed.
-    No state changes required.
+    Biology analogy: when recent surprise has been steady, the organism
+    trusts the PE signal (high π); when recent surprise swings wildly,
+    gain is damped (low π). Cold start (too few samples) is neutral π=1.0.
 
     Formula:
-      variance = var(pe_vector.values())
-      pi = 1 / (variance + PRECISION_EPSILON)
-      pi_clamped = min(pi, PRECISION_MAX_WEIGHT)
+      variance = sample_var(pe_history)
+      π_raw    = 1 / (variance / VAR_REF + ε)
+      π        = clamp(π_raw, MIN_WEIGHT, MAX_WEIGHT)
     """
     import statistics
 
-    from dau.foundation.constraints import PRECISION_EPSILON, PRECISION_MAX_WEIGHT
+    from dau.foundation.constraints import (
+        PRECISION_EPSILON,
+        PRECISION_MAX_WEIGHT,
+        PRECISION_MIN_HISTORY,
+        PRECISION_MIN_WEIGHT,
+        PRECISION_VAR_REF,
+    )
 
-    values = list(pe_vector.values())
-    if len(values) < 2:
-        return 1.0  # neutral weight — not enough data
+    values = [float(value) for value in pe_history]
+    if len(values) < PRECISION_MIN_HISTORY:
+        return 1.0
     variance = statistics.variance(values)
-    pi = 1.0 / (variance + PRECISION_EPSILON)
-    return min(pi, PRECISION_MAX_WEIGHT)
+    pi_raw = 1.0 / (variance / PRECISION_VAR_REF + PRECISION_EPSILON)
+    return max(PRECISION_MIN_WEIGHT, min(PRECISION_MAX_WEIGHT, pi_raw))
 
 
 def apply_precision_weighting(
     raw_pe: float,
-    pe_vector: dict[str, float],
+    pe_history: list[float],
 ) -> float:
-    """
-    Applies precision weighting to raw PE scalar.
-    Returns precision-weighted PE, clamped to [0.0, 1.0].
+    """Apply history-based precision weighting to raw PE; clamp to [0, 1].
 
-    Usage: call after compute_pe, before passing to DAERM.
+    Caller must compute π from the *current* history (before appending
+    this raw_pe), then append the unweighted raw_pe afterward so the
+    gain never feeds on its own output.
     """
-    pi = compute_precision_weight(pe_vector)
-    weighted = raw_pe * pi
-    return min(weighted, 1.0)
+    pi = compute_precision_weight(pe_history)
+    weighted = float(raw_pe) * pi
+    return min(METRIC_MAX, max(METRIC_MIN, weighted))

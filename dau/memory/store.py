@@ -38,6 +38,8 @@ CHROMA_DB_PATH: str = "dau_memory_chroma"
 SQLITE_MEMORY_PATH: str = "dau_memory.db"
 DOMAIN_EDGE_WINDOW: int = 10  # DEEP/TRAUMA within this event-counter span link
 EMBEDDING_DIM: int = 32  # Chroma vault only; W_SEM=0 so vectors are not scored
+# Heir birth stamp for inherited engrams (recency starts at lineage handoff).
+SEED_BIRTH_COUNTER_DEFAULT: int = 0
 
 
 class DeterministicHashEmbedding(EmbeddingFunction[Documents]):
@@ -240,6 +242,74 @@ class MemoryStore:
                 int(record.timestamp),
                 strength,
                 float(record.magnitude),
+                classification,
+                drift_flag,
+                record_id,
+            ),
+        )
+        self._conn.commit()
+        return record_id
+
+    def seed_inherited_record(
+        self,
+        source_id: str,
+        dest_agent_id: str,
+        *,
+        birth_counter: int = SEED_BIRTH_COUNTER_DEFAULT,
+    ) -> str | None:
+        """Copy a durable engram onto a heir agent under a new record id.
+
+        Biology analogy: lineage handoff — the ancestor's cortical card is
+        re-filed under the heir's identity. Selection already happened at
+        consolidation, so the persist gate is not re-applied. Missing source
+        yields None (no silent fabricate).
+        """
+
+        payload = self.get_record_payload(source_id)
+        source_node = self.get_node(source_id)
+        if payload is None or source_node is None:
+            return None
+
+        record_id = str(uuid4())
+        domain = str(payload.affected_domain)
+        classification = str(source_node.classification)
+        drift_flag = int(source_node.drift_flag)
+        strength = int(source_node.strength)
+        document = json.dumps(payload.model_dump())
+
+        self._collection.add(
+            ids=[record_id],
+            documents=[document],
+            metadatas=[
+                {
+                    "agent_id": dest_agent_id,
+                    "domain": domain,
+                    "magnitude": float(payload.magnitude),
+                    "timestamp": int(payload.timestamp),
+                    "classification": classification,
+                    "drift_flag": drift_flag,
+                }
+            ],
+        )
+
+        cur = self._conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO memory_nodes (
+                id, agent_id, domain, event_type, timestamp,
+                last_activated_counter, strength, magnitude,
+                classification, drift_flag, chroma_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                record_id,
+                dest_agent_id,
+                domain,
+                classification,
+                int(payload.timestamp),
+                int(birth_counter),
+                strength,
+                float(payload.magnitude),
                 classification,
                 drift_flag,
                 record_id,

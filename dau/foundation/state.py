@@ -307,6 +307,14 @@ class DAUAgentState(BaseModel):
         default_factory=list,
         description="Ordered record of internal-state deltas (append-only history).",
     )
+    # ADIM 5 — rolling raw PE scalars for precision weighting (not precision-weighted).
+    pe_history: list[float] = Field(
+        default_factory=list,
+        description=(
+            "Recent raw prediction-error scalars (oldest→newest), truncated "
+            "to PRECISION_HISTORY_WINDOW. Used for adaptive precision gain."
+        ),
+    )
     # Layer 2 — permanent trauma drift (DriftState lives in drift.py; lazy default
     # avoids circular import: state → drift → delta → state).
     drift_state: Any = Field(
@@ -400,6 +408,19 @@ class DAUAgentState(BaseModel):
         elif not isinstance(raw_ctx, list):
             raise TypeError("retrieval_context must be a list of dicts")
 
+        # ADIM 5 — coerce / truncate pe_history to the rolling window.
+        from dau.foundation.constraints import PRECISION_HISTORY_WINDOW
+
+        raw_pe_history = data.get("pe_history", None)
+        if raw_pe_history is None:
+            data["pe_history"] = []
+        elif not isinstance(raw_pe_history, list):
+            raise TypeError("pe_history must be a list of floats")
+        else:
+            data["pe_history"] = [
+                float(value) for value in raw_pe_history[-PRECISION_HISTORY_WINDOW:]
+            ]
+
         raw_gen = data.get("generation_record", None)
         if raw_gen is None or not isinstance(raw_gen, dict):
             return data
@@ -417,12 +438,19 @@ class DAUAgentState(BaseModel):
             )
         else:
             inherited_drift = DriftState()
+        raw_scales = raw_gen.get("inherited_somatic_scales", {})
+        if not isinstance(raw_scales, dict):
+            raw_scales = {}
         data["generation_record"] = GenerationRecord(
             agent_id=str(raw_gen["agent_id"]),
             generation=int(raw_gen.get("generation", DEFAULT_GENERATION)),
             inherited_memories=list(raw_gen.get("inherited_memories", [])),
             inherited_drift=inherited_drift,
             transfer_timestamp=int(raw_gen.get("transfer_timestamp", 0)),
+            inherited_warning_ids=list(raw_gen.get("inherited_warning_ids", [])),
+            inherited_somatic_scales={
+                str(key): float(value) for key, value in raw_scales.items()
+            },
         )
         return data
 

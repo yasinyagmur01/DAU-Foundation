@@ -47,6 +47,8 @@ TRANSFER_KIND_INHERITED_WARNING: str = "inherited_warning"
 
 DEFAULT_REWARD_MARKER: float = 0.0
 DEFAULT_THREAT_MARKER: float = 0.0
+# Heir vault stamp at lineage handoff (matches MemoryStore.SEED_BIRTH_COUNTER_DEFAULT).
+APPLY_BIRTH_COUNTER: int = 0
 
 
 @dataclass
@@ -287,6 +289,30 @@ def consolidate_generation(
     )
 
 
+def _seed_inherited_id_map(
+    memory_store: Any,
+    parent_ids: list[str],
+    dest_agent_id: str,
+) -> dict[str, str]:
+    """Copy parent engrams into the heir vault; return parent_id → heir_id."""
+
+    id_map: dict[str, str] = {}
+    if memory_store is None:
+        return id_map
+    seed_fn = getattr(memory_store, "seed_inherited_record", None)
+    if seed_fn is None:
+        return id_map
+    for parent_id in parent_ids:
+        new_id = seed_fn(
+            parent_id,
+            dest_agent_id,
+            birth_counter=APPLY_BIRTH_COUNTER,
+        )
+        if new_id:
+            id_map[str(parent_id)] = str(new_id)
+    return id_map
+
+
 def apply_generation(
     new_agent_state: DAUAgentState,
     record: GenerationRecord,
@@ -297,9 +323,11 @@ def apply_generation(
     Biology analogy: the heir receives scarred niches and the engrams that
     earned transfer — lineage age advances by one. Inherited warnings carry
     a reduced somatic scale so ancestral trauma informs without dominating.
-    """
 
-    _ = memory_store  # vault re-binding reserved for later wiring
+    When memory_store is provided, selected parent engrams are seeded under
+    the heir's agent_id (new record ids). When None, only retrieval_context
+    markers are written (legacy / unit-test path).
+    """
 
     inherited_drift = DriftState(
         flags=dict(record.inherited_drift.flags),
@@ -307,16 +335,26 @@ def apply_generation(
     )
     warning_ids = set(record.inherited_warning_ids)
     warning_scales = dict(record.inherited_somatic_scales)
+
+    id_map = _seed_inherited_id_map(
+        memory_store,
+        list(record.inherited_memories),
+        new_agent_state.agent_id,
+    )
+
     retrieval_context: list[dict[str, Any]] = []
-    for memory_id in record.inherited_memories:
+    for parent_id in record.inherited_memories:
+        # Prefer seeded heir id; fall back to parent id when store is absent
+        # or the source engram was missing from the vault.
+        context_id = id_map.get(str(parent_id), str(parent_id))
         entry: dict[str, Any] = {
-            RECORD_ID_KEY: memory_id,
+            RECORD_ID_KEY: context_id,
             GENERATION_INHERITED_KEY: True,
         }
-        if memory_id in warning_ids:
+        if parent_id in warning_ids:
             entry[INHERITED_WARNING_KEY] = True
             entry[SOMATIC_SCALE_KEY] = warning_scales.get(
-                memory_id, WARNING_SOMATIC_SCALE
+                parent_id, WARNING_SOMATIC_SCALE
             )
         retrieval_context.append(entry)
     return new_agent_state.model_copy(

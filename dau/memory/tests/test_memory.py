@@ -159,3 +159,39 @@ def test_run_consolidation_forget_protect_edge_report(store):
     assert trauma_node is not None
     assert trauma_node.strength >= TRAUMA_S_BASE + 2
     _ = id_deep
+
+
+def test_seed_inherited_record_writes_under_new_agent_id(store) -> None:
+    """Inherited seed copies engram to heir agent_id with a distinct record id."""
+
+    parent_id = "parent-0"
+    heir_id = "heir-0"
+    source_id = store.write_record(_record(0.85, domain="resource", timestamp=4), parent_id)
+    assert source_id
+
+    store.update_activation(source_id, now_counter=5)
+    parent_node = store.get_node(source_id)
+    assert parent_node is not None
+
+    new_id = store.seed_inherited_record(source_id, heir_id, birth_counter=0)
+    assert new_id is not None
+    assert new_id != source_id
+
+    heir_nodes = store.list_nodes(heir_id)
+    assert len(heir_nodes) == 1
+    assert heir_nodes[0].id == new_id
+    assert heir_nodes[0].agent_id == heir_id
+    assert heir_nodes[0].strength == parent_node.strength
+    assert heir_nodes[0].last_activated_counter == 0
+    assert store.get_record_payload(new_id) is not None
+
+    # Parent row untouched and still listed only under parent.
+    assert store.get_node(source_id) is not None
+    assert len(store.list_nodes(parent_id)) == 1
+
+
+def test_seed_inherited_record_missing_source_returns_none(store) -> None:
+    """Missing source id yields None — no fabricated heir engram."""
+
+    assert store.seed_inherited_record("missing-id", "heir-0") is None
+    assert store.list_nodes("heir-0") == []

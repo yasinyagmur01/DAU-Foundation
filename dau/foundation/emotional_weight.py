@@ -8,8 +8,10 @@ JSON tag like "anxious" that leaves behavior unchanged (Dubedy 2025).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from .delta import is_trauma
+from .generation import INHERITED_WARNING_KEY, SOMATIC_SCALE_KEY
 from .state import METRIC_MAX, METRIC_MIN, DeltaRecord, InternalState
 
 # ---------------------------------------------------------------------------
@@ -30,6 +32,11 @@ MARKER_ORDER: tuple[str, ...] = (
     MARKER_SOCIAL,
     MARKER_LOSS,
 )
+
+# Ancestral cautionary scale multiplies threat/loss: factor = 1 + somatic_scale.
+INHERITED_SOMATIC_MARKERS: tuple[str, ...] = (MARKER_THREAT, MARKER_LOSS)
+SOMATIC_SCALE_UNIT: float = 1.0
+DEFAULT_INHERITED_SOMATIC_SCALE: float = 0.0
 
 LOSS_ON_TRAUMA: float = 1.0
 LOSS_DEFAULT: float = 0.0
@@ -100,6 +107,40 @@ def _top_marker(somatic_markers: dict[str, float]) -> str:
             best_marker = marker
             best_weight = weight
     return best_marker
+
+
+def apply_inherited_somatic_scale(
+    ew: EmotionalWeight,
+    retrieval_context: list[dict[str, Any]],
+) -> EmotionalWeight:
+    """Scale threat/loss by ancestral inherited_warning somatic_scale.
+
+    Biology analogy: cautionary scars from a low-fitness ancestor dampen
+    threat/loss priority (negative scale) so trauma informs without dominating;
+    high-fitness inherited warnings may mildly amplify. No trait labels —
+    only a numeric factor on existing somatic markers.
+    """
+
+    scales: list[float] = []
+    for entry in retrieval_context:
+        if not isinstance(entry, dict):
+            continue
+        if not entry.get(INHERITED_WARNING_KEY):
+            continue
+        scales.append(
+            float(entry.get(SOMATIC_SCALE_KEY, DEFAULT_INHERITED_SOMATIC_SCALE))
+        )
+    if not scales:
+        return ew
+
+    # Strongest caution (most negative) wins when mixed scales are present.
+    scale = min(scales)
+    factor = SOMATIC_SCALE_UNIT + scale
+    new_markers = dict(ew.somatic_markers)
+    for marker in INHERITED_SOMATIC_MARKERS:
+        if marker in new_markers:
+            new_markers[marker] = _clamp(float(new_markers[marker]) * factor)
+    return EmotionalWeight(somatic_markers=new_markers)
 
 
 def apply_emotional_weight(prompt: str, ew: EmotionalWeight) -> str:

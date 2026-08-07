@@ -16,9 +16,17 @@ from dau.foundation.emotional_weight import (
     PRIORITY_PROMPT_TEMPLATE,
     EmotionalWeight,
     apply_emotional_weight,
+    apply_inherited_somatic_scale,
     compute_emotional_weight,
 )
+from dau.foundation.generation import (
+    GENERATION_INHERITED_KEY,
+    INHERITED_WARNING_KEY,
+    RECORD_ID_KEY,
+    SOMATIC_SCALE_KEY,
+)
 from dau.foundation.state import DeltaRecord, InternalState
+from dau.generation.fitness import WARNING_SOMATIC_SCALE
 
 
 def _delta(magnitude: float, domain: str = "resource") -> DeltaRecord:
@@ -160,3 +168,50 @@ def test_trauma_loss_dominates_when_others_low() -> None:
     assert result.endswith(
         PRIORITY_PROMPT_TEMPLATE.format(top_marker=MARKER_LOSS)
     )
+
+
+def test_apply_inherited_somatic_scale_dampens_threat_on_negative_scale() -> None:
+    """Negative ancestral somatic_scale dampens threat and loss markers."""
+
+    ew = EmotionalWeight(
+        somatic_markers={
+            MARKER_THREAT: 0.8,
+            MARKER_REWARD: 0.4,
+            MARKER_NOVELTY: 0.3,
+            MARKER_SOCIAL: 0.2,
+            MARKER_LOSS: 1.0,
+        }
+    )
+    context = [
+        {
+            RECORD_ID_KEY: "heir-warn",
+            GENERATION_INHERITED_KEY: True,
+            INHERITED_WARNING_KEY: True,
+            SOMATIC_SCALE_KEY: -WARNING_SOMATIC_SCALE,
+        }
+    ]
+    scaled = apply_inherited_somatic_scale(ew, context)
+    factor = 1.0 - WARNING_SOMATIC_SCALE
+    assert scaled.somatic_markers[MARKER_THREAT] == pytest.approx(0.8 * factor)
+    assert scaled.somatic_markers[MARKER_LOSS] == pytest.approx(1.0 * factor)
+    # Non-cautionary markers untouched.
+    assert scaled.somatic_markers[MARKER_REWARD] == pytest.approx(0.4)
+
+
+def test_apply_inherited_somatic_scale_noop_without_warnings() -> None:
+    """Without inherited_warning entries, EmotionalWeight is unchanged."""
+
+    ew = EmotionalWeight(
+        somatic_markers={
+            MARKER_THREAT: 0.5,
+            MARKER_REWARD: 0.5,
+            MARKER_NOVELTY: 0.5,
+            MARKER_SOCIAL: 0.5,
+            MARKER_LOSS: 0.0,
+        }
+    )
+    context = [
+        {RECORD_ID_KEY: "plain", GENERATION_INHERITED_KEY: True},
+    ]
+    scaled = apply_inherited_somatic_scale(ew, context)
+    assert scaled.somatic_markers == ew.somatic_markers

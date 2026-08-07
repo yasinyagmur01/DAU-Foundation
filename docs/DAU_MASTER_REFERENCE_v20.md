@@ -1,15 +1,15 @@
 # DAU — Master Reference
 
-**Versiyon 2.3** · 2026-08-07  
+**Versiyon 2.4** · 2026-08-07  
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`  
-*(`.html` / `.pdf` türevleri v2.3 için henüz yeniden üretilmedi — md kaynaktır)*  
+*(`.html` / `.pdf` türevleri v2.4 için henüz yeniden üretilmedi — md kaynaktır)*  
 *(eski `v10` / Versiyon 1.x belge ailesi süpersede edildi — arşiv olarak kalabilir)*
 
 Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C **paper-locked negative
 finding** · C′ N=15 (eski reçete) **INSTRUMENT_LIMITED_NULL** · mini
 **SAMPLE_LIVED_PE_SEPARATION** (N=1) · C′ N=15 sampling+B →
 **SAMPLE_N15_UNDERPOWERED** (INCONCLUSIVE) · **ADIM 1–6 kodlandı** · bu
-branch’te **182 test**.
+branch’te **206 test**.
 
 **İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü
 metacognition **UNSUPPORTED (paper-locked null)** · C′ N=15 eski koşum
@@ -25,7 +25,7 @@ mini sampling+B: lived ΔPE=−0.180 · null=0.000 · shuffle=−0.149
 **Faz 0 kilit:** Frozen Protocol C null **paper-locked**; full Groq
 Protocol C tekrar yok.
 
-**Plastisite / ADIM durumu (v2.3):**
+**Plastisite / ADIM durumu (v2.4):**
 - Flags: `DAU_LLM_BACKEND=groq|local` (default groq), `DAU_LORA_ENABLED=0`,
   `DAU_NLI_FILTER_ENABLED=1`, `DAU_LLM_DO_SAMPLE=0` (C′ için `=1`),
   `DAU_LLM_TEMPERATURE` / `DAU_LLM_SEED` / `DAU_TORCH_THREADS`.
@@ -33,10 +33,12 @@ Protocol C tekrar yok.
   gradient checkpointing ile **8GB kartta train tamamlanır** (önceki
   `BATCH_SIZE=2` OOM).
 - ADIM 1–6 kod + unit test; ADIM 6 sampling+B N=15 koşuldu (W=10, K=5).
-- Bilinen gap: `apply_crisis_trauma` / `step_pool_with_crisis` API hazır;
-  production `graph.py` henüz otomatik çağırmıyor.
+- ADIM 1 crisis: `pool_step_node` → `step_pool_with_crisis` production
+  graph’a kablolu; pool collapse terminasyonu hâlâ açık (§17).
 - **Replay:** sampling açıkken `sha256(DAU_LLM_SEED:prompt)` per-generate
   tohum + strict CUDA lock → null faz1≡faz2 (mini + N=15 null_arm_clean).
+- ADIM 5 precision: rolling history + `VAR_REF` ölçekleme (v2.4; §7).
+- Layer 3: `apply_generation` memory vault seed API bağlı.
 
 ---
 
@@ -208,37 +210,54 @@ L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)
 Sabitler: `ALLOSTATIC_SETPOINT_MAX=0.75`, `CROSS_AXIS_SPILLOVER=0.20`,
 `METABOLIC_FLOOR=0.05`.
 
-### ADIM 5 — Precision-weighted PE (kodlandı; fiili davranış)
+### ADIM 5 — Precision-weighted PE (kodlandı; v2.4 adaptif)
 
-`semantic_similarity.compute_precision_weight` / `apply_precision_weighting`:
+`semantic_similarity.compute_precision_weight` / `apply_precision_weighting`
++ `DAUAgentState.pe_history` (graph `evaluator_node` yazar).
+
+#### v2.3 ve öncesi formül — sabit kazanç, tarihsel
+
+Bu formülle alınan tüm empirik sonuçlar (C′ N=15 vb.) **sabit-kazanç aleti**
+ile ölçülmüştür — iddialar kilitli kalır; alet etiketi §10b’de.
 
 ```
-variance = var(pe_vector.values())        # tek event, history yok (Seçenek B)
+variance = var(pe_vector.values())        # tek event, history yok
 π        = 1 / (variance + PRECISION_EPSILON)
-π_clamp  = min(π, PRECISION_MAX_WEIGHT)
+π_clamp  = min(π, PRECISION_MAX_WEIGHT)   # = 1.2 her girdi için
 PE_w     = min(raw_pe · π_clamp, 1.0)
 ```
 
+PE ∈ [0,1] ⇒ örnek var ≤ 0.5 ⇒ π ≥ 2.0 ⇒ tavan **her zaman** bağlayıcı;
+fiili davranış `π ≡ 1.2`. Tavan 3.0→1.2 (541c02c): ölçülen raw PE
+**0.2875–0.8102**; 3× kazanç 10 event’in **7’sini** tam `1.0`’a doyuruyordu.
+1.2 tavanı 0.81 tepesini 0.97’de tutar. Eski regresyon:
+`test_clamp_binds_for_every_pe_vector_in_unit_interval` (silindi, v2.4).
+
+#### v2.4+ — rolling history + VAR_REF ölçekleme
+
 ```
-PRECISION_EPSILON     = 1e-6
-PRECISION_MAX_WEIGHT  = 1.2    # 3.0'dan düşürüldü (541c02c)
-PRECISION_HISTORY_WINDOW = 10
+# π, pe_history'ye raw_pe EKLENMEDEN önce hesaplanır; sonra unweighted
+# raw_pe append edilir (kendi çıktısını beslemez).
+variance = sample_var(pe_history)         # son W raw PE skaler
+π_raw    = 1 / (variance / VAR_REF + ε)
+π        = clamp(π_raw, MIN_WEIGHT, MAX_WEIGHT)
+PE_w     = min(raw_pe · π, 1.0)
 ```
 
-**Tavan neden 3.0 → 1.2:** ölçülen raw PE aralığı **0.2875–0.8102**. 3× kazançla
-10 event’in **7’si** tam `1.0`’a doyuyordu; protokollerin ölçtüğü ΔPE farkı
-clamp tarafından siliniyordu. 1.2 tavanı 0.81 tepesini 0.97’de tutar.
+```
+PRECISION_EPSILON         = 1e-6
+PRECISION_HISTORY_WINDOW  = 10
+PRECISION_MIN_HISTORY     = 2      # cold start → π = 1.0
+PRECISION_VAR_REF         = 1/12   # Uniform[0,1] pop. variance
+PRECISION_MIN_WEIGHT      = 0.5
+PRECISION_MAX_WEIGHT      = 1.2    # doygunluk bütçesi korunur
+```
 
-**Teorik not (kayda geçsin — belgelenen amaçla çelişki):** PE ∈ [0,1] olduğu
-sürece örnek varyansı **0.5’i geçemez**, dolayısıyla `π = 1/(var+ε)` hiçbir
-koşulda **2.0’ın altına inmez**. `PRECISION_MAX_WEIGHT = 1.2 < 2.0` olduğundan
-tavan **her girdi için bağlayıcıdır** ve `π_clamp` sabit `1.2`’dir. Yani
-formülün vaat ettiği “düşük varyans → yüksek precision, kriz → düşük precision”
-adaptifliği bu formülasyonda **ulaşılamaz**; ADIM 5 pratikte **sabit kazanç**
-uygular. Tavanı 2.0’ın üstüne çıkarmak adaptifliği geri getirir ama yukarıdaki
-doygunluk sorununu da geri getirir. Formül ile davranış arasındaki bu çelişki
-açık kalemdir (§17). Regresyon: `tests/test_precision_pe.py` —
-`test_clamp_binds_for_every_pe_vector_in_unit_interval`.
+Cold start (`len(pe_history) < MIN_HISTORY`): nötr `π = 1.0`.
+Sakin (düşük var) → π → MAX; kriz/yüksek var → π → MIN (dampen).
+Tam çözülmedi: tipik sakin pencerelerde π hâlâ 1.2’ye yakın doyar;
+gerçek dampen çoğunlukla yüksek-varyans rejimde. Regresyon:
+`tests/test_precision_pe.py` (rolling-history suite).
 
 ---
 
@@ -304,8 +323,9 @@ step_pool_with_crisis(env, extractions, drift_states) -> (env, drift_states)
 
 `pool_ratio < 0.30` → sentetik `DeltaRecord` + `update_drift` (mevcut imza).
 Eşik ve üstü: no-op. Unit testler: `dau/society/tests/test_environment.py`
-(crisis 5 test). **Gap:** `graph.py` henüz her adımda otomatik çağırmıyor —
-pilot / harness / `step_pool_with_crisis` üzerinden.
+(crisis 5 test). **Kablolama:** `graph.py` `pool_step_node` →
+`step_pool_with_crisis` (meta_observer sonrası). Extraction:
+`dau/society/extraction.py` (`decision_to_extraction`).
 
 ### Sosyal yük / LOD / Fitness
 
@@ -321,7 +341,7 @@ NPC conserve kuralı: `NPC_POOL_RATIO_CONSERVE=0.3` (crisis eşiği ile hizalı)
 
 ```
 social_pre_node → agent_node → evaluator_node → meta_observer_node
-  → (social_pre | END)
+  → pool_step_node → (social_pre | END)
 ```
 
 ---
@@ -334,9 +354,12 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node
 - Closed-loop metacognition **UNSUPPORTED (paper-locked)**
 - Protocol C (Groq frozen): ΔPE≈0 gürültü → **paper-locked negative finding**
   (temiz çekirdek ~31–35 çift; resmi paired t-test yok; full 40 tekrar yok)
+  *[instrument: ADIM 5 fixed-gain π≡1.2, pe_vector-based — PE yolu
+  evaluator üzerinden; iddia geçersiz kılınmaz, yalnızca alet etiketi]*
 - **Protocol C′ N=15 (eski reçete, 2026-08-07 gece):** 50 event/arm ·
   `lived −0.008935 · null −0.009007 · shuffle −0.002849 · t=0.019 · p=0.985`
   → harness **INCONCLUSIVE**, belge **`INSTRUMENT_LIMITED_NULL`**
+  *[instrument: ADIM 5 fixed-gain π≡1.2, pe_vector-based]*
   (artefakt: `dau_runs/protocol_c_prime_results.json`)
 - **C′ düzeltme sonrası mini-test (N=1, seed=9101, 10 event, sampling + yaşam-PE):**
   `lived −0.180 · null 0.000 · shuffle −0.149` · sıra `lived < shuffle < null`
@@ -347,6 +370,7 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node
   t=−0.485 · p=0.637 · Wilcoxon p=0.850 · n_eff=12 (gated 3: 2001/2007/2013) ·
   `null_arm_clean=True` → harness **INCONCLUSIVE** · belge
   **`SAMPLE_N15_UNDERPOWERED`**
+  *[instrument: ADIM 5 fixed-gain π≡1.2, pe_vector-based]*
   (artefakt: `dau_runs/protocol_c_prime_results.json`; eski greedy sonuçlar
   `dau_runs/archive_cprime_instrument_limited_*`)
 
@@ -387,7 +411,7 @@ zayıf/gürültülü yön.
 | Layer 4 Society | ✅ + ADIM 1 | GovSim, social, LOD, F_agent, crisis constants |
 | Layer 5 Metacognition | ✅ kod / ❌ empirik (frozen) | Protocol C **paper-locked null** |
 | Plastisite (ADIM 2–3) | ✅ kod / ⚠ default off | Yaşam-PE tercih · QLoRA+DPO · sampling opt-in |
-| ADIM 5 Precision PE | ✅ kod / ⚠ tavan bağlayıcı | Sabit kazanç `π=1.2` (§7) |
+| ADIM 5 Precision PE | ✅ kod / v2.4 rolling+VAR_REF | Adaptif band açık; sakin≈MAX (§7) |
 | ADIM 6 C′ | ✅ kod + N=15 sampling+B | Eski `INSTRUMENT_LIMITED_NULL`; mini **SAMPLE_LIVED_PE_SEPARATION**; N=15 **SAMPLE_N15_UNDERPOWERED** |
 
 ---
@@ -446,9 +470,10 @@ docs/
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)
 ```
 
-**Adapter kökleri (dikkat):**
-- Runtime Punica path: `dau_runs/adapters/{agent_id}/` (`ADAPTER_BASE_DIR`)
-- C′ disk artefaktları (untracked): `dau_lora_adapters/cprime_seed…`
+**Adapter kökleri:**
+- Runtime tek kök: `dau_runs/adapters/{agent_id}/` (`ADAPTER_BASE_DIR`)
+- Eski dead constant `ADAPTER_ROOT_DIR` / `dau_lora_adapters` kaldırıldı
+  (kod); diskte legacy `dau_lora_adapters/` arşiv kararı açık (rm/mv yok)
 
 ---
 
@@ -491,8 +516,8 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | NLI filter (ADIM 2) | `test_nli_filter.py` |
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
-| Precision PE (ADIM 5) | `test_precision_pe.py` (tavan bağlayıcılığı dahil) |
-| **Collect (v2.3 branch)** | **182** |
+| Precision PE (ADIM 5) | `test_precision_pe.py` (rolling-history suite) |
+| **Collect (v2.4 branch)** | **206** |
 
 *(Master v1.4’teki “137” / v2.2’deki “177” sayıları önceki kesitler; bu belge
 **bu branch collect=182** ile kilitlenir — C′ diversity/W unit testleri dahil.)*
@@ -559,13 +584,19 @@ Empirik artefaktlar (`dau_runs/`):
 - **C′ etki sorusu** — N=15 sampling+B aleti temiz ama n_eff=12 + n.s. →
   H1 desteklenmedi; mini −0.180 N≥15’e taşınmadı. Yeni ön-kayıt olmadan
   K/W oynatılamaz (post-hoc yasak)
-- **ADIM 5 precision** PE bounded iken nasıl gerçekten adaptif yapılır? (§7)
-- `apply_crisis_trauma` → production graph kablolama
+- ~~**ADIM 5 precision** PE bounded iken nasıl gerçekten adaptif yapılır?~~
+  → **v2.4:** rolling history + `VAR_REF` (§7); sakin≈MAX doygunluğu sınır olarak kalır
+- **Pool collapse → terminasyon mantığı henüz kablosuz** —
+  `EnvironmentState.collapsed` / `COLLAPSE_EPSILON` üretiliyor ama
+  `should_continue` yalnızca `MAX_EVENTS` + `TERMINATION_ENERGY` bakıyor;
+  crisis travması terminasyon değil (somatik), collapse için ayrı END
+  koşulu henüz yok
 - Energy floor / γ=0 erken kapanma
 - Meta `trigger_drift_healing` eşik kalibrasyonu
 - Spontaneous convention: format sync ≠ restraint sync
-- `test_nli_filter.py` kırılganlığı (HF offline / tokenizer yolu)
-- Dual adapter root tekilleştirme
+- ~~`test_nli_filter.py` kırılganlığı~~ — unit path mock’landı; gerçek model
+  `@pytest.mark.integration` (günlük suite dışı; HF Hub flake kanıtlandı)
+- Legacy disk `dau_lora_adapters/` arşiv/taşıma kararı (kod kökü tekilleşti)
 
 ### Kapanan (v2.2–v2.3 — bu branch’te ölçüldü)
 
@@ -591,8 +622,11 @@ Empirik artefaktlar (`dau_runs/`):
 - Frozen weights: parametrik öğrenme default **kapalı**
 - Protocol C: TPD kirlenmesi; pair t-test yok; claim locked
 - C′ v2: N=1 — istatistik iddiası yok
-- Crisis: API var, graph otomatik çağrı kısmi
-- ADIM 5 precision: tavan her koşulda bağlayıcı → adaptif değil, sabit kazanç (§7)
+- Crisis: graph `pool_step_node` kablolu; collapse → END henüz yok (§17)
+- ADIM 5 precision: **ÇÖZÜLDÜ (v2.4)** rolling history + `VAR_REF` ölçekleme
+  (bkz §7). Tam değil: sakin pencerelerde π hâlâ ≈1.2’ye doyar; gerçek
+  dampen çoğunlukla kriz/yüksek-varyans rejimde. v2.3 ve öncesi empirik
+  sonuçlar sabit-kazanç aletiyle alınmıştır (§10b etiketleri).
 
 ### Yeni sınırlar (v2.1 tarihsel) → v2.2 durumu
 
@@ -657,17 +691,17 @@ VRAM: peak ≈ **6.4–7.2 GiB** + DPO batch=1 → **GO** (8GB).
 
 ---
 
-## 19. ADIM uygulama kaydı (v2.3 — bu branch)
+## 19. ADIM uygulama kaydı (v2.4 — bu branch)
 
 ### ADIM 1 — Layer 4 Somatic Enforcement ✅ kod
 
 | | |
 |--|--|
-| Dosyalar | `dau/society/environment.py` (+ tests) |
+| Dosyalar | `environment.py`, `extraction.py`, `graph.py` `pool_step_node` (+ tests) |
 | Sabitler | `POOL_CRISIS_THRESHOLD=0.30`, `CRISIS_TRAUMA_MULTIPLIER=2.5`, `CRISIS_BASE_MAGNITUDE=0.4` |
 | Davranış | `pool_ratio < 0.30` → resource TRAUMA via `update_drift` |
-| Test | crisis 5 unit test |
-| Gap | graph otomatik çağrı yok |
+| Test | crisis 5 unit + `test_graph_crisis_wiring.py` |
+| Gap | pool collapse → terminasyon kablosuz (§17) |
 
 ### ADIM 2 — Signal v2 NLI Polarity Filter ✅ kod
 
@@ -684,13 +718,13 @@ VRAM: peak ≈ **6.4–7.2 GiB** + DPO batch=1 → **GO** (8GB).
 | | |
 |--|--|
 | Dosyalar | `local_llm.py`, `llm_backend.py`, `lora_update.py`, `graph.py` |
-| Path | `dau_runs/adapters/{agent_id}/` |
+| Path | `dau_runs/adapters/{agent_id}/` (`ADAPTER_BASE_DIR`; tek runtime kök) |
 | Rank/α | `PER_AGENT_LORA_RANK=8`, `PER_AGENT_LORA_ALPHA=16` |
 | Inference | `DAU_LLM_BACKEND=local` → `switch_adapter` + `LocalBackend.complete` |
 | Train | `run_micro_train_preference_step(..., agent_id=)` → gerçek DPO adımı → `save_agent_adapter` |
 | Default | `DAU_LORA_ENABLED=0` |
-| Test | `test_per_agent_adapter.py` |
-| Gap | **kapandı** (`e4c026b`, `f25b0ef`) — generation-end hook bağlı, eğitim gerçek |
+| Test | `test_per_agent_adapter.py` (+ `test_no_dead_adapter_root_reference`) |
+| Gap | **kapandı** (`e4c026b`, `f25b0ef`) — generation-end hook bağlı, eğitim gerçek; dead `ADAPTER_ROOT_DIR` kaldırıldı |
 
 **Düzeltme 1 — eğitim gerçekten yoktu (`e4c026b`).** Önceki halinde
 `run_micro_train_preference_step` **hiçbir gradyan adımı içermiyordu**: taze
@@ -717,18 +751,15 @@ empirik tablosunda **†** ile işaretli satırlar).
 | Formül | §6 memory_score |
 | Test | `test_ppr_retrieval.py` |
 
-### ADIM 5 — Precision-Weighted PE ✅ kod (⚠ tavan bağlayıcı)
+### ADIM 5 — Precision-Weighted PE ✅ kod (v2.4 rolling history)
 
 | | |
 |--|--|
-| Dosyalar | `semantic_similarity.py` (`compute_precision_weight` / `apply_precision_weighting`), `constraints.py`, `graph.py` |
-| Formül | `π = min(1/(var(pe_vector)+ε), PRECISION_MAX_WEIGHT)`; `PE_w = min(raw_pe·π, 1.0)` |
-| Sabitler | `PRECISION_EPSILON=1e-6`, `PRECISION_MAX_WEIGHT=1.2` (3.0’dan; `541c02c`) |
-| Test | `test_precision_pe.py` |
-| ⚠ Uyarı | PE bounded ⇒ var ≤ 0.5 ⇒ π ≥ 2.0 ⇒ **tavan her koşulda bağlayıcı**; adaptif değil, **sabit kazanç** (§7) |
-
-Tavan düşürülmeseydi: ölçülen raw PE 0.2875–0.8102 aralığında, 3× kazanç
-10 event’in 7’sini tam 1.0’a doyuruyordu.
+| Dosyalar | `semantic_similarity.py`, `constraints.py`, `graph.py`, `state.py` (`pe_history`) |
+| Formül (v2.4+) | `π = clamp(1/(var(pe_history)/VAR_REF+ε), MIN, MAX)`; cold start `π=1.0`; append sırası: π sonra raw |
+| Sabitler | `WINDOW=10`, `MIN_HISTORY=2`, `VAR_REF=1/12`, `MIN_WEIGHT=0.5`, `MAX_WEIGHT=1.2` |
+| Test | `test_precision_pe.py` (rolling-history suite) |
+| Not | v2.3 ve öncesi = sabit kazanç `π≡1.2` (pe_vector); kilitli C′ sonuçları o aletle (§7, §10b). v2.4 adaptif bandı açar; sakin≈MAX doygunluğu sınır olarak kalır. |
 
 ### ADIM 6 — Protocol C′ N≥15 ✅ kod + sampling+B koşuldu
 
@@ -785,12 +816,12 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 
 ### Sıradaki (öncelik)
 
-1. Crisis’i graph’a kablola
-2. ADIM 5 precision formülünü PE bounded’da adaptif yap (§7)
+1. Pool collapse → `should_continue` terminasyon (§17)
+2. ~~ADIM 5 precision formülünü PE bounded’da adaptif yap~~ → **v2.4 yapıldı** (§7)
 3. Paper gövdesi (frozen-null ana; C′ alet evrimi appendix:
    INSTRUMENT_LIMITED → SAMPLE_LIVED → SAMPLE_N15_UNDERPOWERED)
 4. (İsteğe bağlı) C′ için **yeni ön-kayıtlı** reçete tartışması — post-hoc
-   K=4 / W seçimi yasak
+   K=4 / W seçimi yasak; precision v2.4 smoke / multi-gen ayrı karar
 
 ### Anti-roadmap (yasak)
 
@@ -841,17 +872,15 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.1** | **2026-08-07** | Ölçüm zincirinde 6 katmanlı hata düzeltildi; C′ N=15 uçtan uca → **`INSTRUMENT_LIMITED_NULL`**. Replay/plato blocker kaydı. 175 test. |
 | **2.2** | **2026-08-07** | Alet yeniden kuruldu: null train hook kaldırıldı · niş tohum · yaşam-PE tercih · DPO 8GB fit · sampling + prompt-keyed seed. Mini N=1 → **`SAMPLE_LIVED_PE_SEPARATION`** (lived −0.180 · null 0 · shuffle −0.149). N=15 sampling sırada; 13 saat CPU tahmini iptal (GPU ≈1.5–2.5 saat). **177 test**. `.html`/`.pdf` henüz yenilenmedi. |
 | **2.3** | **2026-08-07** | Diversity gate (K=5) + ön-kayıtlı W=10. C′ N=15 sampling+B final (~76 dk GPU): null **0.000** clean · lived **+0.008** · shuffle **+0.019** · n_eff=12 · p=0.637 → **`SAMPLE_N15_UNDERPOWERED`** / INCONCLUSIVE. Mini separation N≥15’e taşınmadı; “etki yok” iddiası yok. **182 test**. `.html`/`.pdf` henüz yenilenmedi. |
+| **2.4** | **2026-08-07** | Precision fix (rolling history + `VAR_REF`); memory vault seed API bağlandı (`apply_generation`); inherited somatic scale EW tüketimi; **206 test**. `.html`/`.pdf` henüz yenilenmedi. |
 
 ---
 
-**Güncellendi (v2.3):** v2.2 aleti yeniden kurdu ve mini’de H1 yönü gördü.
-v2.3 aynı reçeteyi N=15’te koştu: **null bütünlüğü tutuldu**, diversity/W
-ön-kayıtlandı, fakat n_eff=12 + n.s. + her iki mean ≥0 →
-**SAMPLE_N15_UNDERPOWERED**. Bu, eski `INSTRUMENT_LIMITED_NULL` ile aynı
-değildir ve “yaşantı-LoRA etkisiz” diye okunmaz. Omurga default’ları
-değişmedi: LoRA kapalı, Groq default, trait yasak.
+**Güncellendi (v2.4):** ADIM 5 rolling-history + `VAR_REF` ölçekleme;
+Layer 3 vault seed. v2.3 C′ N=15 sonucu kilitli kalır — alet etiketi
+“fixed-gain ADIM 5” (§10b). Omurga default’ları değişmedi: LoRA kapalı,
+Groq default, trait yasak.
 
 Bu döküman her önemli katman / empirik dönüm tamamlanınca güncellenir.  
-Versiyon 2.3 — ADIM 1–6 kod; C′ N=15 sampling+B **SAMPLE_N15_UNDERPOWERED**;
-Protocol C paper-locked null; eski C′ **INSTRUMENT_LIMITED_NULL**; mini
-**SAMPLE_LIVED_PE_SEPARATION**.
+Versiyon 2.4 — ADIM 1–6 kod; precision v2.4; C′ N=15 **SAMPLE_N15_UNDERPOWERED**
+(fixed-gain aleti); Protocol C paper-locked null; **206 test**.

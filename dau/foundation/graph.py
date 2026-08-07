@@ -22,11 +22,17 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
-from dau.society.environment import EnvironmentState, get_pool_ratio
+from dau.society.environment import (
+    EnvironmentState,
+    get_pool_ratio,
+    step_pool_with_crisis,
+)
+from dau.society.extraction import decision_to_extraction
 
 from .constraints import (
     CROSS_AXIS_SPILLOVER,
     METABOLIC_FLOOR,
+    PRECISION_HISTORY_WINDOW,
     build_default_constraints,
 )
 from .delta import (
@@ -44,7 +50,11 @@ from .drift import (
     heal_drift,
     update_drift,
 )
-from .emotional_weight import apply_emotional_weight, compute_emotional_weight
+from .emotional_weight import (
+    apply_emotional_weight,
+    apply_inherited_somatic_scale,
+    compute_emotional_weight,
+)
 from .lod import (
     DOMAIN_RESOURCE_LOAD,
     DOMAIN_SOCIAL_LOAD,
@@ -230,7 +240,9 @@ SYSTEM_PROMPT: str = (
 NODE_AGENT: str = "agent_node"
 NODE_EVALUATOR: str = "evaluator_node"
 NODE_META_OBSERVER: str = "meta_observer_node"
+NODE_POOL_STEP: str = "pool_step_node"
 NODE_SOCIAL_PRE: str = "social_pre_node"
+POOL_STEP_EMPTY_EXTRACTION: float = 0.0
 
 # Layer 4 — strategic expectation injection + LOD domain bridge
 STRATEGIC_EXPECTATION_TEMPLATE: str = (
@@ -870,10 +882,15 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         system_content = f"{system_content}\n{expectation_text}"
 
     # Layer 2 — somatic markers bias priority (function, not emotion label).
+    # Layer 3/4 — ancestral inherited_warning scales threat/loss before inject.
     if state.delta_log:
         emotional_weight = compute_emotional_weight(
             state.delta_log[-1],
             state.internal_state,
+        )
+        emotional_weight = apply_inherited_somatic_scale(
+            emotional_weight,
+            list(state.retrieval_context),
         )
         system_content = apply_emotional_weight(system_content, emotional_weight)
 
@@ -954,21 +971,15 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
 
     raw_pe = _prediction_error(expected_outcome, actual_outcome)
     target_domain = _pe_target_load_domain(state)
-    primary = (
-        target_domain
-        if target_domain in DAERM_LOAD_DOMAINS
-        else DAERM_DEFAULT_TARGET_DOMAIN
-    )
-    pe_vector = {
-        domain: (
-            raw_pe if domain == primary else raw_pe * CROSS_AXIS_SPILLOVER
-        )
-        for domain in DAERM_LOAD_DOMAINS
-    }
+    # ADIM 5 — π from prior raw history, then append unweighted raw_pe.
+    prior_pe_history = [float(value) for value in list(state.pe_history)]
     try:
-        precision_pe = apply_precision_weighting(raw_pe, pe_vector)
+        precision_pe = apply_precision_weighting(raw_pe, prior_pe_history)
     except Exception:
         precision_pe = raw_pe
+    updated_pe_history = (prior_pe_history + [float(raw_pe)])[
+        -PRECISION_HISTORY_WINDOW:
+    ]
     prediction_error = precision_pe
     expected_source = str(
         last_event.payload.get(EXPECTED_SOURCE_PAYLOAD_KEY, EXPECTED_SOURCE_FALLBACK)
@@ -1048,6 +1059,42 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         "delta_log": list(state.delta_log) + [record],
         "drift_state": new_drift,
         "lod_state": new_lod,
+        "pe_history": updated_pe_history,
+    }
+
+
+def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
+    """Advance the shared pool, then apply crisis trauma when ratio is critical.
+
+    Biology analogy: after the organism acts and the body consolidates the
+    experience, the commons regenerates and is harvested. If stock falls below
+    the crisis floor, somatic resource trauma scars the drift map. Skips when
+    society physics is absent (env_state is None).
+    """
+
+    if state.env_state is None or not isinstance(state.env_state, EnvironmentState):
+        return {}
+    if not state.event_log:
+        return {}
+
+    decision = str(state.event_log[-1].payload.get("decision", ""))
+    amount = (
+        float(decision_to_extraction(decision))
+        if decision
+        else POOL_STEP_EMPTY_EXTRACTION
+    )
+    drift = state.drift_state
+    if not isinstance(drift, DriftState):
+        drift = DriftState()
+
+    new_env, updated_drifts = step_pool_with_crisis(
+        state.env_state,
+        {state.agent_id: amount},
+        {state.agent_id: drift},
+    )
+    return {
+        "env_state": new_env,
+        "drift_state": updated_drifts[state.agent_id],
     }
 
 
@@ -1058,6 +1105,7 @@ def should_continue(state: DAUAgentState) -> Literal["agent_node", "__end__"]:
     above it, another sense-act cycle begins. AB_ENERGY_FLOOR holds effective
     energy at a fixed-horizon pad so a single PE shock cannot abort the run
     before Meta-Observer actuators accumulate history; MAX_EVENTS is the hard cap.
+    Pool collapse termination is intentionally unwired (open item §17).
     """
 
     if len(state.event_log) >= MAX_EVENTS:
@@ -1081,12 +1129,13 @@ def build_checkpointer(db_path: str = DB_PATH) -> SqliteSaver:
 
 
 def build_graph(checkpointer: SqliteSaver | None = None) -> Any:
-    """Compile social_pre → agent → evaluator → meta_observer → continue/end.
+    """Compile social_pre → agent → evaluator → meta → pool_step → continue/end.
 
     Biology analogy: wire the sense-act-measure-regulate cycle into a closed
     loop that checkpoints after each node and ends when energy is exhausted.
     Meta-Observer runs after Delta is measured; its interventions apply on the
-    next iteration. Social pre-node refreshes strategic expectation before each
+    next iteration. Pool step advances the commons and may scar resource drift
+    under crisis. Social pre-node refreshes strategic expectation before each
     act when an opponent is present.
     """
 
@@ -1095,12 +1144,14 @@ def build_graph(checkpointer: SqliteSaver | None = None) -> Any:
     graph.add_node(NODE_AGENT, agent_node)
     graph.add_node(NODE_EVALUATOR, evaluator_node)
     graph.add_node(NODE_META_OBSERVER, meta_observer_node)
+    graph.add_node(NODE_POOL_STEP, pool_step_node)
     graph.set_entry_point(NODE_SOCIAL_PRE)
     graph.add_edge(NODE_SOCIAL_PRE, NODE_AGENT)
     graph.add_edge(NODE_AGENT, NODE_EVALUATOR)
     graph.add_edge(NODE_EVALUATOR, NODE_META_OBSERVER)
+    graph.add_edge(NODE_META_OBSERVER, NODE_POOL_STEP)
     graph.add_conditional_edges(
-        NODE_META_OBSERVER,
+        NODE_POOL_STEP,
         should_continue,
         {
             NODE_AGENT: NODE_SOCIAL_PRE,

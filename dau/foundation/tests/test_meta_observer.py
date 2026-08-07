@@ -10,6 +10,12 @@ from dau.foundation.constraints import build_default_constraints
 from dau.foundation.delta import DELTA_THRESHOLD_DEEP, DELTA_THRESHOLD_NORMAL
 from dau.foundation.drift import HEAL_RATE, HEAL_THRESHOLD, DriftState
 from dau.foundation.emotional_weight import MARKER_REWARD, EmotionalWeight
+from dau.foundation.generation import (
+    GENERATION_INHERITED_KEY,
+    INHERITED_WARNING_KEY,
+    RECORD_ID_KEY,
+    SOMATIC_SCALE_KEY,
+)
 from dau.foundation.lod import CognitiveMode, LODState
 from dau.foundation.meta_observer import (
     META_DRIFT_HEAL_FITNESS_THRESHOLD,
@@ -24,6 +30,7 @@ from dau.foundation.meta_observer import (
     trigger_retrieval,
     unbind_memory_store,
 )
+from dau.generation.fitness import WARNING_SOMATIC_SCALE
 from dau.foundation.self_model import (
     EPSILON,
     M_RATIO_LOW_THRESHOLD,
@@ -223,6 +230,36 @@ def test_context_prune_does_not_prune_when_variance_low() -> None:
     )
     context = [{"score": 0.1}, {"score": 0.9}]
     assert context_prune(context, model) == context
+
+
+def test_context_prune_keeps_generation_inherited_entries() -> None:
+    """Score-less generation_inherited / cautionary refs survive high-variance prune."""
+
+    scores = [0.0, 1.0]
+    from statistics import variance
+
+    assert variance(scores) > META_RETRIEVAL_VARIANCE_THRESHOLD
+
+    inherited = {
+        RECORD_ID_KEY: "heir-engram",
+        GENERATION_INHERITED_KEY: True,
+        INHERITED_WARNING_KEY: True,
+        SOMATIC_SCALE_KEY: -WARNING_SOMATIC_SCALE,
+    }
+    model = _self_model(
+        delta_current=0.0,
+        delta_history=[],
+        memory_retrieval_scores=scores,
+    )
+    context = [
+        {"score": 0.1},
+        inherited,
+        {"score": 0.9},
+    ]
+    pruned = context_prune(context, model)
+    assert inherited in pruned
+    assert {"score": 0.1} not in pruned
+    assert {"score": 0.9} in pruned
 
 
 def test_trigger_drift_healing_activates_when_all_conditions_met() -> None:
