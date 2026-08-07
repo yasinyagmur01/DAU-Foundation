@@ -477,21 +477,20 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (tavan bağlayıcılığı dahil) |
-| **Collect (v2.1 branch)** | **175** |
+| **Collect (v2.2 branch)** | **177** |
 
 *(Master v1.4’teki “137” ve main v1.6’daki “162+” sayıları farklı ağaç
-kesitleri; bu belge **bu branch collect=175** ile kilitlenir.)*
+kesitleri; bu belge **bu branch collect=177** ile kilitlenir.)*
 
 **Kırılgan test:** `test_nli_filter.py` yaklaşık **3–6 koşuda bir** düşüyor.
-İzole çalıştırıldığında (`pytest dau/foundation/tests/test_nli_filter.py`)
-**her zaman** geçiyor — yani tam suite içinde sıra/paylaşılan durum kaynaklı.
-Bu oturumdan **önce de** vardı; bu oturumun değişiklikleri sebep değil.
-Kök neden bulunmadı, açık kalem.
+İzole + `HF_HUB_OFFLINE=1` ile daha stabil; suite içinde sıra/hub yolu
+şüphesi. Açık kalem.
 
 Empirik artefaktlar (`dau_runs/`):
 - `protocol_c_run.log` — provisional/paper-locked null izi
-- `protocol_c_prime_v2_smoke_results.json` — SMOKE_SEPARATION
-- `protocol_c_prime_results.json` — C′ N=15, `INSTRUMENT_LIMITED_NULL`
+- `protocol_c_prime_results.json` — C′ N=15 eski, `INSTRUMENT_LIMITED_NULL`
+- Mini sampling+B: `/tmp/cprime_full_arm/dau_runs/protocol_c_prime_sample_pilot.json`
+  (`SAMPLE_LIVED_PE_SEPARATION`)
 - `vram_spike_results.json` — GO (~6386 MiB)
 - `overnight_audit_results.json`
 
