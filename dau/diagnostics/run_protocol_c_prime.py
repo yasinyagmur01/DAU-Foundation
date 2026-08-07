@@ -81,6 +81,15 @@ LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
 LORA_ENABLED_ENV: str = "DAU_LORA_ENABLED"
 NLI_FILTER_ENABLED_ENV: str = "DAU_NLI_FILTER_ENABLED"
+TORCH_THREADS_ENV: str = "DAU_TORCH_THREADS"
+
+# Thread count changes the CPU reduction order, so it is pinned rather than
+# left at whatever torch infers from the host. Default is this host's inferred
+# value; override per machine via TORCH_THREADS_ENV.
+TORCH_NUM_THREADS: int = int(os.environ.get(TORCH_THREADS_ENV, "14"))
+# warn_only: an unsupported op must not abort a 15-seed run, and the decode
+# path was measured reproducible without it.
+TORCH_DETERMINISTIC_WARN_ONLY: bool = True
 
 STREAM_NODES_PER_EVENT: int = 4
 STREAM_RECURSION_HEADROOM: int = 10
@@ -159,11 +168,31 @@ def _std(values: list[float]) -> float:
     return float(statistics.stdev(values))
 
 
+def _lock_torch_seed(seed: int) -> None:
+    """Pin torch RNG, thread count, and algorithm choice.
+
+    torch is optional — the groq backend never imports it.
+    """
+
+    try:
+        import torch
+    except ImportError:
+        return
+
+    torch.manual_seed(seed)
+    torch.set_num_threads(TORCH_NUM_THREADS)
+    torch.use_deterministic_algorithms(
+        True,
+        warn_only=TORCH_DETERMINISTIC_WARN_ONLY,
+    )
+
+
 def _lock_seeds(seed: int) -> None:
-    """Pin Python, NumPy, and Groq seed for counterfactual replay."""
+    """Pin Python, NumPy, torch, and Groq seed for counterfactual replay."""
 
     random.seed(seed)
     np.random.seed(seed)
+    _lock_torch_seed(seed)
     os.environ[LLM_SEED_ENV] = str(seed)
     os.environ[LLM_TEMPERATURE_ENV] = str(TEMPERATURE)
 
@@ -262,25 +291,20 @@ def _build_lived_examples(
     state: DAUAgentState,
     pe_rows: list[dict[str, Any]],
 ) -> list[Any]:
-    """Build LivedTraceExample rows; graceful empty list if unavailable."""
+    """Build LivedTraceExample rows; graceful empty list if unavailable.
+
+    Must stay side-effect free. ``maybe_lora_update_after_life`` returns the
+    same rows but trains and saves the adapter on the way, and this runs at
+    the end of every phase of every arm — including NULL, whose whole job is
+    to stay untrained, and including phase 2, after the measurement window.
+    """
 
     try:
-        from dau.foundation.lora_update import (
-            build_lived_trace_examples,
-            maybe_lora_update_after_life,
-        )
+        from dau.foundation.lora_update import build_lived_trace_examples
     except ImportError:
         return []
 
-    examples = build_lived_trace_examples(state, pe_rows)
-    # Optional hook — only replace when the hook actually returned examples.
-    try:
-        result = maybe_lora_update_after_life(state, pe_event_log=pe_rows)
-        if getattr(result, "examples", None):
-            examples = list(result.examples)
-    except Exception:  # noqa: BLE001 — harness must not abort on hook failure
-        pass
-    return list(examples)
+    return list(build_lived_trace_examples(state, pe_rows))
 
 
 # ---------------------------------------------------------------------------
