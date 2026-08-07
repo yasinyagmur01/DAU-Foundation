@@ -44,11 +44,34 @@ LORA_TASK_TYPE: str = "CAUSAL_LM"
 LORA_BIAS: str = "none"
 GENERATION_MAX_NEW_TOKENS: int = 64
 PLAIN_PROMPT_TEMPLATE: str = "{system}\n\n{user}\n"
+LLM_DO_SAMPLE_ENV: str = "DAU_LLM_DO_SAMPLE"
+LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
+LLM_DO_SAMPLE_DEFAULT: str = "0"
+LLM_TEMPERATURE_DEFAULT: float = 0.0
+LLM_DO_SAMPLE_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "YES"})
+# Floor below which sampling is treated as greedy even if the flag is on.
+LLM_SAMPLE_TEMPERATURE_FLOOR: float = 1e-6
 
 # Process-wide singleton — frozen base loaded once; adapters hot-swapped.
 _model: Any | None = None
 _tokenizer: Any | None = None
 _active_agent_id: str | None = None
+
+
+def _resolve_generation_sampling() -> tuple[bool, float]:
+    """Return (do_sample, temperature) from env. Default remains greedy."""
+
+    flagged = os.environ.get(LLM_DO_SAMPLE_ENV, LLM_DO_SAMPLE_DEFAULT).strip()
+    if flagged not in LLM_DO_SAMPLE_TRUTHY:
+        return False, LLM_TEMPERATURE_DEFAULT
+    raw = os.environ.get(LLM_TEMPERATURE_ENV, str(LLM_TEMPERATURE_DEFAULT)).strip()
+    try:
+        temperature = float(raw)
+    except ValueError:
+        return False, LLM_TEMPERATURE_DEFAULT
+    if temperature <= LLM_SAMPLE_TEMPERATURE_FLOOR:
+        return False, LLM_TEMPERATURE_DEFAULT
+    return True, temperature
 
 
 def get_adapter_path(agent_id: str) -> Path:
@@ -356,7 +379,12 @@ def generate_completion(
     system: str,
     user: str,
 ) -> str:
-    """Greedy local completion for LocalBackend.complete()."""
+    """Local completion for LocalBackend.complete().
+
+    Default is greedy. ``DAU_LLM_DO_SAMPLE=1`` with ``DAU_LLM_TEMPERATURE`` > 0
+    enables sampling; the caller must pin ``torch.manual_seed`` at phase start
+    so a NULL arm can still replay bit-for-bit.
+    """
 
     import torch
 
@@ -372,14 +400,17 @@ def generate_completion(
     prompt_length = int(encoded["input_ids"].shape[-1])
     eos_token_id = getattr(tokenizer, "eos_token_id", None)
     pad_token_id = getattr(tokenizer, "pad_token_id", None) or eos_token_id
+    do_sample, temperature = _resolve_generation_sampling()
+    generate_kwargs: dict[str, Any] = {
+        "max_new_tokens": GENERATION_MAX_NEW_TOKENS,
+        "do_sample": do_sample,
+        "eos_token_id": eos_token_id,
+        "pad_token_id": pad_token_id,
+    }
+    if do_sample:
+        generate_kwargs["temperature"] = temperature
     with torch.no_grad():
-        output = model.generate(
-            **encoded,
-            max_new_tokens=GENERATION_MAX_NEW_TOKENS,
-            do_sample=False,
-            eos_token_id=eos_token_id,
-            pad_token_id=pad_token_id,
-        )
+        output = model.generate(**encoded, **generate_kwargs)
     generated = output[0][prompt_length:]
     return tokenizer.decode(generated, skip_special_tokens=True).strip()
 
