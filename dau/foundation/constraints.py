@@ -49,7 +49,10 @@ ADAPTER_SWITCH_MAX_MS: int = 1
 DPO_BETA: float = 0.10
 DPO_LEARNING_RATE: float = 5e-5
 DPO_EPOCHS: int = 1
-DPO_BATCH_SIZE: int = 2
+# One pair per step. A batch holds every pair's forward graph alive at once —
+# two sides each — so batch 2 needs four full graphs before backward. The 4-bit
+# 8B already occupies 7.49 GiB of an 8 GiB card and OOMs there.
+DPO_BATCH_SIZE: int = 1
 DPO_MAX_SEQUENCE_TOKENS: int = 256
 DPO_MAX_GRAD_NORM: float = 1.0
 

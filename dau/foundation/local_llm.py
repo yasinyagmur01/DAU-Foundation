@@ -472,6 +472,33 @@ def _reference_logprobs(
     return reference
 
 
+def _enable_gradient_checkpointing(model: Any) -> bool:
+    """Turn on gradient checkpointing for the DPO step when the model supports it.
+
+    Returns True only when enable succeeded so the caller can restore afterward.
+    PeftModel may need the flag on the wrapped base; try both surfaces.
+    """
+
+    for target in (model, getattr(model, "get_base_model", lambda: None)()):
+        if target is None:
+            continue
+        enable = getattr(target, "gradient_checkpointing_enable", None)
+        if not callable(enable):
+            continue
+        try:
+            enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+            return True
+        except TypeError:
+            try:
+                enable()
+                return True
+            except Exception:  # noqa: BLE001 — fall through
+                continue
+        except Exception:  # noqa: BLE001 — fall through to next target
+            continue
+    return False
+
+
 def _enable_adapter_training(model: Any) -> None:
     """Re-arm LoRA gradients before a train step.
 
@@ -521,6 +548,11 @@ def _run_dpo_epochs(
     optimizer = torch.optim.AdamW(trainable, lr=DPO_LEARNING_RATE)
     was_training = model.training
     model.train()
+    checkpointing = _enable_gradient_checkpointing(model)
+    config = getattr(model, "config", None)
+    prior_use_cache = getattr(config, "use_cache", None)
+    if config is not None:
+        config.use_cache = False
 
     total_loss = 0.0
     total_accuracy = 0.0
@@ -572,6 +604,14 @@ def _run_dpo_epochs(
                 optimizer.step()
                 total_loss += float(batch_loss.item()) * len(encoded)
     finally:
+        # Checkpointing and use_cache=False make generation far slower, so they
+        # must not outlive the train step on this shared singleton.
+        if checkpointing:
+            disable = getattr(model, "gradient_checkpointing_disable", None)
+            if disable is not None:
+                disable()
+        if config is not None and prior_use_cache is not None:
+            config.use_cache = prior_use_cache
         if not was_training:
             model.eval()
 
