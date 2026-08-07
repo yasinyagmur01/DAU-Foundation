@@ -51,7 +51,11 @@ PPR_TOP_K_DOMAINS = 10
 # ADIM 5 — precision-weighted PE (global scalar from pe_vector variance)
 PRECISION_EPSILON = 1e-6
 PRECISION_HISTORY_WINDOW = 10
-PRECISION_MAX_WEIGHT = 3.0
+# Ceiling on the amplification gain. Measured raw PE peaks near 0.81, so a gain
+# above ~1.23 clamps most events to exactly 1.0 and erases the delta the
+# protocols measure. Sample variance of PE in [0, 1] never exceeds 0.5, so pi
+# never falls below 2.0 and this ceiling is always the binding value.
+PRECISION_MAX_WEIGHT = 1.2
 
 
 def build_default_constraints() -> EnvironmentConstraints:

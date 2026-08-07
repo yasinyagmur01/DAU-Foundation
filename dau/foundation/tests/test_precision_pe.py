@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import statistics
 from unittest.mock import patch
 
 import pytest
@@ -18,6 +19,9 @@ from dau.foundation.semantic_similarity import (
 )
 from dau.foundation.state import DAUAgentState, Event, InternalState
 
+# Peak raw PE observed in a local Protocol C′ probe (10 events, seed 2001).
+MEASURED_RAW_PE_PEAK: float = 0.81
+
 
 def test_compute_precision_weight_stable_agent() -> None:
     """Low variance → precision weight > 1.0."""
@@ -26,15 +30,40 @@ def test_compute_precision_weight_stable_agent() -> None:
     assert compute_precision_weight(pe_vector) > 1.0
 
 
-def test_compute_precision_weight_crisis_agent() -> None:
-    """High variance → lower precision than stable (dampened)."""
+def test_unclamped_precision_falls_with_variance() -> None:
+    """Design intent: higher variance → lower precision, before clamping."""
 
-    stable = {"energy": 0.0, "social": 0.0, "resource": 1.0}
-    crisis = {"energy": 0.0, "social": 1.0}
-    stable_weight = compute_precision_weight(stable)
-    crisis_weight = compute_precision_weight(crisis)
-    assert crisis_weight < stable_weight
-    assert crisis_weight > 1.0  # still amplifies, but less than stable peak
+    stable_variance = statistics.variance([0.0, 0.0, 1.0])
+    crisis_variance = statistics.variance([0.0, 1.0])
+    assert crisis_variance > stable_variance
+    stable_pi = 1.0 / (stable_variance + PRECISION_EPSILON)
+    crisis_pi = 1.0 / (crisis_variance + PRECISION_EPSILON)
+    assert crisis_pi < stable_pi
+
+
+def test_clamp_binds_for_every_pe_vector_in_unit_interval() -> None:
+    """PE is bounded, so the ceiling — not the variance — sets the gain.
+
+    Sample variance of values in [0, 1] tops out at 0.5, so pi >= 2.0 always
+    and PRECISION_MAX_WEIGHT is the value actually applied. The adaptive band
+    below the ceiling is unreachable while PE stays bounded.
+    """
+
+    vectors = [
+        {"energy": 0.0, "social": 1.0},
+        {"energy": 0.0, "social": 0.0, "resource": 1.0},
+        {"energy": 0.1, "social": 0.11, "resource": 0.09},
+        {"energy": 0.5, "social": 0.5},
+    ]
+    for pe_vector in vectors:
+        assert compute_precision_weight(pe_vector) == PRECISION_MAX_WEIGHT
+
+
+def test_measured_pe_range_does_not_saturate() -> None:
+    """Observed raw PE peaks near 0.81 — weighting must keep it below 1.0."""
+
+    pe_vector = {"energy": 0.1, "social": 0.1, "resource": 0.1}
+    assert apply_precision_weighting(MEASURED_RAW_PE_PEAK, pe_vector) < 1.0
 
 
 def test_precision_weight_clamped_at_max() -> None:
