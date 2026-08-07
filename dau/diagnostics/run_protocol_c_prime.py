@@ -113,6 +113,10 @@ SMOKE_SATURATION_MAX_RATE: float = 0.30
 SMOKE_PI_MIN_DISTINCT: int = 3
 PE_W_SATURATION_VALUE: float = 1.0
 PI_DISTINCT_DECIMALS: int = 6
+# v1 = usable-pair-only (SMOKE_N3_K5 locked). v2 = all audited arms
+# (informational; not pre-registered — do not use to flip a locked FAIL).
+SMOKE_POOL_USABLE_PAIRS: str = "usable_pairs_only"
+SMOKE_POOL_ALL_AUDITED: str = "all_audited_arms"
 
 # Diversity gate + PE window — pre-registered BEFORE the N=15 final run
 # (cheap scan: 5 seeds × 10 evt phase-1 only, sampling T=0.2, no train;
@@ -268,6 +272,64 @@ def _is_finite_delta(value: float) -> bool:
     """True when ΔPE is a real measurement (not diversity-gated NaN)."""
 
     return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
+def _smoke_gates_block(
+    *,
+    arms: list[ArmResult],
+    null_deltas: list[float],
+    pool: str,
+    pre_registered: bool,
+) -> dict[str, Any]:
+    """Build one smoke_gates dict from an explicit arm pool + null ΔPE list.
+
+    ``null_deltas`` are caller-selected so v1 (usable pairs) and v2 (all
+    finite null arms) stay independent of each other.
+    """
+
+    n_pe_total = sum(int(arm.n_pe_events_audited) for arm in arms)
+    n_sat_total = sum(int(arm.n_saturated) for arm in arms)
+    saturation_rate = (
+        float(n_sat_total) / float(n_pe_total) if n_pe_total > 0 else EMPTY_MEAN
+    )
+    all_pi: list[float] = []
+    for arm in arms:
+        all_pi.extend(float(value) for value in arm.pi_values)
+    pi_values_unique = sorted(
+        {round(value, PI_DISTINCT_DECIMALS) for value in all_pi}
+    )
+    pi_n_distinct = len(pi_values_unique)
+    saturation_pass = bool(n_pe_total > 0) and (
+        saturation_rate <= SMOKE_SATURATION_MAX_RATE
+    )
+    pi_distinct_pass = pi_n_distinct >= SMOKE_PI_MIN_DISTINCT
+    null_arm_clean = bool(null_deltas) and all(
+        abs(value) <= NULL_ARM_MAX_ABS_DELTA for value in null_deltas
+    )
+    return {
+        "pool": pool,
+        # Bool flag: is this pool the locked SMOKE_N3_K5 definition?
+        "is_pre_registered": pre_registered,
+        # Threshold bag (same shape as earlier smoke_gates.pre_registered).
+        "pre_registered": {
+            "n_pairs": N_PAIRS,
+            "events_per_arm": EVENTS_PER_ARM,
+            "seed_start": SEED_START,
+            "seeds": list(SEEDS),
+            "saturation_max_rate": SMOKE_SATURATION_MAX_RATE,
+            "pi_min_distinct": SMOKE_PI_MIN_DISTINCT,
+            "pe_w_saturation_value": PE_W_SATURATION_VALUE,
+        },
+        "null_arm_clean": null_arm_clean,
+        "saturation_rate": saturation_rate,
+        "saturation_pass": saturation_pass,
+        "n_pe_events": n_pe_total,
+        "n_saturated": n_sat_total,
+        "pi_n_distinct": pi_n_distinct,
+        "pi_distinct_pass": pi_distinct_pass,
+        "pi_values_unique": pi_values_unique,
+        "all_pass": bool(null_arm_clean and saturation_pass and pi_distinct_pass),
+    }
 
 
 def _precision_audit_from_pe_rows(
@@ -1047,52 +1109,38 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
 
     degenerate_reason = primary["degenerate_reason"] or underpowered_reason
 
-    # Precision smoke gates — usable pairs only (non-gated full arms).
-    # Locked for SMOKE_N3_K5; do not expand to gated phase-1 without a new
-    # pre-registration (SMOKE v2).
-    smoke_arms = [
+    # Precision smoke gates — dual pools (never collapse into one).
+    # v1: usable-pair-only — SMOKE_N3_K5 locked / pre-registered.
+    # v2: all audited arms — informational; pair-gate independent.
+    smoke_arms_v1 = [
         arm
         for pair in usable
         for arm in (pair.lived, pair.null, pair.shuffle)
     ]
-    n_pe_total = sum(int(arm.n_pe_events_audited) for arm in smoke_arms)
-    n_sat_total = sum(int(arm.n_saturated) for arm in smoke_arms)
-    saturation_rate = (
-        float(n_sat_total) / float(n_pe_total) if n_pe_total > 0 else EMPTY_MEAN
+    smoke_arms_v2 = [
+        arm
+        for pair in results
+        for arm in (pair.lived, pair.null, pair.shuffle)
+    ]
+    null_deltas_v2 = [
+        float(pair.null.delta_pe)
+        for pair in results
+        if _is_finite_delta(pair.null.delta_pe)
+    ]
+    smoke_gates_v1 = _smoke_gates_block(
+        arms=smoke_arms_v1,
+        null_deltas=list(null),
+        pool=SMOKE_POOL_USABLE_PAIRS,
+        pre_registered=True,
     )
-    all_pi: list[float] = []
-    for arm in smoke_arms:
-        all_pi.extend(float(value) for value in arm.pi_values)
-    pi_values_unique = sorted(
-        {round(value, PI_DISTINCT_DECIMALS) for value in all_pi}
+    smoke_gates_v2 = _smoke_gates_block(
+        arms=smoke_arms_v2,
+        null_deltas=null_deltas_v2,
+        pool=SMOKE_POOL_ALL_AUDITED,
+        pre_registered=False,
     )
-    pi_n_distinct = len(pi_values_unique)
-    saturation_pass = bool(n_pe_total > 0) and (
-        saturation_rate <= SMOKE_SATURATION_MAX_RATE
-    )
-    pi_distinct_pass = pi_n_distinct >= SMOKE_PI_MIN_DISTINCT
-    smoke_gates = {
-        "pre_registered": {
-            "n_pairs": N_PAIRS,
-            "events_per_arm": EVENTS_PER_ARM,
-            "seed_start": SEED_START,
-            "seeds": list(SEEDS),
-            "saturation_max_rate": SMOKE_SATURATION_MAX_RATE,
-            "pi_min_distinct": SMOKE_PI_MIN_DISTINCT,
-            "pe_w_saturation_value": PE_W_SATURATION_VALUE,
-        },
-        "null_arm_clean": null_arm_clean,
-        "saturation_rate": saturation_rate,
-        "saturation_pass": saturation_pass,
-        "n_pe_events": n_pe_total,
-        "n_saturated": n_sat_total,
-        "pi_n_distinct": pi_n_distinct,
-        "pi_distinct_pass": pi_distinct_pass,
-        "pi_values_unique": pi_values_unique,
-        "all_pass": bool(
-            null_arm_clean and saturation_pass and pi_distinct_pass
-        ),
-    }
+    # Backward-compat alias: smoke_gates == locked v1 (do not point at v2).
+    smoke_gates = smoke_gates_v1
 
     return {
         "primary_contrast": "lived_vs_shuffle",
@@ -1131,6 +1179,8 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
         "n_pairs": len(results),
         "constraints": dict(_CONSTRAINT_SNAPSHOT),
         "smoke_gates": smoke_gates,
+        "smoke_gates_v1": smoke_gates_v1,
+        "smoke_gates_v2": smoke_gates_v2,
     }
 
 
