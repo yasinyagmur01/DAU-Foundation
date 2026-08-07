@@ -19,6 +19,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import json
+import math
 import os
 import random
 import statistics
@@ -86,6 +87,19 @@ EMPTY_STD: float = 0.0
 PAIRED_DIFF_MIN_STD: float = 1e-12
 # NULL takes no training, so with the harness clean its replay is exact.
 NULL_ARM_MAX_ABS_DELTA: float = 1e-9
+
+# Diversity gate + PE window — pre-registered BEFORE the N=15 final run
+# (cheap scan: 5 seeds × 10 evt phase-1 only, sampling T=0.2, no train;
+# artefact /tmp/cprime_diversity_scan.json). n_unique=[4,5,5,5,4] →
+# median 5 → K=5. Scan pe_gap_max min≈0.666 (not binding under sampling);
+# gap floor equals the preference-pair builder's PE_RANK_MIN_GAP so a life
+# that cannot form any PE-ranked pair is skipped as degenerate.
+# W=10 is the mini-test SAMPLE_LIVED_PE_SEPARATION window with null clean —
+# not chosen from the N=15 outcome (post-hoc W forbidden).
+DIVERSITY_MIN_UNIQUE: int = 5
+DIVERSITY_MIN_PE_GAP: float = 1e-6
+PE_WINDOW_EVENTS: int = 10
+NAN_DELTA: float = float("nan")
 
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
@@ -160,13 +174,17 @@ class ArmResult:
 
     seed: int
     arm: str  # "lived" | "null" | "shuffle"
-    pe_before: float  # mean PE over first EVENTS_PER_ARM events
-    pe_after: float  # mean PE over second EVENTS_PER_ARM events
-    delta_pe: float  # pe_after - pe_before
+    pe_before: float  # mean PE over first PE_WINDOW_EVENTS of phase-1
+    pe_after: float  # mean PE over first PE_WINDOW_EVENTS of phase-2
+    delta_pe: float  # pe_after - pe_before (NaN when diversity-gated)
     n_events: int
     n_pairs_trained: int  # preference pairs that passed NLI filter
     n_pairs_rejected: int  # rejected by NLI filter
     wall_seconds: float
+    gated: bool = False
+    gate_reason: str = ""
+    n_unique: int = 0
+    pe_gap_max: float = 0.0
 
 
 @dataclass
@@ -198,6 +216,67 @@ def _std(values: list[float]) -> float:
     if len(values) < 2:
         return EMPTY_STD
     return float(statistics.stdev(values))
+
+
+def _window_mean(pe_list: list[float], window: int = PE_WINDOW_EVENTS) -> float:
+    """Mean over the pre-registered PE window (first ``window`` events)."""
+
+    if not pe_list:
+        return EMPTY_MEAN
+    return _mean(pe_list[:window])
+
+
+def _is_finite_delta(value: float) -> bool:
+    """True when ΔPE is a real measurement (not diversity-gated NaN)."""
+
+    return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
+def _phase1_diversity(
+    lived_examples: list[Any],
+) -> tuple[int, float]:
+    """Return (n_unique completions, pe_gap_max) for usable lived decisions."""
+
+    from dau.foundation.lora_update import COMPLETION_FALLBACK
+
+    completions: list[str] = []
+    pes: list[float] = []
+    for example in lived_examples:
+        text = (getattr(example, "completion", None) or COMPLETION_FALLBACK).strip()
+        if not text or text == COMPLETION_FALLBACK:
+            continue
+        completions.append(text)
+        pes.append(float(example.prediction_error))
+    n_unique = len(set(completions))
+    pe_gap_max = (max(pes) - min(pes)) if len(pes) >= 2 else EMPTY_MEAN
+    return n_unique, pe_gap_max
+
+
+def _diversity_gate_reason(n_unique: int, pe_gap_max: float) -> str:
+    """Empty string when the arm may train; otherwise a skip reason."""
+
+    if n_unique < DIVERSITY_MIN_UNIQUE:
+        return (
+            f"n_unique={n_unique} < DIVERSITY_MIN_UNIQUE={DIVERSITY_MIN_UNIQUE}"
+        )
+    if pe_gap_max < DIVERSITY_MIN_PE_GAP:
+        return (
+            f"pe_gap_max={pe_gap_max:.6g} < "
+            f"DIVERSITY_MIN_PE_GAP={DIVERSITY_MIN_PE_GAP}"
+        )
+    return ""
+
+
+def _json_sanitize(value: Any) -> Any:
+    """Replace NaN/Inf with null so results JSON stays RFC-compliant."""
+
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {key: _json_sanitize(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_sanitize(item) for item in value]
+    return value
 
 
 def _lock_torch_seed(seed: int) -> None:
@@ -553,7 +632,13 @@ def run_arm(
     arm: str,
     agent_id: str,
 ) -> ArmResult:
-    """Full arm: lock → phase-1 → train/skip → phase-2 → ArmResult."""
+    """Full arm: lock → phase-1 → diversity gate → train/skip → phase-2.
+
+    ΔPE uses the pre-registered ``PE_WINDOW_EVENTS`` prefix of each phase, not
+    the full life mean (plato dilution guard). Train arms that fail the
+    diversity gate return NaN ΔPE and skip train/phase-2. NULL never trains and
+    is not diversity-gated — it remains the integrity replay check.
+    """
 
     started = time.perf_counter()
     _lock_seeds(seed)
@@ -564,23 +649,40 @@ def run_arm(
         n_events=EVENTS_PER_ARM,
         energy_floor=AB_ENERGY_FLOOR,
     )
-    pe_before = _mean(pe_before_list)
+    pe_before = _window_mean(pe_before_list)
+    n_unique, pe_gap_max = _phase1_diversity(lived_examples)
 
     n_pairs_trained = EMPTY_COUNT
     n_pairs_rejected = EMPTY_COUNT
-    if arm == ARM_LIVED:
+    if arm in {ARM_LIVED, ARM_SHUFFLE}:
+        gate_reason = _diversity_gate_reason(n_unique, pe_gap_max)
+        if gate_reason:
+            print(
+                f"[PROTOCOL_C_PRIME] {agent_id}: diversity gate — {gate_reason} "
+                f"(skip train/phase-2)",
+                flush=True,
+            )
+            return ArmResult(
+                seed=seed,
+                arm=arm,
+                pe_before=pe_before,
+                pe_after=NAN_DELTA,
+                delta_pe=NAN_DELTA,
+                n_events=EVENTS_PER_ARM,
+                n_pairs_trained=n_pairs_trained,
+                n_pairs_rejected=n_pairs_rejected,
+                wall_seconds=float(time.perf_counter() - started),
+                gated=True,
+                gate_reason=gate_reason,
+                n_unique=n_unique,
+                pe_gap_max=pe_gap_max,
+            )
         n_pairs_trained, n_pairs_rejected = _train_adapter(
             agent_id,
             lived_examples,
-            shuffled=False,
+            shuffled=(arm == ARM_SHUFFLE),
         )
-    elif arm == ARM_SHUFFLE:
-        n_pairs_trained, n_pairs_rejected = _train_adapter(
-            agent_id,
-            lived_examples,
-            shuffled=True,
-        )
-    # null: no training between phases
+    # null: no training between phases; diversity metrics recorded only
 
     _lock_seeds(seed)
     pe_after_list, _ = _collect_pe_events(
@@ -589,7 +691,7 @@ def run_arm(
         n_events=EVENTS_PER_ARM,
         energy_floor=AB_ENERGY_FLOOR,
     )
-    pe_after = _mean(pe_after_list)
+    pe_after = _window_mean(pe_after_list)
     delta_pe = pe_after - pe_before
     wall_seconds = float(time.perf_counter() - started)
 
@@ -603,6 +705,10 @@ def run_arm(
         n_pairs_trained=n_pairs_trained,
         n_pairs_rejected=n_pairs_rejected,
         wall_seconds=wall_seconds,
+        gated=False,
+        gate_reason="",
+        n_unique=n_unique,
+        pe_gap_max=pe_gap_max,
     )
 
 
@@ -792,11 +898,24 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
     machinery and differ only in preference direction. LIVED vs NULL is kept as
     a secondary read-out, but NULL is an integrity check rather than a
     statistical arm — with the harness clean its ΔPE is exactly zero.
+
+    Diversity-gated arms carry NaN ΔPE and are dropped from the contrast. A
+    claim requires ``n_effective >= N_PAIRS`` so N<15 never reads as decisive.
     """
 
-    lived = [r.lived.delta_pe for r in results]
-    null = [r.null.delta_pe for r in results]
-    shuffle = [r.shuffle.delta_pe for r in results]
+    usable = [
+        r
+        for r in results
+        if _is_finite_delta(r.lived.delta_pe)
+        and _is_finite_delta(r.shuffle.delta_pe)
+        and _is_finite_delta(r.null.delta_pe)
+    ]
+    n_gated = len(results) - len(usable)
+    n_effective = len(usable)
+
+    lived = [r.lived.delta_pe for r in usable]
+    null = [r.null.delta_pe for r in usable]
+    shuffle = [r.shuffle.delta_pe for r in usable]
 
     mean_delta_pe_lived = _mean(lived)
     mean_delta_pe_null = _mean(null)
@@ -810,14 +929,25 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
     t_stat = primary["t_stat"]
     p_value = primary["p_value"]
 
-    null_arm_clean = all(abs(value) <= NULL_ARM_MAX_ABS_DELTA for value in null)
+    null_arm_clean = bool(null) and all(
+        abs(value) <= NULL_ARM_MAX_ABS_DELTA for value in null
+    )
 
+    # Anti-roadmap: never treat N_effective < design N_PAIRS as decisive.
+    underpowered = n_effective < N_PAIRS
+    underpowered_reason = (
+        f"n_effective={n_effective} < N_PAIRS={N_PAIRS} "
+        f"(diversity-gated={n_gated}); N<15 claims forbidden"
+        if underpowered
+        else ""
+    )
     significant = bool(
         not primary["degenerate"]
+        and not underpowered
         and p_value < ALPHA
         and (not primary["wilcoxon_gateable"] or primary["wilcoxon_p"] < ALPHA)
     )
-    if primary["degenerate"] or not null_arm_clean:
+    if primary["degenerate"] or not null_arm_clean or underpowered:
         verdict = VERDICT_INCONCLUSIVE
     elif significant and mean_delta_pe_lived < mean_delta_pe_shuffle:
         verdict = VERDICT_H1_SUPPORTED
@@ -826,14 +956,24 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
     else:
         verdict = VERDICT_INCONCLUSIVE
 
+    degenerate_reason = primary["degenerate_reason"] or underpowered_reason
+
     return {
         "primary_contrast": "lived_vs_shuffle",
         "primary": primary,
         "secondary_lived_vs_null": secondary,
         "null_arm_clean": null_arm_clean,
         "wilcoxon_p": primary["wilcoxon_p"],
-        "degenerate": primary["degenerate"],
-        "degenerate_reason": primary["degenerate_reason"],
+        "degenerate": bool(primary["degenerate"] or underpowered),
+        "degenerate_reason": degenerate_reason,
+        "underpowered": underpowered,
+        "n_gated": n_gated,
+        "n_effective": n_effective,
+        "diversity_gate": {
+            "min_unique": DIVERSITY_MIN_UNIQUE,
+            "min_pe_gap": DIVERSITY_MIN_PE_GAP,
+            "pe_window_events": PE_WINDOW_EVENTS,
+        },
         "niche_ranges": {
             "resource_scarcity": list(NICHE_SCARCITY_RANGE),
             "uncertainty": list(NICHE_UNCERTAINTY_RANGE),
@@ -862,19 +1002,25 @@ def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path
 
     path = RESULTS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "protocol": "C_PRIME",
-        "signal_version": SIGNAL_VERSION,
-        "n_pairs": N_PAIRS,
-        "events_per_arm": EVENTS_PER_ARM,
-        "temperature": TEMPERATURE,
-        "seeds": list(SEEDS),
-        "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
-        "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
-        "pairs": [asdict(r) for r in results],
-        "summary": stats,
-    }
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    payload = _json_sanitize(
+        {
+            "protocol": "C_PRIME",
+            "signal_version": SIGNAL_VERSION,
+            "n_pairs": N_PAIRS,
+            "events_per_arm": EVENTS_PER_ARM,
+            "pe_window_events": PE_WINDOW_EVENTS,
+            "diversity_min_unique": DIVERSITY_MIN_UNIQUE,
+            "diversity_min_pe_gap": DIVERSITY_MIN_PE_GAP,
+            "temperature": TEMPERATURE,
+            "seeds": list(SEEDS),
+            "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
+            "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
+            "llm_do_sample": os.environ.get(LLM_DO_SAMPLE_ENV, "0"),
+            "pairs": [asdict(r) for r in results],
+            "summary": stats,
+        }
+    )
+    path.write_text(json.dumps(payload, indent=2, allow_nan=False), encoding="utf-8")
     print(f"Wrote {path}", flush=True)
     return path
 
@@ -883,11 +1029,14 @@ def main() -> None:
     """CLI: run Protocol C′, print summary, write JSON."""
 
     print(
-        f"Protocol C′ — N={N_PAIRS} seeds, {EVENTS_PER_ARM} events/arm",
+        f"Protocol C′ — N={N_PAIRS} seeds, {EVENTS_PER_ARM} events/arm, "
+        f"PE window W={PE_WINDOW_EVENTS}",
         flush=True,
     )
     print(
-        f"Signal: {SIGNAL_VERSION} | LORA: {os.environ.get(LORA_ENABLED_ENV, '0')}",
+        f"Signal: {SIGNAL_VERSION} | LORA: {os.environ.get(LORA_ENABLED_ENV, '0')} "
+        f"| sample: {os.environ.get(LLM_DO_SAMPLE_ENV, '0')} "
+        f"| diversity K>={DIVERSITY_MIN_UNIQUE}",
         flush=True,
     )
     print(f"Monitor: watch -n 30 cat {HEARTBEAT_PATH}")
@@ -909,6 +1058,12 @@ def main() -> None:
         flush=True,
     )
     print(f"mean ΔPE null:    {stats_out['mean_delta_pe_null']:.4f}", flush=True)
+    print(
+        f"n_effective={stats_out['n_effective']} "
+        f"n_gated={stats_out['n_gated']} "
+        f"null_arm_clean={stats_out['null_arm_clean']}",
+        flush=True,
+    )
     print(
         f"primary lived vs shuffle: t={stats_out['t_stat']:.3f} "
         f"p={stats_out['p_value']:.4f} wilcoxon_p={stats_out['wilcoxon_p']:.4f}",

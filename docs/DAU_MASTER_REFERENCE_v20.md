@@ -1,40 +1,42 @@
 # DAU — Master Reference
 
-**Versiyon 2.2** · 2026-08-07  
+**Versiyon 2.3** · 2026-08-07  
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`  
-*(`.html` / `.pdf` türevleri v2.2 için henüz yeniden üretilmedi — md kaynaktır)*  
+*(`.html` / `.pdf` türevleri v2.3 için henüz yeniden üretilmedi — md kaynaktır)*  
 *(eski `v10` / Versiyon 1.x belge ailesi süpersede edildi — arşiv olarak kalabilir)*
 
 Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C **paper-locked negative
-finding** · C′ N=15 (eski reçete) **INSTRUMENT_LIMITED_NULL** · C′ düzeltme
-zinciri + mini-testler → **SAMPLE_LIVED_PE_SEPARATION** (N=1, sampling +
-yaşam-PE tercih) · **ADIM 1–6 kodlandı** · bu branch’te **177 test**.
+finding** · C′ N=15 (eski reçete) **INSTRUMENT_LIMITED_NULL** · mini
+**SAMPLE_LIVED_PE_SEPARATION** (N=1) · C′ N=15 sampling+B →
+**SAMPLE_N15_UNDERPOWERED** (INCONCLUSIVE) · **ADIM 1–6 kodlandı** · bu
+branch’te **182 test**.
 
 **İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü
 metacognition **UNSUPPORTED (paper-locked null)** · C′ N=15 eski koşum
 (**INSTRUMENT_LIMITED_NULL** — alet bozukken alınmış; etki iddiası değil) ·
-düzeltme sonrası tek-seed sampling+B: lived ΔPE=−0.180 · null=0.000 ·
-shuffle=−0.149 · sıra `lived < shuffle < null` (**SAMPLE_LIVED_PE_SEPARATION**;
-significance yok; N=15 henüz yok).
+mini sampling+B: lived ΔPE=−0.180 · null=0.000 · shuffle=−0.149
+(**SAMPLE_LIVED_PE_SEPARATION**; N=1) · N=15 sampling+B final: null=0.000
+(clean) · lived +0.008 · shuffle +0.019 · n_eff=12 · p=0.637 ·
+**SAMPLE_N15_UNDERPOWERED** / harness **INCONCLUSIVE** (N&lt;15 claim yasak;
+“etki yok” değil).
 `DAU_LORA_ENABLED=0` · `DAU_LLM_BACKEND=groq` default · C′ local koşumda
 `DAU_LLM_DO_SAMPLE=1` + `DAU_LLM_TEMPERATURE=0.2`.
 
 **Faz 0 kilit:** Frozen Protocol C null **paper-locked**; full Groq
 Protocol C tekrar yok.
 
-**Plastisite / ADIM durumu (v2.2):**
+**Plastisite / ADIM durumu (v2.3):**
 - Flags: `DAU_LLM_BACKEND=groq|local` (default groq), `DAU_LORA_ENABLED=0`,
   `DAU_NLI_FILTER_ENABLED=1`, `DAU_LLM_DO_SAMPLE=0` (C′ için `=1`),
   `DAU_LLM_TEMPERATURE` / `DAU_LLM_SEED` / `DAU_TORCH_THREADS`.
 - VRAM: Llama-3.1-8B 4-bit + MiniLM + QLoRA; DPO `BATCH_SIZE=1` +
   gradient checkpointing ile **8GB kartta train tamamlanır** (önceki
   `BATCH_SIZE=2` OOM).
-- ADIM 1–6 kod + unit test; ADIM 6 uçtan uca çalıştırıldı; ölçüm reçetesi
-  v2.2’de yeniden kuruldu (aşağı).
+- ADIM 1–6 kod + unit test; ADIM 6 sampling+B N=15 koşuldu (W=10, K=5).
 - Bilinen gap: `apply_crisis_trauma` / `step_pool_with_crisis` API hazır;
   production `graph.py` henüz otomatik çağırmıyor.
 - **Replay:** sampling açıkken `sha256(DAU_LLM_SEED:prompt)` per-generate
-  tohum + strict CUDA lock → null faz1≡faz2 ölçüldü (N=10 event).
+  tohum + strict CUDA lock → null faz1≡faz2 (mini + N=15 null_arm_clean).
 
 ---
 
@@ -338,7 +340,15 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node
   (artefakt: `dau_runs/protocol_c_prime_results.json`)
 - **C′ düzeltme sonrası mini-test (N=1, seed=9101, 10 event, sampling + yaşam-PE):**
   `lived −0.180 · null 0.000 · shuffle −0.149` · sıra `lived < shuffle < null`
-  · null faz1≡faz2 → **`SAMPLE_LIVED_PE_SEPARATION`** (significance yok; N=15 sırada)
+  · null faz1≡faz2 → **`SAMPLE_LIVED_PE_SEPARATION`** (significance yok)
+- **C′ N=15 sampling+B final (2026-08-07, GPU ~76 dk):** 50 event/arm ·
+  ön-kayıtlı `W=10` · diversity `K=5` (5-seed tarama median) ·
+  `lived +0.0081 · null 0.0000 · shuffle +0.0190` ·
+  t=−0.485 · p=0.637 · Wilcoxon p=0.850 · n_eff=12 (gated 3: 2001/2007/2013) ·
+  `null_arm_clean=True` → harness **INCONCLUSIVE** · belge
+  **`SAMPLE_N15_UNDERPOWERED`**
+  (artefakt: `dau_runs/protocol_c_prime_results.json`; eski greedy sonuçlar
+  `dau_runs/archive_cprime_instrument_limited_*`)
 
 **`INSTRUMENT_LIMITED_NULL` ne demek:** “yaşantı-LoRA’nın etkisi yok” **değil**;
 **“o koşumdaki ölçüm aletiyle bir etki görülemez”**. Dayanak o koşumda:
@@ -348,8 +358,13 @@ verisini öldürüyordu; (4) tasarımcı `PREF_EXPECTED` trait-adjacent’tı.
 Eski C′ null’ı Protocol C null’ı ile **aynı statüde sunulmamalıdır**.
 
 **`SAMPLE_LIVED_PE_SEPARATION` ne demek:** düzeltme zinciri + `DAU_LLM_DO_SAMPLE=1`
-+ yaşam-PE tercih ile tek seed’de H1 yönü görüldü; henüz N≥15 değil,
-istatistik iddiası yok. N=15 bu reçeteyle koşulacak (§20).
++ yaşam-PE tercih ile tek seed’de H1 yönü görüldü; N=1 — istatistik iddiası yok.
+
+**`SAMPLE_N15_UNDERPOWERED` ne demek:** alet bütünlüğü tutuldu (`null ΔPE=0`);
+mean lived &lt; mean shuffle (+0.008 &lt; +0.019) ama **ikisi de ≥0** (mini’deki
+−0.180 çoğalmadı); p n.s.; diversity gate 3 seed düşürdü → n_eff=12 &lt; 15 →
+**N&lt;15 istatistik iddiası yok**. “Etki yok” diye sunulmaz; underpowered +
+zayıf/gürültülü yön.
 
 ### Aktüatörler (deterministik Python, LLM okumaz)
 
@@ -360,7 +375,7 @@ istatistik iddiası yok. N=15 bu reçeteyle koşulacak (§20).
 
 ---
 
-## 11. Mimari durum (v2.2)
+## 11. Mimari durum (v2.3)
 
 | Katman | Durum | Özet |
 |--------|-------|------|
@@ -373,11 +388,11 @@ istatistik iddiası yok. N=15 bu reçeteyle koşulacak (§20).
 | Layer 5 Metacognition | ✅ kod / ❌ empirik (frozen) | Protocol C **paper-locked null** |
 | Plastisite (ADIM 2–3) | ✅ kod / ⚠ default off | Yaşam-PE tercih · QLoRA+DPO · sampling opt-in |
 | ADIM 5 Precision PE | ✅ kod / ⚠ tavan bağlayıcı | Sabit kazanç `π=1.2` (§7) |
-| ADIM 6 C′ | ✅ kod + yeniden kuruldu | Eski N=15 `INSTRUMENT_LIMITED_NULL`; mini **SAMPLE_LIVED_PE_SEPARATION** |
+| ADIM 6 C′ | ✅ kod + N=15 sampling+B | Eski `INSTRUMENT_LIMITED_NULL`; mini **SAMPLE_LIVED_PE_SEPARATION**; N=15 **SAMPLE_N15_UNDERPOWERED** |
 
 ---
 
-## 12. Kod ağacı (v2.2)
+## 12. Kod ağacı (v2.3)
 
 ```
 dau/foundation/
@@ -477,10 +492,10 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (tavan bağlayıcılığı dahil) |
-| **Collect (v2.2 branch)** | **177** |
+| **Collect (v2.3 branch)** | **182** |
 
-*(Master v1.4’teki “137” ve main v1.6’daki “162+” sayıları farklı ağaç
-kesitleri; bu belge **bu branch collect=177** ile kilitlenir.)*
+*(Master v1.4’teki “137” / v2.2’deki “177” sayıları önceki kesitler; bu belge
+**bu branch collect=182** ile kilitlenir — C′ diversity/W unit testleri dahil.)*
 
 **Kırılgan test:** `test_nli_filter.py` yaklaşık **3–6 koşuda bir** düşüyor.
 İzole + `HF_HUB_OFFLINE=1` ile daha stabil; suite içinde sıra/hub yolu
@@ -488,7 +503,12 @@ kesitleri; bu belge **bu branch collect=177** ile kilitlenir.)*
 
 Empirik artefaktlar (`dau_runs/`):
 - `protocol_c_run.log` — provisional/paper-locked null izi
-- `protocol_c_prime_results.json` — C′ N=15 eski, `INSTRUMENT_LIMITED_NULL`
+- `archive_cprime_instrument_limited_*` — eski greedy N=15
+  (`INSTRUMENT_LIMITED_NULL`)
+- `protocol_c_prime_results.json` — C′ N=15 sampling+B final
+  (`SAMPLE_N15_UNDERPOWERED`)
+- `protocol_c_prime_sample_n15.log` — final koşum logu
+- `cprime_diversity_prereg_scan.json` — K/W ön-kayıt taraması (5×10 evt)
 - Mini sampling+B: `/tmp/cprime_full_arm/dau_runs/protocol_c_prime_sample_pilot.json`
   (`SAMPLE_LIVED_PE_SEPARATION`)
 - `vram_spike_results.json` — GO (~6386 MiB)
@@ -536,11 +556,9 @@ Empirik artefaktlar (`dau_runs/`):
 
 ### Hâlâ açık
 
-- **C′ N=15 sampling+B koşumu** — mini-test `SAMPLE_LIVED_PE_SEPARATION`
-  sonrası istatistiksel doğrulama (GPU ≈ 1.5–2.5 saat; eski 13 saat CPU
-  tahmini iptal)
-- **Plato / W penceresi** — sinyal varken null kilidinden ön-kayıtlı W;
-  post-hoc yasak (§18/2 tarihsel)
+- **C′ etki sorusu** — N=15 sampling+B aleti temiz ama n_eff=12 + n.s. →
+  H1 desteklenmedi; mini −0.180 N≥15’e taşınmadı. Yeni ön-kayıt olmadan
+  K/W oynatılamaz (post-hoc yasak)
 - **ADIM 5 precision** PE bounded iken nasıl gerçekten adaptif yapılır? (§7)
 - `apply_crisis_trauma` → production graph kablolama
 - Energy floor / γ=0 erken kapanma
@@ -549,7 +567,7 @@ Empirik artefaktlar (`dau_runs/`):
 - `test_nli_filter.py` kırılganlığı (HF offline / tokenizer yolu)
 - Dual adapter root tekilleştirme
 
-### Kapanan (v2.2 — bu branch’te ölçüldü)
+### Kapanan (v2.2–v2.3 — bu branch’te ölçüldü)
 
 - ✅ Yerel LLM replay — greedy birebir; sampling’te prompt-keyed seed +
   strict CUDA lock ile null faz1≡faz2
@@ -558,6 +576,8 @@ Empirik artefaktlar (`dau_runs/`):
 - ✅ Tercih hedefi — yaşam-PE ranking (reçete B); tasarımcı cümle yok
 - ✅ DPO OOM — `BATCH_SIZE=1` + gradient checkpointing (8GB)
 - ✅ Chat-template DPO / eval mode / adapter izolasyonu (önceki commit’ler)
+- ✅ Diversity gate + ön-kayıtlı W — 5-seed tarama → K=5; W=10 (mini/null)
+- ✅ C′ N=15 sampling+B koşumu — **SAMPLE_N15_UNDERPOWERED** (§10b)
 
 ---
 
@@ -585,12 +605,12 @@ kirlenmesi (`switch_adapter` early-return + LoRA reset). Düzeltmeler:
 hook kaldırıldı · niş tohumları. **Ölçüldü:** sampling + aynı agent_id ile
 10 event null replay birebir.
 
-#### 2. Metrik plato dilusyonu — **kısmen çözüldü / hâlâ izleniyor**
+#### 2. Metrik plato dilusyonu — **ölçüm reçetesi kilitlendi (v2.3)**
 
 Greedy plato (~3 unique completion / 10 event) tercih verisini öldürüyordu.
-`DAU_LLM_DO_SAMPLE=1` (T=0.2) ile unique ≈5 ve yaşam-PE çiftleri gerçek
-kontrast kazandı. 50 event’te plato hâlâ seyreltebilir — N=15’te W’yi
-null kilidinden **ön-kayıtla** sabitlemek açık (§17).
+`DAU_LLM_DO_SAMPLE=1` (T=0.2) ile unique ≈5. N=15 öncesi: 5-seed tarama →
+`DIVERSITY_MIN_UNIQUE=K=5` (median); `PE_WINDOW_EVENTS=W=10` (mini + null
+clean; post-hoc değil). N=15’te 3 seed `n_unique=4` ile gated → n_eff=12.
 
 ### Plastisite günlüğü
 
@@ -611,27 +631,33 @@ null kilidinden **ön-kayıtla** sabitlemek açık (§17).
 | C′ mini / smoke | ≤3 | local | v1/v2 erken | (tarihsel) | | | **WEAK / SMOKE** (†) |
 | C′ N=15 eski | 15 | local | v2+A, greedy, kontamine | −0.0089 | −0.0090 | −0.0028 | **INSTRUMENT_LIMITED_NULL** |
 | C′ mini sampling+B | 1 (9101) | local | yaşam-PE + sample | **−0.180** | **0.000** | −0.149 | **SAMPLE_LIVED_PE_SEPARATION** |
+| C′ N=15 sampling+B | 15 (n_eff=12) | local | yaşam-PE + sample · W=10 · K=5 | **+0.0081** | **0.000** | +0.0190 | **SAMPLE_N15_UNDERPOWERED** |
 
 **(†)** Gradyansız eğitim / adapter sızıntısı düzeltilmeden önce; ileri sürülmez.
 
-C′ mini sampling+B parametreleri: 10 event/arm, `DAU_LLM_DO_SAMPLE=1`,
-`T=0.2`, `DAU_LORA_ENABLED=1`, yaşam-PE pairs, GPU ≈ 71 sn / seed (3 kol).
-Eski “13 saat CPU” tahmini **iptal**; GPU N=15×50 ≈ **1.5–2.5 saat**.
+C′ mini sampling+B: 10 event/arm, `DAU_LLM_DO_SAMPLE=1`, `T=0.2`,
+`DAU_LORA_ENABLED=1`, yaşam-PE pairs, GPU ≈ 71 sn / seed (3 kol).
 
-VRAM: peak ≈ **6.4 GiB** + DPO batch=1 → **GO** (8GB).
+C′ N=15 sampling+B final: 50 event/arm, aynı reçete + `W=10` + diversity
+`K=5`, GPU ≈ **76 dk** (eski 13 saat CPU tahmini iptal; 1.5–2.5 saat
+üst sınırı da aşılmadı). Peak VRAM ≈ **7.2 GiB** train sırasında.
+
+VRAM: peak ≈ **6.4–7.2 GiB** + DPO batch=1 → **GO** (8GB).
 
 #### Paper naratif iskeleti (kilitli)
 
 1. Ana katkı: frozen-weight in-context metacognition null (Protocol C)
 2. Mimari: trait yasağı, MiniLM PE, DAERM, LOD, format≠restraint
 3. Appendix: C′ alet evrimi — `INSTRUMENT_LIMITED_NULL` (eski) →
-   reçete düzeltmesi → `SAMPLE_LIVED_PE_SEPARATION` (N=1) → (sırada N=15)
+   reçete düzeltmesi → `SAMPLE_LIVED_PE_SEPARATION` (N=1) →
+   `SAMPLE_N15_UNDERPOWERED` (null clean; n_eff=12; H1 yok)
 4. Non-claims: persona LoRA, LLM-as-judge, per-event online LoRA, Layer 6,
-   full Groq C rerun, N<15 istatistik iddiası, post-hoc W bulgusu
+   full Groq C rerun, N&lt;15 istatistik iddiası, post-hoc W/K bulgusu,
+   eski `INSTRUMENT_LIMITED_NULL` = “etki yok”
 
 ---
 
-## 19. ADIM uygulama kaydı (v2.2 — bu branch)
+## 19. ADIM uygulama kaydı (v2.3 — bu branch)
 
 ### ADIM 1 — Layer 4 Somatic Enforcement ✅ kod
 
@@ -704,15 +730,15 @@ empirik tablosunda **†** ile işaretli satırlar).
 Tavan düşürülmeseydi: ölçülen raw PE 0.2875–0.8102 aralığında, 3× kazanç
 10 event’in 7’sini tam 1.0’a doyuruyordu.
 
-### ADIM 6 — Protocol C′ N≥15 ✅ kod + yeniden kuruldu
+### ADIM 6 — Protocol C′ N≥15 ✅ kod + sampling+B koşuldu
 
 | | |
 |--|--|
-| Dosyalar | `dau/diagnostics/run_protocol_c_prime.py` |
+| Dosyalar | `dau/diagnostics/run_protocol_c_prime.py` (+ tests) |
 | Eski koşum | N=15 · 50 event · greedy · reçete A → **INSTRUMENT_LIMITED_NULL** |
 | Mini (v2.2) | N=1 · 10 event · sample+B → **SAMPLE_LIVED_PE_SEPARATION** |
-| Sırada | N=15 · 50 event · `DAU_LLM_DO_SAMPLE=1` · yaşam-PE · niş tohum |
-| Harness | lived vs shuffle birincil; null bütünlük assert; sıfır-varyans guard |
+| Final (v2.3) | N=15 · 50 event · sample+B · W=10 · K=5 → **SAMPLE_N15_UNDERPOWERED** |
+| Harness | lived vs shuffle birincil; null bütünlük; diversity gate; sıfır-varyans; n_eff&lt;N → INCONCLUSIVE |
 
 ### Bağımlılık grafiği
 
@@ -721,16 +747,16 @@ ADIM 1 ────────────────────────�
 ADIM 2 ──────────────────────────────┤
                                       ↓
 ADIM 3 ← ADIM 2 sonrası ────────────→ ADIM 6
-ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15 sampling+B)
+ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15 sampling+B ✅ koşuldu)
 ADIM 5 ← ADIM 2+4 sonrası ──────────┘
 ```
 
-ADIM 1–6 kodlandı. ADIM 6 ölçüm reçetesi v2.2’de yeniden kuruldu; N=15
-sampling+B **sıradaki empirik adım**.
+ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
+**SAMPLE_N15_UNDERPOWERED** (alet temiz; H1 yok; N&lt;15 claim yok).
 
 ---
 
-## 20. Yol haritası + Anti-roadmap (v2.2)
+## 20. Yol haritası + Anti-roadmap (v2.3)
 
 ### Doğrulanan / kilitli
 
@@ -740,11 +766,14 @@ sampling+B **sıradaki empirik adım**.
 - Protocol C paper-locked null
 - C′ harness + replay (sampling’te prompt-keyed seed)
 - Yaşam-PE tercih (reçete B) · niş tohumları · DPO 8GB fit
+- C′ diversity gate + ön-kayıtlı W · N=15 null_arm_clean
 
 ### Yeniden değerlendirilmesi gereken
 
-- SMOKE / WEAK / eski N=15 `INSTRUMENT_LIMITED_NULL` — tarihsel alet kayıtları;
-  sampling+B N=15 öncesi ileri sürülmez
+- SMOKE / WEAK / eski N=15 `INSTRUMENT_LIMITED_NULL` — tarihsel alet kayıtları
+- Mini `SAMPLE_LIVED_PE_SEPARATION` — N=1; N=15’te çoğalmadı
+- `SAMPLE_N15_UNDERPOWERED` — underpowered; yeni ön-kayıtlı reçete olmadan
+  K/W gevşeterek “kurtarma” yasak
 
 ### Yanlışlanan / kapatılan
 
@@ -756,18 +785,19 @@ sampling+B **sıradaki empirik adım**.
 
 ### Sıradaki (öncelik)
 
-1. **C′ N=15 sampling+B** — GPU, `DAU_LLM_DO_SAMPLE=1`, T=0.2, yaşam-PE,
-   niş tohum; ~1.5–2.5 saat (13 saat CPU tahmini iptal)
-2. İsteğe bağlı: diversity gate (`n_unique < K` → skip) · ön-kayıtlı W
-3. Crisis’i graph’a kablola
-4. ADIM 5 precision formülünü PE bounded’da adaptif yap (§7)
-5. Paper gövdesi (frozen-null ana; C′ alet evrimi appendix)
+1. Crisis’i graph’a kablola
+2. ADIM 5 precision formülünü PE bounded’da adaptif yap (§7)
+3. Paper gövdesi (frozen-null ana; C′ alet evrimi appendix:
+   INSTRUMENT_LIMITED → SAMPLE_LIVED → SAMPLE_N15_UNDERPOWERED)
+4. (İsteğe bağlı) C′ için **yeni ön-kayıtlı** reçete tartışması — post-hoc
+   K=4 / W seçimi yasak
 
 ### Anti-roadmap (yasak)
 
 - Per-event online LoRA · EWC · TTT/PoT · prefix ana rota
-- N<15 ile istatistiksel iddia · post-hoc W bulgusu
-- Eski `INSTRUMENT_LIMITED_NULL` koşumunu “etki yok” diye sunmak
+- N&lt;15 ile istatistiksel iddia · post-hoc W/K bulgusu
+- Eski `INSTRUMENT_LIMITED_NULL` veya `SAMPLE_N15_UNDERPOWERED` koşumunu
+  “etki yok” diye sunmak
 - Layer 6 · LLM-as-judge · trait injection · wall-clock zaman
 - Persona/trait adapter · Groq Protocol C tekrarı
 
@@ -810,15 +840,18 @@ sampling+B **sıradaki empirik adım**.
 | **2.0** | **2026-08-07** | **Yeni belge ailesi `v20`.** ADIM 1–4 kodlandı (crisis, NLI, per-agent QLoRA, PPR). memory_score PPR formülü. 159 test (bu branch). ADIM 5–6 açık. `DAU_LORA_ENABLED=0` korunuyor. `v10` süpersede. |
 | **2.1** | **2026-08-07** | Ölçüm zincirinde 6 katmanlı hata düzeltildi; C′ N=15 uçtan uca → **`INSTRUMENT_LIMITED_NULL`**. Replay/plato blocker kaydı. 175 test. |
 | **2.2** | **2026-08-07** | Alet yeniden kuruldu: null train hook kaldırıldı · niş tohum · yaşam-PE tercih · DPO 8GB fit · sampling + prompt-keyed seed. Mini N=1 → **`SAMPLE_LIVED_PE_SEPARATION`** (lived −0.180 · null 0 · shuffle −0.149). N=15 sampling sırada; 13 saat CPU tahmini iptal (GPU ≈1.5–2.5 saat). **177 test**. `.html`/`.pdf` henüz yenilenmedi. |
+| **2.3** | **2026-08-07** | Diversity gate (K=5) + ön-kayıtlı W=10. C′ N=15 sampling+B final (~76 dk GPU): null **0.000** clean · lived **+0.008** · shuffle **+0.019** · n_eff=12 · p=0.637 → **`SAMPLE_N15_UNDERPOWERED`** / INCONCLUSIVE. Mini separation N≥15’e taşınmadı; “etki yok” iddiası yok. **182 test**. `.html`/`.pdf` henüz yenilenmedi. |
 
 ---
 
-**Güncellendi (v2.2):** v2.1’in kazancı “alet bozuk” teşhisiydi. v2.2’nin
-kazancı teşhisi **kapatmak**: replay, null bütünlüğü, endojen tercih ve
-sampling ile tek seed’de H1 yönü (`SAMPLE_LIVED_PE_SEPARATION`). Bu henüz
-N=15 değildir; istatistik iddiası yok. Omurga default’ları değişmedi: LoRA
-kapalı, Groq default, trait yasak. C′ local koşumda `DAU_LLM_DO_SAMPLE=1`.
+**Güncellendi (v2.3):** v2.2 aleti yeniden kurdu ve mini’de H1 yönü gördü.
+v2.3 aynı reçeteyi N=15’te koştu: **null bütünlüğü tutuldu**, diversity/W
+ön-kayıtlandı, fakat n_eff=12 + n.s. + her iki mean ≥0 →
+**SAMPLE_N15_UNDERPOWERED**. Bu, eski `INSTRUMENT_LIMITED_NULL` ile aynı
+değildir ve “yaşantı-LoRA etkisiz” diye okunmaz. Omurga default’ları
+değişmedi: LoRA kapalı, Groq default, trait yasak.
 
 Bu döküman her önemli katman / empirik dönüm tamamlanınca güncellenir.  
-Versiyon 2.2 — ADIM 1–6 kod; C′ alet yeniden kuruldu; Protocol C paper-locked
-null; eski C′ **INSTRUMENT_LIMITED_NULL**; mini **SAMPLE_LIVED_PE_SEPARATION**.
+Versiyon 2.3 — ADIM 1–6 kod; C′ N=15 sampling+B **SAMPLE_N15_UNDERPOWERED**;
+Protocol C paper-locked null; eski C′ **INSTRUMENT_LIMITED_NULL**; mini
+**SAMPLE_LIVED_PE_SEPARATION**.
