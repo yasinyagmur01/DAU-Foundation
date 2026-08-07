@@ -46,6 +46,7 @@ GENERATION_MAX_NEW_TOKENS: int = 64
 PLAIN_PROMPT_TEMPLATE: str = "{system}\n\n{user}\n"
 LLM_DO_SAMPLE_ENV: str = "DAU_LLM_DO_SAMPLE"
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
+LLM_SEED_ENV: str = "DAU_LLM_SEED"
 LLM_DO_SAMPLE_DEFAULT: str = "0"
 LLM_TEMPERATURE_DEFAULT: float = 0.0
 LLM_DO_SAMPLE_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "YES"})
@@ -282,16 +283,20 @@ def save_agent_adapter(model: Any, agent_id: str) -> None:
 def switch_adapter(model: Any, agent_id: str) -> None:
     """Hot-swap the active LoRA adapter for agent_id on an already-loaded model.
 
-    If no adapter exists: disable adapters (base weights only).
+    If no adapter exists: reset to a fresh identity graft (base policy).
     Target: complete under ADAPTER_SWITCH_MAX_MS when base is already loaded
     (metadata / weight pointer swap — not a full reload).
+
+    Do not short-circuit on ``_active_agent_id == agent_id``. A no-disk reset
+    draws torch RNG for LoRA-A; skipping it on the second phase of a NULL arm
+    leaves sampling on a different stream, so phase1≢phase2 under
+    DAU_LLM_DO_SAMPLE=1 (measured). Lived phase2 also needs a disk reload after
+    training even when the agent_id did not change.
     """
 
     global _active_agent_id
 
     started = time.perf_counter()
-    if _active_agent_id == agent_id:
-        return
 
     try:
         from peft import PeftModel
@@ -382,10 +387,12 @@ def generate_completion(
     """Local completion for LocalBackend.complete().
 
     Default is greedy. ``DAU_LLM_DO_SAMPLE=1`` with ``DAU_LLM_TEMPERATURE`` > 0
-    enables sampling; the caller must pin ``torch.manual_seed`` at phase start
-    so a NULL arm can still replay bit-for-bit.
+    enables sampling. Each sampled call re-seeds from ``DAU_LLM_SEED`` and the
+    prompt so prior RNG consumers (LoRA reset, model load, MiniLM) cannot shift
+    the stream — required for NULL phase1≡phase2 under sampling.
     """
 
+    import hashlib
     import torch
 
     prompt, used_template = _build_prompt(tokenizer, system, user)
@@ -409,6 +416,16 @@ def generate_completion(
     }
     if do_sample:
         generate_kwargs["temperature"] = temperature
+        phase_seed_raw = os.environ.get(LLM_SEED_ENV, "0").strip()
+        try:
+            phase_seed = int(phase_seed_raw)
+        except ValueError:
+            phase_seed = 0
+        digest = hashlib.sha256(f"{phase_seed}:{prompt}".encode("utf-8")).hexdigest()
+        step_seed = int(digest[:16], 16) % (2**31)
+        torch.manual_seed(step_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(step_seed)
     with torch.no_grad():
         output = model.generate(**encoded, **generate_kwargs)
     generated = output[0][prompt_length:]
