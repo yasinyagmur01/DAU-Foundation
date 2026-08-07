@@ -89,16 +89,21 @@ NULL_ARM_MAX_ABS_DELTA: float = 1e-9
 
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
+LLM_DO_SAMPLE_ENV: str = "DAU_LLM_DO_SAMPLE"
 LORA_ENABLED_ENV: str = "DAU_LORA_ENABLED"
 NLI_FILTER_ENABLED_ENV: str = "DAU_NLI_FILTER_ENABLED"
 TORCH_THREADS_ENV: str = "DAU_TORCH_THREADS"
+CUBLAS_WORKSPACE_CONFIG_ENV: str = "CUBLAS_WORKSPACE_CONFIG"
+# Required by torch deterministic mode on CUDA; setdefault so a caller can override.
+CUBLAS_WORKSPACE_CONFIG_VALUE: str = ":4096:8"
+LLM_DO_SAMPLE_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "YES"})
 
 # Thread count changes the CPU reduction order, so it is pinned rather than
 # left at whatever torch infers from the host. Default is this host's inferred
 # value; override per machine via TORCH_THREADS_ENV.
 TORCH_NUM_THREADS: int = int(os.environ.get(TORCH_THREADS_ENV, "14"))
-# warn_only: an unsupported op must not abort a 15-seed run, and the decode
-# path was measured reproducible without it.
+# warn_only for greedy: unsupported ops must not abort a long run. Sampling
+# on CUDA needs strict determinism or NULL phase1≢phase2 (measured).
 TORCH_DETERMINISTIC_WARN_ONLY: bool = True
 
 STREAM_NODES_PER_EVENT: int = 4
@@ -198,7 +203,9 @@ def _std(values: list[float]) -> float:
 def _lock_torch_seed(seed: int) -> None:
     """Pin torch RNG, thread count, and algorithm choice.
 
-    torch is optional — the groq backend never imports it.
+    torch is optional — the groq backend never imports it. When local
+    sampling is on, CUDA must be strictly deterministic: warn_only left
+    NULL phase1≠phase2 at event 1 under T=0.2.
     """
 
     try:
@@ -206,11 +213,25 @@ def _lock_torch_seed(seed: int) -> None:
     except ImportError:
         return
 
+    os.environ.setdefault(
+        CUBLAS_WORKSPACE_CONFIG_ENV,
+        CUBLAS_WORKSPACE_CONFIG_VALUE,
+    )
     torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     torch.set_num_threads(TORCH_NUM_THREADS)
+    try:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    except Exception:  # noqa: BLE001 — CPU-only builds
+        pass
+    sampling = (
+        os.environ.get(LLM_DO_SAMPLE_ENV, "0").strip() in LLM_DO_SAMPLE_TRUTHY
+    )
     torch.use_deterministic_algorithms(
         True,
-        warn_only=TORCH_DETERMINISTIC_WARN_ONLY,
+        warn_only=(TORCH_DETERMINISTIC_WARN_ONLY and not sampling),
     )
 
 
