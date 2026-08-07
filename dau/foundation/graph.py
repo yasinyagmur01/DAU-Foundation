@@ -74,7 +74,11 @@ from .memory_bridge import (
     retrieve_relevant,
 )
 from .meta_observer import bind_memory_store, meta_observer_node, unbind_memory_store
-from .semantic_similarity import apply_precision_weighting, semantic_prediction_error
+from .semantic_similarity import (
+    apply_precision_weighting,
+    compute_precision_weight,
+    semantic_prediction_error,
+)
 from .social import (
     MARKOV_WINDOW,
     SocialState,
@@ -204,15 +208,23 @@ def _record_pe_event(
     *,
     event_counter: int,
     prediction_error: float,
+    raw_pe: float,
+    precision_weight: float,
     delta_magnitude: float,
     delta_class: str,
 ) -> None:
-    """Append one event-level PE row to the overnight-audit buffer."""
+    """Append one event-level PE row to the overnight-audit buffer.
+
+    ``prediction_error`` is precision-weighted PE_w; ``raw_pe`` is the
+    unweighted MiniLM error; ``precision_weight`` is π used for that event.
+    """
 
     _pe_event_log.append(
         {
             "event_counter": int(event_counter),
             "prediction_error": float(prediction_error),
+            "raw_pe": float(raw_pe),
+            "precision_weight": float(precision_weight),
             "delta_magnitude": float(delta_magnitude),
             "delta_class": str(delta_class),
         }
@@ -974,8 +986,10 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     # ADIM 5 — π from prior raw history, then append unweighted raw_pe.
     prior_pe_history = [float(value) for value in list(state.pe_history)]
     try:
+        precision_weight = float(compute_precision_weight(prior_pe_history))
         precision_pe = apply_precision_weighting(raw_pe, prior_pe_history)
     except Exception:
+        precision_weight = 1.0
         precision_pe = raw_pe
     updated_pe_history = (prior_pe_history + [float(raw_pe)])[
         -PRECISION_HISTORY_WINDOW:
@@ -1008,6 +1022,8 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     _record_pe_event(
         event_counter=int(last_event.timestamp),
         prediction_error=float(prediction_error),
+        raw_pe=float(raw_pe),
+        precision_weight=float(precision_weight),
         delta_magnitude=float(record.magnitude),
         delta_class=_audit_delta_class(record),
     )

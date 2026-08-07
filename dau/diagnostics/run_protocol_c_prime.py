@@ -25,7 +25,7 @@ import random
 import statistics
 import tempfile
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -39,7 +39,11 @@ from dau.foundation.constraints import (
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
     PRECISION_EPSILON,
+    PRECISION_HISTORY_WINDOW,
     PRECISION_MAX_WEIGHT,
+    PRECISION_MIN_HISTORY,
+    PRECISION_MIN_WEIGHT,
+    PRECISION_VAR_REF,
     PPR_ALPHA,
     PPR_WEIGHT_IN_SCORE,
     build_default_constraints,
@@ -67,11 +71,27 @@ from dau.society.environment import (
 N_PAIRS: int = int(os.environ.get("DAU_CPRIME_N_PAIRS", "15"))
 EVENTS_PER_ARM: int = int(os.environ.get("DAU_CPRIME_EVENTS", "50"))
 TEMPERATURE: float = float(os.environ.get("DAU_LLM_TEMPERATURE", "0.2"))
-SEEDS: list[int] = list(range(2001, 2001 + N_PAIRS))
+SEED_START: int = int(os.environ.get("DAU_CPRIME_SEED_START", "2001"))
+SEEDS: list[int] = list(range(SEED_START, SEED_START + N_PAIRS))
 SIGNAL_VERSION: str = os.environ.get("DAU_CPRIME_SIGNAL", "v2")
-RESULTS_PATH: Path = Path("dau_runs/protocol_c_prime_results.json")
-CHECKPOINT_PATH: Path = Path("dau_runs/protocol_c_prime_checkpoint.json")
-HEARTBEAT_PATH: Path = Path("dau_runs/protocol_c_prime_heartbeat.json")
+RESULTS_PATH: Path = Path(
+    os.environ.get(
+        "DAU_CPRIME_RESULTS",
+        "dau_runs/protocol_c_prime_results.json",
+    )
+)
+CHECKPOINT_PATH: Path = Path(
+    os.environ.get(
+        "DAU_CPRIME_CHECKPOINT",
+        "dau_runs/protocol_c_prime_checkpoint.json",
+    )
+)
+HEARTBEAT_PATH: Path = Path(
+    os.environ.get(
+        "DAU_CPRIME_HEARTBEAT",
+        "dau_runs/protocol_c_prime_heartbeat.json",
+    )
+)
 # Must stay strictly above graph.TERMINATION_ENERGY, otherwise the floor never
 # protects the run and a single max-PE trauma ends the life at event 1.
 AB_ENERGY_FLOOR: float = 0.15
@@ -87,6 +107,12 @@ EMPTY_STD: float = 0.0
 PAIRED_DIFF_MIN_STD: float = 1e-12
 # NULL takes no training, so with the harness clean its replay is exact.
 NULL_ARM_MAX_ABS_DELTA: float = 1e-9
+
+# Precision smoke gates — pre-registered; do not retune after seeing outcomes.
+SMOKE_SATURATION_MAX_RATE: float = 0.30
+SMOKE_PI_MIN_DISTINCT: int = 3
+PE_W_SATURATION_VALUE: float = 1.0
+PI_DISTINCT_DECIMALS: int = 6
 
 # Diversity gate + PE window — pre-registered BEFORE the N=15 final run
 # (cheap scan: 5 seeds × 10 evt phase-1 only, sampling T=0.2, no train;
@@ -121,7 +147,9 @@ TORCH_NUM_THREADS: int = int(os.environ.get(TORCH_THREADS_ENV, "14"))
 TORCH_DETERMINISTIC_WARN_ONLY: bool = True
 
 STREAM_NODES_PER_EVENT: int = 4
-STREAM_RECURSION_HEADROOM: int = 10
+# Headroom must clear post-last-event nodes (meta/pool/END). 10 was too tight
+# for EVENTS=10 (4*10+10=50 → GRAPH_RECURSION_LIMIT after event 10).
+STREAM_RECURSION_HEADROOM: int = 40
 
 # Per-seed niche. Decoding is greedy and the world is deterministic, so a seed
 # that only touches RNG changes nothing: every seed in the N=15 overnight run
@@ -165,6 +193,10 @@ _CONSTRAINT_SNAPSHOT: dict[str, float | int | str] = {
     "ADAPTER_BASE_DIR": ADAPTER_BASE_DIR,
     "PRECISION_EPSILON": PRECISION_EPSILON,
     "PRECISION_MAX_WEIGHT": PRECISION_MAX_WEIGHT,
+    "PRECISION_MIN_WEIGHT": PRECISION_MIN_WEIGHT,
+    "PRECISION_VAR_REF": PRECISION_VAR_REF,
+    "PRECISION_MIN_HISTORY": PRECISION_MIN_HISTORY,
+    "PRECISION_HISTORY_WINDOW": PRECISION_HISTORY_WINDOW,
 }
 
 
@@ -185,6 +217,12 @@ class ArmResult:
     gate_reason: str = ""
     n_unique: int = 0
     pe_gap_max: float = 0.0
+    # Precision audit (phase-1 + phase-2 pe_event_log rows for this arm).
+    saturation_rate: float = EMPTY_MEAN
+    pi_n_distinct: int = EMPTY_COUNT
+    n_pe_events_audited: int = EMPTY_COUNT
+    n_saturated: int = EMPTY_COUNT
+    pi_values: list[float] = field(default_factory=list)
 
 
 @dataclass
@@ -230,6 +268,40 @@ def _is_finite_delta(value: float) -> bool:
     """True when ΔPE is a real measurement (not diversity-gated NaN)."""
 
     return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
+def _precision_audit_from_pe_rows(
+    pe_rows: list[dict[str, Any]],
+) -> tuple[float, int, list[float], int, int]:
+    """Return (saturation_rate, pi_n_distinct, pi_values, n_events, n_saturated).
+
+    saturation_rate = fraction of rows with PE_w == PE_W_SATURATION_VALUE.
+    π distinct uses rounded values at PI_DISTINCT_DECIMALS.
+    """
+
+    if not pe_rows:
+        return EMPTY_MEAN, EMPTY_COUNT, [], EMPTY_COUNT, EMPTY_COUNT
+
+    pe_w_values = [float(row["prediction_error"]) for row in pe_rows]
+    pi_values = [float(row["precision_weight"]) for row in pe_rows]
+    n_events = len(pe_w_values)
+    n_saturated = sum(
+        1 for value in pe_w_values if float(value) == PE_W_SATURATION_VALUE
+    )
+    saturation_rate = float(n_saturated) / float(n_events)
+    unique_n = len({round(value, PI_DISTINCT_DECIMALS) for value in pi_values})
+    return saturation_rate, unique_n, pi_values, n_events, n_saturated
+
+
+def _merge_pe_rows(
+    *row_groups: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Concatenate pe_event_log row groups in order."""
+
+    merged: list[dict[str, Any]] = []
+    for group in row_groups:
+        merged.extend(group)
+    return merged
 
 
 def _phase1_diversity(
@@ -467,12 +539,13 @@ def _collect_pe_events(
     seed: int,
     n_events: int,
     energy_floor: float = AB_ENERGY_FLOOR,
-) -> tuple[list[float], list[Any]]:
-    """Run agent for n_events; return (pe_list, lived_examples).
+) -> tuple[list[float], list[Any], list[dict[str, Any]]]:
+    """Run agent for n_events; return (pe_list, lived_examples, pe_rows).
 
     Uses production ``build_graph`` with Protocol C monkeypatch pattern.
     Collects ``prediction_error`` from evaluator telemetry (pe event log).
     Pads remaining slots with last PE when energy floor ends the life early.
+    ``pe_rows`` are the raw audit rows (include raw_pe / precision_weight).
     """
 
     graph_mod.load_env_file()
@@ -524,7 +597,7 @@ def _collect_pe_events(
         pe_list = [float(row["prediction_error"]) for row in pe_rows]
         pe_list = _pad_pe_list(pe_list, n_events)
         lived_examples = _build_lived_examples(state, pe_rows)
-        return pe_list, lived_examples
+        return pe_list, lived_examples, pe_rows
     finally:
         unbind_memory_store(agent_id)
         graph_mod._memory_stores.pop(agent_id, None)
@@ -643,7 +716,7 @@ def run_arm(
     started = time.perf_counter()
     _lock_seeds(seed)
 
-    pe_before_list, lived_examples = _collect_pe_events(
+    pe_before_list, lived_examples, pe_rows_before = _collect_pe_events(
         agent_id=agent_id,
         seed=seed,
         n_events=EVENTS_PER_ARM,
@@ -662,6 +735,9 @@ def run_arm(
                 f"(skip train/phase-2)",
                 flush=True,
             )
+            sat, pi_n, pi_vals, n_aud, n_sat = _precision_audit_from_pe_rows(
+                pe_rows_before
+            )
             return ArmResult(
                 seed=seed,
                 arm=arm,
@@ -676,6 +752,11 @@ def run_arm(
                 gate_reason=gate_reason,
                 n_unique=n_unique,
                 pe_gap_max=pe_gap_max,
+                saturation_rate=sat,
+                pi_n_distinct=pi_n,
+                n_pe_events_audited=n_aud,
+                n_saturated=n_sat,
+                pi_values=list(pi_vals),
             )
         n_pairs_trained, n_pairs_rejected = _train_adapter(
             agent_id,
@@ -685,7 +766,7 @@ def run_arm(
     # null: no training between phases; diversity metrics recorded only
 
     _lock_seeds(seed)
-    pe_after_list, _ = _collect_pe_events(
+    pe_after_list, _, pe_rows_after = _collect_pe_events(
         agent_id=agent_id,
         seed=seed,
         n_events=EVENTS_PER_ARM,
@@ -694,6 +775,9 @@ def run_arm(
     pe_after = _window_mean(pe_after_list)
     delta_pe = pe_after - pe_before
     wall_seconds = float(time.perf_counter() - started)
+    sat, pi_n, pi_vals, n_aud, n_sat = _precision_audit_from_pe_rows(
+        _merge_pe_rows(pe_rows_before, pe_rows_after)
+    )
 
     return ArmResult(
         seed=seed,
@@ -709,6 +793,11 @@ def run_arm(
         gate_reason="",
         n_unique=n_unique,
         pe_gap_max=pe_gap_max,
+        saturation_rate=sat,
+        pi_n_distinct=pi_n,
+        n_pe_events_audited=n_aud,
+        n_saturated=n_sat,
+        pi_values=list(pi_vals),
     )
 
 
@@ -958,6 +1047,53 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
 
     degenerate_reason = primary["degenerate_reason"] or underpowered_reason
 
+    # Precision smoke gates — usable pairs only (non-gated full arms).
+    # Locked for SMOKE_N3_K5; do not expand to gated phase-1 without a new
+    # pre-registration (SMOKE v2).
+    smoke_arms = [
+        arm
+        for pair in usable
+        for arm in (pair.lived, pair.null, pair.shuffle)
+    ]
+    n_pe_total = sum(int(arm.n_pe_events_audited) for arm in smoke_arms)
+    n_sat_total = sum(int(arm.n_saturated) for arm in smoke_arms)
+    saturation_rate = (
+        float(n_sat_total) / float(n_pe_total) if n_pe_total > 0 else EMPTY_MEAN
+    )
+    all_pi: list[float] = []
+    for arm in smoke_arms:
+        all_pi.extend(float(value) for value in arm.pi_values)
+    pi_values_unique = sorted(
+        {round(value, PI_DISTINCT_DECIMALS) for value in all_pi}
+    )
+    pi_n_distinct = len(pi_values_unique)
+    saturation_pass = bool(n_pe_total > 0) and (
+        saturation_rate <= SMOKE_SATURATION_MAX_RATE
+    )
+    pi_distinct_pass = pi_n_distinct >= SMOKE_PI_MIN_DISTINCT
+    smoke_gates = {
+        "pre_registered": {
+            "n_pairs": N_PAIRS,
+            "events_per_arm": EVENTS_PER_ARM,
+            "seed_start": SEED_START,
+            "seeds": list(SEEDS),
+            "saturation_max_rate": SMOKE_SATURATION_MAX_RATE,
+            "pi_min_distinct": SMOKE_PI_MIN_DISTINCT,
+            "pe_w_saturation_value": PE_W_SATURATION_VALUE,
+        },
+        "null_arm_clean": null_arm_clean,
+        "saturation_rate": saturation_rate,
+        "saturation_pass": saturation_pass,
+        "n_pe_events": n_pe_total,
+        "n_saturated": n_sat_total,
+        "pi_n_distinct": pi_n_distinct,
+        "pi_distinct_pass": pi_distinct_pass,
+        "pi_values_unique": pi_values_unique,
+        "all_pass": bool(
+            null_arm_clean and saturation_pass and pi_distinct_pass
+        ),
+    }
+
     return {
         "primary_contrast": "lived_vs_shuffle",
         "primary": primary,
@@ -994,6 +1130,7 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
         "alpha": ALPHA,
         "n_pairs": len(results),
         "constraints": dict(_CONSTRAINT_SNAPSHOT),
+        "smoke_gates": smoke_gates,
     }
 
 
@@ -1008,6 +1145,7 @@ def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path
             "signal_version": SIGNAL_VERSION,
             "n_pairs": N_PAIRS,
             "events_per_arm": EVENTS_PER_ARM,
+            "seed_start": SEED_START,
             "pe_window_events": PE_WINDOW_EVENTS,
             "diversity_min_unique": DIVERSITY_MIN_UNIQUE,
             "diversity_min_pe_gap": DIVERSITY_MIN_PE_GAP,
