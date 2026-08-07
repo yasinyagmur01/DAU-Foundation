@@ -67,9 +67,10 @@ PREF_TRACES_FILE_NAME: str = "preference_pairs.jsonl"
 PREF_EXPECTED_OUTCOME: str = (
     "extract resources carefully while preserving the shared commons"
 )
-PREF_REJECT_CANDIDATE: str = (
-    "abandon all care and drain the pool for maximum short-term gain"
-)
+# Must share the agent's terse action register and negate it explicitly: the
+# NLI cross-encoder scores surface negation, so prose in a different register
+# reads as non-contradictory and every pair is filtered out.
+PREF_REJECT_CANDIDATE: str = "do not extract resource"
 PREF_CONTEXT_TEMPLATE: str = (
     "Context expectation: {expected}\nLived scalars: pe={pe:.3f}"
 )

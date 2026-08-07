@@ -66,7 +66,11 @@ SIGNAL_VERSION: str = os.environ.get("DAU_CPRIME_SIGNAL", "v2")
 RESULTS_PATH: Path = Path("dau_runs/protocol_c_prime_results.json")
 CHECKPOINT_PATH: Path = Path("dau_runs/protocol_c_prime_checkpoint.json")
 HEARTBEAT_PATH: Path = Path("dau_runs/protocol_c_prime_heartbeat.json")
-AB_ENERGY_FLOOR: float = 0.05
+# Must stay strictly above graph.TERMINATION_ENERGY, otherwise the floor never
+# protects the run and a single max-PE trauma ends the life at event 1.
+AB_ENERGY_FLOOR: float = 0.15
+# Below this fraction of EVENTS_PER_ARM a padded PE trace is not measurable.
+MIN_TRACE_FRACTION: float = 0.5
 
 ALPHA: float = 0.05
 EMPTY_COUNT: int = 0
@@ -90,6 +94,11 @@ ARM_ORDER: tuple[str, ...] = (ARM_LIVED, ARM_NULL, ARM_SHUFFLE)
 VERDICT_H1_SUPPORTED: str = "H1_SUPPORTED"
 VERDICT_H1_REJECTED: str = "H1_REJECTED"
 VERDICT_INCONCLUSIVE: str = "INCONCLUSIVE"
+
+assert AB_ENERGY_FLOOR > graph_mod.TERMINATION_ENERGY, (
+    f"AB_ENERGY_FLOOR ({AB_ENERGY_FLOOR}) must exceed "
+    f"TERMINATION_ENERGY ({graph_mod.TERMINATION_ENERGY})"
+)
 
 # Constraint snapshot — documents ADIM wiring without silent magic.
 _CONSTRAINT_SNAPSHOT: dict[str, float | int | str] = {
@@ -220,10 +229,20 @@ def _run_system1_fallback(original: Any, state: DAUAgentState) -> dict[str, Any]
 
 
 def _pad_pe_list(pe_list: list[float], n_events: int) -> list[float]:
-    """Pad short PE traces with last value (energy-floor early stop)."""
+    """Pad short PE traces with last value (energy-floor early stop).
+
+    A trace shorter than MIN_TRACE_FRACTION is dominated by padding, so its
+    mean is an artifact rather than a measurement — surface it loudly.
+    """
 
     if len(pe_list) >= n_events:
         return pe_list[:n_events]
+    if len(pe_list) < n_events * MIN_TRACE_FRACTION:
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] PE trace {len(pe_list)}/{n_events} events "
+            f"— mean is padding-dominated, arm not measurable",
+            flush=True,
+        )
     if not pe_list:
         return [EMPTY_MEAN] * n_events
     last = pe_list[-1]

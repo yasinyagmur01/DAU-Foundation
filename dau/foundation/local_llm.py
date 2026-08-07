@@ -37,6 +37,7 @@ LORA_TARGET_MODULES: tuple[str, ...] = ("q_proj", "v_proj")
 LORA_TASK_TYPE: str = "CAUSAL_LM"
 LORA_BIAS: str = "none"
 GENERATION_MAX_NEW_TOKENS: int = 64
+PLAIN_PROMPT_TEMPLATE: str = "{system}\n\n{user}\n"
 
 # Process-wide singleton — frozen base loaded once; adapters hot-swapped.
 _model: Any | None = None
@@ -275,6 +276,33 @@ def switch_adapter(model: Any, agent_id: str) -> None:
         )
 
 
+def _build_prompt(tokenizer: Any, system: str, user: str) -> tuple[str, bool]:
+    """Return (prompt_text, used_chat_template).
+
+    LOCAL_MODEL_NAME is an -Instruct checkpoint: without its chat template the
+    model sees no instruction boundary and continues the text instead of
+    answering, echoing the prompt back. Fall back to plain concatenation only
+    for tokenizers that carry no template.
+    """
+
+    messages = [
+        {"role": "system", "content": system.strip()},
+        {"role": "user", "content": user.strip()},
+    ]
+    try:
+        prompt = tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=False,
+        )
+        return str(prompt), True
+    except Exception:  # noqa: BLE001 — templateless tokenizer / test double
+        return PLAIN_PROMPT_TEMPLATE.format(
+            system=system.strip(),
+            user=user.strip(),
+        ), False
+
+
 def generate_completion(
     model: Any,
     tokenizer: Any,
@@ -286,20 +314,28 @@ def generate_completion(
 
     import torch
 
-    prompt = f"{system.strip()}\n\n{user.strip()}\n"
-    encoded = tokenizer(prompt, return_tensors="pt")
+    prompt, used_template = _build_prompt(tokenizer, system, user)
+    # The chat template already emits BOS; re-adding it shifts the turn header.
+    encoded = tokenizer(
+        prompt,
+        return_tensors="pt",
+        add_special_tokens=not used_template,
+    )
     if hasattr(model, "device"):
         encoded = {key: value.to(model.device) for key, value in encoded.items()}
+    prompt_length = int(encoded["input_ids"].shape[-1])
+    eos_token_id = getattr(tokenizer, "eos_token_id", None)
+    pad_token_id = getattr(tokenizer, "pad_token_id", None) or eos_token_id
     with torch.no_grad():
         output = model.generate(
             **encoded,
             max_new_tokens=GENERATION_MAX_NEW_TOKENS,
             do_sample=False,
+            eos_token_id=eos_token_id,
+            pad_token_id=pad_token_id,
         )
-    text = tokenizer.decode(output[0], skip_special_tokens=True)
-    if text.startswith(prompt):
-        return text[len(prompt) :].strip()
-    return text.strip()
+    generated = output[0][prompt_length:]
+    return tokenizer.decode(generated, skip_special_tokens=True).strip()
 
 
 def run_micro_train_preference_step(
