@@ -134,14 +134,10 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
     model = AutoModelForCausalLM.from_pretrained(LOCAL_MODEL_NAME, **load_kwargs)
     model = _ensure_peft_model(model)
 
-    if adapter_exists(agent_id):
-        switch_adapter(model, agent_id)
-    else:
-        _disable_adapters(model)
-
     _model = model
     _tokenizer = tokenizer
-    _active_agent_id = agent_id if adapter_exists(agent_id) else None
+    _active_agent_id = None
+    switch_adapter(model, agent_id)
     return _model, _tokenizer
 
 
@@ -159,6 +155,58 @@ def _disable_adapters(model: Any) -> None:
     if callable(disable_ctx):
         # disable_adapter is a context manager on some peft versions — call no-op.
         return
+
+
+def _reset_active_adapter(model: Any) -> None:
+    """Return the in-memory adapter to a fresh zero-B initialisation.
+
+    Agents must not inherit each other's scars: an agent with no adapter on
+    disk has to start from the base policy, not from whatever the previously
+    trained agent left in the shared singleton.
+    """
+
+    try:
+        from peft.tuners.lora import LoraLayer
+    except ImportError:
+        return
+
+    reset_count = 0
+    for module in model.modules():
+        if not isinstance(module, LoraLayer):
+            continue
+        try:
+            module.reset_lora_parameters(ACTIVE_ADAPTER_NAME, init_lora_weights=True)
+            reset_count += 1
+        except Exception:  # noqa: BLE001 — fall back to manual zeroing below
+            import torch
+
+            with torch.no_grad():
+                lora_b = getattr(module, "lora_B", None)
+                if lora_b is not None and ACTIVE_ADAPTER_NAME in lora_b:
+                    lora_b[ACTIVE_ADAPTER_NAME].weight.zero_()
+                    reset_count += 1
+    logger.debug("reset %d LoRA layers to fresh init", reset_count)
+
+
+def _load_adapter_weights(model: Any, adapter_dir: Path) -> bool:
+    """Load saved LoRA weights into the single in-memory adapter slot."""
+
+    weights_path = adapter_dir / ADAPTER_WEIGHTS_FILE
+    if not weights_path.exists():
+        return False
+    try:
+        from peft import set_peft_model_state_dict
+        from safetensors.torch import load_file
+    except ImportError:
+        return False
+
+    state_dict = load_file(str(weights_path))
+    set_peft_model_state_dict(
+        model,
+        state_dict,
+        adapter_name=ACTIVE_ADAPTER_NAME,
+    )
+    return True
 
 
 def save_agent_adapter(model: Any, agent_id: str) -> None:
@@ -215,59 +263,47 @@ def switch_adapter(model: Any, agent_id: str) -> None:
     global _active_agent_id
 
     started = time.perf_counter()
-    if not adapter_exists(agent_id):
-        _disable_adapters(model)
-        _active_agent_id = None
+    if _active_agent_id == agent_id:
         return
 
-    adapter_dir = str(get_adapter_path(agent_id))
     try:
         from peft import PeftModel
     except ImportError:
         _active_agent_id = agent_id
         return
 
-    try:
-        if isinstance(model, PeftModel):
-            # Prefer load_adapter + set_adapter when already Peft-wrapped.
-            load_adapter = getattr(model, "load_adapter", None)
-            set_adapter = getattr(model, "set_adapter", None)
-            enable = getattr(model, "enable_adapter_layers", None)
-            if callable(enable):
-                try:
-                    enable()
-                except Exception:
-                    pass
-            adapter_name = str(agent_id)
-            if callable(load_adapter):
-                try:
-                    load_adapter(adapter_dir, adapter_name=adapter_name)
-                except Exception:
-                    # Already loaded under this name — set active only.
-                    pass
-            if callable(set_adapter):
-                try:
-                    set_adapter(adapter_name)
-                except Exception:
-                    try:
-                        set_adapter(ACTIVE_ADAPTER_NAME)
-                    except Exception:
-                        pass
-            else:
-                # Fallback: PeftModel.from_pretrained into caller's reference
-                # is not possible in-place; rely on load_adapter path.
-                pass
-        else:
-            from peft import PeftModel as _PeftModel
+    if not isinstance(model, PeftModel):
+        _disable_adapters(model)
+        _active_agent_id = None
+        return
 
-            wrapped = _PeftModel.from_pretrained(model, adapter_dir)
-            # Caller holds model reference — copy state when possible.
-            if hasattr(model, "__dict__"):
-                model.__dict__.update(wrapped.__dict__)
-        _active_agent_id = agent_id
+    # One in-memory adapter slot, swapped from disk. Registering a slot per
+    # agent would make peft write every registered adapter into each agent's
+    # directory on save, leaking one agent's training into the next.
+    try:
+        enable = getattr(model, "enable_adapter_layers", None)
+        if callable(enable):
+            try:
+                enable()
+            except Exception:  # noqa: BLE001 — layers may already be enabled
+                pass
+        set_adapter = getattr(model, "set_adapter", None)
+        if callable(set_adapter):
+            try:
+                set_adapter(ACTIVE_ADAPTER_NAME)
+            except Exception:  # noqa: BLE001 — single-adapter models
+                pass
+
+        if adapter_exists(agent_id) and _load_adapter_weights(
+            model, get_adapter_path(agent_id)
+        ):
+            _active_agent_id = agent_id
+        else:
+            _reset_active_adapter(model)
+            _active_agent_id = agent_id
     except Exception as exc:  # noqa: BLE001 — inference must fall back to base
         logger.warning("switch_adapter(%s) failed: %s — using base", agent_id, exc)
-        _disable_adapters(model)
+        _reset_active_adapter(model)
         _active_agent_id = None
 
     elapsed_ms = (time.perf_counter() - started) * 1000.0
