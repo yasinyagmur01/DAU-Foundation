@@ -19,6 +19,7 @@ from typing import Any
 
 from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
+from dau.foundation.nli_filter import is_genuine_polarity_pair
 from dau.foundation.state import DAUAgentState, DeltaRecord
 
 # ---------------------------------------------------------------------------
@@ -64,6 +65,9 @@ PREF_LIVED_CONTEXT_TEMPLATE: str = (
 )
 PE_RANK_MIN_GAP: float = 1e-6
 
+# total_candidates/rejected are per-candidate (pre-dedup); passed is
+# per-event (post PE-rank dedup) — these do not sum to total_candidates
+# by design.
 NLI_FILTER_STATS: dict[str, int] = {
     "total_candidates": 0,
     "passed": 0,
@@ -257,12 +261,15 @@ def build_lived_trace_examples(
 def build_pe_ranked_pairs(
     examples: list[LivedTraceExample],
 ) -> list[PreferencePair]:
-    """Rank the agent's own decisions by the PE they produced in life.
+    """Rank lived decisions by PE, then keep only genuine polarity pairs.
 
     Chosen = lower lived prediction_error, rejected = higher. One strongest-
     contrast pair is kept per low-PE event so the train set stays O(n) rather
-    than O(n²). Linguistic NLI is not applied: the preference is defined by
-    measured PE, not by surface negation.
+    than O(n²). Each PE-ranked candidate must also pass
+    ``is_genuine_polarity_pair`` (contradiction ≥ NLI_CONTRADICTION_THRESHOLD
+    from constraints / nli_filter); non-genuine pairs are dropped and counted
+    in NLI_FILTER_STATS["rejected"]. Preference direction remains PE-defined;
+    NLI only gates linguistic polarity.
     """
 
     usable = [
@@ -286,6 +293,10 @@ def build_pe_ranked_pairs(
             rejected = (high.completion or COMPLETION_FALLBACK).strip()
             if not chosen or not rejected or chosen == rejected:
                 continue
+            NLI_FILTER_STATS["total_candidates"] += 1
+            if not is_genuine_polarity_pair(chosen, rejected):
+                NLI_FILTER_STATS["rejected"] += 1
+                continue
             pe_chosen = float(low.prediction_error)
             pe_rejected = float(high.prediction_error)
             gap = pe_rejected - pe_chosen
@@ -300,7 +311,6 @@ def build_pe_ranked_pairs(
                 pe_rejected=pe_rejected,
                 event_counter=int(low.event_counter),
             )
-            NLI_FILTER_STATS["total_candidates"] += 1
             previous = best_by_event.get(pair.event_counter)
             if previous is None or gap > (previous.pe_rejected - previous.pe_chosen):
                 best_by_event[pair.event_counter] = pair

@@ -684,10 +684,11 @@ def _train_adapter(
     lived_examples: list[Any],
     shuffled: bool = False,
 ) -> tuple[int, int]:
-    """Build preference pairs, optional shuffle, micro-train per agent.
+    """Build preference pairs (PE-rank + NLI gate), optional shuffle, train.
 
-    NLI filter is active when ``dau.foundation.nli_filter`` is importable.
-    Returns ``(n_pairs_trained, n_pairs_rejected)`` from NLI_FILTER_STATS.
+    Pairs come from ``build_pe_ranked_pairs``: PE-rank first, then
+    ``is_genuine_polarity_pair``. Returns ``(n_pairs_trained, n_pairs_rejected)``
+    from NLI_FILTER_STATS deltas (passed is per-event; rejected per-candidate).
     Guard: ``DAU_LORA_ENABLED=0`` → skip and return ``(0, 0)``.
     """
 
