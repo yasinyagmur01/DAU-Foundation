@@ -1,0 +1,226 @@
+"""Tests for Protocol C′ multigen orchestration — mock LLM, no API/GPU."""
+
+from __future__ import annotations
+
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+
+from dau.diagnostics.run_cprime_multigen import (
+    MOCK_LLM_ENV,
+    heir_agent_id,
+    parent_agent_id,
+    run_cprime_multigen,
+    transfer_to_heir,
+    write_multigen_results_json,
+)
+from dau.foundation.drift import DriftState
+from dau.foundation.generation import (
+    GENERATION_INHERITED_KEY,
+    GENERATION_MIN_RECALL,
+    INHERITED_WARNING_KEY,
+    RECORD_ID_KEY,
+    SOMATIC_SCALE_KEY,
+)
+from dau.foundation.state import DAUAgentState, DeltaRecord, InternalState
+from dau.generation.fitness import WARNING_SOMATIC_SCALE
+from dau.memory.decay import compute_strength_init
+from dau.memory.store import MemoryStore
+from dau.diagnostics.run_protocol_c_prime import _initial_state
+from dau.society.environment import EnvironmentState
+
+
+SEED_UNIT: int = 9101
+ARM_UNIT: str = "lived"
+EVENTS_SMOKE: int = 5
+N_SMOKE: int = 1
+
+
+def _trauma_delta(timestamp: int = 3) -> DeltaRecord:
+    snap = {
+        "energy": 1.0,
+        "resource_load": 0.0,
+        "uncertainty_load": 0.0,
+        "social_load": 0.0,
+    }
+    return DeltaRecord(
+        timestamp=timestamp,
+        magnitude=0.9,
+        affected_domain="resource",
+        snapshot_before=snap,
+        snapshot_after={
+            "energy": 0.2,
+            "resource_load": 0.8,
+            "uncertainty_load": 0.0,
+            "social_load": 0.0,
+        },
+    )
+
+
+@pytest.fixture
+def store(tmp_path):
+    ms = MemoryStore(
+        chroma_path=str(tmp_path / "chroma"),
+        sqlite_path=str(tmp_path / "memory.db"),
+    )
+    yield ms
+    ms.close()
+
+
+def _parent_with_transferable_trauma(store: MemoryStore, seed: int) -> DAUAgentState:
+    """Parent state + vault engram that select_for_transfer can keep."""
+
+    parent_id = parent_agent_id(ARM_UNIT, seed)
+    parent = _initial_state(parent_id, seed)
+    delta = _trauma_delta()
+    record_id = store.write_record(delta, parent_id)
+    assert record_id
+    # Recall bumps strength above strength_init → recall_count >= 1.
+    store.update_activation(record_id, now_counter=int(delta.timestamp) + 1)
+    node = store.get_node(record_id)
+    assert node is not None
+    assert node.strength - compute_strength_init(delta) >= GENERATION_MIN_RECALL
+
+    drifted = DriftState(
+        flags={"resource": True},
+        magnitudes={"resource": 2.0},
+    )
+    # Low energy → f_agent < FITNESS_LOW_THRESHOLD so trauma → inherited_warning.
+    return parent.model_copy(
+        update={
+            "drift_state": drifted,
+            "delta_log": [delta, _trauma_delta(timestamp=6)],
+            "event_log": parent.event_log,
+            "internal_state": InternalState(energy=0.05),
+            "env_state": EnvironmentState(pool=40.0),
+            "generation": 0,
+        }
+    )
+
+
+def test_gen2_orchestration_applies_inheritance_before_first_invoke(
+    store: MemoryStore,
+) -> None:
+    """apply_generation fills retrieval_context before any graph stream."""
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    # Force low F via energy so trauma → inherited_warning when selected.
+    # build_self_model computes f_agent; low energy helps stay below threshold.
+    assert parent.internal_state.energy < 0.5
+
+    stream_calls: list[Any] = []
+
+    class _BoomApp:
+        def stream(self, *_args: Any, **_kwargs: Any):
+            stream_calls.append(True)
+            raise AssertionError("gen2 graph must not run during transfer")
+
+    with patch(
+        "dau.diagnostics.run_cprime_multigen.build_graph",
+        return_value=_BoomApp(),
+    ):
+        heir, record, birth = transfer_to_heir(
+            parent_state=parent,
+            memory_store=store,
+            seed=SEED_UNIT,
+            gen1_arm=ARM_UNIT,
+        )
+
+    assert stream_calls == []
+    assert heir.agent_id == heir_agent_id(ARM_UNIT, SEED_UNIT)
+    assert heir.event_log == []
+    assert heir.delta_log == []
+    assert heir.generation == parent.generation + 1
+    assert heir.generation_record is record
+    assert birth.n_transfer_candidates == len(record.inherited_memories)
+    assert birth.birth_drift_flags.get("resource") is True
+
+    # A13/A40: inherited markers present on heir BEFORE first invoke.
+    assert heir.retrieval_context, "heir must carry inherited retrieval_context"
+    inherited = [
+        e for e in heir.retrieval_context if e.get(GENERATION_INHERITED_KEY) is True
+    ]
+    assert inherited, "expected generation_inherited entries"
+    # When fitness/selection marks warning, somatic markers must appear.
+    if record.inherited_warning_ids:
+        warn_entries = [e for e in inherited if e.get(INHERITED_WARNING_KEY) is True]
+        assert warn_entries
+        assert all(SOMATIC_SCALE_KEY in e for e in warn_entries)
+        assert all(
+            e[SOMATIC_SCALE_KEY] == -WARNING_SOMATIC_SCALE
+            or abs(float(e[SOMATIC_SCALE_KEY])) == WARNING_SOMATIC_SCALE
+            for e in warn_entries
+        )
+    assert all(RECORD_ID_KEY in e for e in inherited)
+
+
+def test_transfer_logs_birth_drift_independent_of_gen2_pe(store: MemoryStore) -> None:
+    """Birth-drift log is produced at transfer time (channel diagnosis)."""
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    heir, _record, birth = transfer_to_heir(
+        parent_state=parent,
+        memory_store=store,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+    )
+    assert birth.heir_agent_id == heir.agent_id
+    assert birth.gen1_arm == ARM_UNIT
+    assert "resource" in birth.birth_drift_magnitudes
+    assert birth.n_retrieval_context == len(heir.retrieval_context)
+
+
+def test_multigen_smoke_mock_llm_end_to_end(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """N=1, events=5 mock path writes gen1/transfer/gen2 JSON sections."""
+
+    monkeypatch.setenv(MOCK_LLM_ENV, "1")
+    monkeypatch.setenv("DAU_LORA_ENABLED", "0")
+    monkeypatch.setenv("DAU_LLM_BACKEND", "groq")
+    # Keep MiniLM out of the critical path when available stub is cleaner.
+    monkeypatch.setattr(
+        "dau.foundation.graph._prediction_error",
+        lambda expected, actual: 0.25 + (len(str(actual)) % 7) * 0.05,
+    )
+
+    results = run_cprime_multigen(
+        n_pairs=N_SMOKE,
+        seed_start=SEED_UNIT,
+        events_gen1=EVENTS_SMOKE,
+        events_gen2=EVENTS_SMOKE,
+        k_gen2=1,
+        pe_window_gen2=EVENTS_SMOKE,
+        mock_llm=True,
+    )
+    assert len(results) == 1
+    assert len(results[0].lineages) == 3
+    arms = {lin.gen1_arm for lin in results[0].lineages}
+    assert arms == {"lived", "null", "shuffle"}
+
+    for lin in results[0].lineages:
+        assert "pe_before" in lin.gen1
+        assert "n_transfer_candidates" in lin.transfer
+        assert "birth_drift_flags" in lin.transfer
+        assert lin.gen2["gen1_arm"] == lin.gen1_arm
+        assert "mean_pe" in lin.gen2
+        assert lin.transfer["heir_agent_id"].endswith("-g2")
+
+    out = tmp_path / "multigen_smoke.json"
+    path = write_multigen_results_json(
+        results,
+        path=out,
+        events_gen1=EVENTS_SMOKE,
+        events_gen2=EVENTS_SMOKE,
+        k_gen2=1,
+        n_pairs=N_SMOKE,
+        seed_start=SEED_UNIT,
+        pe_window_gen2=EVENTS_SMOKE,
+    )
+    payload = path.read_text(encoding="utf-8")
+    assert "C_PRIME_MULTIGEN" in payload
+    assert "transfer" in payload
+    assert "gen2" in payload
+    assert "gen1_arm" in payload

@@ -1,0 +1,792 @@
+"""Protocol C′ multigen — gen1 (3 arms) → transfer → gen2 (single measure).
+
+Biology analogy: one life consolidates scars and engrams; the heir is born into
+a fresh niche carrying only what earned transfer — then a short measurement
+life reads whether lineage left a mark on prediction error.
+
+Gen1 reuses Protocol C′ helpers (niche, seed lock, PE window, train, diversity).
+Gen2 uses the same seed niche draw as the null arm (1A: fresh pool, not gen1's
+continuing commons). Inheritance is memory + drift + retrieval_context only
+(3A: no parent LoRA adapter load).
+
+Gen2 metric (2A): single-phase precision-weighted mean PE over the PE window
+(not a two-phase train ΔPE). Labeled with gen1_arm for groupby analysis.
+
+Transfer (4A): consolidate_generation on gen1 phase-2 final state + the vault
+kept across phase-1 and phase-2. apply_generation completes synchronously
+before any gen2 graph stream.
+
+Somatic-scale note: agent_node.apply_inherited_somatic_scale runs only when
+state.delta_log is non-empty. Inherited threat/loss scaling is therefore
+measurable from gen2 event 2 onward — not on the first event.
+
+Mock mode (DAU_MULTIGEN_MOCK_LLM=1): patches graph._build_llm for
+deterministic, API/GPU-free smoke. Real-backend pilots are out of scope here.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import statistics
+import tempfile
+import time
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any, Callable
+
+import dau.foundation.graph as graph_mod
+from dau.diagnostics.run_protocol_c_prime import (
+    AB_ENERGY_FLOOR,
+    ARM_LIVED,
+    ARM_NULL,
+    ARM_ORDER,
+    ARM_SHUFFLE,
+    DIVERSITY_MIN_PE_GAP,
+    EMPTY_COUNT,
+    EMPTY_MEAN,
+    LORA_ENABLED_ENV,
+    NAN_DELTA,
+    NLI_FILTER_ENABLED_ENV,
+    PE_WINDOW_EVENTS,
+    STREAM_NODES_PER_EVENT,
+    STREAM_RECURSION_HEADROOM,
+    ArmResult,
+    _build_lived_examples,
+    _diversity_gate_reason,
+    _initial_state,
+    _json_sanitize,
+    _lock_seeds,
+    _pad_pe_list,
+    _phase1_diversity,
+    _train_adapter,
+    _window_mean,
+)
+from dau.foundation.drift import DriftState
+from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
+from dau.foundation.generation import (
+    INHERITED_WARNING_KEY,
+    SOMATIC_SCALE_KEY,
+    GenerationRecord,
+    apply_generation,
+    consolidate_generation,
+)
+from dau.foundation.graph import build_graph, get_pe_event_log, reset_pe_event_log
+from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
+from dau.foundation.self_model import build_self_model
+from dau.foundation.state import DAUAgentState
+from dau.generation.fitness import classify_fitness
+from dau.memory.store import MemoryStore
+
+# ---------------------------------------------------------------------------
+# Multigen parameters (env / CLI; pre-reg not locked — keep parametric)
+# ---------------------------------------------------------------------------
+
+N_PAIRS: int = int(os.environ.get("DAU_MULTIGEN_N_PAIRS", "15"))
+EVENTS_GEN1: int = int(os.environ.get("DAU_MULTIGEN_EVENTS_GEN1", "50"))
+EVENTS_GEN2: int = int(os.environ.get("DAU_MULTIGEN_EVENTS_GEN2", "20"))
+K_GEN2: int = int(os.environ.get("DAU_MULTIGEN_K_GEN2", "3"))
+SEED_START: int = int(os.environ.get("DAU_MULTIGEN_SEED_START", "2001"))
+PE_WINDOW_GEN2: int = int(
+    os.environ.get("DAU_MULTIGEN_PE_WINDOW", str(PE_WINDOW_EVENTS))
+)
+MOCK_LLM_ENV: str = "DAU_MULTIGEN_MOCK_LLM"
+MOCK_LLM_DEFAULT: str = "0"
+RESULTS_PATH: Path = Path(
+    os.environ.get(
+        "DAU_MULTIGEN_RESULTS",
+        "dau_runs/protocol_c_prime_multigen_results.json",
+    )
+)
+
+PROTOCOL_ID: str = "C_PRIME_MULTIGEN"
+HEIR_SUFFIX: str = "g2"
+PARENT_SUFFIX: str = "g1"
+TMP_PREFIX: str = "dau_cprime_multigen_"
+
+MOCK_DECISION_TEXTS: tuple[str, ...] = (
+    "I cooperate and share resources carefully with others.",
+    "I extract maximum resources for myself alone.",
+    "I wait and observe the pool before acting.",
+    "I trust this domain and cooperate with partners.",
+    "I defect and take as much as possible right now.",
+)
+
+# Diversity gate for gen2 uses K_GEN2; pe_gap floor matches gen1.
+GEN2_DIVERSITY_MIN_PE_GAP: float = DIVERSITY_MIN_PE_GAP
+
+
+# ---------------------------------------------------------------------------
+# Result dataclasses
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class BirthDriftLog:
+    """Transfer-time channel diagnostics (pre-gen2, not PE-filtered)."""
+
+    parent_agent_id: str
+    heir_agent_id: str
+    gen1_arm: str
+    seed: int
+    f_agent: float
+    fitness_class: str
+    n_transfer_candidates: int
+    inherited_memory_ids: list[str]
+    n_inherited_warnings: int
+    birth_drift_flags: dict[str, bool]
+    birth_drift_magnitudes: dict[str, float]
+    n_retrieval_context: int
+    has_inherited_warning_marker: bool
+    has_somatic_scale_marker: bool
+
+
+@dataclass
+class Gen2Result:
+    """Single-phase gen2 measurement labeled by gen1 arm."""
+
+    seed: int
+    gen1_arm: str
+    heir_agent_id: str
+    mean_pe: float  # 2A: single-phase window mean (labeled gen2 ΔPE in JSON)
+    n_events: int
+    n_unique: int
+    pe_gap_max: float
+    gated: bool
+    gate_reason: str
+    wall_seconds: float
+    pe_list: list[float] = field(default_factory=list)
+
+
+@dataclass
+class LineageResult:
+    """One gen1 arm → transfer → gen2 heir for a seed."""
+
+    seed: int
+    gen1_arm: str
+    gen1: dict[str, Any]
+    transfer: dict[str, Any]
+    gen2: dict[str, Any]
+
+
+@dataclass
+class MultigenPairResult:
+    """Three lineages (lived/null/shuffle) for one seed."""
+
+    seed: int
+    lineages: list[LineageResult]
+
+
+# ---------------------------------------------------------------------------
+# Mock LLM (smoke / unit path)
+# ---------------------------------------------------------------------------
+
+
+class _MockMsg:
+    def __init__(self, content: str) -> None:
+        self.content = content
+
+
+class MockLLM:
+    """Deterministic stand-in for ChatGroq.invoke — cycles decision texts."""
+
+    def __init__(self, texts: tuple[str, ...] = MOCK_DECISION_TEXTS) -> None:
+        self._texts = texts
+        self.calls = 0
+
+    def invoke(self, _messages: list[dict[str, str]]) -> _MockMsg:
+        text = self._texts[self.calls % len(self._texts)]
+        self.calls += 1
+        return _MockMsg(text)
+
+
+def mock_llm_enabled() -> bool:
+    raw = os.environ.get(MOCK_LLM_ENV, MOCK_LLM_DEFAULT).strip()
+    return raw in {"1", "true", "TRUE", "yes", "YES"}
+
+
+def install_mock_llm() -> Callable[[], Any]:
+    """Patch graph._build_llm; return previous builder for restore."""
+
+    previous = graph_mod._build_llm
+    mock = MockLLM()
+    graph_mod._build_llm = lambda: mock  # type: ignore[assignment]
+    os.environ.setdefault("DAU_LLM_BACKEND", "groq")
+    return previous
+
+
+def restore_llm_builder(previous: Callable[[], Any]) -> None:
+    graph_mod._build_llm = previous  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# Life runner that keeps the vault (unlike _collect_pe_events)
+# ---------------------------------------------------------------------------
+
+
+def _state_from_stream(values: Any) -> DAUAgentState:
+    if isinstance(values, DAUAgentState):
+        return values
+    if isinstance(values, dict):
+        return DAUAgentState.model_validate(values)
+    raise TypeError(f"Unexpected stream value type: {type(values)!r}")
+
+
+def _open_lineage_store() -> tuple[MemoryStore, tempfile.TemporaryDirectory[str]]:
+    tmp = tempfile.TemporaryDirectory(prefix=TMP_PREFIX)
+    store = MemoryStore(
+        chroma_path=os.path.join(tmp.name, "chroma"),
+        sqlite_path=os.path.join(tmp.name, "memory.db"),
+    )
+    return store, tmp
+
+
+def run_life_keep_vault(
+    *,
+    agent_id: str,
+    seed: int,
+    n_events: int,
+    store: MemoryStore,
+    initial: DAUAgentState | None = None,
+    energy_floor: float = AB_ENERGY_FLOOR,
+) -> tuple[list[float], list[Any], list[dict[str, Any]], DAUAgentState]:
+    """Stream one life; keep MemoryStore bound for the caller (no close).
+
+    When ``initial`` is provided (gen2 heir after apply_generation), that state
+    is streamed as-is — inheritance must already be applied.
+    """
+
+    graph_mod.load_env_file()
+    original_max = graph_mod.MAX_EVENTS
+    original_floor = graph_mod.AB_ENERGY_FLOOR
+    reset_pe_event_log()
+
+    try:
+        graph_mod.MAX_EVENTS = int(n_events)
+        graph_mod.AB_ENERGY_FLOOR = float(energy_floor)
+        graph_mod._memory_stores[agent_id] = store
+        graph_mod._memory_written[agent_id] = 0
+        bind_memory_store(agent_id, store)
+
+        start = initial if initial is not None else _initial_state(agent_id, seed)
+        assert start.agent_id == agent_id
+        stream_limit = n_events * STREAM_NODES_PER_EVENT + STREAM_RECURSION_HEADROOM
+        result: Any = start
+        app = build_graph(checkpointer=None)
+        for values in app.stream(
+            start,
+            config={"recursion_limit": stream_limit},
+            stream_mode="values",
+        ):
+            result = values
+
+        state = _state_from_stream(result)
+        pe_rows = list(get_pe_event_log())
+        pe_list = [float(row["prediction_error"]) for row in pe_rows]
+        pe_list = _pad_pe_list(pe_list, n_events)
+        lived_examples = _build_lived_examples(state, pe_rows)
+        return pe_list, lived_examples, pe_rows, state
+    finally:
+        unbind_memory_store(agent_id)
+        graph_mod._memory_stores.pop(agent_id, None)
+        graph_mod._memory_written.pop(agent_id, None)
+        graph_mod.MAX_EVENTS = original_max
+        graph_mod.AB_ENERGY_FLOOR = original_floor
+
+
+def parent_agent_id(arm: str, seed: int) -> str:
+    return f"cprime-{arm}-{seed}-{PARENT_SUFFIX}"
+
+
+def heir_agent_id(arm: str, seed: int) -> str:
+    return f"cprime-{arm}-{seed}-{HEIR_SUFFIX}"
+
+
+def _gen2_diversity_gate_reason(n_unique: int, pe_gap_max: float, k_gen2: int) -> str:
+    if n_unique < k_gen2:
+        return f"n_unique={n_unique} < K_GEN2={k_gen2}"
+    if pe_gap_max < GEN2_DIVERSITY_MIN_PE_GAP:
+        return (
+            f"pe_gap_max={pe_gap_max:.6g} < "
+            f"GEN2_DIVERSITY_MIN_PE_GAP={GEN2_DIVERSITY_MIN_PE_GAP}"
+        )
+    return ""
+
+
+# ---------------------------------------------------------------------------
+# Transfer (synchronous; before any gen2 invoke)
+# ---------------------------------------------------------------------------
+
+
+def transfer_to_heir(
+    *,
+    parent_state: DAUAgentState,
+    memory_store: MemoryStore,
+    seed: int,
+    gen1_arm: str,
+) -> tuple[DAUAgentState, GenerationRecord, BirthDriftLog]:
+    """Consolidate parent → birth heir with apply_generation (pre-invoke).
+
+    Ordering guarantee: apply_generation returns before this function returns;
+    callers must not stream the heir graph until after this returns.
+    """
+
+    self_model = build_self_model(parent_state)
+    f_agent = float(self_model.f_agent)
+    reward = float(self_model.emotional_weight.somatic_markers.get(MARKER_REWARD, 0.0))
+    threat = float(self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0))
+
+    record = consolidate_generation(
+        parent_state,
+        memory_store,
+        f_agent=f_agent,
+        reward_marker=reward,
+        threat_marker=threat,
+    )
+
+    heir_id = heir_agent_id(gen1_arm, seed)
+    # 1A: fresh niche via _seed_niche(seed) — not gen1's continuing pool.
+    heir_blank = _initial_state(heir_id, seed)
+    assert heir_blank.event_log == []
+    assert heir_blank.delta_log == []
+
+    # --- synchronous inheritance (must complete before any gen2 stream) ---
+    heir = apply_generation(heir_blank, record, memory_store)
+    assert heir.generation_record is record
+    assert heir.agent_id == heir_id
+    # ---------------------------------------------------------------------
+
+    drift = heir.drift_state
+    if not isinstance(drift, DriftState):
+        drift = DriftState()
+    has_warning = any(
+        isinstance(e, dict) and e.get(INHERITED_WARNING_KEY) is True
+        for e in heir.retrieval_context
+    )
+    has_scale = any(
+        isinstance(e, dict) and SOMATIC_SCALE_KEY in e for e in heir.retrieval_context
+    )
+    birth = BirthDriftLog(
+        parent_agent_id=str(parent_state.agent_id),
+        heir_agent_id=heir_id,
+        gen1_arm=gen1_arm,
+        seed=seed,
+        f_agent=f_agent,
+        fitness_class=classify_fitness(f_agent),
+        n_transfer_candidates=len(record.inherited_memories),
+        inherited_memory_ids=list(record.inherited_memories),
+        n_inherited_warnings=len(record.inherited_warning_ids),
+        birth_drift_flags=dict(drift.flags),
+        birth_drift_magnitudes=dict(drift.magnitudes),
+        n_retrieval_context=len(heir.retrieval_context),
+        has_inherited_warning_marker=has_warning,
+        has_somatic_scale_marker=has_scale,
+    )
+    print(
+        f"[MULTIGEN][TRANSFER] {parent_state.agent_id} → {heir_id} "
+        f"arm={gen1_arm} n_transfer={birth.n_transfer_candidates} "
+        f"f_agent={f_agent:.3f} warnings={birth.n_inherited_warnings} "
+        f"drift_flags={birth.birth_drift_flags}",
+        flush=True,
+    )
+    return heir, record, birth
+
+
+# ---------------------------------------------------------------------------
+# Gen1 arm (phase-1 → train? → phase-2 on same vault) + gen2 measure
+# ---------------------------------------------------------------------------
+
+
+def run_gen1_arm_lineage(
+    *,
+    seed: int,
+    arm: str,
+    events_gen1: int,
+) -> tuple[ArmResult, DAUAgentState, MemoryStore, tempfile.TemporaryDirectory[str]]:
+    """Full gen1 arm keeping one MemoryStore across phase-1 and phase-2."""
+
+    started = time.perf_counter()
+    agent_id = parent_agent_id(arm, seed)
+    _lock_seeds(seed)
+    store, tmp = _open_lineage_store()
+
+    pe_before_list, lived_examples, _pe_rows_1, _state_1 = run_life_keep_vault(
+        agent_id=agent_id,
+        seed=seed,
+        n_events=events_gen1,
+        store=store,
+        initial=None,
+    )
+    pe_before = _window_mean(pe_before_list)
+    n_unique, pe_gap_max = _phase1_diversity(lived_examples)
+
+    n_pairs_trained = EMPTY_COUNT
+    n_pairs_rejected = EMPTY_COUNT
+    gated = False
+    gate_reason = ""
+
+    if arm in {ARM_LIVED, ARM_SHUFFLE}:
+        gate_reason = _diversity_gate_reason(n_unique, pe_gap_max)
+        if gate_reason:
+            gated = True
+            print(
+                f"[MULTIGEN] {agent_id}: diversity gate — {gate_reason} "
+                f"(skip train; phase-2 still runs for transfer)",
+                flush=True,
+            )
+        else:
+            n_pairs_trained, n_pairs_rejected = _train_adapter(
+                agent_id,
+                lived_examples,
+                shuffled=(arm == ARM_SHUFFLE),
+            )
+
+    # Phase-2: fresh body + same seed niche, SAME vault (4A material).
+    _lock_seeds(seed)
+    pe_after_list, _, _pe_rows_2, state_2 = run_life_keep_vault(
+        agent_id=agent_id,
+        seed=seed,
+        n_events=events_gen1,
+        store=store,
+        initial=None,
+    )
+    pe_after = _window_mean(pe_after_list)
+    delta_pe = NAN_DELTA if gated else (pe_after - pe_before)
+
+    arm_result = ArmResult(
+        seed=seed,
+        arm=arm,
+        pe_before=pe_before,
+        pe_after=pe_after,
+        delta_pe=delta_pe,
+        n_events=events_gen1,
+        n_pairs_trained=n_pairs_trained,
+        n_pairs_rejected=n_pairs_rejected,
+        wall_seconds=float(time.perf_counter() - started),
+        gated=gated,
+        gate_reason=gate_reason,
+        n_unique=n_unique,
+        pe_gap_max=pe_gap_max,
+    )
+    return arm_result, state_2, store, tmp
+
+
+def run_gen2_measure(
+    *,
+    heir: DAUAgentState,
+    store: MemoryStore,
+    seed: int,
+    gen1_arm: str,
+    events_gen2: int,
+    k_gen2: int,
+    pe_window: int,
+) -> Gen2Result:
+    """Single-phase PE measure on the heir (fresh LoRA weights — no adapter)."""
+
+    started = time.perf_counter()
+    # 3A: do not load parent adapter; heir agent_id has no trained adapter.
+    pe_list, lived_examples, _rows, _final = run_life_keep_vault(
+        agent_id=heir.agent_id,
+        seed=seed,
+        n_events=events_gen2,
+        store=store,
+        initial=heir,
+    )
+    mean_pe = _window_mean(pe_list, window=pe_window)
+    n_unique, pe_gap_max = _phase1_diversity(lived_examples)
+    gate_reason = _gen2_diversity_gate_reason(n_unique, pe_gap_max, k_gen2)
+    gated = bool(gate_reason)
+    return Gen2Result(
+        seed=seed,
+        gen1_arm=gen1_arm,
+        heir_agent_id=str(heir.agent_id),
+        mean_pe=mean_pe,
+        n_events=events_gen2,
+        n_unique=n_unique,
+        pe_gap_max=pe_gap_max,
+        gated=gated,
+        gate_reason=gate_reason,
+        wall_seconds=float(time.perf_counter() - started),
+        pe_list=list(pe_list),
+    )
+
+
+def run_lineage(
+    *,
+    seed: int,
+    arm: str,
+    events_gen1: int,
+    events_gen2: int,
+    k_gen2: int,
+    pe_window_gen2: int,
+) -> LineageResult:
+    """Gen1 arm → sync transfer → gen2 measure; vault closed after."""
+
+    store: MemoryStore | None = None
+    tmp: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        gen1, parent_final, store, tmp = run_gen1_arm_lineage(
+            seed=seed,
+            arm=arm,
+            events_gen1=events_gen1,
+        )
+        # Transfer BEFORE any gen2 invoke (ordering asserted inside).
+        heir, _record, birth = transfer_to_heir(
+            parent_state=parent_final,
+            memory_store=store,
+            seed=seed,
+            gen1_arm=arm,
+        )
+        # Birth-drift logged at transfer time — independent of gen2 PE.
+        gen2 = run_gen2_measure(
+            heir=heir,
+            store=store,
+            seed=seed,
+            gen1_arm=arm,
+            events_gen2=events_gen2,
+            k_gen2=k_gen2,
+            pe_window=pe_window_gen2,
+        )
+        return LineageResult(
+            seed=seed,
+            gen1_arm=arm,
+            gen1=asdict(gen1),
+            transfer=asdict(birth),
+            gen2=asdict(gen2),
+        )
+    finally:
+        if store is not None:
+            try:
+                store.close()
+            except Exception:
+                pass
+        if tmp is not None:
+            try:
+                tmp.cleanup()
+            except Exception:
+                pass
+
+
+def run_multigen_pair(
+    seed: int,
+    *,
+    events_gen1: int = EVENTS_GEN1,
+    events_gen2: int = EVENTS_GEN2,
+    k_gen2: int = K_GEN2,
+    pe_window_gen2: int = PE_WINDOW_GEN2,
+) -> MultigenPairResult:
+    """Lived / null / shuffle lineages for one seed."""
+
+    lineages: list[LineageResult] = []
+    for arm in ARM_ORDER:
+        print(
+            f"[MULTIGEN] seed={seed} arm={arm} "
+            f"events_gen1={events_gen1} events_gen2={events_gen2}",
+            flush=True,
+        )
+        lineages.append(
+            run_lineage(
+                seed=seed,
+                arm=arm,
+                events_gen1=events_gen1,
+                events_gen2=events_gen2,
+                k_gen2=k_gen2,
+                pe_window_gen2=pe_window_gen2,
+            )
+        )
+    return MultigenPairResult(seed=seed, lineages=lineages)
+
+
+def run_cprime_multigen(
+    *,
+    n_pairs: int = N_PAIRS,
+    seed_start: int = SEED_START,
+    events_gen1: int = EVENTS_GEN1,
+    events_gen2: int = EVENTS_GEN2,
+    k_gen2: int = K_GEN2,
+    pe_window_gen2: int = PE_WINDOW_GEN2,
+    mock_llm: bool | None = None,
+) -> list[MultigenPairResult]:
+    """Run N seeds × 3 arms through gen1 → transfer → gen2."""
+
+    use_mock = mock_llm_enabled() if mock_llm is None else bool(mock_llm)
+    previous_builder: Callable[[], Any] | None = None
+    if use_mock:
+        previous_builder = install_mock_llm()
+        print("[MULTIGEN] mock LLM installed", flush=True)
+
+    seeds = list(range(seed_start, seed_start + n_pairs))
+    results: list[MultigenPairResult] = []
+    try:
+        for seed in seeds:
+            results.append(
+                run_multigen_pair(
+                    seed,
+                    events_gen1=events_gen1,
+                    events_gen2=events_gen2,
+                    k_gen2=k_gen2,
+                    pe_window_gen2=pe_window_gen2,
+                )
+            )
+    finally:
+        if previous_builder is not None:
+            restore_llm_builder(previous_builder)
+    return results
+
+
+def _summary(results: list[MultigenPairResult]) -> dict[str, Any]:
+    """Lightweight aggregate: gen2 mean_pe by gen1_arm (no claim tests)."""
+
+    by_arm: dict[str, list[float]] = {arm: [] for arm in ARM_ORDER}
+    n_transfer_total = EMPTY_COUNT
+    for pair in results:
+        for lineage in pair.lineages:
+            arm = lineage.gen1_arm
+            gen2 = lineage.gen2
+            if not gen2.get("gated", False):
+                by_arm.setdefault(arm, []).append(float(gen2["mean_pe"]))
+            n_transfer_total += int(lineage.transfer.get("n_transfer_candidates", 0))
+
+    def _arm_mean(values: list[float]) -> float:
+        return float(statistics.mean(values)) if values else EMPTY_MEAN
+
+    return {
+        "n_seeds": len(results),
+        "n_lineages": sum(len(p.lineages) for p in results),
+        "n_transfer_candidates_total": n_transfer_total,
+        "mean_gen2_pe_by_gen1_arm": {
+            arm: _arm_mean(by_arm.get(arm, [])) for arm in ARM_ORDER
+        },
+        "n_usable_gen2_by_gen1_arm": {
+            arm: len(by_arm.get(arm, [])) for arm in ARM_ORDER
+        },
+    }
+
+
+def write_multigen_results_json(
+    results: list[MultigenPairResult],
+    *,
+    path: Path | None = None,
+    events_gen1: int = EVENTS_GEN1,
+    events_gen2: int = EVENTS_GEN2,
+    k_gen2: int = K_GEN2,
+    n_pairs: int = N_PAIRS,
+    seed_start: int = SEED_START,
+    pe_window_gen2: int = PE_WINDOW_GEN2,
+) -> Path:
+    """Persist gen1 / transfer / gen2 sections in one JSON document."""
+
+    out = path if path is not None else RESULTS_PATH
+    out.parent.mkdir(parents=True, exist_ok=True)
+    payload = _json_sanitize(
+        {
+            "protocol": PROTOCOL_ID,
+            "n_pairs": n_pairs,
+            "seed_start": seed_start,
+            "events_gen1": events_gen1,
+            "events_gen2": events_gen2,
+            "k_gen2": k_gen2,
+            "pe_window_gen2": pe_window_gen2,
+            "pe_window_gen1": PE_WINDOW_EVENTS,
+            "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
+            "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
+            "mock_llm": mock_llm_enabled(),
+            "notes": {
+                "gen2_env": "fresh _seed_niche(seed) — same draw as null arm",
+                "gen2_metric": "single-phase window mean PE (not train ΔPE)",
+                "gen2_adapter": "fresh weights — no parent LoRA load",
+                "somatic_scale": (
+                    "apply_inherited_somatic_scale needs non-empty delta_log; "
+                    "measurable from gen2 event 2+"
+                ),
+            },
+            "pairs": [
+                {
+                    "seed": pair.seed,
+                    "lineages": [
+                        {
+                            "gen1_arm": lin.gen1_arm,
+                            "gen1": lin.gen1,
+                            "transfer": lin.transfer,
+                            "gen2": {
+                                **lin.gen2,
+                                # Explicit analysis key: gen2 PE × gen1 arm.
+                                "delta_pe": lin.gen2.get("mean_pe"),
+                                "gen1_arm": lin.gen1_arm,
+                            },
+                        }
+                        for lin in pair.lineages
+                    ],
+                }
+                for pair in results
+            ],
+            "summary": _summary(results),
+        }
+    )
+    out.write_text(json.dumps(payload, indent=2, allow_nan=False), encoding="utf-8")
+    print(f"Wrote {out}", flush=True)
+    return out
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Protocol C′ multigen: gen1 → transfer → gen2",
+    )
+    parser.add_argument("--n-pairs", type=int, default=N_PAIRS)
+    parser.add_argument("--seed-start", type=int, default=SEED_START)
+    parser.add_argument("--events-gen1", type=int, default=EVENTS_GEN1)
+    parser.add_argument("--events-gen2", type=int, default=EVENTS_GEN2)
+    parser.add_argument("--k-gen2", type=int, default=K_GEN2)
+    parser.add_argument("--pe-window-gen2", type=int, default=PE_WINDOW_GEN2)
+    parser.add_argument(
+        "--mock-llm",
+        action="store_true",
+        help="Use deterministic MockLLM (no API/GPU).",
+    )
+    parser.add_argument(
+        "--results",
+        type=Path,
+        default=RESULTS_PATH,
+        help="Output JSON path.",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    if args.mock_llm:
+        os.environ[MOCK_LLM_ENV] = "1"
+    print(
+        f"Protocol C′ multigen — N={args.n_pairs} "
+        f"events_gen1={args.events_gen1} events_gen2={args.events_gen2} "
+        f"K_gen2={args.k_gen2} mock={mock_llm_enabled()}",
+        flush=True,
+    )
+    results = run_cprime_multigen(
+        n_pairs=args.n_pairs,
+        seed_start=args.seed_start,
+        events_gen1=args.events_gen1,
+        events_gen2=args.events_gen2,
+        k_gen2=args.k_gen2,
+        pe_window_gen2=args.pe_window_gen2,
+        mock_llm=True if args.mock_llm else None,
+    )
+    path = write_multigen_results_json(
+        results,
+        path=args.results,
+        events_gen1=args.events_gen1,
+        events_gen2=args.events_gen2,
+        k_gen2=args.k_gen2,
+        n_pairs=args.n_pairs,
+        seed_start=args.seed_start,
+        pe_window_gen2=args.pe_window_gen2,
+    )
+    summary = _summary(results)
+    print("\n=== MULTIGEN SUMMARY ===", flush=True)
+    print(json.dumps(summary, indent=2), flush=True)
+    print(f"results={path}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
