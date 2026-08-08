@@ -14,7 +14,7 @@ from dataclasses import replace
 from statistics import variance
 from typing import Any
 
-from .delta import DELTA_THRESHOLD_DEEP, DELTA_THRESHOLD_NORMAL
+from .delta import DELTA_THRESHOLD_DEEP, DELTA_THRESHOLD_NORMAL, is_trauma
 from .drift import HEAL_THRESHOLD, DriftState, heal_drift
 from .emotional_weight import MARKER_REWARD
 from .lod import CognitiveMode, LODState
@@ -136,6 +136,23 @@ def _current_delta_domain(state: DAUAgentState) -> str:
     return DEFAULT_RETRIEVAL_DOMAIN
 
 
+def _evaluator_healed_domains(state: DAUAgentState) -> frozenset[str]:
+    """Domains already healed this cycle by evaluator_node (same guards).
+
+    Mirrors graph.evaluator_node: non-trauma + magnitude ≥ HEAL_THRESHOLD.
+    Meta-Observer runs after evaluator, so delta_log[-1] is that cycle's record.
+    """
+
+    if not state.delta_log:
+        return frozenset()
+    record = state.delta_log[-1]
+    if is_trauma(record):
+        return frozenset()
+    if float(record.magnitude) < HEAL_THRESHOLD:
+        return frozenset()
+    return frozenset({str(record.affected_domain)})
+
+
 def _heal_snapshot() -> dict[str, float]:
     """Deterministic empty vital panel for metacognitive heal deltas."""
 
@@ -207,11 +224,14 @@ def context_prune(
 def trigger_drift_healing(
     drift_state: DriftState,
     self_model: SelfModel,
+    evaluator_healed_domains: frozenset[str] | None = None,
 ) -> DriftState:
     """Call heal_drift on flagged domains when fitness is low but reward is present.
 
     Condition: any flag True AND f_agent < fitness threshold AND reward > min.
     Action: heal_drift() once per flagged domain with a HEAL_THRESHOLD delta.
+    Domains already healed this cycle by evaluator_node are skipped so the same
+    domain receives at most one heal_drift application per event cycle.
     """
 
     any_flagged = any(bool(flag) for flag in drift_state.flags.values())
@@ -226,6 +246,11 @@ def trigger_drift_healing(
             magnitudes=dict(drift_state.magnitudes),
         )
 
+    skip_domains = (
+        evaluator_healed_domains
+        if evaluator_healed_domains is not None
+        else frozenset()
+    )
     healed = DriftState(
         flags=dict(drift_state.flags),
         magnitudes=dict(drift_state.magnitudes),
@@ -234,6 +259,8 @@ def trigger_drift_healing(
         if not flagged:
             continue
         if domain not in VALID_AFFECTED_DOMAINS:
+            continue
+        if domain in skip_domains:
             continue
         healed = heal_drift(healed, _healing_delta(domain))  # type: ignore[arg-type]
     return healed
@@ -284,7 +311,11 @@ def meta_observer_node(state: DAUAgentState) -> dict[str, Any]:
 
     lod = lod_override(self_model, _ensure_lod(state))
     context = context_prune(list(state.retrieval_context), self_model)
-    drift = trigger_drift_healing(_ensure_drift(state), self_model)
+    drift = trigger_drift_healing(
+        _ensure_drift(state),
+        self_model,
+        evaluator_healed_domains=_evaluator_healed_domains(state),
+    )
 
     interim = state.model_copy(
         update={

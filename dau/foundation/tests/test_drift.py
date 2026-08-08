@@ -13,6 +13,13 @@ from dau.foundation.drift import (
     heal_drift,
     update_drift,
 )
+from dau.foundation.emotional_weight import MARKER_REWARD, EmotionalWeight
+from dau.foundation.meta_observer import (
+    META_DRIFT_HEAL_FITNESS_THRESHOLD,
+    META_DRIFT_HEAL_REWARD_MIN,
+    trigger_drift_healing,
+)
+from dau.foundation.self_model import SelfModel
 from dau.foundation.state import DeltaRecord
 
 
@@ -150,6 +157,41 @@ def test_trauma_cannot_heal_trauma() -> None:
     assert after is drifted
     assert after.magnitudes["resource"] == pytest.approx(0.8)
     assert after.flags["resource"] is True
+
+
+def test_same_domain_healed_at_most_once_per_cycle() -> None:
+    """Evaluator + meta guards both pass → still one heal (scar − mag×HEAL_RATE)."""
+
+    # 0.69 is DEEP (heal-eligible); evaluator and meta conditions both met.
+    initial_scar = 1.0
+    eval_heal_mag = 0.69
+    domain = "resource"
+    drifted = DriftState(
+        flags={domain: True},
+        magnitudes={domain: initial_scar},
+    )
+    after_evaluator = heal_drift(drifted, _delta(eval_heal_mag, domain=domain))
+    meta_ready = SelfModel(
+        delta_current=eval_heal_mag,
+        delta_history=[eval_heal_mag],
+        drift_state=after_evaluator,
+        emotional_weight=EmotionalWeight(
+            somatic_markers={MARKER_REWARD: META_DRIFT_HEAL_REWARD_MIN + 0.1}
+        ),
+        t_cognitive=0.0,
+        memory_retrieval_scores=[],
+        f_agent=META_DRIFT_HEAL_FITNESS_THRESHOLD - 0.1,
+        generation_count=0,
+    )
+    after_meta = trigger_drift_healing(
+        after_evaluator,
+        meta_ready,
+        evaluator_healed_domains=frozenset({domain}),
+    )
+    expected_single_heal = initial_scar - eval_heal_mag * HEAL_RATE
+    assert after_evaluator.magnitudes[domain] == pytest.approx(expected_single_heal)
+    assert after_meta.magnitudes[domain] == pytest.approx(expected_single_heal)
+    assert after_meta.flags[domain] is True
 
 
 def test_trauma_accumulation_diminishing_returns():
