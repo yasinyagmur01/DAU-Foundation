@@ -150,9 +150,11 @@ TORCH_NUM_THREADS: int = int(os.environ.get(TORCH_THREADS_ENV, "14"))
 # on CUDA needs strict determinism or NULL phase1≢phase2 (measured).
 TORCH_DETERMINISTIC_WARN_ONLY: bool = True
 
-STREAM_NODES_PER_EVENT: int = 4
-# Headroom must clear post-last-event nodes (meta/pool/END). 10 was too tight
-# for EVENTS=10 (4*10+10=50 → GRAPH_RECURSION_LIMIT after event 10).
+STREAM_NODES_PER_EVENT: int = 5
+# Cycle: social_pre→agent→evaluator→meta_observer→pool_step (5 nodes after
+# pool_step landed in 231c222). Headroom clears END after the last event.
+# Historically 10 was too tight for EVENTS=10 under the old 4-node count
+# (4*10+10=50 → GRAPH_RECURSION_LIMIT after event 10).
 STREAM_RECURSION_HEADROOM: int = 40
 
 # Per-seed niche. Decoding is greedy and the world is deterministic, so a seed
