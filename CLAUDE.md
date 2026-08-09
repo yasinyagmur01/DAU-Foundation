@@ -18,6 +18,33 @@ Kilitli her madde bir `D-00X` kaydına işaret etmelidir. (2026-08-09'da
 kaynaksız bir kilitli madde bulundu — bkz. `DECISIONS.md` "Bu dosya neden
 var".)
 
+## Şu An Neredeyiz (2026-08-09)
+
+- **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
+  gerçek diverjans var, ertelendi (**D-013**).
+- **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
+- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 1 (GAP-11)**.
+- **Son durum:** GAP-1..15 açık; 20 preflight değişmezi kilitli (D-012),
+  koda dökülmeyi bekliyor.
+
+**Bu fazın üç kuralı:**
+1. Tek konu → tek commit → gerekçeli mesaj → karar varsa D-kaydı.
+2. **Her düzeltme, o hatayı yakalayacak testle birlikte gelir.** Yoksa
+   N+1'inci düzeltme N'inciyi bozar ve kimse görmez.
+3. Koda dokunmadan önce mevcut davranışı teste bağla. Onaysız kod değiştirme.
+
+**Okuma haritası — hangi soruda hangi dosya:**
+
+| Ne zaman | Dosya |
+|---|---|
+| Her oturum başı | `CLAUDE.md` (otomatik yüklenir) |
+| Sıradaki iş ne | `docs/EXECUTION_PLAN.md` |
+| "Bunu neden böyle kararlaştırdık?" | `docs/DECISIONS.md`, D-numarasıyla |
+| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (D-012, I0.1–I5.4) |
+| "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
+| Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
+| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` ⚠ 4+ commit geride, v2.4.2 borcu var |
+
 ## Axiom
 
 > "Bir agent'a trait veremezsin, sadece yaşam verebilirsin, trait oradan çıkar."

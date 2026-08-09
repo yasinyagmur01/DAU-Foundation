@@ -666,3 +666,56 @@ ayrı karar).
 **Kabul edilen sınır:** Değişmezler mekanik arızayı yakalar, kavramsal
 arızayı yakalamaz. Kalan riski sıfırlamıyoruz; riski *sessiz* olmaktan
 çıkarıp *gürültülü* yapıyoruz.
+
+---
+
+## D-013 · 2026-08-09 · main merge'ü alet fazı sonrasına ertelendi
+
+**Durum:** kabul edildi (ertelenmiş iş — unutulmaması için kayıt)
+
+**Karar:** `main` merge'ü/taşıması, kod düzeltme + alet yükseltmesi fazı
+bitene kadar yapılmaz. Çalışma `cursor/per-agent-qlora-adapter-c116`
+üzerinde sürer.
+
+**Kanıt (2026-08-09'da ölçüldü):**
+- Ortak ata `ece09b1` (v1.4 milestone). main'de **10**, bu branch'te **40**
+  commit → `git merge-base --is-ancestor main HEAD` **başarısız**:
+  fast-forward değil, **gerçek diverjans**.
+- İki hat aynı özellikleri **bağımsız** geliştirmiş: `local_llm.py`,
+  `lora_update.py`, `nli_filter.py`, `llm_backend.py`, `environment.py`
+  crisis. Merge çatışmaları tam da en kritik dosyalarda çıkar.
+- main'de bu branch'te **hiç olmayan 9 dosya** var. Üçü önemli:
+  `dau/foundation/tests/test_llm_backend.py`,
+  `dau/foundation/tests/test_local_llm.py`,
+  `dau/foundation/tests/test_lora_update.py` — **tam da değiştireceğimiz
+  modüllerin testleri.** main'in implementasyonuna göre yazıldılar,
+  bu branch'e olduğu gibi geçmeyebilirler → körlemesine alınmaz, incelenir.
+  Diğerleri: `dau/diagnostics/run_vram_spike.py`, `requirements-lora.txt`,
+  süpersede `DAU_MASTER_REFERENCE_v15.{md,html,pdf}` ve `v16.md`.
+- main'in tepe commit'i `43efef6 "checkpoint before checking out
+  cursor/per-agent-qlora-adapter-c116"` — Cursor otomatik checkpoint'i,
+  kasıtlı bir geliştirme değil.
+
+**Gerekçe:** Hassas kod fazının hemen öncesinde riskli bir git operasyonu,
+"bir daha başarısız çok adımlı aksiyon istemiyorum" ilkesinin tam tersi.
+Ayrıca çözülmek istenen asıl sorun — yeni oturumun hangi hatta olduğunu
+bilmemesi — merge gerektirmiyor; `CLAUDE.md`'deki "Şu An Neredeyiz"
+bölümüyle çözüldü.
+
+**Reddedilen alternatifler:**
+- *Şimdi merge* — çatışmalar `local_llm.py`/`lora_update.py`'de çıkar,
+  yani tam da değiştirmek üzere olduğumuz dosyalarda. İki riski üst üste
+  bindirir.
+- *`main`'i şimdi bu branch'e force-push ile sıfırla* — muhtemelen doğru
+  nihai çözüm (main hattı süpersede görünüyor), ama geri dönüşü zor ve o
+  üç test dosyası incelenmeden yapılamaz.
+
+**Yapılacak sıra (alet fazı sonrası):**
+1. Üç test dosyasını incele — bu branch'e uyarlanabilir bir şey var mı
+2. Varsa cherry-pick / uyarla
+3. `main`'i bu hatta taşı
+4. Uzağa gönder (push — kullanıcı onayıyla; şimdiye kadar hiç push yapılmadı)
+
+**Kabul edilen bedel:** Branch adı (`per-agent-qlora-adapter-c116`) artık
+içeriği tarif etmiyor — repoda karar kaydı, araştırma arşivi ve denetimler
+de var. Kozmetik, zararsız.
