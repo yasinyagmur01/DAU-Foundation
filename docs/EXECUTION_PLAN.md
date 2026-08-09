@@ -265,16 +265,24 @@ yoksa ölçülen alet pilotun aleti olmaz. U7 tamamen U3'ün VRAM sonucuna bağl
 
 ---
 
-## U1 — Backend varsayılanı `local` (D-018)
+## U1 — Backend varsayılanı `local` (D-018) ✅ `7adb01d`
+
+**Bitti** 2026-08-10. Planlananın dışında bir şey çıktı ve karara bağlandı:
+varsayılanı çevirmek, `_resolve_llm_backend`'in tanınmayan değerde sessizce
+varsayılana düşmesini **zararsızdan zararlıya** çevirdi (`grok` yazım hatası
+eskiden `groq`'a, artık `local`'a düşerdi). Fonksiyon artık `ValueError`
+fırlatıyor; boş/unset hâlâ varsayılan (GAP-15 emsali). Kaydı **D-023**.
+`llm_backend.py`'deki kopya sabitler bilerek tekilleştirilmedi — bekçi testi
+bağlıyor, temizlik ayrı iş.
 
 | | |
 |---|---|
-| **Kayıt** | D-018 (kilitli) |
+| **Kayıt** | D-018 (kilitli) + **D-023** (uygulama sırasında çıkan yan ürün) |
 | **Dosya** | `dau/foundation/llm_backend.py:18` · `dau/foundation/graph.py:293` — ikisinde de `LLM_BACKEND_DEFAULT: str = "groq"` |
 | **Değişiklik** | İkisi de `"local"` |
 | **Dikkat** | `install_mock_llm` (`run_cprime_multigen.py`) `os.environ.setdefault("DAU_LLM_BACKEND", "groq")` yapıyor. Mock **yalnızca groq yolunda** mock — backend `local` olursa graph gerçek `LocalBackend`'i çağırır ve 8B modeli yükler. Bu `setdefault` **kalmalı**, ama artık varsayılanı değil, mock'un kendi gereksinimini ifade ediyor; yorumu buna göre güncellensin. |
-| **Test** | Env set edilmemişken `_resolve_llm_backend() == "local"`; mock yolunda hâlâ `"groq"` görünmeli (mock testi zaten bunu kontrol ediyor) |
-| **Dur-kontrol** | Tam suite yeşil mi — groq varsayımına dayanan başka test var mı |
+| **Test** | ✅ yeni `dau/foundation/tests/test_llm_backend.py` (13 vaka) + `test_cprime_multigen.py`'ye 2 `install_mock_llm` vakası. 5 mutasyon denendi, 5'i de yakalandı. |
+| **Dur-kontrol** | ✅ tam suite 255 → **270 passed**. Backend'e dokunan 4 test env'i zaten açıkça set ediyordu; groq varsayımına dayanan test çıkmadı. |
 | **Yan etki** | Adım 5'in `--lora` + uzak backend kontrolü fiilen ateşlenmez hale gelir. **Kaldırılmaz** — yanlış env set eden koşumu hâlâ yakalar. |
 
 ## U2 — NF4 + double_quant, açıkça (D-020)

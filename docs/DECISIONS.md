@@ -1131,3 +1131,65 @@ seçilmiyor.
 
 **Belge borcu:** master reference §6 ve §19 ADIM 4'ü uygulanmış entegrasyon
 olarak sunuyor. v2.4.2'de düzeltilir: "atıldı, D-022 ile bağlandı".
+
+---
+
+## D-023 · 2026-08-10 · Tanınmayan backend değeri sessizce varsayılana düşmez
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), U1 ile aynı oturumda uygulandı
+(`7adb01d`). D-018'in **yan ürünü** — D-018 bu davranışı yazmıyordu.
+
+**Karar:** `_resolve_llm_backend` üç dilim tanır:
+1. env hiç set edilmemiş **veya** boş/whitespace → varsayılan (`local`).
+   Emsal: `_resolve_llm_temperature` (`ab30f9c`, GAP-15) boş değeri "set
+   edilmemiş" sayıyor; aynı okuma.
+2. `groq` veya `local` (case/boşluk toleranslı) → o değer.
+3. Başka her şey → `ValueError`, mesajda geçerli değerler listeli.
+
+**Neden şimdi — ölçülen senaryo:** Değişiklikten önce fonksiyon
+tanınmayan **her** değer için varsayılanı döndürüyordu:
+
+```python
+raw = os.environ.get(LLM_BACKEND_ENV, LLM_BACKEND_DEFAULT).strip().lower()
+if raw == LLM_BACKEND_LOCAL: return LLM_BACKEND_LOCAL
+return LLM_BACKEND_DEFAULT      # ← tanınmayan her şey buraya
+```
+
+Varsayılan `groq` iken bu **zararsızdı**: `DAU_LLM_BACKEND=grok` yazım
+hatası sessizce `groq`'a düşüyordu, yani kullanıcının istediği şeye. U1
+varsayılanı `local` yapınca aynı satır zararlı hale geldi: aynı yazım
+hatası artık sessizce **`local`** döndürüyor, 8B model yükleniyor ve
+sonuç JSON'una `tool_identity.backend = "local"` yazılıyor — kullanıcı
+uzak backend istediğini sanırken lokal koşuyor ve **koşum kendini doğru
+raporluyor**. Yanlış aletle üretilmiş bir sonucun kendini temiz göstermesi,
+tam olarak GAP-1'in ve `075576e`'in dersi.
+
+**Yani karar bir tercih değil, D-018'in açtığı deliğin kapatılması.**
+Varsayılanı çevirmek, önceden zararsız olan bir sessiz fallback'i zararlı
+hale getirdi; F.0 madde 5 ("sessiz fallback yasak") bunu zaten yasaklıyordu.
+
+**Neden `ValueError`, `SystemExit` değil:** `_resolve_llm_backend` karar
+anında (`graph.py:921`, her olayda) çağrılıyor, runner girişinde değil.
+`tool_identity.resolve_lora_choice` gibi giriş kapıları `SystemExit`
+kullanır; kütüphane derinliğindeki bir çözümleyici `ValueError` fırlatır ve
+çağıran katman ne yapacağına karar verir. İkisi de sessiz değil.
+
+**Reddedilen alternatif — `[WARN]` basıp `local`'a düşmek:** koşum devam
+ederdi ve uyarı, saatler sonra bakılan bir logda kalırdı. Alet kimliği
+yanlış kalırdı; ölçüm zaten yapılmış olurdu.
+
+**Kapsam dışı bırakılan (bilinçli):** `llm_backend.py`'deki
+`LLM_BACKEND_*` sabitleri `graph.py`'dekilerin **kopyası** ve modülün
+`resolve_backend_name`/`get_backend` fonksiyonlarının **hiçbir çağıranı
+yok** — `graph.py:929` yalnızca `LocalBackend` sınıfını import ediyor,
+backend seçimini kendi yapıyor. Yasak #4 ("her sabit tek yerde") burada
+zaten ihlal. Tekilleştirme U1'e sokulmadı: `graph.py` ↔ `llm_backend.py`
+import yönünü değiştiriyor ve U1'in kapsamı değil. Yerine
+`test_llm_backend_module_mirrors_graph_constants` iki kopyayı bağlıyor —
+sessizce ayrışamazlar. Tekilleştirme ayrı, mekanik bir iş olarak duruyor.
+
+**Kanıt (mutasyon kontrolü, 5 mutasyon 5 kırılma):** varsayılanı `groq`'a
+geri al → 6 test kırılır · sessiz fallback'i geri koy → 4 test kırılır ·
+boş değeri "set edilmiş" say → 5 test kırılır · mock'un `setdefault`'unu
+kaldır → 1 test kırılır · `setdefault`'u koşulsuz `set` yap → 1 test kırılır.
+Tam suite: 255 → **270 passed**.

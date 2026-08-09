@@ -24,8 +24,14 @@ var".)
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
   ve karar kapısı (D-018..D-022) kapandı.
-- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U1** (backend
-  varsayılanı `local`). Sıra: `U1 → U2 → U3 → U7 → U4 → U5 → U6`.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U2** (NF4 +
+  `double_quant` açıkça, D-020). Sıra: `U1 ✅ → U2 → U3 → U7 → U4 → U5 → U6`.
+- **U1 bitti** (`7adb01d`): backend varsayılanı `local`. Yan ürün **D-023** —
+  tanınmayan `DAU_LLM_BACKEND` değeri artık `ValueError`; varsayılanı
+  çevirmek, eskiden zararsız olan sessiz fallback'i zararlı hale getirdi
+  (`grok` yazım hatası eskiden `groq`'a, artık `local`'a düşerdi ve koşum
+  kendini `backend=local` diye doğru raporlardı). Boş/unset hâlâ varsayılan
+  (GAP-15 emsali). Suite 270 passed.
 - **Biten:** Adım 1–5 (GAP-11 `8cf2ac0`, GAP-12 `ab8966c`, GAP-15
   `ab30f9c`, GAP-13 `090a5bc`, GAP-1 `afbb552`) · Adım 6 **kısmen**
   (`preflight.py`, **24 değişmezin 17'si**: `75239d1` faz 0 · `0b48f93`
