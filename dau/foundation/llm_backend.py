@@ -1,8 +1,9 @@
-"""Thin LLM backend Protocol — Groq (default) or local frozen+adapter path.
+"""Thin LLM backend Protocol — local frozen+adapter path (default) or Groq.
 
 Biology analogy: the organism can sense through one sensory organ at a time —
-remote Groq cortex or a local 4-bit body with per-agent LoRA scars.
-Default remains Groq; local is opt-in via DAU_LLM_BACKEND=local.
+a local 4-bit body with per-agent LoRA scars, or a remote Groq cortex.
+Default is local since D-018; groq is the legacy/exploration path, opt-in
+via DAU_LLM_BACKEND=groq.
 """
 
 from __future__ import annotations
@@ -15,9 +16,13 @@ from typing import Any, Protocol, runtime_checkable
 # ---------------------------------------------------------------------------
 
 LLM_BACKEND_ENV: str = "DAU_LLM_BACKEND"
-LLM_BACKEND_DEFAULT: str = "groq"
 LLM_BACKEND_GROQ: str = "groq"
 LLM_BACKEND_LOCAL: str = "local"
+# D-018 — see graph.LLM_BACKEND_DEFAULT. These constants are deliberately
+# mirrored there for now; test_llm_backend binds the two copies so they
+# cannot drift apart silently.
+LLM_BACKEND_DEFAULT: str = LLM_BACKEND_LOCAL
+LLM_BACKEND_VALID: tuple[str, ...] = (LLM_BACKEND_LOCAL, LLM_BACKEND_GROQ)
 
 
 @runtime_checkable
@@ -63,12 +68,28 @@ class LocalBackend:
 
 
 def resolve_backend_name() -> str:
-    """Return groq|local from DAU_LLM_BACKEND (default groq)."""
+    """Return local|groq from DAU_LLM_BACKEND (default local, D-018).
 
-    raw = os.environ.get(LLM_BACKEND_ENV, LLM_BACKEND_DEFAULT).strip().lower()
-    if raw == LLM_BACKEND_LOCAL:
-        return LLM_BACKEND_LOCAL
-    return LLM_BACKEND_GROQ
+    Mirrors graph._resolve_llm_backend, including the D-023 refusal to fall
+    back on an unrecognised value. No caller today — graph resolves the
+    backend itself — but the two must not answer differently.
+    """
+
+    raw = os.environ.get(LLM_BACKEND_ENV, "").strip().lower()
+    if not raw:
+        return LLM_BACKEND_DEFAULT
+    if raw not in LLM_BACKEND_VALID:
+        from dau.foundation.graph import LLM_BACKEND_UNKNOWN_MESSAGE
+
+        raise ValueError(
+            LLM_BACKEND_UNKNOWN_MESSAGE.format(
+                env=LLM_BACKEND_ENV,
+                value=raw,
+                valid=", ".join(LLM_BACKEND_VALID),
+                default=LLM_BACKEND_DEFAULT,
+            )
+        )
+    return raw
 
 
 def get_backend() -> Any:

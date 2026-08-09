@@ -712,6 +712,42 @@ def test_gen2_result_carries_precision_audit(
     assert gen2.pi_values == [0.9, 0.9, 0.4, 0.2]
 
 
+def test_install_mock_llm_pins_groq_when_backend_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """D-018 flipped the default to local; the mock still needs the groq branch.
+
+    _build_llm is only called by the groq branch of agent_node, so an unset
+    variable would send a mock run down the local branch and load the real
+    model. The setdefault states that requirement, and must survive the
+    default flip.
+    """
+
+    from dau.foundation.graph import LLM_BACKEND_ENV, LLM_BACKEND_GROQ
+
+    monkeypatch.delenv(LLM_BACKEND_ENV, raising=False)
+    previous = multigen_mod.install_mock_llm()
+    try:
+        assert os.environ[LLM_BACKEND_ENV] == LLM_BACKEND_GROQ
+    finally:
+        multigen_mod.restore_llm_builder(previous)
+
+
+def test_install_mock_llm_does_not_override_explicit_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """setdefault, not set: an explicit choice by the runner still wins."""
+
+    from dau.foundation.graph import LLM_BACKEND_ENV, LLM_BACKEND_LOCAL
+
+    monkeypatch.setenv(LLM_BACKEND_ENV, LLM_BACKEND_LOCAL)
+    previous = multigen_mod.install_mock_llm()
+    try:
+        assert os.environ[LLM_BACKEND_ENV] == LLM_BACKEND_LOCAL
+    finally:
+        multigen_mod.restore_llm_builder(previous)
+
+
 def test_multigen_smoke_mock_llm_end_to_end(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

@@ -94,7 +94,12 @@ from dau.foundation.generation import (
     apply_generation,
     consolidate_generation,
 )
-from dau.foundation.graph import build_graph, get_pe_event_log, reset_pe_event_log
+from dau.foundation.graph import (
+    LLM_BACKEND_GROQ,
+    build_graph,
+    get_pe_event_log,
+    reset_pe_event_log,
+)
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
 from dau.foundation.self_model import build_self_model
 from dau.foundation.state import DAUAgentState
@@ -253,12 +258,19 @@ def mock_llm_enabled() -> bool:
 
 
 def install_mock_llm() -> Callable[[], Any]:
-    """Patch graph._build_llm; return previous builder for restore."""
+    """Patch graph._build_llm; return previous builder for restore.
+
+    The backend setdefault is not a default any more (D-018 made that
+    local) — it states the mock's own requirement: the canned LLM is
+    patched into _build_llm, which only the groq branch of agent_node
+    calls. Left unset, the run would take the local branch and load the
+    real model instead of the mock.
+    """
 
     previous = graph_mod._build_llm
     mock = MockLLM()
     graph_mod._build_llm = lambda: mock  # type: ignore[assignment]
-    os.environ.setdefault("DAU_LLM_BACKEND", "groq")
+    os.environ.setdefault("DAU_LLM_BACKEND", LLM_BACKEND_GROQ)
     return previous
 
 
