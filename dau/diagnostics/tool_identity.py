@@ -48,6 +48,9 @@ LORA_ENABLED_OFF: str = LORA_ENABLED_DEFAULT
 # Spelled here rather than imported from graph so this module stays importable
 # without pulling the graph in; asserted equal to graph's constant in tests.
 BACKEND_LOCAL: str = "local"
+# Same reasoning for the control arm's name, which preflight needs without
+# importing the runner; asserted equal to ARM_NULL in tests.
+ARM_NULL_NAME: str = "null"
 
 # No accumulation is implemented: local_llm steps the optimizer once per
 # micro-batch, so the effective batch equals DPO_BATCH_SIZE. Recorded as a

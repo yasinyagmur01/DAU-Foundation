@@ -523,6 +523,103 @@ def check_gen2_rng_uniform(gen2_sections: list[dict[str, Any]]) -> tuple[bool, s
     return True, f"{len(by_seed)} seeds, one RNG state per seed"
 
 
+def arm_digest(decisions: list[str], pe_values: list[float]) -> str:
+    """sha256(decision sequence ++ PE sequence) for one arm.
+
+    Final agent state is deliberately excluded (D-012): it is a function of
+    decisions and PE, so it adds no information while contributing float
+    noise that would produce false separations. Decisions alone are not
+    enough either — identical decisions can carry different PE, and that is
+    a real divergence.
+    """
+
+    import hashlib
+
+    digest = hashlib.sha256()
+    for decision in decisions:
+        digest.update(str(decision).encode("utf-8"))
+        digest.update(b"\x00")
+    for value in pe_values:
+        digest.update(f"{float(value):.12g}".encode("utf-8"))
+        digest.update(b"\x00")
+    return digest.hexdigest()
+
+
+def check_arms_differ(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I2.1 — no two arms of a seed are byte-identical.
+
+    The most valuable invariant on the list: it removes the ambiguity of
+    "null ΔPE = 0.000 clean", which reads the same whether the tool is
+    deterministic or no arm was ever trained (GAP-1).
+    """
+
+    if not gen1_sections:
+        return False, "no arms to compare"
+    by_seed: dict[Any, dict[str, str]] = {}
+    for section in gen1_sections:
+        digest = str(section.get("arm_digest", ""))
+        if not digest:
+            return False, f"seed={section.get('seed')} arm has no digest recorded"
+        by_seed.setdefault(section.get("seed"), {})[str(section.get("arm"))] = digest
+    for seed, digests in by_seed.items():
+        if len(set(digests.values())) < len(digests):
+            collisions = [
+                arm
+                for arm, value in digests.items()
+                if list(digests.values()).count(value) > 1
+            ]
+            return False, f"seed={seed}: identical arms {sorted(collisions)}"
+    return True, f"{len(by_seed)} seeds, all arms distinct"
+
+
+def check_null_untrained(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I2.2 — the null arm has no adapter of its own.
+
+    A null that trained is not a control, and the arm contrast built on it
+    means nothing (the pre-f25b0ef leak did exactly this).
+    """
+
+    from dau.diagnostics.tool_identity import ARM_NULL_NAME
+
+    nulls = [s for s in gen1_sections if str(s.get("arm")) == ARM_NULL_NAME]
+    if not nulls:
+        return False, "no null arm found"
+    trained = [s for s in nulls if int(s.get("n_pairs_trained", 0)) > 0]
+    if trained:
+        return False, f"{len(trained)} null arms report trained pairs"
+    contaminated = [s for s in nulls if bool(s.get("adapter_present", False))]
+    if contaminated:
+        return False, (
+            f"{len(contaminated)} null arms have an adapter on disk — "
+            f"stale state from an earlier run counts as contamination"
+        )
+    return True, f"{len(nulls)} null arms untrained, no adapter on disk"
+
+
+def run_phase2(
+    preflight: Preflight,
+    *,
+    gen1_sections: list[dict[str, Any]],
+) -> Preflight:
+    """Record I2.1 and I2.2.
+
+    Mock exception (D-012): under a canned LLM the arms are identical by
+    design, so I2.1 drops to FLAG rather than aborting a smoke run.
+    """
+
+    preflight.check(
+        "I2.1",
+        lambda: check_arms_differ(gen1_sections),
+        mode=MODE_FLAG if preflight.mock else MODE_ABORT,
+    )
+    preflight.check(
+        "I2.2",
+        lambda: check_null_untrained(gen1_sections),
+        mode=MODE_ABORT,
+    )
+    return preflight
+
+
 def check_ppr_active(life_stats: list[dict[str, Any]]) -> tuple[bool, str]:
     """I5.1 — the association graph has edges at all.
 

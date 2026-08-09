@@ -69,8 +69,10 @@ from dau.diagnostics.run_protocol_c_prime import (
 from dau.diagnostics.preflight import (
     Preflight,
     PreflightAbort,
+    arm_digest,
     rng_state_digest,
     run_phase0,
+    run_phase2,
     run_phase3,
     run_phase4_5,
 )
@@ -349,6 +351,34 @@ def run_life_keep_vault(
         graph_mod.AB_ENERGY_FLOOR = original_floor
 
 
+def _decisions(state: Any) -> list[str]:
+    """Decision texts in order, for the I2.1 arm digest."""
+
+    events = getattr(state, "event_log", None) or []
+    decisions: list[str] = []
+    for event in events:
+        payload = getattr(event, "payload", None)
+        if not isinstance(payload, dict):
+            continue
+        decision = payload.get("decision")
+        if decision is not None:
+            decisions.append(str(decision))
+    return decisions
+
+
+def _adapter_present(agent_id: str) -> bool:
+    """Whether this agent has an adapter on disk (I2.2)."""
+
+    try:
+        from dau.foundation.local_llm import adapter_exists
+    except ImportError:
+        return False
+    try:
+        return bool(adapter_exists(agent_id))
+    except Exception:  # noqa: BLE001 — a probe must not kill the run
+        return False
+
+
 def _count_edges(store: Any) -> int:
     """Edge count for a live store, or -1 when it cannot be read.
 
@@ -505,7 +535,7 @@ def run_gen1_arm_lineage(
     _lock_seeds(seed)
     store, tmp = _open_lineage_store()
 
-    pe_before_list, lived_examples, pe_rows_1, _state_1 = run_life_keep_vault(
+    pe_before_list, lived_examples, pe_rows_1, state_1 = run_life_keep_vault(
         agent_id=agent_id,
         seed=seed,
         n_events=events_gen1,
@@ -574,6 +604,11 @@ def run_gen1_arm_lineage(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
+        arm_digest=arm_digest(
+            _decisions(state_1) + _decisions(state_2),
+            list(pe_before_list) + list(pe_after_list),
+        ),
+        adapter_present=_adapter_present(agent_id),
     )
     return arm_result, state_2, store, tmp
 
@@ -808,6 +843,7 @@ def run_cprime_multigen(
         gen1_audit=_precision_audit_totals(gen1_sections),
         gen2_audit=_precision_audit_totals(gen2_sections),
     )
+    run_phase2(gate, gen1_sections=gen1_sections)
     run_phase4_5(gate, gen2_sections=gen2_sections, life_stats=list(LIFE_STATS))
     # I4.2 is ABORT and can only be judged once the heirs have run: a lineage
     # whose arms entered gen2 from different RNG states has no separable arm

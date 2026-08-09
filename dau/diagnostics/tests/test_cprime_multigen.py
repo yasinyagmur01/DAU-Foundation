@@ -37,8 +37,11 @@ from dau.diagnostics.preflight import (
     Preflight,
     PreflightAbort,
     check_determinism_settings,
+    arm_digest,
+    check_arms_differ,
     check_gated_fraction,
     check_gen2_rng_uniform,
+    check_null_untrained,
     check_import_time_env,
     check_memory_written,
     check_ppr_active,
@@ -50,8 +53,13 @@ from dau.diagnostics.preflight import (
     check_pythonhashseed,
     check_seed_derivation,
     check_tool_identity,
+    run_phase2,
 )
-from dau.diagnostics.tool_identity import LORA_CHOICE_OFF, LORA_ENABLED_ENV
+from dau.diagnostics.tool_identity import (
+    ARM_NULL_NAME,
+    LORA_CHOICE_OFF,
+    LORA_ENABLED_ENV,
+)
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
     GENERATION_INHERITED_KEY,
@@ -462,6 +470,77 @@ def test_i3_4_flags_any_padding() -> None:
     )
     assert passed is False
     assert "3/10 padded" in detail
+
+
+def test_i2_1_detects_identical_arms() -> None:
+    """GAP-1's actual consequence: three copies of one experiment."""
+
+    distinct = [
+        {"seed": 1, "arm": arm, "arm_digest": digest}
+        for arm, digest in (("lived", "a"), ("null", "b"), ("shuffle", "c"))
+    ]
+    assert check_arms_differ(distinct)[0] is True
+
+    identical = [
+        {"seed": 1, "arm": arm, "arm_digest": "same"}
+        for arm in ("lived", "null", "shuffle")
+    ]
+    passed, detail = check_arms_differ(identical)
+    assert passed is False
+    assert "identical arms" in detail
+
+    passed, _ = check_arms_differ([{"seed": 1, "arm": "lived"}])
+    assert passed is False
+
+
+def test_arm_digest_separates_equal_decisions_with_different_pe() -> None:
+    """Decisions alone are not enough — same words, different PE is real."""
+
+    decisions = ["cooperate", "defect"]
+    assert arm_digest(decisions, [0.1, 0.2]) != arm_digest(decisions, [0.1, 0.3])
+    assert arm_digest(decisions, [0.1, 0.2]) == arm_digest(decisions, [0.1, 0.2])
+    assert arm_digest(["defect", "cooperate"], [0.1, 0.2]) != arm_digest(
+        decisions, [0.1, 0.2]
+    )
+
+
+def test_i2_2_detects_trained_or_contaminated_null() -> None:
+    clean = [{"arm": "null", "n_pairs_trained": 0, "adapter_present": False}]
+    assert check_null_untrained(clean)[0] is True
+
+    trained = [{"arm": "null", "n_pairs_trained": 4, "adapter_present": False}]
+    passed, detail = check_null_untrained(trained)
+    assert passed is False
+    assert "trained pairs" in detail
+
+    stale = [{"arm": "null", "n_pairs_trained": 0, "adapter_present": True}]
+    passed, detail = check_null_untrained(stale)
+    assert passed is False
+    assert "adapter on disk" in detail
+
+    assert check_null_untrained([{"arm": "lived"}])[0] is False
+
+
+def test_arm_null_name_matches_runner() -> None:
+    assert ARM_NULL_NAME == ARM_NULL
+
+
+def test_i2_1_is_flag_under_mock_and_abort_otherwise() -> None:
+    """Canned decisions make arms identical by design (D-012 exception)."""
+
+    identical = [
+        {"seed": 1, "arm": arm, "arm_digest": "same"}
+        for arm in ("lived", "null", "shuffle")
+    ]
+    real = Preflight(mock=False)
+    run_phase2(real, gen1_sections=identical)
+    with pytest.raises(PreflightAbort):
+        real.enforce()
+
+    mocked = Preflight(mock=True)
+    run_phase2(mocked, gen1_sections=identical)
+    mocked.enforce()  # must not raise
+    assert mocked.invariants()["I2.1"] is False
 
 
 def test_i4_2_detects_arm_dependent_rng_entry() -> None:

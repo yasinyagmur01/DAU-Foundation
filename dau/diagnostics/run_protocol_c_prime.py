@@ -239,6 +239,11 @@ class ArmResult:
     n_pe_events_audited: int = EMPTY_COUNT
     n_saturated: int = EMPTY_COUNT
     pi_values: list[float] = field(default_factory=list)
+    # sha256(decisions ++ PE) for I2.1, and whether this agent has an adapter
+    # on disk for I2.2. Recorded rather than asserted so the invariants can be
+    # judged from the results file after the fact.
+    arm_digest: str = ""
+    adapter_present: bool = False
 
 
 @dataclass
