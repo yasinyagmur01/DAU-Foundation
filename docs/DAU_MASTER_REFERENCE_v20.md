@@ -1,15 +1,15 @@
 # DAU — Master Reference
 
-**Versiyon 2.4** · 2026-08-07  
+**Versiyon 2.4.1** · 2026-08-08  
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`  
-*(`.html` / `.pdf` türevleri v2.4 için henüz yeniden üretilmedi — md kaynaktır)*  
+*(`.pdf` v2.4.1 ile senkron · `.html` henüz yeniden üretilmedi — md kaynaktır)*  
 *(eski `v10` / Versiyon 1.x belge ailesi süpersede edildi — arşiv olarak kalabilir)*
 
 Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C **paper-locked negative
 finding** · C′ N=15 (eski reçete) **INSTRUMENT_LIMITED_NULL** · mini
 **SAMPLE_LIVED_PE_SEPARATION** (N=1) · C′ N=15 sampling+B →
-**SAMPLE_N15_UNDERPOWERED** (INCONCLUSIVE) · **ADIM 1–6 kodlandı** · bu
-branch’te **206 test**.
+**SAMPLE_N15_UNDERPOWERED** (INCONCLUSIVE) · **ADIM 1–6 kodlandı** ·
+ADIM 5 precision **v3 smoke PASS** · bu branch’te **206 test**.
 
 **İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü
 metacognition **UNSUPPORTED (paper-locked null)** · C′ N=15 eski koşum
@@ -18,14 +18,15 @@ mini sampling+B: lived ΔPE=−0.180 · null=0.000 · shuffle=−0.149
 (**SAMPLE_LIVED_PE_SEPARATION**; N=1) · N=15 sampling+B final: null=0.000
 (clean) · lived +0.008 · shuffle +0.019 · n_eff=12 · p=0.637 ·
 **SAMPLE_N15_UNDERPOWERED** / harness **INCONCLUSIVE** (N&lt;15 claim yasak;
-“etki yok” değil).
+“etki yok” değil). Precision smoke v3 ΔPE (lived≈0.107) **etki iddiası
+değil** (§7).
 `DAU_LORA_ENABLED=0` · `DAU_LLM_BACKEND=groq` default · C′ local koşumda
 `DAU_LLM_DO_SAMPLE=1` + `DAU_LLM_TEMPERATURE=0.2`.
 
 **Faz 0 kilit:** Frozen Protocol C null **paper-locked**; full Groq
 Protocol C tekrar yok.
 
-**Plastisite / ADIM durumu (v2.4):**
+**Plastisite / ADIM durumu (v2.4.1):**
 - Flags: `DAU_LLM_BACKEND=groq|local` (default groq), `DAU_LORA_ENABLED=0`,
   `DAU_NLI_FILTER_ENABLED=1`, `DAU_LLM_DO_SAMPLE=0` (C′ için `=1`),
   `DAU_LLM_TEMPERATURE` / `DAU_LLM_SEED` / `DAU_TORCH_THREADS`.
@@ -34,11 +35,13 @@ Protocol C tekrar yok.
   `BATCH_SIZE=2` OOM).
 - ADIM 1–6 kod + unit test; ADIM 6 sampling+B N=15 koşuldu (W=10, K=5).
 - ADIM 1 crisis: `pool_step_node` → `step_pool_with_crisis` production
-  graph’a kablolu; pool collapse terminasyonu hâlâ açık (§17).
+  graph’ta doğrulandı (`a1ec2b4`); pool collapse terminasyonu hâlâ açık (§17).
 - **Replay:** sampling açıkken `sha256(DAU_LLM_SEED:prompt)` per-generate
   tohum + strict CUDA lock → null faz1≡faz2 (mini + N=15 null_arm_clean).
-- ADIM 5 precision: rolling history + `VAR_REF` ölçekleme (v2.4; §7).
-- Layer 3: `apply_generation` memory vault seed API bağlı.
+- ADIM 5 precision: rolling history + `VAR_REF` (v2.4; §7) + **v3 smoke
+  PASS** (davranışsal doğrulama; §7 / §23).
+- Layer 3: `apply_generation` memory vault seed API bağlı (`231c222`).
+- Sıradaki: çok-nesilli C′ pre-registration **henüz yazılmadı** (§23).
 
 ---
 
@@ -255,9 +258,26 @@ PRECISION_MAX_WEIGHT      = 1.2    # doygunluk bütçesi korunur
 
 Cold start (`len(pe_history) < MIN_HISTORY`): nötr `π = 1.0`.
 Sakin (düşük var) → π → MAX; kriz/yüksek var → π → MIN (dampen).
-Tam çözülmedi: tipik sakin pencerelerde π hâlâ 1.2’ye yakın doyar;
+Sınır notu: tipik sakin pencerelerde π hâlâ 1.2’ye yakın doyabilir;
 gerçek dampen çoğunlukla yüksek-varyans rejimde. Regresyon:
 `tests/test_precision_pe.py` (rolling-history suite).
+
+#### Precision smoke doğrulama (v2.4.1)
+
+| Koşum | Param | Sonuç | Artefakt |
+|-------|--------|--------|----------|
+| v1 (ön-kayıtlı usable-only) | events=10, N=3, seeds 9101–9103 | **INCONCLUSIVE** — instrument starvation (`n_pe_events=0`; diversity gate lived+shuffle 3/3) | `dau_runs/protocol_c_prime_precision_smoke.json` (+ `_v2.log`) |
+| v2 (exploratory all-audit) | aynı seed/events | teşhis; pair-gate bağımsız; confirmatory değil (`2528e79` dual gates) | aynı JSON `smoke_gates_v2` |
+| **v3 (resmi smoke)** | events=22, N=3, seeds 9201–9203 | **PASS** — `n_pe_events=396`, `saturation_rate=0.0025`, `pi_n_distinct=14` (bant ~0.76–1.2), `null_arm_clean=true`, `n_gated=0` | `dau_runs/protocol_c_prime_precision_smoke_v3.json` |
+
+v3 ile precision fix **davranışsal olarak doğrulandı** (alet sağlıklı:
+doygunluk düşük, π çeşitli, null temiz). Formül commit: `231c222`.
+
+> **Informal gözlem (etki iddiası DEĞİL):** v3 mean ΔPE lived≈0.107 ·
+> null=0.0 · shuffle≈0.017 — lived kolu belirgin yüksek. Bu **N=3 smoke
+> ölçümü**; istatistiksel güç **YOK**; hipotez testi değil. Asıl test
+> çok-nesilli N=15 pre-registered koşumda yapılacak. Bu satır gelecekte
+> **“etki doğrulandı”** diye okunamaz.
 
 ---
 
@@ -465,15 +485,16 @@ dau/diagnostics/
  └── long_run.py / pe_histogram.py / actuator_audit.py
 
 docs/
- └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.1**)
- └── DAU_MASTER_REFERENCE_v20.{html,pdf}    — v2.0 türevleri (stale)
+ └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.4.1**)
+ └── DAU_MASTER_REFERENCE_v20.pdf           — türev (md ile senkron)
+ └── DAU_MASTER_REFERENCE_v20.html          — türev (stale; md kaynaktır)
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)
 ```
 
 **Adapter kökleri:**
 - Runtime tek kök: `dau_runs/adapters/{agent_id}/` (`ADAPTER_BASE_DIR`)
-- Eski dead constant `ADAPTER_ROOT_DIR` / `dau_lora_adapters` kaldırıldı
-  (kod); diskte legacy `dau_lora_adapters/` arşiv kararı açık (rm/mv yok)
+- Dead constant `ADAPTER_ROOT_DIR` / `dau_lora_adapters` kaldırıldı
+  (`c9bdbaf`); disk → `archive/dau_lora_adapters_cprime_legacy/` (veri kaybı yok)
 
 ---
 
@@ -517,14 +538,14 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (rolling-history suite) |
-| **Collect (v2.4 branch)** | **206** |
+| **Collect (v2.4.1 branch)** | **206** |
 
-*(Master v1.4’teki “137” / v2.2’deki “177” sayıları önceki kesitler; bu belge
-**bu branch collect=182** ile kilitlenir — C′ diversity/W unit testleri dahil.)*
+*(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” sayıları önceki
+kesitler; bu belge **bu branch collect=206** ile kilitlenir.)*
 
-**Kırılgan test:** `test_nli_filter.py` yaklaşık **3–6 koşuda bir** düşüyor.
-İzole + `HF_HUB_OFFLINE=1` ile daha stabil; suite içinde sıra/hub yolu
-şüphesi. Açık kalem.
+**NLI flake ÇÖZÜLDÜ (`3d760e8`):** unit path mock HF; gerçek model
+`@pytest.mark.integration` (günlük suite dışı). Kök neden: HF Hub canlı
+çağrı + ağ kesintisi (`RemoteProtocolError`).
 
 Empirik artefaktlar (`dau_runs/`):
 - `protocol_c_run.log` — provisional/paper-locked null izi
@@ -536,6 +557,9 @@ Empirik artefaktlar (`dau_runs/`):
 - `cprime_diversity_prereg_scan.json` — K/W ön-kayıt taraması (5×10 evt)
 - Mini sampling+B: `/tmp/cprime_full_arm/dau_runs/protocol_c_prime_sample_pilot.json`
   (`SAMPLE_LIVED_PE_SEPARATION`)
+- `protocol_c_prime_precision_smoke.json` — precision smoke v1/v2
+  (`smoke_gates_v1` locked; `smoke_gates_v2` exploratory)
+- `protocol_c_prime_precision_smoke_v3.json` — precision smoke **v3 PASS**
 - `vram_spike_results.json` — GO (~6386 MiB)
 - `overnight_audit_results.json`
 
@@ -578,14 +602,30 @@ Empirik artefaktlar (`dau_runs/`):
 - ✅ Trait injection yasağı — Gemini raporu ile yeniden doğrulandı
 - ✅ MiniLM tek başına polarity için yetersiz → NLI filter (ADIM 2) kodlandı
 - ✅ Serbest kanalda restraint emergence yaptırımsız çıkmaz → crisis API (ADIM 1)
+- ✅ Crisis wiring production (`a1ec2b4`) — `pool_step_node` + extraction /
+  `long_run` çift-step düzeltmesi
+- ✅ Adapter kök temizliği (`c9bdbaf`) → `archive/dau_lora_adapters_cprime_legacy/`
+- ✅ NLI flake (`3d760e8`) — unit mock + `@pytest.mark.integration`
+- ✅ Memory vault no-op (`231c222`) — `MemoryStore.seed_inherited_record` /
+  `apply_generation` yazar; EW `inherited_warning` / `somatic_scale` tüketir
+- ✅ **ADIM 5 precision — formül** (`231c222`) rolling history + `VAR_REF` (§7)
+- ✅ **ADIM 5 precision — smoke doğrulaması (v2.4.1):**
+  - v1 (events=10, N=3, seeds 9101–9103): **INCONCLUSIVE** (instrument
+    starvation; diversity gate lived+shuffle 3/3 eledi; `n_pe_events=0`)
+  - v2 (exploratory all-audit, aynı seed/events): teşhis; confirmatory değil
+  - **v3 (events=22, N=3, seeds 9201–9203): RESMİ PASS** — `n_pe_events=396`,
+    `saturation_rate=0.0025`, `pi_n_distinct=14` (bant ~0.76–1.2),
+    `null_arm_clean=true`, `n_gated=0`. Precision fix davranışsal doğrulandı.
 
 ### Hâlâ açık
 
 - **C′ etki sorusu** — N=15 sampling+B aleti temiz ama n_eff=12 + n.s. →
   H1 desteklenmedi; mini −0.180 N≥15’e taşınmadı. Yeni ön-kayıt olmadan
   K/W oynatılamaz (post-hoc yasak)
-- ~~**ADIM 5 precision** PE bounded iken nasıl gerçekten adaptif yapılır?~~
-  → **v2.4:** rolling history + `VAR_REF` (§7); sakin≈MAX doygunluğu sınır olarak kalır
+- ~~**ADIM 5 precision** formül + smoke doğrulaması~~ → **ÇÖZÜLDÜ**
+  (v2.4 formül + v3 PASS; §7)
+- **Çok-nesilli Protocol C′ pre-registration henüz yazılmadı** — sıradaki
+  oturumun ilk görevi (§23)
 - **Pool collapse → terminasyon mantığı henüz kablosuz** —
   `EnvironmentState.collapsed` / `COLLAPSE_EPSILON` üretiliyor ama
   `should_continue` yalnızca `MAX_EVENTS` + `TERMINATION_ENERGY` bakıyor;
@@ -594,9 +634,9 @@ Empirik artefaktlar (`dau_runs/`):
 - Energy floor / γ=0 erken kapanma
 - Meta `trigger_drift_healing` eşik kalibrasyonu
 - Spontaneous convention: format sync ≠ restraint sync
-- ~~`test_nli_filter.py` kırılganlığı~~ — unit path mock’landı; gerçek model
-  `@pytest.mark.integration` (günlük suite dışı; HF Hub flake kanıtlandı)
-- Legacy disk `dau_lora_adapters/` arşiv/taşıma kararı (kod kökü tekilleşti)
+- ~~`test_nli_filter.py` kırılganlığı~~ — **ÇÖZÜLDÜ** (`3d760e8`)
+- ~~Legacy disk `dau_lora_adapters/` arşiv~~ — **ÇÖZÜLDÜ** (`c9bdbaf`;
+  `archive/dau_lora_adapters_cprime_legacy/`)
 
 ### Kapanan (v2.2–v2.3 — bu branch’te ölçüldü)
 
@@ -622,11 +662,11 @@ Empirik artefaktlar (`dau_runs/`):
 - Frozen weights: parametrik öğrenme default **kapalı**
 - Protocol C: TPD kirlenmesi; pair t-test yok; claim locked
 - C′ v2: N=1 — istatistik iddiası yok
-- Crisis: graph `pool_step_node` kablolu; collapse → END henüz yok (§17)
-- ADIM 5 precision: **ÇÖZÜLDÜ (v2.4)** rolling history + `VAR_REF` ölçekleme
-  (bkz §7). Tam değil: sakin pencerelerde π hâlâ ≈1.2’ye doyar; gerçek
-  dampen çoğunlukla kriz/yüksek-varyans rejimde. v2.3 ve öncesi empirik
-  sonuçlar sabit-kazanç aletiyle alınmıştır (§10b etiketleri).
+- Crisis: graph `pool_step_node` kablolu (`a1ec2b4`); collapse → END henüz yok (§17)
+- ADIM 5 precision: **ÇÖZÜLDÜ (v2.4 formül + v2.4.1 v3 smoke PASS)** —
+  rolling history + `VAR_REF` (§7). Sınır: sakin pencerelerde π hâlâ ≈1.2’ye
+  doyabilir; v3’te sat≈0.0025 / π_n=14 ile alet sağlıklı ölçüldü. v2.3 ve
+  öncesi empirik sonuçlar sabit-kazanç aletiyle alınmıştır (§10b etiketleri).
 
 ### Yeni sınırlar (v2.1 tarihsel) → v2.2 durumu
 
@@ -691,15 +731,16 @@ VRAM: peak ≈ **6.4–7.2 GiB** + DPO batch=1 → **GO** (8GB).
 
 ---
 
-## 19. ADIM uygulama kaydı (v2.4 — bu branch)
+## 19. ADIM uygulama kaydı (v2.4.1 — bu branch)
 
-### ADIM 1 — Layer 4 Somatic Enforcement ✅ kod
+### ADIM 1 — Layer 4 Somatic Enforcement ✅ kod + wiring
 
 | | |
 |--|--|
 | Dosyalar | `environment.py`, `extraction.py`, `graph.py` `pool_step_node` (+ tests) |
 | Sabitler | `POOL_CRISIS_THRESHOLD=0.30`, `CRISIS_TRAUMA_MULTIPLIER=2.5`, `CRISIS_BASE_MAGNITUDE=0.4` |
 | Davranış | `pool_ratio < 0.30` → resource TRAUMA via `update_drift` |
+| Wiring | ✅ production (`a1ec2b4`) — `pool_step_node` → `step_pool_with_crisis`; `long_run` çift-step düzeltmesi |
 | Test | crisis 5 unit + `test_graph_crisis_wiring.py` |
 | Gap | pool collapse → terminasyon kablosuz (§17) |
 
@@ -751,15 +792,16 @@ empirik tablosunda **†** ile işaretli satırlar).
 | Formül | §6 memory_score |
 | Test | `test_ppr_retrieval.py` |
 
-### ADIM 5 — Precision-Weighted PE ✅ kod (v2.4 rolling history)
+### ADIM 5 — Precision-Weighted PE ✅ kod + smoke PASS (v2.4.1)
 
 | | |
 |--|--|
 | Dosyalar | `semantic_similarity.py`, `constraints.py`, `graph.py`, `state.py` (`pe_history`) |
-| Formül (v2.4+) | `π = clamp(1/(var(pe_history)/VAR_REF+ε), MIN, MAX)`; cold start `π=1.0`; append sırası: π sonra raw |
+| Formül (v2.4+) | `π = clamp(1/(var(pe_history)/VAR_REF+ε), MIN, MAX)`; cold start `π=1.0`; append sırası: π sonra raw (`231c222`) |
 | Sabitler | `WINDOW=10`, `MIN_HISTORY=2`, `VAR_REF=1/12`, `MIN_WEIGHT=0.5`, `MAX_WEIGHT=1.2` |
 | Test | `test_precision_pe.py` (rolling-history suite) |
-| Not | v2.3 ve öncesi = sabit kazanç `π≡1.2` (pe_vector); kilitli C′ sonuçları o aletle (§7, §10b). v2.4 adaptif bandı açar; sakin≈MAX doygunluğu sınır olarak kalır. |
+| Smoke | v1 INCONCLUSIVE (starvation, evt=10) · v3 **PASS** (evt=22, seeds 9201–9203) — §7 |
+| Not | v2.3 ve öncesi = sabit kazanç `π≡1.2` (pe_vector); kilitli C′ sonuçları o aletle (§7, §10b). v3 smoke aleti doğrular; ΔPE lived>shuffle **informal only** (N=3; etki iddiası yok). |
 
 ### ADIM 6 — Protocol C′ N≥15 ✅ kod + sampling+B koşuldu
 
@@ -816,12 +858,12 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 
 ### Sıradaki (öncelik)
 
-1. Pool collapse → `should_continue` terminasyon (§17)
-2. ~~ADIM 5 precision formülünü PE bounded’da adaptif yap~~ → **v2.4 yapıldı** (§7)
-3. Paper gövdesi (frozen-null ana; C′ alet evrimi appendix:
-   INSTRUMENT_LIMITED → SAMPLE_LIVED → SAMPLE_N15_UNDERPOWERED)
-4. (İsteğe bağlı) C′ için **yeni ön-kayıtlı** reçete tartışması — post-hoc
-   K=4 / W seçimi yasak; precision v2.4 smoke / multi-gen ayrı karar
+1. Çok-nesilli Protocol C′ **pre-registration yazımı** (§23) — **henüz yok**
+2. Pilot N=1–3 → tam N=15 iki-nesil koşum (~2sa GPU, Varyant B) → dürüst analiz
+3. Pool collapse → `should_continue` terminasyon (§17)
+4. Paper gövdesi (frozen-null ana; C′ alet evrimi appendix:
+   INSTRUMENT_LIMITED → SAMPLE_LIVED → SAMPLE_N15_UNDERPOWERED → precision v3 PASS)
+5. ~~ADIM 5 precision formül + smoke~~ → **v2.4.1 tamam** (§7)
 
 ### Anti-roadmap (yasak)
 
@@ -872,15 +914,56 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.1** | **2026-08-07** | Ölçüm zincirinde 6 katmanlı hata düzeltildi; C′ N=15 uçtan uca → **`INSTRUMENT_LIMITED_NULL`**. Replay/plato blocker kaydı. 175 test. |
 | **2.2** | **2026-08-07** | Alet yeniden kuruldu: null train hook kaldırıldı · niş tohum · yaşam-PE tercih · DPO 8GB fit · sampling + prompt-keyed seed. Mini N=1 → **`SAMPLE_LIVED_PE_SEPARATION`** (lived −0.180 · null 0 · shuffle −0.149). N=15 sampling sırada; 13 saat CPU tahmini iptal (GPU ≈1.5–2.5 saat). **177 test**. `.html`/`.pdf` henüz yenilenmedi. |
 | **2.3** | **2026-08-07** | Diversity gate (K=5) + ön-kayıtlı W=10. C′ N=15 sampling+B final (~76 dk GPU): null **0.000** clean · lived **+0.008** · shuffle **+0.019** · n_eff=12 · p=0.637 → **`SAMPLE_N15_UNDERPOWERED`** / INCONCLUSIVE. Mini separation N≥15’e taşınmadı; “etki yok” iddiası yok. **182 test**. `.html`/`.pdf` henüz yenilenmedi. |
-| **2.4** | **2026-08-07** | Precision fix (rolling history + `VAR_REF`); memory vault seed API bağlandı (`apply_generation`); inherited somatic scale EW tüketimi; **206 test**. `.html`/`.pdf` henüz yenilenmedi. |
+| **2.4** | **2026-08-07** | Precision fix (`231c222`: rolling history + `VAR_REF`); memory vault seed API (`apply_generation`); inherited somatic scale EW tüketimi; **206 test**. `.html`/`.pdf` henüz yenilenmedi. |
+| **2.4.1** | **2026-08-08** | Oturum kapanışı. Zincir: `231c222` precision+vault · `a1ec2b4` crisis wiring · `c9bdbaf` adapter cleanup · `3d760e8` NLI flake · `2528e79` dual smoke_gates. Smoke: v1 (`protocol_c_prime_precision_smoke.json`, seeds 9101–9103, evt=10) **INCONCLUSIVE** / instrument starvation · v2 exploratory all-audit (aynı JSON) · **v3 (`…_smoke_v3.json`, seeds 9201–9203, evt=22) RESMİ PASS** (n_pe=396, sat=0.0025, π_n=14, null_clean, n_gated=0). Precision davranışsal doğrulandı. ΔPE lived≈0.107 informal only (N=3; güç yok; “etki doğrulandı” yasak). Sıradaki = multi-gen pre-reg (§23). **206 test**. Push yok. `.pdf` md ile senkron; `.html` henüz stale. |
 
 ---
 
-**Güncellendi (v2.4):** ADIM 5 rolling-history + `VAR_REF` ölçekleme;
-Layer 3 vault seed. v2.3 C′ N=15 sonucu kilitli kalır — alet etiketi
-“fixed-gain ADIM 5” (§10b). Omurga default’ları değişmedi: LoRA kapalı,
-Groq default, trait yasak.
+## 23. Sıradaki Oturum İçin Bağlam
+
+**Precision fix TAMAMLANDI ve DOĞRULANDI (v3 PASS).** Formül `231c222`;
+resmi smoke: `dau_runs/protocol_c_prime_precision_smoke_v3.json`
+(events=22, N=3, seeds 9201–9203; `n_pe_events=396`, sat=0.0025, π_n=14,
+null_clean, n_gated=0).
+
+**Sıradaki adım (yeni oturumun İLK görevi):** çok-nesilli Protocol C′
+pre-registration **tasarımı ve yazımı** — **HENÜZ YAZILMADI**.
+
+Taslak (henüz kilitli değil; yazılacak):
+- 2 nesil: gen1 tam C′ (lived/null/shuffle); gen2 miras + hafif ölçüm fazı
+- Birincil metrik: gen2 ΔPE × gen1 kolu
+- İkincil: doğum-drift + transfer aday sayısı
+- `F_agent` stratifiye kontrol (kapı değil)
+- Tahmini GPU: ~2sa (Varyant B, N=15, 2 nesil)
+- Akış: pre-reg yaz → pilot N=1–3 → tam N=15 → dürüst analiz
+
+**Hazır altyapı:** crisis wiring · memory vault seed · rolling precision
+(v3 PASS) · adapter tek kök · NLI unit mock · ölçüm zinciri sağlam.
+Deney tasarımına geçilebilir.
+
+**Artefakt okuma:**
+- v1/v2: `dau_runs/protocol_c_prime_precision_smoke.json`
+  (`summary.smoke_gates_v1` resmi kilitli usable-only;
+  `smoke_gates_v2` exploratory)
+- v3: `dau_runs/protocol_c_prime_precision_smoke_v3.json`
+- Loglar: `…_v2.log`, `…_v3.log` · heartbeat: `…_heartbeat.json` /
+  `…_v3_heartbeat.json`
+
+**Branch:** ahead of origin; tree temiz (bu belge güncellemesi hariç);
+push yok. Collect **206**.
+
+**Yasak okuma:** v3 mean ΔPE (lived≈0.107 · null=0 · shuffle≈0.017) ≠
+“etki doğrulandı”. N=3 informal gözlem; istatistiksel güç yok. Asıl test
+pre-registered çok-nesilli N=15 koşumda.
+
+---
+
+**Güncellendi (v2.4.1):** ADIM 5 precision formül + v3 smoke PASS; crisis /
+vault / NLI / adapter oturum kapanışı; §23 handoff. v2.3 C′ N=15 sonucu
+kilitli kalır — alet etiketi “fixed-gain ADIM 5” (§10b). Omurga default’ları
+değişmedi: LoRA kapalı, Groq default, trait yasak.
 
 Bu döküman her önemli katman / empirik dönüm tamamlanınca güncellenir.  
-Versiyon 2.4 — ADIM 1–6 kod; precision v2.4; C′ N=15 **SAMPLE_N15_UNDERPOWERED**
-(fixed-gain aleti); Protocol C paper-locked null; **206 test**.
+Versiyon 2.4.1 — ADIM 1–6 kod; precision v2.4 + **v3 smoke PASS**; C′ N=15
+**SAMPLE_N15_UNDERPOWERED** (fixed-gain aleti); Protocol C paper-locked null;
+çok-nesilli pre-reg sırada; **206 test**.
