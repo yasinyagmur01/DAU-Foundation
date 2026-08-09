@@ -953,3 +953,47 @@ isteyen ayarlarının (seq_len 512, %10 replay) bütçesini belirliyor.
 **Maliyet:** ~15GB indirme + iki kısa koşum. Reddedilirse indirme boşa
 gider — kabul edilen bedel, çünkü alternatifi doğrulanmamış bir iddiaya
 dayanarak aleti değiştirmek.
+
+---
+
+## D-020 · 2026-08-10 · Quantization: NF4 + double_quant, açıkça yazılır
+
+**Durum:** kabul edildi (Yasin, 2026-08-10). **D-016'yı kapatır.**
+
+**Karar:** `bnb_4bit_quant_type = "nf4"` ve `bnb_4bit_use_double_quant =
+True` koda **açıkça** yazılır. Kütüphane varsayılanına bırakılmaz.
+
+**Asıl mesele fp4 değildi.** D-016'da ölçülen şey şuydu: bayrak hiç
+yazılmamıştı, alet transformers'ın varsayılanına teslim edilmişti (5.14.1'de
+`fp4`, `double_quant=False`). Kütüphane bir gün varsayılanı değiştirirse
+alet, kimse haberdar olmadan değişir ve ön-kayıt sessizce geçersizleşir.
+**Bu, D-018'de uzak backend için reddedilen riskin birebir aynısı** —
+sadece kendi makinede. Karar bu yüzden "hangi tip" sorusundan önce
+"açıkça yaz" ilkesini içeriyor.
+
+**Neden NF4:**
+- Brief tavsiyesi açık (`2026-08-08~_per-agent-lora-serving.md` §7 sonu):
+  `double_quant=True` + `quant_type="nf4"` sabitlensin.
+- Belgeler (CLAUDE.md GAP-7, master reference) zaten NF4 diyor — bu bir
+  değişiklik değil, belgenin iddiasına **uyum**.
+- QLoRA literatüründe NF4 normal dağılımlı ağırlıklar için 4-bit'in
+  yerleşik tercihi; fp4 üzerinde bilgi-teorik gerekçesi var.
+- `double_quant=True` ~0.3–0.4 GiB açar → doğrudan GAP-8 bütçesine girer.
+
+**Kabul edilen bedel:** alet değişir. Maliyeti pratikte sıfır, çünkü
+geçerli hiçbir C′ sonucu yok — `e4c026b` ve `f25b0ef` öncesi üretilenlerin
+tümü zaten geçersiz sayılmıştı. Pre-reg kilitlendikten sonra aynı
+değişiklik post-hoc olurdu; pencere şimdi açık.
+
+**Uygulama borcu:** `local_llm.build_load_kwargs`. `afbb552`'de
+`describe_quantization()` config'i loader'ın kendisinden okuyacak şekilde
+yazılmıştı, bu yüzden alet kimliği değişikliği kendiliğinden doğru
+raporlayacak — ayrıca bir yer güncellenmesi gerekmiyor.
+
+**Belge borcu:** CLAUDE.md GAP-7 ve master reference §10b artık **doğru**
+olacak; v2.4.2'de "kod fp4 idi, NF4'e geçildi (D-020)" notu düşülür —
+belgeyi sessizce haklı çıkarmış gibi göstermemek için.
+
+**D-019 ile ilişki:** model ölçümü NF4 açıkken yapılır. İki modelin VRAM
+tepe değerleri de bu konfigürasyonda ölçülür; brief'in ~6.4 / ~7.2 GiB
+rakamları fp4 varsayımıyla verilmişti, ölçüm onları düzeltecek.
