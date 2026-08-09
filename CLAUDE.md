@@ -23,11 +23,19 @@ var".)
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
-- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 6 (preflight gate)**.
+- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **C bölümü, karar kapısı**
+  (kod değil, karar: GAP-8 · D-005/D-015 · D-016 · GAP-14).
 - **Son durum:** Adım 1–5 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
   GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`), **GAP-1 (`afbb552`)**.
-  Kalan: GAP-2..10, GAP-14. 20 preflight değişmezi kilitli (D-012),
-  I0.1/I0.2'nin verisi artık var (`tool_identity.py`), gate yazılmayı bekliyor.
+  Adım 6 **kısmen**: `dau/diagnostics/preflight.py`, **24 değişmezin 17'si**
+  (`75239d1` faz 0 · `0b48f93` faz 3 · `30c80da` faz 4/5 · `b8c3e69` faz 2).
+  Adım 7 ✅ gate ateşlendi — flagsız koşum `exit=1`, `--lora --mock-llm`
+  koşumu I2.1/I3.2/I5.1/I5.4 FLAG'leriyle geçti.
+  Kalan 7 değişmez (I1.1–I1.5, I2.3, I4.1) eğitim yoluna ölçüm istiyor;
+  ikisi zaten GAP-8 kararına bağlı. Kalan gap'ler: GAP-2..10, GAP-14.
+- **Gate'in kendi bulduğu:** I5.1 → GAP-14 (PPR atıl), I5.4 → GAP-3
+  (inherited somatic scale hiç uygulanmıyor). Denetimle bulunmuş iki maddeyi
+  koşum artık kendisi söylüyor.
 - **Yön:** nesil zinciri 2 ile sınırlı değil, hedef **N nesil** (**D-014**).
   Backend hedefi **safi lokal** (**D-015**) — kod default'u hâlâ groq.
 - **Ölçülmüş bulgu:** quantization kodda `fp4`, belgede NF4 (**D-016**) —
@@ -46,7 +54,7 @@ var".)
 | Her oturum başı | `CLAUDE.md` (otomatik yüklenir) |
 | Sıradaki iş ne | `docs/EXECUTION_PLAN.md` |
 | "Bunu neden böyle kararlaştırdık?" | `docs/DECISIONS.md`, D-numarasıyla |
-| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (D-012, I0.1–I5.4) |
+| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (D-012, I0.1–I5.4 — **24 madde**, "20" yanlıştı) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` ⚠ 4+ commit geride, v2.4.2 borcu var |

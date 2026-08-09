@@ -29,10 +29,33 @@ Bu dosya, kod fazının adım adım yürütülmesi içindir. Her oturum başınd
 
 Bağımlılık sırasına göre. Adım 1–4 birer satırlık; asıl iş 5 ve 6.
 
-**Durum (2026-08-09):** Adım 1 ✅ `8cf2ac0` · Adım 2 ✅ `ab8966c` ·
-Adım 3 ✅ `ab30f9c` · Adım 4 ✅ `090a5bc` · Adım 5 ✅ `afbb552` — beşi de
-mutasyon kontrolünden geçti (düzeltme geri alınınca ilgili testler
-kırılıyor). Sıradaki: **Adım 6 (preflight gate)**.
+**Durum (2026-08-10):** Adım 1 ✅ `8cf2ac0` · Adım 2 ✅ `ab8966c` ·
+Adım 3 ✅ `ab30f9c` · Adım 4 ✅ `090a5bc` · Adım 5 ✅ `afbb552` ·
+Adım 6 **kısmen** (`75239d1` faz 0 · `0b48f93` faz 3 · `30c80da` faz 4/5 ·
+`b8c3e69` faz 2) · Adım 7 ✅ **ateşlendi**.
+
+Adım 1–5 mutasyon kontrolünden geçti. Adım 6'da **24 değişmezin 17'si**
+kodda; kalan 7'si eğitim yoluna ölçüm eklemeyi gerektiriyor (aşağıda).
+
+⚠ **Sayı düzeltmesi:** `CLAUDE.md` ve bu dosya "20 değişmez" diyordu;
+`PREFLIGHT_INVARIANTS.md` tablosunda **24** madde var (6+5+3+4+2+4).
+Belge kilitli, sayı yanlıştı.
+
+**Adım 6'da kalan 7 değişmez** — hepsi `local_llm`'in eğitim yoluna ölçüm
+eklemeyi gerektiriyor, o yüzden ayrı bir parça olarak duruyor:
+
+| id | Neden henüz yok |
+|---|---|
+| I1.1 | `lora_B` abs-sum öncesi/sonrası ölçen yardımcı yok |
+| I1.2 | Adapter dizini içerik denetimi (izolasyon) yazılmadı |
+| I1.3 | `grad_norm` `clip_grad_norm_`'dan alınıp atılıyor (`local_llm.py:651`) |
+| I1.4 | `SNR_FLOOR` çift filtresi — GAP-8/A5 kararına bağlı |
+| I1.5 | `MIN_PAIRS` kalibre edilmemiş |
+| I2.3 | `_train_adapter` çift listesini döndürmüyor |
+| I4.1 | Replay: ilk seed'i iki kez koşan orkestrasyon yok |
+
+I1.4 ve I2.3 zaten karar kapısındaki GAP-8 paketine bağlı — o karar
+verilmeden yazılmaları erken olurdu.
 
 ### Adım 1 — GAP-11: shuffle kolu reproducible değil
 
@@ -112,6 +135,33 @@ FLAG yolunun kanıtıdır.
 
 > **Hiç ateşlenmemiş gate, gate değildir.** Gate'in çalıştığının tek kanıtı,
 > onu kasten kırıp abort ettirmektir.
+
+**✅ Koşuldu (2026-08-10).**
+
+*Koşum 1* — planın tam komutu, `exit=1`, JSON yazılmadı:
+```
+Refusing to start: neither --lora nor --no-lora was given. LoRA training is
+off by default, so falling through would run three identical arms and report
+a p-value for it (GAP-1).
+```
+
+*Koşum 2* — `--lora --mock-llm`, `exit=0`, Faz 0'ın altısı da geçti,
+`run_quality=flagged`. Planın öngördüğü FLAG çıktı:
+```
+FLAG I2.1  seed=2001: identical arms ['lived', 'null', 'shuffle']
+FLAG I3.2  saturation_rate=0.2000 > 0.05; pi_n_distinct=2 < 8
+FLAG I5.1  memory_edges is empty in every life — PPR is inert
+FLAG I5.4  never applied (skipped=36)
+```
+
+İki koşum birlikte hem ABORT hem FLAG yolunu kanıtlıyor. Ayrıca iki koşum
+arasındaki fark da bilgi taşıyor: `--no-lora` koşumunda I5.2 (NLI aktif mi)
+**kaldı**, `--lora` koşumunda **geçti** (`total_candidates=20 rejected=8`) —
+kapı gerçekten ayrım yapıyor, sabit yeşil basmıyor.
+
+**Gate iki bilinen gap'i kendiliğinden buldu:** I5.1 → GAP-14 (PPR atıl),
+I5.4 → GAP-3 (somatic scale hiç uygulanmadı). İkisi de Ağustos'ta salt-yazı
+denetimiyle bulunmuştu; artık koşum kendisi söylüyor.
 
 ---
 

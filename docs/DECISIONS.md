@@ -826,3 +826,49 @@ iddiası. GAP-8 paketiyle birlikte karara bağlanacak.
 
 **Belge borcu:** `CLAUDE.md` GAP-7 ve master reference §10b — v2.4.2'de
 düzeltilecek.
+
+---
+
+## D-017 · 2026-08-10 · Preflight gate koşuldu; 24 değişmezin 17'si kodda
+
+**Durum:** uygulama kaydı + iki düzeltme.
+
+**Adım 7 sonucu (ateşlendi, 2026-08-10):**
+
+- *Koşum 1* — `--n-pairs 1 --mock-llm`, flag yok → `exit=1`, JSON yazılmadı.
+  Gerekçe I0.2 (LoRA kapısı bilinçli değil).
+- *Koşum 2* — `--lora --mock-llm` → `exit=0`, Faz 0'ın altısı geçti,
+  `run_quality=flagged`, planın öngördüğü I2.1 FLAG'i çıktı.
+
+İki koşum arasındaki fark gate'in sabit yeşil basmadığını gösteriyor:
+I5.2 (NLI aktif mi) `--no-lora`'da **kaldı**, `--lora`'da **geçti**.
+
+**Gate'in kendiliğinden bulduğu iki gap:** I5.1 → GAP-14 (PPR atıl,
+`memory_edges` her yaşamda boş), I5.4 → GAP-3 (inherited somatic scale hiç
+uygulanmıyor, `skipped=36`). İkisi de Ağustos'ta salt-yazı denetimiyle
+bulunmuştu; artık koşumun kendi çıktısı.
+
+**Düzeltme 1 — değişmez sayısı 20 değil 24.** `CLAUDE.md` ve
+`EXECUTION_PLAN.md` "20 preflight değişmezi" diyordu.
+`PREFLIGHT_INVARIANTS.md` tablosu sayıldı: 6+5+3+4+2+4 = **24**. Belge
+kilitli ve doğru; sayı yanlış aktarılmış. İki durum belgesi düzeltildi,
+kilitli belgeye dokunulmadı.
+
+**Düzeltme 2 — mock koşum asla `clean` olamaz.** `--mock-llm` ile `--lora`
+birlikte verilemiyordu (Adım 5'in uzak-backend kontrolü, mock backend'i
+groq'a sabitlediği için). Planın Adım 7'si bu kombinasyonu gerektiriyordu.
+Çözüm: mock, backend kontrolünden muaf; karşılığında koşum
+`run_quality="mock"` damgası alıyor ve **asla `clean` olamıyor**. Muafiyeti
+güvenli kılan şey bu damga.
+
+**Eşik çelişkisi (karara bağlanmadı, kayda geçiyor):** aynı büyüklük için
+iki eşik var — `run_protocol_c_prime.SMOKE_SATURATION_MAX_RATE = 0.30` /
+`SMOKE_PI_MIN_DISTINCT = 3` ve D-012'nin önerdiği `~0.05` / `~8`. Preflight
+D-012'nin değerlerini ayrı sabit olarak aldı ve `calibrated: false` diye
+işaretledi; smoke gate'e dokunulmadı. Pilot sonrası tek eşiğe indirilmeli.
+
+**Kalan 7 değişmez** (I1.1–I1.5, I2.3, I4.1) `local_llm`'in eğitim yoluna
+ölçüm eklemeyi gerektiriyor: `lora_B` abs-sum, `grad_norm` (bugün
+`clip_grad_norm_`'dan alınıp atılıyor), tercih çifti listeleri, ve ilk
+seed'i iki kez koşan replay orkestrasyonu. I1.4 (SNR eşiği) ve I2.3 zaten
+GAP-8 karar paketine bağlı — karar verilmeden yazılmaları erken olurdu.
