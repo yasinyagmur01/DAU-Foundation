@@ -1,10 +1,22 @@
 # DAU (Dynamic Agent Universe) — Claude Code Authority Document
 
-Bu dosya Claude Code'un bu repo üzerinde çalışırken referans aldığı tek otorite
-belgesidir. `docs/DAU_MASTER_REFERENCE_v20.md` ayrıntılı geçmiş/gerekçe içerir;
-bu dosya onun güncel, aksiyon odaklı özetidir. Çelişki durumunda bu dosya
-geçerlidir, ama çelişkiyi de açıkça belirt ve kullanıcıya sor — sessizce
-birini seçme.
+## Belge Düzeni (D-001)
+
+| Dosya | İşi | Yazma modu |
+|---|---|---|
+| `CLAUDE.md` (bu dosya, kök) | geçerli kurallar + açık GAP'ler, kısa | üzerine yazılır |
+| `docs/DECISIONS.md` | karar kaydı: ne/ne zaman/neden/**kanıt** | **append-only** |
+| `docs/DAU_MASTER_REFERENCE_v20.md` | bilimsel anlatı, formüller, empirik tablo | sürüm sürüm |
+
+Bu dosya Claude Code'un her oturum otomatik yüklediği otorite belgesidir —
+**kısa tutulur**, ayrıntı `DECISIONS.md`'ye gider. Çelişki durumunda bu dosya
+geçerlidir, ama çelişkiyi açıkça belirt ve kullanıcıya sor — sessizce birini
+seçme.
+
+**Kural:** Kanıtı olmayan hiçbir madde "kilitli karar" olarak yazılmaz.
+Kilitli her madde bir `D-00X` kaydına işaret etmelidir. (2026-08-09'da
+kaynaksız bir kilitli madde bulundu — bkz. `DECISIONS.md` "Bu dosya neden
+var".)
 
 ## Axiom
 
@@ -60,9 +72,15 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
   düzeltti (saturation_rate=0.0025), kalibrasyon doğrulandı.
 - NLI contradiction threshold: `NLI_CONTRADICTION_THRESHOLD=0.60`,
   `cross-encoder/nli-deberta-v3-small`.
-- İstatistik eşikleri: N≥15, K≥5 (DIVERSITY_MIN_UNIQUE), n_eff≥12,
-  Kruskal-Wallis (primary, birth-drift), Fisher-Freeman-Halton (transfer
-  candidate counts), paired t-test/Wilcoxon (destekleyici).
+- İstatistik eşikleri: N≥15, K≥5 (DIVERSITY_MIN_UNIQUE), n_eff≥12.
+- **Çok-nesilli C′ birincil uç noktası = doğum-drift** (D-002). Gen2 PE +
+  gen2 davranışsal = ön-kayıtlı ikincil. Testler: Kruskal-Wallis (doğum
+  drift magnitude, 3 grup), Fisher-Freeman-Halton (transfer aday sayıları),
+  paired t-test/Wilcoxon (destekleyici). ⚠ Bu iki test adının provenansı
+  repoda yok — Deep Research arşivi gelince aranacak (D-006).
+- **F_agent transfer kapısı korunur** + `f_agent=None` duyarlılık kolu
+  (D-003). Kapı kaldırılmaz: aksiyom içeri trait enjeksiyonunu yasaklar,
+  dışarıdan seçilim baskısını değil.
 
 ## Açık Gap'ler (öncelik sırasıyla — doğrulanmadan "kapalı" sayılmaz)
 
@@ -83,9 +101,11 @@ seed lock ile muhtemelen bit-identik. Böyle bir koşumdan çıkacak p-değeri
 bilimsel sonuç değil, tautolojidir. `null ΔPE=0.000 clean` metriği bu yüzden
 ikircikli: "alet deterministik" de demek olabilir, "hiçbir kol eğitilmedi" de.
 
-**Fix kararı (onaylandı, henüz uygulanmadı):** (c) env kapalıyken runner
-**hard fail** etsin + (b) explicit `--lora/--no-lora` CLI flag'i, seçim
-results JSON'una yazılsın.
+**Fix kararı — D-004** (onaylandı, henüz uygulanmadı): env kapalıyken runner
+**hard fail** etsin + explicit `--lora/--no-lora` CLI flag'i + her results
+JSON'una alet kimliği (backend, model id, quantization, adapter durumu,
+sampling parametreleri). İlke: bir koşum kendi konfigürasyonunu inkâr
+edememeli.
 
 ### GAP-2: Silent train failure — kısmen açık
 Doğrulandı, ama CLAUDE.md'nin önceki tarifi olduğundan geniş:
@@ -115,7 +135,7 @@ teorik mi — doğrulanmalı.**
 `time.sleep(10)` (run_protocol_c_prime.py), bare `0.5`
 (shuffle_preference_pairs), default `k: int = 5` (retrieval.py).
 
-### GAP-7: Backend default'u aksiyomu test edemeyen konfigürasyon
+### GAP-7 (D-005, henüz kilitlenmedi): Backend aksiyomu test edemeyen konfigürasyon
 `DAU_LLM_BACKEND=groq` default. Ama Kanal 2 (per-agent adapter,
 `switch_adapter`, DPO) ağırlık erişimi ister — **Groq'ta ontolojik olarak
 imkânsız**. Yani projenin merkezî iddiasının test edilemediği konfigürasyon,
@@ -210,6 +230,26 @@ Bu bir yedek değil, karar sürecinin bir organı. İki işlevi var:
 2. **Geriye dönük tutarlılık denetimi** — Layer 5 (özbilinç) araştırılırken
    önceki 4 katmanın iç tutarlılığı dışarıdan bağımsız olarak doğrulandı.
    Yeni bir katmanı araştırmak, eskilerin denetimi anlamına da gelir.
+
+**Hangi soruyu kim cevaplar (D-007):**
+
+| Soru tipi | Kim |
+|---|---|
+| "Biz neye karar vermiştik / neden böyle yaptık" | git geçmişi + Yasin; Claude Code kazar |
+| "Kod gerçekten ne yapıyor" | Claude Code, read-only denetim |
+| "Literatürde X mi Y mi savunulabilir" | Gemini Deep Research |
+| "Bu deneyde X mi Y mi olsun" | Yasin (DR + Claude Code girdi verir) |
+
+Provenans sorusu (**"biz ne karar vermiştik"**) Deep Research'e sorulmaz —
+DR'nin commit geçmişine erişimi yok, sorulursa makul görünen ama kaynaksız
+bir metin üretir ve kaynaksız satır sayısı artar.
+
+**Arşiv mutabakatı (D-006):** Geçmiş brief'ler repo köküne
+`RESEARCH_BRIEF_v*.md` olarak **dosya** halinde girer (sohbete
+yapıştırılmaz). Her biri için Claude Code bir mutabakat tablosu üretir:
+brief ne diyor / kod ne yapıyor / karar ∈ {bilinçli sapma · fark
+edilmemiş kayma · uyumlu · brief yanılmış}. Bilinçli sapmalar
+`DECISIONS.md`'ye gerekçesiyle girer, kaymalar buraya GAP olur.
 
 **Claude Code'un buradaki rolü:**
 
