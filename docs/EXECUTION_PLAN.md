@@ -30,8 +30,9 @@ Bu dosya, kod fazının adım adım yürütülmesi içindir. Her oturum başınd
 Bağımlılık sırasına göre. Adım 1–4 birer satırlık; asıl iş 5 ve 6.
 
 **Durum (2026-08-09):** Adım 1 ✅ `8cf2ac0` · Adım 2 ✅ `ab8966c` ·
-Adım 3 ✅ `ab30f9c` · Adım 4 ✅ `090a5bc` — dördü de mutasyon kontrolünden
-geçti (düzeltme geri alınınca ilgili testler kırılıyor). Sıradaki: Adım 5.
+Adım 3 ✅ `ab30f9c` · Adım 4 ✅ `090a5bc` · Adım 5 ✅ `afbb552` — beşi de
+mutasyon kontrolünden geçti (düzeltme geri alınınca ilgili testler
+kırılıyor). Sıradaki: **Adım 6 (preflight gate)**.
 
 ### Adım 1 — GAP-11: shuffle kolu reproducible değil
 
@@ -123,7 +124,8 @@ gücü) etkiliyor:
 | Karar | Kayıt | Neden şimdi |
 |---|---|---|
 | GAP-8'in beş ayarı: gradient accumulation · `seq_len` 512 · 3 epoch · %10 somatik replay · `PE ≥ 0.40` eşiği | GAP-8 | Alet gücü; pre-reg'den önce |
-| Backend `local` + **Qwen-2.5-7B** | D-005 (durum: **önerildi**, kilitli değil) | Aynı pencere; pre-reg kilitlenince post-hoc olur |
+| Backend `local` + **Qwen-2.5-7B** | D-005 (durum: **önerildi**, kilitli değil) · **D-015** (Yasin: "proje safi lokal koşacak" — girdi) | Aynı pencere; pre-reg kilitlenince post-hoc olur |
+| **Quantization: NF4'e geçilsin mi, fp4 kabul edilip belgeler mi düzeltilsin** | **D-016** (ölçüldü: kod fp4, belge NF4 diyor) | Aynı alet paketi; koşum başlamadan |
 | PPR: koşum yoluna bağlansın mı, "inert" diye belgelensin mi | GAP-14 | I5.1'in ABORT/FLAG modunu belirliyor |
 
 ---

@@ -764,3 +764,65 @@ Nesil-agnostik olan (değişiklik gerektirmez):
 
 **Etki:** `EXECUTION_PLAN.md` D-10'daki "2 vs 3 nesil" maddesi artık
 "2 vs N" olarak okunmalı.
+
+---
+
+## D-015 · 2026-08-09 · "Proje safi lokal LLM'de koşacak" — yön beyanı
+
+**Durum:** yön beyanı (Yasin, 2026-08-09). D-005'i **kilitlemez**, ona kanıt
+ve niyet ekler. Kod default'u bu kayıtla değişmiyor.
+
+**Beyan:** "Proje safi lokal LLM'de çalışacak." Uzak backend (groq) hedef
+konfigürasyon değil; Protocol C provenance'ı için tarihsel olarak duruyor.
+
+**Neden şimdi kayda giriyor:** Adım 5'te (`afbb552`) `--lora` + uzak backend
+kombinasyonuna hard fail kondu. O kontrolün gerekçesi doğrudan bu beyandır:
+kod **hâlâ** uzak backend'i varsayılan kabul ediyor (`LLM_BACKEND_DEFAULT =
+"groq"`, `llm_backend.py:18`), yani lokal kullanmak isteyen her koşumun
+env'i açıkça set etmesi gerekiyor. Set etmeyi unutan bir koşum bugün sessizce
+uzağa gider ve eğitim hiç olmaz. Kontrol, yanlış varsayılanın sessiz zararını
+gürültülü hale getiriyor — varsayılanı düzeltmiyor.
+
+**Neden default şimdi değişmiyor:** backend varsayılanını değiştirmek aleti
+değiştirmektir; GAP-8 (DPO ayarları) ve GAP-14 (PPR) ile aynı karar
+paketinde, `EXECUTION_PLAN.md` C bölümündeki karar kapısında verilecek.
+Beyan orada tartışmayı sıfırdan başlatmamak için buraya yazıldı.
+
+**Sonuç:** Karar kapısında D-005 kilitlenirken bu beyan girdi kabul edilir.
+Kilitlenirse `LLM_BACKEND_DEFAULT` lokale döner ve `--lora`/backend tutarlılık
+kontrolü fiilen hiç ateşlenmez hale gelir — istenen budur.
+
+---
+
+## D-016 · 2026-08-09 · Quantization belgede NF4, kodda fp4 — ölçüldü
+
+**Durum:** bulgu kaydı. Karar **verilmedi**, kod değiştirilmedi.
+
+**Ölçüm (2026-08-09):** `local_llm.build_load_kwargs` (eskiden
+`load_local_model` gövdesi) `BitsAndBytesConfig(load_in_4bit=True,
+bnb_4bit_compute_dtype=torch.float16)` kuruyor. `bnb_4bit_quant_type`
+**set edilmiyor**. Kurulu transformers 5.14.1'de bu alanın default'u `fp4`:
+
+```
+quant_type default: fp4      double_quant default: False
+```
+
+`CLAUDE.md` GAP-7 ve master reference "lokal Llama-3.1-8B **4-bit NF4**"
+diyor. Koşulan şey NF4 değil.
+
+**Neden kod değiştirilmedi:** quantization tipini değiştirmek aleti
+değiştirmektir. Ön-kayıt henüz yazılmadı, yani pencere açık — ama değişiklik
+karar kapısına getirilmeden yapılırsa "önce karar, sonra değişiklik" kuralı
+çiğnenir ve proje bir kez daha sessizce alet değiştirmiş olur.
+
+**Bunun yerine yapılan:** `afbb552` alet kimliğine **gerçek** değeri yazıyor
+(`quantization.quant_type: "fp4"`), ve `describe_quantization()` config'i
+loader'ın kendisinden okuyor — ikinci bir kurulum bir gün ayrışırdı.
+
+**Karar kapısına taşınan soru:** NF4'e geçilsin mi (belge doğru, kod yanlış),
+yoksa fp4 kabul edilip belgeler mi düzeltilsin (kod doğru, belge yanlış)?
+NF4 literatürde 4-bit için normal tercih; ama bu, ölçülmemiş bir kalite
+iddiası. GAP-8 paketiyle birlikte karara bağlanacak.
+
+**Belge borcu:** `CLAUDE.md` GAP-7 ve master reference §10b — v2.4.2'de
+düzeltilecek.

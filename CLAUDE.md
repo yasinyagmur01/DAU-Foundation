@@ -23,12 +23,15 @@ var".)
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
-- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 5 (GAP-1 / D-004)**.
-- **Son durum:** Adım 1–4 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
-  GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`). Kalan: GAP-1..10, GAP-14.
-  20 preflight değişmezi kilitli (D-012), koda dökülmeyi bekliyor.
+- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 6 (preflight gate)**.
+- **Son durum:** Adım 1–5 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
+  GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`), **GAP-1 (`afbb552`)**.
+  Kalan: GAP-2..10, GAP-14. 20 preflight değişmezi kilitli (D-012),
+  I0.1/I0.2'nin verisi artık var (`tool_identity.py`), gate yazılmayı bekliyor.
 - **Yön:** nesil zinciri 2 ile sınırlı değil, hedef **N nesil** (**D-014**).
-  Nesil sayısına bağlı her tasarım kararı buna göre verilir.
+  Backend hedefi **safi lokal** (**D-015**) — kod default'u hâlâ groq.
+- **Ölçülmüş bulgu:** quantization kodda `fp4`, belgede NF4 (**D-016**) —
+  karar kapısına taşındı, kod değiştirilmedi.
 
 **Bu fazın üç kuralı:**
 1. Tek konu → tek commit → gerekçeli mesaj → karar varsa D-kaydı.
@@ -135,11 +138,13 @@ seed lock ile muhtemelen bit-identik. Böyle bir koşumdan çıkacak p-değeri
 bilimsel sonuç değil, tautolojidir. `null ΔPE=0.000 clean` metriği bu yüzden
 ikircikli: "alet deterministik" de demek olabilir, "hiçbir kol eğitilmedi" de.
 
-**Fix kararı — D-004** (onaylandı, henüz uygulanmadı): env kapalıyken runner
-**hard fail** etsin + explicit `--lora/--no-lora` CLI flag'i + her results
-JSON'una alet kimliği (backend, model id, quantization, adapter durumu,
-sampling parametreleri). İlke: bir koşum kendi konfigürasyonunu inkâr
-edememeli.
+**Fix kararı — D-004 · ✅ UYGULANDI (`afbb552`).** `dau/diagnostics/
+tool_identity.py`: flag verilmemişse `SystemExit`; `--no-lora` meşru ama
+`explicit_off` diye kayda geçiyor ve env'i de o yazıyor; `--lora` + uzak
+backend `SystemExit` (uzakta ağırlık yok, eğitim sessizce atlanırdı);
+her results JSON'unda alet kimliği. İlke: bir koşum kendi konfigürasyonunu
+inkâr edememeli. Kalan: Adım 6'da I0.1/I0.2 olarak değişmez çerçevesine
+bağlanması.
 
 ### GAP-2: Silent train failure — kısmen açık
 Doğrulandı, ama CLAUDE.md'nin önceki tarifi olduğundan geniş:
