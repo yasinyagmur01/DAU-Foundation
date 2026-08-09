@@ -872,3 +872,84 @@ işaretledi; smoke gate'e dokunulmadı. Pilot sonrası tek eşiğe indirilmeli.
 `clip_grad_norm_`'dan alınıp atılıyor), tercih çifti listeleri, ve ilk
 seed'i iki kez koşan replay orkestrasyonu. I1.4 (SNR eşiği) ve I2.3 zaten
 GAP-8 karar paketine bağlı — karar verilmeden yazılmaları erken olurdu.
+
+---
+
+## D-018 · 2026-08-10 · Backend varsayılanı `local` — KİLİTLENDİ
+
+**Durum:** kabul edildi (Yasin, 2026-08-10). **D-005'i kilitler**, D-015'i
+karara dönüştürür.
+
+**Karar:** Deney runner'larının varsayılan backend'i `local`. `groq`
+silinmez — Protocol C provenansı için "legacy/keşif" etiketiyle korunur.
+
+**Gerekçe (D-005'ten devralınan, hepsi kayıtlı):**
+- Kanal 2 (per-agent adapter + DPO) ağırlık erişimi ister; uzak endpoint'te
+  ontolojik olarak imkânsız. Merkezî iddianın test edilemediği
+  konfigürasyon varsayılan olamaz.
+- Ön-kayıt bütünlüğü: sahibi olunmayan bir endpoint sürümünü habersiz
+  değiştirebilir; ön-kayıt geriye dönük geçersizleşir.
+- **Ölçülmüş kanıt:** `075576e` — gerçek Groq ile pilot TPD rate limit'ine
+  takıldı, 6 soydan 5'i tamamlandı. Uzak backend koşumu fiilen yarıda kesti.
+
+**Zamanlama:** pre-reg henüz yazılmadı, pencere açıktı. D-005'in kendi
+uyarısı gereği karar tam da bu pencerede verildi.
+
+**Uygulama borcu (kod henüz değişmedi):** `llm_backend.py:18` ve
+`graph.py:293` `LLM_BACKEND_DEFAULT = "groq"`. Bu karar onları `local`
+yapmayı gerektiriyor. `install_mock_llm` groq'a `setdefault` yapıyor —
+mock yolu gözden geçirilmeli. Uygulama ayrı bir adımda, testleriyle.
+
+**Yan etki:** Adım 5'teki `--lora` + uzak backend kontrolü, varsayılan
+lokal olunca fiilen hiç ateşlenmez hale gelir. Kaldırılmaz: yanlış env
+set eden bir koşumu hâlâ yakalar.
+
+---
+
+## D-019 · 2026-08-10 · Model seçimi: Qwen-2.5-7B ölçülmeden kilitlenmez
+
+**Durum:** yöntem kararı (Yasin, 2026-08-10). Model **henüz seçilmedi**.
+
+**Karar:** Llama-3.1-8B → Qwen-2.5-7B geçişi, brief tavsiyesine dayanarak
+yapılmaz. Önce ölçülür, sonra kilitlenir.
+
+**Neden ölçüm şart:** Tavsiyenin provenansı sağlam
+(`2026-08-08~_per-agent-lora-serving.md` §7, D-010'da güncelliği
+doğrulandı) — ama `CLAUDE.md` kuralı açık: *"Brief'teki her iddia DAU kod
+tabanında ayrıca doğrulanır; doğrulanmadan kilitli karar olarak
+yazılmaz."* Qwen'in "keskin logit ayrımı" ve "~6.4 GiB" iddiaları bu
+repoda **ölçülmedi**.
+
+**Brief'in merkezî iddiası ve neden ciddiye alınıyor:** "Llama-3.1-8B'de
+açgözlü yanıt üretimindeki platosallık DPO verisinde tıkanmaya yol
+açıyor." Bu iddia projenin kendi ölçümüyle örtüşüyor — master reference
+§2: *"Greedy plato (~3 unique completion / 10 event) tercih verisini
+öldürüyordu."* `DIVERSITY_MIN_UNIQUE = 5` olduğu için ölçülen plato
+kapının altında; geçen koşumda 15 çiftin 3'ü bu yüzden elendi.
+
+### Ön-kayıtlı ölçüm protokolü (sayılar görülmeden yazıldı)
+
+**Ölçülen:** `_phase1_diversity`'nin saydığı `n_unique` — üretim kodunun
+kullandığı metriğin aynısı, yeni bir metrik icat edilmiyor.
+
+**Tasarım:** 3 seed × 10 olay, her iki model için **aynı seed'ler, aynı
+prompt'lar, aynı sıcaklık, greedy decoding**. Llama'nın arşiv değeri
+(~3/10) referans alınmaz — aynı koşulda yeniden ölçülür.
+
+**Kabul kriteri (önceden kilitli):** Qwen benimsenir ancak ve ancak
+1. Qwen'in seed'ler üzerindeki **medyan `n_unique` ≥ DIVERSITY_MIN_UNIQUE
+   (5)**, **ve**
+2. Qwen'in medyanı Llama'nınkinden **kesin olarak büyük**.
+
+**Beraberlik / belirsizlik durumunda statüko kazanır** — Llama'da kalınır.
+Bu kural bilerek konuyor: kriteri sonradan gevşetmek, ölçümü tavsiyeyi
+onaylatma törenine çevirir.
+
+**Ayrıca kaydedilecek (karar kriteri değil, envanter):** her iki model
+için ölçülen VRAM tepe değeri. Brief Qwen için ~6.4 GiB, Llama için
+~7.2 GiB diyor; iddia doğrulanır veya düzeltilir. Bu sayı GAP-8'in bellek
+isteyen ayarlarının (seq_len 512, %10 replay) bütçesini belirliyor.
+
+**Maliyet:** ~15GB indirme + iki kısa koşum. Reddedilirse indirme boşa
+gider — kabul edilen bedel, çünkü alternatifi doğrulanmamış bir iddiaya
+dayanarak aleti değiştirmek.
