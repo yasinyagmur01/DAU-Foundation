@@ -28,6 +28,19 @@ from dau.diagnostics.run_protocol_c_prime import (
     PE_W_SATURATION_VALUE,
     _lock_seeds,
 )
+from dau.diagnostics.preflight import (
+    MODE_ABORT,
+    RUN_QUALITY_CLEAN,
+    RUN_QUALITY_MOCK,
+    Preflight,
+    PreflightAbort,
+    check_determinism_settings,
+    check_import_time_env,
+    check_lora_choice,
+    check_pythonhashseed,
+    check_seed_derivation,
+    check_tool_identity,
+)
 from dau.diagnostics.tool_identity import LORA_CHOICE_OFF, LORA_ENABLED_ENV
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
@@ -261,6 +274,125 @@ def test_gen2_measure_locks_rng_for_every_arm(
     assert set(digests.values()) == {_rng_digest()}
 
 
+def _identity(**overrides: Any) -> dict[str, Any]:
+    """Minimal tool-identity shape for the phase-0 checks."""
+
+    identity: dict[str, Any] = {
+        "backend": "groq",
+        "model_id": "llama-3.1-8b-instant",
+        "lora": {"choice": LORA_CHOICE_OFF, "enabled_env": "0"},
+    }
+    identity.update(overrides)
+    return identity
+
+
+def test_i0_1_rejects_undeterminable_field() -> None:
+    passed, detail = check_tool_identity(_identity())
+    assert passed is True
+
+    passed, detail = check_tool_identity(_identity(quantization={"quant_type": None}))
+    assert passed is False
+    assert "quant_type" in detail
+
+
+def test_i0_2_rejects_choice_env_disagreement() -> None:
+    assert check_tool_identity(_identity())[0] is True
+    assert check_lora_choice(_identity())[0] is True
+
+    # Choice says off while the env says training is on: the three gate layers
+    # downstream would disagree with the results file.
+    passed, detail = check_lora_choice(
+        _identity(lora={"choice": LORA_CHOICE_OFF, "enabled_env": "1"})
+    )
+    assert passed is False
+    assert "expected" in detail
+
+    passed, _ = check_lora_choice(_identity(lora={"choice": None, "enabled_env": "0"}))
+    assert passed is False
+
+
+def test_i0_3_requires_pinned_hashseed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYTHONHASHSEED", "0")
+    assert check_pythonhashseed()[0] is True
+
+    monkeypatch.delenv("PYTHONHASHSEED", raising=False)
+    passed, detail = check_pythonhashseed()
+    assert passed is False
+    assert "PYTHONHASHSEED=0 python" in detail
+
+    monkeypatch.setenv("PYTHONHASHSEED", "random")
+    assert check_pythonhashseed()[0] is False
+
+
+def test_i0_4_rejects_agent_id_outside_planned_seeds() -> None:
+    seeds = [SEED_UNIT]
+    ids = [parent_agent_id(ARM_UNIT, SEED_UNIT), heir_agent_id(ARM_UNIT, SEED_UNIT)]
+    assert check_seed_derivation(ids, seeds)[0] is True
+
+    passed, detail = check_seed_derivation(
+        ids + [parent_agent_id(ARM_UNIT, SEED_UNIT + 1)], seeds
+    )
+    assert passed is False
+    assert "not in planned seeds" in detail
+    assert check_seed_derivation([], seeds)[0] is False
+
+
+def test_i0_5_detects_env_changed_after_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bindings = [("N_PAIRS", 15, "DAU_MULTIGEN_N_PAIRS", int)]
+    monkeypatch.delenv("DAU_MULTIGEN_N_PAIRS", raising=False)
+    assert check_import_time_env(bindings)[0] is True
+
+    monkeypatch.setenv("DAU_MULTIGEN_N_PAIRS", "15")
+    assert check_import_time_env(bindings)[0] is True
+
+    monkeypatch.setenv("DAU_MULTIGEN_N_PAIRS", "40")
+    passed, detail = check_import_time_env(bindings)
+    assert passed is False
+    assert "N_PAIRS=15" in detail
+
+
+def test_i0_6_detects_determinism_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    _lock_seeds(SEED_UNIT)
+    assert check_determinism_settings()[0] is True
+
+    monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
+    passed, detail = check_determinism_settings()
+    assert passed is False
+    assert "CUBLAS_WORKSPACE_CONFIG" in detail
+
+
+def test_abort_mode_failure_blocks_the_run() -> None:
+    gate = Preflight()
+    gate.record("I0.3", False, mode=MODE_ABORT, detail="unset")
+    with pytest.raises(PreflightAbort) as excinfo:
+        gate.enforce()
+    assert "I0.3" in str(excinfo.value)
+    assert gate.run_quality() == "aborted"
+
+
+def test_broken_check_counts_as_failure() -> None:
+    """A check that raises must not read as a check that passed."""
+
+    gate = Preflight()
+
+    def _boom() -> tuple[bool, str]:
+        raise RuntimeError("sensor unplugged")
+
+    gate.check("I0.1", _boom, mode=MODE_ABORT)
+    assert gate.invariants()["I0.1"] is False
+    assert "sensor unplugged" in gate.details()["I0.1"]["detail"]
+
+
+def test_not_applicable_is_not_a_pass() -> None:
+    gate = Preflight()
+    gate.record("I1.1", None, mode=MODE_ABORT, detail="no training in mock")
+    gate.enforce()  # None must not trip the abort
+    assert gate.invariants()["I1.1"] is None
+    assert gate.run_quality() == RUN_QUALITY_CLEAN
+
+
 def _pe_rows(pe_w_values: list[float], pi_values: list[float]) -> list[dict[str, Any]]:
     """pe_event_log rows shaped as _precision_audit_from_pe_rows reads them."""
 
@@ -353,6 +485,8 @@ def test_multigen_smoke_mock_llm_end_to_end(
     # LoRA off is now a stated choice, not an env default we lean on (GAP-1).
     monkeypatch.setenv(LORA_ENABLED_ENV, "1")
     monkeypatch.setenv("DAU_LLM_BACKEND", "groq")
+    monkeypatch.setenv("PYTHONHASHSEED", "0")
+    gate = Preflight(mock=True)
     # Keep MiniLM out of the critical path when available stub is cleaner.
     monkeypatch.setattr(
         "dau.foundation.graph._prediction_error",
@@ -368,6 +502,7 @@ def test_multigen_smoke_mock_llm_end_to_end(
         pe_window_gen2=EVENTS_SMOKE,
         mock_llm=True,
         lora=False,
+        preflight=gate,
     )
     # The stated choice wins over the environment, so the three gate layers
     # downstream cannot disagree with what the JSON reports.
@@ -389,6 +524,7 @@ def test_multigen_smoke_mock_llm_end_to_end(
     path = write_multigen_results_json(
         results,
         lora_choice=LORA_CHOICE_OFF,
+        preflight=gate,
         path=out,
         events_gen1=EVENTS_SMOKE,
         events_gen2=EVENTS_SMOKE,
@@ -406,6 +542,12 @@ def test_multigen_smoke_mock_llm_end_to_end(
             assert section["n_pe_events_audited"] > 0, generation
             assert section["pi_values"], generation
             assert section["pi_n_distinct"] > 0, generation
+    # A mock run must never read as clean: canned decisions make the arms
+    # identical by construction.
+    assert doc["run_quality"] == RUN_QUALITY_MOCK
+    assert set(doc["invariants"]) >= {"I0.1", "I0.2", "I0.3", "I0.4", "I0.5", "I0.6"}
+    assert all(v is True for v in doc["invariants"].values())
+
     audit = doc["summary"]["precision_audit"]
     assert audit["gen1"]["n_pe_events_audited"] > 0
     assert audit["gen2"]["n_pe_events_audited"] > 0

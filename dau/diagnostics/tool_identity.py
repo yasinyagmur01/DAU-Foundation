@@ -79,19 +79,25 @@ LORA_UNSET_MESSAGE: str = (
 )
 
 
-def resolve_lora_choice(explicit: bool | None) -> str:
+def resolve_lora_choice(explicit: bool | None, *, mock: bool = False) -> str:
     """Return the recorded LoRA choice, or exit loudly when none was made.
 
     Sets DAU_LORA_ENABLED to match, so the three gate layers downstream
     (_train_adapter, run_micro_train_preference_step, lora_update) cannot
     disagree with what the results JSON reports.
+
+    ``mock`` exempts the backend check: a mock run takes decisions from a
+    canned LLM, so neither backend is in play and the remote-endpoint
+    objection does not apply. Such a run can never be stamped clean —
+    preflight marks it RUN_QUALITY_MOCK — so the exemption cannot let a
+    mock be mistaken for an experiment.
     """
 
     if explicit is None:
         raise SystemExit(LORA_UNSET_MESSAGE)
 
     if explicit:
-        if resolve_backend() != BACKEND_LOCAL:
+        if not mock and resolve_backend() != BACKEND_LOCAL:
             raise SystemExit(GROQ_LORA_MESSAGE)
         os.environ[LORA_ENABLED_ENV] = LORA_ENABLED_ON
         return LORA_CHOICE_ON

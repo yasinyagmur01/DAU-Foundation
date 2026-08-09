@@ -66,6 +66,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _train_adapter,
     _window_mean,
 )
+from dau.diagnostics.preflight import Preflight, PreflightAbort, run_phase0
 from dau.diagnostics.tool_identity import (
     LORA_CHOICE_OFF,
     build_tool_identity,
@@ -310,6 +311,24 @@ def run_life_keep_vault(
         graph_mod._memory_written.pop(agent_id, None)
         graph_mod.MAX_EVENTS = original_max
         graph_mod.AB_ENERGY_FLOOR = original_floor
+
+
+def import_time_bindings() -> list[tuple[str, Any, str, Any]]:
+    """Module constants captured at import, with the env var each came from.
+
+    I0.5 compares these against the environment as it stands now. Anything
+    changed after import is silently ignored by the module that read it, so
+    the run would use one setting while a later reader saw another.
+    """
+
+    return [
+        ("N_PAIRS", N_PAIRS, "DAU_MULTIGEN_N_PAIRS", int),
+        ("EVENTS_GEN1", EVENTS_GEN1, "DAU_MULTIGEN_EVENTS_GEN1", int),
+        ("EVENTS_GEN2", EVENTS_GEN2, "DAU_MULTIGEN_EVENTS_GEN2", int),
+        ("K_GEN2", K_GEN2, "DAU_MULTIGEN_K_GEN2", int),
+        ("SEED_START", SEED_START, "DAU_MULTIGEN_SEED_START", int),
+        ("PE_WINDOW_GEN2", PE_WINDOW_GEN2, "DAU_MULTIGEN_PE_WINDOW", int),
+    ]
 
 
 def parent_agent_id(arm: str, seed: int) -> str:
@@ -654,14 +673,19 @@ def run_cprime_multigen(
     pe_window_gen2: int = PE_WINDOW_GEN2,
     mock_llm: bool | None = None,
     lora: bool | None = None,
+    preflight: Preflight | None = None,
 ) -> list[MultigenPairResult]:
     """Run N seeds × 3 arms through gen1 → transfer → gen2.
 
     ``lora`` must be stated: True trains, False deliberately does not, and
     None exits (GAP-1 — the default was off and nothing said so out loud).
+
+    ``preflight`` collects the invariant verdicts. Pass the same object to
+    the results writer; phase 0 runs here and aborts before any GPU work.
     """
 
-    lora_choice = resolve_lora_choice(lora)
+    use_mock = mock_llm_enabled() if mock_llm is None else bool(mock_llm)
+    lora_choice = resolve_lora_choice(lora, mock=use_mock)
     print(f"[MULTIGEN] lora={lora_choice}", flush=True)
     if lora_choice == LORA_CHOICE_OFF:
         print(
@@ -671,13 +695,31 @@ def run_cprime_multigen(
             flush=True,
         )
 
-    use_mock = mock_llm_enabled() if mock_llm is None else bool(mock_llm)
+    seeds = list(range(seed_start, seed_start + n_pairs))
+    gate = preflight if preflight is not None else Preflight(mock=use_mock)
+    gate.mock = use_mock
+    # Lock before checking I0.6: the check reports the determinism state the
+    # run will have, it does not create it.
+    _lock_seeds(seed_start)
+    run_phase0(
+        gate,
+        tool_identity=build_tool_identity(lora_choice=lora_choice, seeds=seeds),
+        agent_ids=[
+            fn(arm, seed)
+            for seed in seeds
+            for arm in ARM_ORDER
+            for fn in (parent_agent_id, heir_agent_id)
+        ],
+        seeds=seeds,
+        import_time_bindings=import_time_bindings(),
+    )
+    gate.enforce()
+
     previous_builder: Callable[[], Any] | None = None
     if use_mock:
         previous_builder = install_mock_llm()
         print("[MULTIGEN] mock LLM installed", flush=True)
 
-    seeds = list(range(seed_start, seed_start + n_pairs))
     results: list[MultigenPairResult] = []
     try:
         for seed in seeds:
@@ -764,6 +806,7 @@ def write_multigen_results_json(
     results: list[MultigenPairResult],
     *,
     lora_choice: str,
+    preflight: Preflight,
     path: Path | None = None,
     events_gen1: int = EVENTS_GEN1,
     events_gen2: int = EVENTS_GEN2,
@@ -798,6 +841,7 @@ def write_multigen_results_json(
                 lora_choice=lora_choice,
                 seeds=list(range(seed_start, seed_start + n_pairs)),
             ),
+            **preflight.block(),
             "notes": {
                 "gen2_env": "fresh _seed_niche(seed) — same draw as null arm",
                 "gen2_metric": "single-phase window mean PE (not train ΔPE)",
@@ -879,28 +923,36 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
     # Gate first: a refused run should print the reason, not a run banner.
-    lora_choice = resolve_lora_choice(args.lora)
+    lora_choice = resolve_lora_choice(args.lora, mock=bool(args.mock_llm))
     if args.mock_llm:
         os.environ[MOCK_LLM_ENV] = "1"
+    gate = Preflight(mock=bool(args.mock_llm))
     print(
         f"Protocol C′ multigen — N={args.n_pairs} "
         f"events_gen1={args.events_gen1} events_gen2={args.events_gen2} "
         f"K_gen2={args.k_gen2} mock={mock_llm_enabled()}",
         flush=True,
     )
-    results = run_cprime_multigen(
-        n_pairs=args.n_pairs,
-        seed_start=args.seed_start,
-        events_gen1=args.events_gen1,
-        events_gen2=args.events_gen2,
-        k_gen2=args.k_gen2,
-        pe_window_gen2=args.pe_window_gen2,
-        mock_llm=True if args.mock_llm else None,
-        lora=args.lora,
-    )
+    try:
+        results = run_cprime_multigen(
+            n_pairs=args.n_pairs,
+            seed_start=args.seed_start,
+            events_gen1=args.events_gen1,
+            events_gen2=args.events_gen2,
+            k_gen2=args.k_gen2,
+            pe_window_gen2=args.pe_window_gen2,
+            mock_llm=True if args.mock_llm else None,
+            lora=args.lora,
+            preflight=gate,
+        )
+    except PreflightAbort as abort:
+        # An expected refusal, not a crash: print the named invariants rather
+        # than a traceback, and write nothing.
+        raise SystemExit(str(abort)) from None
     path = write_multigen_results_json(
         results,
         lora_choice=lora_choice,
+        preflight=gate,
         path=args.results,
         events_gen1=args.events_gen1,
         events_gen2=args.events_gen2,
@@ -912,6 +964,7 @@ def main(argv: list[str] | None = None) -> None:
     summary = _summary(results)
     print("\n=== MULTIGEN SUMMARY ===", flush=True)
     print(json.dumps(summary, indent=2), flush=True)
+    print(f"run_quality={gate.run_quality()}", flush=True)
     print(f"results={path}", flush=True)
 
 
