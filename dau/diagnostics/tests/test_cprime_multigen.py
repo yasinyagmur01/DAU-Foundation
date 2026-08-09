@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import random
 from typing import Any
 from unittest.mock import patch
@@ -16,11 +17,16 @@ from dau.diagnostics.run_cprime_multigen import (
     heir_agent_id,
     parent_agent_id,
     run_cprime_multigen,
+    run_gen1_arm_lineage,
     run_gen2_measure,
     transfer_to_heir,
     write_multigen_results_json,
 )
-from dau.diagnostics.run_protocol_c_prime import _lock_seeds
+from dau.diagnostics.run_protocol_c_prime import (
+    ARM_NULL,
+    PE_W_SATURATION_VALUE,
+    _lock_seeds,
+)
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
     GENERATION_INHERITED_KEY,
@@ -253,6 +259,88 @@ def test_gen2_measure_locks_rng_for_every_arm(
     assert set(digests.values()) == {_rng_digest()}
 
 
+def _pe_rows(pe_w_values: list[float], pi_values: list[float]) -> list[dict[str, Any]]:
+    """pe_event_log rows shaped as _precision_audit_from_pe_rows reads them."""
+
+    return [
+        {"prediction_error": pe_w, "precision_weight": pi}
+        for pe_w, pi in zip(pe_w_values, pi_values)
+    ]
+
+
+class _FakeTmp:
+    def cleanup(self) -> None:
+        return None
+
+
+def test_gen1_arm_result_carries_precision_audit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GAP-13: multigen dropped the audit rows and shipped default zeros."""
+
+    sat = PE_W_SATURATION_VALUE
+    row_groups = [
+        _pe_rows([sat, 0.4, 0.4], [0.5, 0.6, 0.5]),  # phase-1
+        _pe_rows([sat, 0.2], [0.7, 0.5]),  # phase-2
+    ]
+
+    def _fake_life(*, agent_id, seed, n_events, store, initial):
+        rows = row_groups.pop(0)
+        return [0.3] * n_events, [], rows, _initial_state(agent_id, seed)
+
+    monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
+    monkeypatch.setattr(
+        multigen_mod,
+        "_open_lineage_store",
+        lambda: (None, _FakeTmp()),
+    )
+
+    # null arm: no training, so the audit is the only thing under test here.
+    arm_result, _state, _store, _tmp = run_gen1_arm_lineage(
+        seed=SEED_UNIT,
+        arm=ARM_NULL,
+        events_gen1=EVENTS_SMOKE,
+    )
+
+    # Both phases audited, not just one.
+    assert arm_result.n_pe_events_audited == 5
+    assert arm_result.n_saturated == 2
+    assert arm_result.saturation_rate == pytest.approx(0.4)
+    assert arm_result.pi_n_distinct == 3
+    assert arm_result.pi_values == [0.5, 0.6, 0.5, 0.7, 0.5]
+
+
+def test_gen2_result_carries_precision_audit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The heir needs its own instrument health — gen1's does not cover it."""
+
+    sat = PE_W_SATURATION_VALUE
+    rows = _pe_rows([sat, 0.3, 0.3, 0.3], [0.9, 0.9, 0.4, 0.2])
+
+    def _fake_life(*, agent_id, seed, n_events, store, initial):
+        return [0.3] * n_events, [], rows, initial
+
+    monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
+
+    heir = _initial_state(heir_agent_id(ARM_UNIT, SEED_UNIT), SEED_UNIT)
+    gen2 = run_gen2_measure(
+        heir=heir,
+        store=None,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+        events_gen2=EVENTS_SMOKE,
+        k_gen2=1,
+        pe_window=EVENTS_SMOKE,
+    )
+
+    assert gen2.n_pe_events_audited == 4
+    assert gen2.n_saturated == 1
+    assert gen2.saturation_rate == pytest.approx(0.25)
+    assert gen2.pi_n_distinct == 3
+    assert gen2.pi_values == [0.9, 0.9, 0.4, 0.2]
+
+
 def test_multigen_smoke_mock_llm_end_to_end(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
@@ -301,6 +389,21 @@ def test_multigen_smoke_mock_llm_end_to_end(
         seed_start=SEED_UNIT,
         pe_window_gen2=EVENTS_SMOKE,
     )
+    # GAP-13: default zeros read as "no saturation" but mean "never measured".
+    # A run whose instrument health is all zeros must not look healthy.
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    for lineage in doc["pairs"][0]["lineages"]:
+        for generation in ("gen1", "gen2"):
+            section = lineage[generation]
+            assert section["n_pe_events_audited"] > 0, generation
+            assert section["pi_values"], generation
+            assert section["pi_n_distinct"] > 0, generation
+    audit = doc["summary"]["precision_audit"]
+    assert audit["gen1"]["n_pe_events_audited"] > 0
+    assert audit["gen2"]["n_pe_events_audited"] > 0
+    # Descriptive block only — the verdict belongs to the preflight gate (I3.2).
+    assert "saturation_pass" not in audit["gen1"]
+
     payload = path.read_text(encoding="utf-8")
     assert "C_PRIME_MULTIGEN" in payload
     assert "transfer" in payload

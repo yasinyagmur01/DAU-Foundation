@@ -50,6 +50,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     NAN_DELTA,
     NLI_FILTER_ENABLED_ENV,
     PE_WINDOW_EVENTS,
+    PI_DISTINCT_DECIMALS,
     STREAM_NODES_PER_EVENT,
     STREAM_RECURSION_HEADROOM,
     ArmResult,
@@ -58,8 +59,10 @@ from dau.diagnostics.run_protocol_c_prime import (
     _initial_state,
     _json_sanitize,
     _lock_seeds,
+    _merge_pe_rows,
     _pad_pe_list,
     _phase1_diversity,
+    _precision_audit_from_pe_rows,
     _train_adapter,
     _window_mean,
 )
@@ -157,6 +160,15 @@ class Gen2Result:
     gate_reason: str
     wall_seconds: float
     pe_list: list[float] = field(default_factory=list)
+    # Precision audit over this heir's pe_event_log rows. Gen2 is where the
+    # inheritance claim is read, and a saturated sensor reads "no difference"
+    # exactly like a real null — so the heir needs its own instrument health,
+    # not just gen1's (GAP-13).
+    saturation_rate: float = EMPTY_MEAN
+    pi_n_distinct: int = EMPTY_COUNT
+    n_pe_events_audited: int = EMPTY_COUNT
+    n_saturated: int = EMPTY_COUNT
+    pi_values: list[float] = field(default_factory=list)
 
 
 @dataclass
@@ -417,7 +429,7 @@ def run_gen1_arm_lineage(
     _lock_seeds(seed)
     store, tmp = _open_lineage_store()
 
-    pe_before_list, lived_examples, _pe_rows_1, _state_1 = run_life_keep_vault(
+    pe_before_list, lived_examples, pe_rows_1, _state_1 = run_life_keep_vault(
         agent_id=agent_id,
         seed=seed,
         n_events=events_gen1,
@@ -450,7 +462,7 @@ def run_gen1_arm_lineage(
 
     # Phase-2: fresh body + same seed niche, SAME vault (4A material).
     _lock_seeds(seed)
-    pe_after_list, _, _pe_rows_2, state_2 = run_life_keep_vault(
+    pe_after_list, _, pe_rows_2, state_2 = run_life_keep_vault(
         agent_id=agent_id,
         seed=seed,
         n_events=events_gen1,
@@ -459,6 +471,13 @@ def run_gen1_arm_lineage(
     )
     pe_after = _window_mean(pe_after_list)
     delta_pe = NAN_DELTA if gated else (pe_after - pe_before)
+
+    # GAP-13: Protocol C′ audits both phases (run_protocol_c_prime.py:874);
+    # multigen dropped the rows on the floor and shipped default zeros, which
+    # read as "no saturation" when they mean "never measured".
+    sat, pi_n, pi_vals, n_aud, n_sat = _precision_audit_from_pe_rows(
+        _merge_pe_rows(pe_rows_1, pe_rows_2)
+    )
 
     arm_result = ArmResult(
         seed=seed,
@@ -474,6 +493,11 @@ def run_gen1_arm_lineage(
         gate_reason=gate_reason,
         n_unique=n_unique,
         pe_gap_max=pe_gap_max,
+        saturation_rate=sat,
+        pi_n_distinct=pi_n,
+        n_pe_events_audited=n_aud,
+        n_saturated=n_sat,
+        pi_values=list(pi_vals),
     )
     return arm_result, state_2, store, tmp
 
@@ -497,7 +521,7 @@ def run_gen2_measure(
     # arm contrast carries an RNG contrast inside it.
     _lock_seeds(seed)
     # 3A: do not load parent adapter; heir agent_id has no trained adapter.
-    pe_list, lived_examples, _rows, _final = run_life_keep_vault(
+    pe_list, lived_examples, pe_rows, _final = run_life_keep_vault(
         agent_id=heir.agent_id,
         seed=seed,
         n_events=events_gen2,
@@ -508,6 +532,7 @@ def run_gen2_measure(
     n_unique, pe_gap_max = _phase1_diversity(lived_examples)
     gate_reason = _gen2_diversity_gate_reason(n_unique, pe_gap_max, k_gen2)
     gated = bool(gate_reason)
+    sat, pi_n, pi_vals, n_aud, n_sat = _precision_audit_from_pe_rows(pe_rows)
     return Gen2Result(
         seed=seed,
         gen1_arm=gen1_arm,
@@ -520,6 +545,11 @@ def run_gen2_measure(
         gate_reason=gate_reason,
         wall_seconds=float(time.perf_counter() - started),
         pe_list=list(pe_list),
+        saturation_rate=sat,
+        pi_n_distinct=pi_n,
+        n_pe_events_audited=n_aud,
+        n_saturated=n_sat,
+        pi_values=list(pi_vals),
     )
 
 
@@ -646,6 +676,33 @@ def run_cprime_multigen(
     return results
 
 
+def _precision_audit_totals(sections: list[dict[str, Any]]) -> dict[str, Any]:
+    """Pool the per-section precision audit into one readable block.
+
+    Descriptive only — no pass/fail. The thresholds this will be judged
+    against (SATURATION_MAX, PI_N_DISTINCT_MIN) are still uncalibrated, and
+    I3.2 assigns the verdict to the preflight gate, not to the writer of the
+    numbers. Counting here and judging there keeps an uncalibrated threshold
+    from being locked in by accident.
+    """
+
+    n_events = sum(int(s.get("n_pe_events_audited", 0)) for s in sections)
+    n_saturated = sum(int(s.get("n_saturated", 0)) for s in sections)
+    all_pi: list[float] = []
+    for section in sections:
+        all_pi.extend(float(value) for value in section.get("pi_values", []))
+    return {
+        "n_pe_events_audited": n_events,
+        "n_saturated": n_saturated,
+        "saturation_rate": (
+            float(n_saturated) / float(n_events) if n_events > 0 else EMPTY_MEAN
+        ),
+        "pi_n_distinct": len(
+            {round(value, PI_DISTINCT_DECIMALS) for value in all_pi}
+        ),
+    }
+
+
 def _summary(results: list[MultigenPairResult]) -> dict[str, Any]:
     """Lightweight aggregate: gen2 mean_pe by gen1_arm (no claim tests)."""
 
@@ -671,6 +728,14 @@ def _summary(results: list[MultigenPairResult]) -> dict[str, Any]:
         },
         "n_usable_gen2_by_gen1_arm": {
             arm: len(by_arm.get(arm, [])) for arm in ARM_ORDER
+        },
+        "precision_audit": {
+            "gen1": _precision_audit_totals(
+                [lin.gen1 for pair in results for lin in pair.lineages]
+            ),
+            "gen2": _precision_audit_totals(
+                [lin.gen2 for pair in results for lin in pair.lineages]
+            ),
         },
     }
 
