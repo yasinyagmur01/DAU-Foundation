@@ -239,12 +239,11 @@ iki kez bağımsız tespit edilmiş bir ölçüm sapması.
 Temizlik (düşük öncelik): `time.sleep(10)` (run_protocol_c_prime.py), bare
 `0.5` (shuffle_preference_pairs), default `k: int = 5` (retrieval.py).
 
-**Eklendi 2026-08-10 (D-023, kapsam dışı bırakıldı):** `LLM_BACKEND_*`
-sabitleri hem `graph.py` hem `llm_backend.py`'de tanımlı, ve
-`llm_backend.resolve_backend_name`/`get_backend`'in **hiçbir çağıranı yok**.
-Yasak #4 ihlali. Şimdilik `test_llm_backend_module_mirrors_graph_constants`
-iki kopyayı bağlıyor. Tekilleştirme **Cursor'a uygun** — mekanik, davranış
-değiştirmeyen, tek konu.
+~~`LLM_BACKEND_*` sabitleri iki dosyada~~ ✅ **kapandı `9ce5269`** (Cursor,
+2026-08-10): sabitler + mesaj + çözümleyici gövdesi `llm_backend.py`'de tek
+yerde, `graph._resolve_llm_backend` ince alias. Bekçi testi eşitlik değil
+**kimlik** iddia ediyor (kısa string'ler intern edilir; tuple edilmez).
+`get_backend`'in hâlâ çağıranı yok — silinmedi, kapsam dışıydı.
 
 **Önceliği yükseltilen madde:** `2026-08-08~_per-agent-lora-serving.md` §1,
 adapter hot-swap'te **CUDA akış senkronizasyonu + gradyan önbellek

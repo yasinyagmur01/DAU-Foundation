@@ -1193,3 +1193,15 @@ geri al → 6 test kırılır · sessiz fallback'i geri koy → 4 test kırılı
 boş değeri "set edilmiş" say → 5 test kırılır · mock'un `setdefault`'unu
 kaldır → 1 test kırılır · `setdefault`'u koşulsuz `set` yap → 1 test kırılır.
 Tam suite: 255 → **270 passed**.
+
+**Ek not (2026-08-10, aynı gün):** D-023'ün "kapsam dışı bırakılan"
+maddesi kapandı — tekilleştirme `9ce5269` ile yapıldı (Cursor, mekanik,
+davranış değişmedi). Sabitler, `LLM_BACKEND_UNKNOWN_MESSAGE` ve
+çözümleyici gövdesi `llm_backend.py`'de tek yerde; `graph._resolve_llm_backend`
+ince alias olarak korundu (`graph.agent_node` ve
+`tool_identity.resolve_backend` onu adıyla çağırıyor). Bekçi testi eşitlik
+yerine **kimlik** iddia ediyor: CPython kısa string'leri intern ettiği için
+`LLM_BACKEND_DEFAULT` üzerinden `is` testi iki ayrı tanımla da geçerdi ve
+hiçbir şey kanıtlamazdı; tuple intern edilmiyor. Mutasyonla doğrulandı —
+`graph.py`'ye aynı değerli bir kopya geri kondu, test kırıldı.
+`get_backend`'in hâlâ çağıranı yok; silinmedi.
