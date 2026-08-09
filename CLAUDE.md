@@ -194,6 +194,59 @@ ya beklenen etki büyüklüğü açıkça gerekçelendirilip N ona göre hesapla
 ya da D-002'nin yüksek güçlü uç noktası (doğum-drift, tamsayı sayımlar)
 kullanılır — ki bu D-002'yi bağımsız olarak destekliyor.
 
+### GAP-11 (canlı hata): Shuffle kolu process'ler arası reproducible değil
+`_seed_from_agent_id` (`run_protocol_c_prime.py:567-573`) trailing segmenti
+int'e çevirir, olmazsa `abs(hash(agent_id)) % 2**31` döner. Multigen
+`agent_id`'si `cprime-{arm}-{seed}-g1` → `int("g1")` ValueError → hash
+fallback. `PYTHONHASHSEED` **hiçbir yerde set edilmiyor**.
+
+Ampirik kanıt — aynı `agent_id`, üç ayrı process:
+`419643228` · `227385495` · `229629477`.
+
+**Kök neden:** `cd64cc8` multigen `agent_id`'ye `-g1` ekledi; Protocol C′'de
+`cprime-shuffle-2001` → `int("2001")` çalışıyordu. Docstring hâlâ eski
+formatı yazıyor. Uzaktaki dosyada sessizce kırıldı.
+
+**Etki:** üç koldan biri replay garantisinin dışında. Düzeltme tek satır,
+ama determinizm assertion'ı ile birlikte gelmeli.
+
+### GAP-12: Gen2 seed-locked değil — ve asimetrik
+`run_gen1_arm_lineage` phase-1 (`:411`) ve phase-2 (`:446`) `_lock_seeds`
+çağırıyor; `run_gen2_measure` çağırmıyor.
+
+Asıl sorun asimetri: lived/shuffle eğitim yapıyor (LoRA reset + DPO, torch
+RNG tüketiyor), null yapmıyor → üç varis gen2'ye **farklı RNG durumlarıyla**
+giriyor. Kol farkı ile RNG farkı karışıyor.
+
+### GAP-13: Multigen'de precision audit hiç yapılmıyor
+`ArmResult`'ın `saturation_rate` / `pi_n_distinct` / `n_pe_events_audited` /
+`n_saturated` / `pi_values` alanları `run_cprime_multigen.py`'de **hiç
+doldurulmuyor** → JSON'a default sıfırlar gidiyor.
+
+v2.4.1'de v3 smoke'un tüm anlamı bu alanlardı. Multigen koşumunda alet
+sağlık kontrolü yok; doygunluk geri gelse haberimiz olmaz.
+
+### GAP-14: PPR (ADIM 4) koşum yolunda inert
+`memory_edges` tablosunu dolduran tek yer `store.write_edge`; onu çağıran
+tek yer `consolidation.run_consolidation`; onu çağıran `memory_bridge.py:113`
+sarmalayıcısını **hiç kimse çağırmıyor** (testler hariç).
+
+Sonuç: tablo boş → `compute_ppr_scores` boş graf → `{seed_domain: 1.0}`
+sabit dönüyor:
+```
+memory_score = 0.21·recency + 0.28·magnitude + 0.21·domain_match + 0.30·ppr
+             → fiilen 0.21·recency + 0.28·magnitude + 0.51·domain_match
+```
+PPR bir çağrışım motoru değil, domain_match'in ağırlığını büyüten sabit.
+⚠ **Master reference §6 ve §19 ADIM 4'ü uygulanmış entegrasyon olarak
+sunuyor** — v2.4.2'de düzeltilmeli. Karar gerekiyor: consolidation'ı koşum
+yoluna bağla mı, yoksa "inert" diye belgele mi?
+
+### GAP-15: `TEMPERATURE` import anında donuyor
+`run_protocol_c_prime.py:73` `DAU_LLM_TEMPERATURE`'ı import anında okuyor;
+`_lock_seeds` her çağrıda env'i o değerle geri yazıyor (`:460`). Import'tan
+sonra env değiştirmek sessizce etkisiz.
+
 ### GAP-10: Süresi dolmuş ölçüm ertelemeleri (v1 denetimlerinden)
 - **`W_SEM = 0.0`** — ChromaDB vektörü skorlamaya girmiyor, sadece depo.
   `v1-kritik-sistem-audit` "**baseline kilitlenince** `W_SEM = 0.3–0.4`

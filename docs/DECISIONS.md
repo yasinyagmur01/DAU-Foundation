@@ -527,3 +527,95 @@ Trait yasağı dört bağımsız kaynakta doğrulanmış.
 "alet yükseltmesi" kararı gerektiğini gösteriyor. Bu, pre-reg'i geciktirir.
 Alternatif — mevcut aletle koşmak — güç analizine göre baştan başarısız
 olacağı bilinen bir deney koşmak demektir.
+
+---
+
+## D-011 · 2026-08-09 · Koşum yolu denetimi: beş sessiz sapma
+
+**Durum:** kabul edildi (bulgu kaydı — düzeltmeler ayrı commit'lerde)
+
+**Karar:** `docs/RUNPATH_AUDIT.md` (Cursor, read-only, 28 dosya, K1–K8 +
+28 BELİRSİZ) üzerinden yapılan doğrulamada beş sessiz sapma tespit edildi
+ve `CLAUDE.md`'ye GAP-11..15 olarak kaydedildi. Hiçbiri exception atmıyor;
+hepsi sessizce başka bir davranışa düşüyor.
+
+**Kanıt:** commit `db6931f` (denetim dosyası) + aşağıdaki bireysel
+doğrulamalar.
+
+### Bulgu 1 — Shuffle kolu process'ler arası reproducible değil
+
+`_seed_from_agent_id` (`run_protocol_c_prime.py:567-573`) trailing segmenti
+int'e çevirmeye çalışır, olmazsa `abs(hash(agent_id)) % 2**31` döner.
+Multigen `agent_id`'si `cprime-{arm}-{seed}-g1` → `int("g1")` ValueError →
+hash fallback. `PYTHONHASHSEED` repoda hiçbir yerde set edilmiyor; Python
+string hash'ini process başına rastgeleleştirir.
+
+Ampirik: aynı `agent_id`, üç ayrı process → `419643228`, `227385495`,
+`229629477`.
+
+**Kök neden:** `cd64cc8` (multigen) `agent_id`'ye `-g1` eki ekledi.
+Protocol C′'de `cprime-shuffle-2001` → `int("2001")` çalışıyordu.
+Fonksiyonun docstring'i hâlâ eski formatı (`cprime-{arm}-{seed}`) yazıyor.
+Uzaktaki bir dosyada, sessizce, fark edilmeden kırıldı.
+
+**Etki:** shuffle kolunun tercih çifti karıştırması her koşumda farklı.
+Üç koldan biri replay garantisinin dışında.
+
+### Bulgu 2 — Gen2 seed-locked değil, ve asimetrik
+
+`run_gen1_arm_lineage` phase-1 (`:411`) ve phase-2 (`:446`) `_lock_seeds`
+çağırıyor; `run_gen2_measure` çağırmıyor. Gen2, gen1'in bıraktığı global
+RNG durumuyla başlıyor.
+
+Asıl sorun asimetri: lived ve shuffle kolları eğitim yapıyor (LoRA reset
+`init_lora_weights=True` + DPO, torch RNG tüketiyor), null yapmıyor.
+Üç varis gen2'ye farklı RNG durumlarıyla giriyor — kol farkından değil,
+eğitimin yan etkisinden.
+
+### Bulgu 3 — Multigen'de precision audit hiç yapılmıyor
+
+`ArmResult`'ın `saturation_rate` / `pi_n_distinct` / `n_pe_events_audited`
+/ `n_saturated` / `pi_values` alanları `run_cprime_multigen.py`'de hiç
+doldurulmuyor (grep sıfır sonuç) → JSON'a default sıfır/boş gidiyor.
+
+v2.4.1'de v3 smoke'un tüm anlamı bu alanlardı ("alet sağlıklı mı").
+Multigen koşumunda o kontrol yok; precision doygunluğu geri gelse
+haberimiz olmaz.
+
+### Bulgu 4 — PPR (ADIM 4) koşum yolunda inert
+
+Zincir sonuna kadar takip edildi:
+- `memory_edges` tablosunu dolduran tek yer: `store.write_edge`
+- `write_edge`'i çağıran tek yer: `consolidation.run_consolidation`
+- `run_consolidation`'ı çağıranlar: `run_memory_demo.py` (demo) ve
+  `memory_bridge.py:113` (sarmalayıcı)
+- O sarmalayıcıyı çağıran: **hiç kimse** (testler hariç)
+
+Sonuç: `memory_edges` koşum boyunca boş. `compute_ppr_scores` boş graf
+görüp `{seed_domain: 1.0}` dönüyor. Yani:
+
+```
+memory_score = 0.21·recency + 0.28·magnitude + 0.21·domain_match + 0.30·ppr
+             → ppr sabit → fiilen 0.21·recency + 0.28·magnitude + 0.51·domain_match
+```
+
+PPR bir HippoRAG çağrışımı değil, domain_match'in ağırlığını büyüten bir
+sabit. **Master reference §6 ve §19 ADIM 4'ü uygulanmış entegrasyon olarak
+sunuyor** — kod ve test var, ama koşum yolunda çalışmıyor. Belge
+düzeltmesi gerekecek (v2.4.2).
+
+### Bulgu 5 — `TEMPERATURE` import anında donuyor
+
+`run_protocol_c_prime.py:73` `DAU_LLM_TEMPERATURE`'ı **import anında**
+okuyor. `_lock_seeds` her çağrıldığında env'i o import-time değeriyle
+**geri yazıyor** (`:460`). Import'tan sonra env'i değiştirmek sessizce
+etkisiz.
+
+**Kabul edilen bedel / kapsam notu:** Denetim 28 BELİRSİZ maddesi bıraktı;
+çoğu kovalanmadı (altın kaplama olurdu). Bulgu 1 ve 4 bu maddelerden
+türetildi, kalanlar açık bırakıldı.
+
+**Metodolojik not:** Arşiv mutabakatı (D-010) *yoklukları* buldu (GAP-8:
+olması gerekip olmayan şeyler). Koşum yolu denetimi *sessiz sapmaları*
+buldu (bu kayıt). İki yöntem farklı hata sınıfları yakalıyor; ikisi de
+gerekliydi. Hiçbiri kavramsal hataları yakalayamaz (GAP-5 tipi).
