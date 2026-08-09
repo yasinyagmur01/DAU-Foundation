@@ -171,12 +171,32 @@ Kod düzeltmeleri bitince durulur. Sıradakiler kod değil **karar** gerektirir
 ve üçü tek "alet yükseltmesi" paketidir — üçü de aynı şeyi (DPO sinyal
 gücü) etkiliyor:
 
-| Karar | Kayıt | Neden şimdi |
+**✅ KAPANDI — 2026-08-10.** Dört kararın hepsi verildi:
+
+| Karar | Sonuç | Kayıt |
 |---|---|---|
-| GAP-8'in beş ayarı: gradient accumulation · `seq_len` 512 · 3 epoch · %10 somatik replay · `PE ≥ 0.40` eşiği | GAP-8 | Alet gücü; pre-reg'den önce |
-| Backend `local` + **Qwen-2.5-7B** | D-005 (durum: **önerildi**, kilitli değil) · **D-015** (Yasin: "proje safi lokal koşacak" — girdi) | Aynı pencere; pre-reg kilitlenince post-hoc olur |
-| **Quantization: NF4'e geçilsin mi, fp4 kabul edilip belgeler mi düzeltilsin** | **D-016** (ölçüldü: kod fp4, belge NF4 diyor) | Aynı alet paketi; koşum başlamadan |
-| PPR: koşum yoluna bağlansın mı, "inert" diye belgelensin mi | GAP-14 | I5.1'in ABORT/FLAG modunu belirliyor |
+| Backend | `local` **kilitlendi**; groq legacy/keşif olarak kalır | **D-018** |
+| Model | Qwen-2.5-7B **ölçülmeden kilitlenmez**; kabul kriteri ön-kayıtlı (medyan `n_unique ≥ 5` **ve** Llama'yı kesin geçme; beraberlikte statüko) | **D-019** |
+| Quantization | **NF4 + `double_quant`**, bayrak açıkça yazılır | **D-020** (D-016 kapandı) |
+| GAP-8 | **Bölündü.** A1 (accumulation) + A5 (SNR filtresi) kilitli; A5'in eşiği pilottan sonra kalibre edilir. A2/A3/A4 VRAM ölçümüne bağlı | **D-021** |
+| PPR / consolidation | Deney yoluna **bağlanır**; I5.1 pilota kadar FLAG; miras etkisi pilotta ölçülür | **D-022** (GAP-14 kapandı) |
+
+**Kararların ortak deseni:** hiçbiri doğrulanmamış bir iddiaya dayanarak
+kilitlenmedi. Kaynağı olan mekanizmalar kabul edildi, **sayılar ölçüme
+bırakıldı** — model seçimi, SNR eşiği, VRAM'e bağlı üç ayar ve
+consolidation'ın miras etkisi.
+
+### Uygulama borçları (kod henüz değişmedi)
+
+| # | İş | Kayıt |
+|---|---|---|
+| U1 | `LLM_BACKEND_DEFAULT` → `local` (`llm_backend.py:18`, `graph.py:293`); `install_mock_llm`'in groq `setdefault`'u gözden geçirilir | D-018 |
+| U2 | `build_load_kwargs`: `quant_type="nf4"` + `use_double_quant=True` | D-020 |
+| U3 | Model ölçümü: 3 seed × 10 olay, iki model, NF4 açık; `n_unique` + VRAM tepe | D-019 |
+| U4 | Gradient accumulation (`local_llm`); alet kimliği `effective_batch_size`'ı kendiliğinden düzeltir | D-021/A1 |
+| U5 | `build_pe_ranked_pairs`'e mutlak PE filtresi; elenen çift sayısı **loglanmalı** (`MIN_PAIRS` kalibresiz, I1.5 FLAG) | D-021/A5 |
+| U6 | `consolidate_run` deney yolunda yaşam sonunda; **hangi fazın sonu olduğu açık soru** | D-022 |
+| U7 | A2/A3/A4 kararı — U3'ün VRAM sonucundan sonra | D-021 |
 
 ---
 

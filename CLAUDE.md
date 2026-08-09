@@ -23,8 +23,8 @@ var".)
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
-- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **C bölümü, karar kapısı**
-  (kod değil, karar: GAP-8 · D-005/D-015 · D-016 · GAP-14).
+- **Sıradaki adım:** karar kapısı **kapandı** (2026-08-10, D-018..D-022).
+  Sıradaki iş bu kararların **uygulanması** — plan modunda ele alınacak.
 - **Son durum:** Adım 1–5 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
   GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`), **GAP-1 (`afbb552`)**.
   Adım 6 **kısmen**: `dau/diagnostics/preflight.py`, **24 değişmezin 17'si**
@@ -37,9 +37,17 @@ var".)
   (inherited somatic scale hiç uygulanmıyor). Denetimle bulunmuş iki maddeyi
   koşum artık kendisi söylüyor.
 - **Yön:** nesil zinciri 2 ile sınırlı değil, hedef **N nesil** (**D-014**).
-  Backend hedefi **safi lokal** (**D-015**) — kod default'u hâlâ groq.
-- **Ölçülmüş bulgu:** quantization kodda `fp4`, belgede NF4 (**D-016**) —
-  karar kapısına taşındı, kod değiştirilmedi.
+- **Karar kapısının çıktısı (hepsi kayıtlı, hiçbiri henüz kodda):**
+  **D-018** backend `local` kilitlendi (groq legacy kalır) ·
+  **D-019** Qwen-2.5-7B ölçülmeden kilitlenmez, kabul kriteri ön-kayıtlı ·
+  **D-020** NF4 + `double_quant`, bayrak açıkça yazılır (D-016 kapandı) ·
+  **D-021** GAP-8 bölündü: A1 (accumulation) + A5 (SNR filtresi) kilitli,
+  A2/A3/A4 VRAM ölçümüne bağlı · **D-022** consolidation deney yoluna
+  bağlanır, I5.1 pilota kadar FLAG (GAP-14 kapandı).
+- ⚠ **GAP-14'ün eski tarifi yanlıştı** — `consolidate_run`'ı `graph.py:1426`
+  çağırıyor. Ölü kod değil, **yanlış yolda**: demo yolu çağırıyor, deney
+  yolu çağırmıyor. Ayrıca deney yolunda **unutma da hiç çalışmamış**
+  (bkz. D-022).
 
 **Bu fazın üç kuralı:**
 1. Tek konu → tek commit → gerekçeli mesaj → karar varsa D-kaydı.
