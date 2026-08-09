@@ -66,7 +66,12 @@ from dau.diagnostics.run_protocol_c_prime import (
     _train_adapter,
     _window_mean,
 )
-from dau.diagnostics.preflight import Preflight, PreflightAbort, run_phase0
+from dau.diagnostics.preflight import (
+    Preflight,
+    PreflightAbort,
+    run_phase0,
+    run_phase3,
+)
 from dau.diagnostics.tool_identity import (
     LORA_CHOICE_OFF,
     build_tool_identity,
@@ -112,6 +117,9 @@ RESULTS_PATH: Path = Path(
 PROTOCOL_ID: str = "C_PRIME_MULTIGEN"
 HEIR_SUFFIX: str = "g2"
 PARENT_SUFFIX: str = "g1"
+# A gen1 arm lives twice on the same vault (before and after training), so its
+# PE log holds two lives' worth of events; the heir lives once.
+GEN1_PHASES: int = 2
 TMP_PREFIX: str = "dau_cprime_multigen_"
 
 MOCK_DECISION_TEXTS: tuple[str, ...] = (
@@ -735,6 +743,21 @@ def run_cprime_multigen(
     finally:
         if previous_builder is not None:
             restore_llm_builder(previous_builder)
+
+    # Phase 3 reads the finished run, so it cannot abort it — every check is
+    # FLAG and lands as a label on the results instead.
+    gen1_sections = [lin.gen1 for pair in results for lin in pair.lineages]
+    gen2_sections = [lin.gen2 for pair in results for lin in pair.lineages]
+    run_phase3(
+        gate,
+        gen1_sections=gen1_sections,
+        gen2_sections=gen2_sections,
+        # Gen1 runs two phases on the same arm; gen2 runs one.
+        expected_gen1=events_gen1 * GEN1_PHASES,
+        expected_gen2=events_gen2,
+        gen1_audit=_precision_audit_totals(gen1_sections),
+        gen2_audit=_precision_audit_totals(gen2_sections),
+    )
     return results
 
 

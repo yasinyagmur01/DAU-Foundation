@@ -42,6 +42,22 @@ RUN_QUALITY_MOCK: str = "mock"
 PYTHONHASHSEED_ENV: str = "PYTHONHASHSEED"
 CUBLAS_WORKSPACE_CONFIG_ENV: str = "CUBLAS_WORKSPACE_CONFIG"
 
+# --- phase 3 thresholds ----------------------------------------------------
+# Sources are in docs/PREFLIGHT_INVARIANTS.md. Uncalibrated ones stay FLAG:
+# killing a run on an invented constant is worse than labelling it.
+#
+# Note these are deliberately stricter than run_protocol_c_prime's
+# SMOKE_SATURATION_MAX_RATE=0.30 / SMOKE_PI_MIN_DISTINCT=3. The smoke gate is
+# left alone; D-012 derived these from the v3 smoke measurement (saturation
+# 0.0025, π distinct 14) with a 20x margin, and the two gates answer
+# different questions.
+SATURATION_MAX: float = 0.05  # D-012; uncalibrated (proposal, not locked)
+PI_N_DISTINCT_MIN: int = 8  # D-012; uncalibrated
+GATED_FRACTION_MAX: float = 0.20  # last run measured 3/15; uncalibrated
+# Padding is fabricated data, so any of it earns a label. Not a guessed
+# threshold — the strictest honest reading, and FLAG only.
+PAD_FRACTION_MAX: float = 0.0
+
 NOT_APPLICABLE_MOCK: str = "not applicable under mock LLM"
 
 
@@ -151,12 +167,19 @@ class Preflight:
         }
 
     def run_quality(self) -> str:
+        """Worst-first, so the stamp never hides a live problem.
+
+        A flagged mock reports "flagged" rather than "mock": both are true and
+        the flag is the one that matters. Mock still outranks clean, so a
+        canned-LLM run can never be stamped clean.
+        """
+
         if self.failures(MODE_ABORT):
             return RUN_QUALITY_ABORTED
-        if self.mock:
-            return RUN_QUALITY_MOCK
         if self.failures(MODE_FLAG):
             return RUN_QUALITY_FLAGGED
+        if self.mock:
+            return RUN_QUALITY_MOCK
         return RUN_QUALITY_CLEAN
 
     def block(self) -> dict[str, Any]:
@@ -169,7 +192,7 @@ class Preflight:
 
 
 # ---------------------------------------------------------------------------
-# Phase 0 — before the run starts, before any GPU work
+# Phase 0 checks — before the run starts, before any GPU work
 # ---------------------------------------------------------------------------
 
 
@@ -309,6 +332,226 @@ def check_determinism_settings() -> tuple[bool, str]:
         return False, "; ".join(problems)
     warn_only = bool(torch.is_deterministic_algorithms_warn_only_enabled())
     return True, f"deterministic algorithms on (warn_only={warn_only})"
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — measurement health (all FLAG: the run continues, labelled)
+# ---------------------------------------------------------------------------
+
+
+def _audited(sections: list[dict[str, Any]]) -> int:
+    return sum(int(s.get("n_pe_events_audited", 0)) for s in sections)
+
+
+def check_pe_event_sufficiency(
+    sections: list[dict[str, Any]],
+    *,
+    expected_per_section: int,
+    min_fraction: float,
+) -> tuple[bool, str]:
+    """I3.1 — enough PE events actually reached the log.
+
+    A stream that stops early leaves a mean dominated by padding rather than
+    by measurement (instrument starvation, v1 smoke).
+    """
+
+    if not sections:
+        return False, "no sections to audit"
+    expected = expected_per_section * len(sections)
+    actual = _audited(sections)
+    fraction = float(actual) / float(expected) if expected else 0.0
+    if fraction < min_fraction:
+        return False, f"{actual}/{expected} PE events ({fraction:.2f} < {min_fraction})"
+    return True, f"{actual}/{expected} PE events ({fraction:.2f})"
+
+
+def check_precision_saturation(
+    audit: dict[str, Any],
+    *,
+    max_rate: float,
+    min_distinct: int,
+) -> tuple[bool, str]:
+    """I3.2 — the precision sensor still discriminates.
+
+    A saturated sensor reads "no difference between arms" exactly like a real
+    null, so this is what keeps a dead instrument from looking like a result.
+    """
+
+    n_events = int(audit.get("n_pe_events_audited", 0))
+    if n_events <= 0:
+        return False, "no PE events audited — saturation cannot be assessed"
+    rate = float(audit.get("saturation_rate", 0.0))
+    distinct = int(audit.get("pi_n_distinct", 0))
+    problems: list[str] = []
+    if rate > max_rate:
+        problems.append(f"saturation_rate={rate:.4f} > {max_rate}")
+    if distinct < min_distinct:
+        problems.append(f"pi_n_distinct={distinct} < {min_distinct}")
+    if problems:
+        return False, "; ".join(problems)
+    return True, f"saturation_rate={rate:.4f} pi_n_distinct={distinct}"
+
+
+def check_gated_fraction(
+    sections: list[dict[str, Any]],
+    *,
+    max_fraction: float,
+) -> tuple[bool, str]:
+    """I3.3 — too many gated arms means n_eff < N and the run is thin."""
+
+    if not sections:
+        return False, "no sections to audit"
+    n_gated = sum(1 for s in sections if bool(s.get("gated", False)))
+    fraction = float(n_gated) / float(len(sections))
+    if fraction > max_fraction:
+        return False, f"{n_gated}/{len(sections)} gated ({fraction:.2f} > {max_fraction})"
+    return True, f"{n_gated}/{len(sections)} gated ({fraction:.2f})"
+
+
+def check_pad_fraction(
+    sections: list[dict[str, Any]],
+    *,
+    expected_per_section: int,
+    max_fraction: float,
+) -> tuple[bool, str]:
+    """I3.4 — how much of the PE trace was padding rather than measurement.
+
+    Derived from the audit counts rather than from _pad_pe_list: the padded
+    values are indistinguishable from real ones once in the list, but the
+    number of rows that reached the log is not.
+    """
+
+    if not sections:
+        return False, "no sections to audit"
+    expected = expected_per_section * len(sections)
+    padded = max(0, expected - _audited(sections))
+    fraction = float(padded) / float(expected) if expected else 0.0
+    if fraction > max_fraction:
+        return False, f"{padded}/{expected} padded ({fraction:.2f} > {max_fraction})"
+    return True, f"{padded}/{expected} padded ({fraction:.2f})"
+
+
+def check_nli_active() -> tuple[bool, str]:
+    """I5.2 — the NLI filter was actually consulted.
+
+    nli_filter returns True when disabled, so a silent no-op looks exactly
+    like a clean pass from the caller's side.
+    """
+
+    from dau.foundation.lora_update import NLI_FILTER_STATS
+
+    total = int(NLI_FILTER_STATS.get("total_candidates", 0))
+    if total <= 0:
+        return False, "NLI_FILTER_STATS.total_candidates == 0 — filter never ran"
+    return True, (
+        f"total_candidates={total} "
+        f"rejected={int(NLI_FILTER_STATS.get('rejected', 0))}"
+    )
+
+
+def _both_generations(
+    check: Callable[..., tuple[bool, str]],
+    gen1: list[dict[str, Any]],
+    gen2: list[dict[str, Any]],
+    expected_gen1: int,
+    expected_gen2: int,
+    **kwargs: Any,
+) -> tuple[bool, str]:
+    """Apply a per-section check to gen1 and gen2, which have different Ns.
+
+    Both must pass. Reported together so a healthy gen1 cannot hide a starved
+    gen2 — the generation where the inheritance claim is actually read.
+    """
+
+    gen1_passed, gen1_detail = check(
+        gen1, expected_per_section=expected_gen1, **kwargs
+    )
+    gen2_passed, gen2_detail = check(
+        gen2, expected_per_section=expected_gen2, **kwargs
+    )
+    return (
+        bool(gen1_passed and gen2_passed),
+        f"gen1: {gen1_detail} | gen2: {gen2_detail}",
+    )
+
+
+def _both_audits(
+    gen1_audit: dict[str, Any],
+    gen2_audit: dict[str, Any],
+) -> tuple[bool, str]:
+    gen1_passed, gen1_detail = check_precision_saturation(
+        gen1_audit, max_rate=SATURATION_MAX, min_distinct=PI_N_DISTINCT_MIN
+    )
+    gen2_passed, gen2_detail = check_precision_saturation(
+        gen2_audit, max_rate=SATURATION_MAX, min_distinct=PI_N_DISTINCT_MIN
+    )
+    return (
+        bool(gen1_passed and gen2_passed),
+        f"gen1: {gen1_detail} | gen2: {gen2_detail}",
+    )
+
+
+def run_phase3(
+    preflight: Preflight,
+    *,
+    gen1_sections: list[dict[str, Any]],
+    gen2_sections: list[dict[str, Any]],
+    expected_gen1: int,
+    expected_gen2: int,
+    gen1_audit: dict[str, Any],
+    gen2_audit: dict[str, Any],
+) -> Preflight:
+    """Record I3.1–I3.4 and I5.2. All FLAG — the run continues, labelled."""
+
+    from dau.diagnostics.run_protocol_c_prime import MIN_TRACE_FRACTION
+
+    preflight.check(
+        "I3.1",
+        lambda: _both_generations(
+            check_pe_event_sufficiency,
+            gen1_sections,
+            gen2_sections,
+            expected_gen1,
+            expected_gen2,
+            min_fraction=MIN_TRACE_FRACTION,
+        ),
+        mode=MODE_FLAG,
+    )
+    preflight.check(
+        "I3.2",
+        lambda: _both_audits(gen1_audit, gen2_audit),
+        mode=MODE_FLAG,
+        calibrated=False,
+    )
+    preflight.check(
+        "I3.3",
+        lambda: check_gated_fraction(
+            gen1_sections + gen2_sections,
+            max_fraction=GATED_FRACTION_MAX,
+        ),
+        mode=MODE_FLAG,
+        calibrated=False,
+    )
+    preflight.check(
+        "I3.4",
+        lambda: _both_generations(
+            check_pad_fraction,
+            gen1_sections,
+            gen2_sections,
+            expected_gen1,
+            expected_gen2,
+            max_fraction=PAD_FRACTION_MAX,
+        ),
+        mode=MODE_FLAG,
+        calibrated=False,
+    )
+    preflight.check("I5.2", check_nli_active, mode=MODE_FLAG)
+    return preflight
+
+
+# ---------------------------------------------------------------------------
+# Phase 0 — before the run starts, before any GPU work
+# ---------------------------------------------------------------------------
 
 
 def run_phase0(

@@ -30,13 +30,19 @@ from dau.diagnostics.run_protocol_c_prime import (
 )
 from dau.diagnostics.preflight import (
     MODE_ABORT,
+    MODE_FLAG,
     RUN_QUALITY_CLEAN,
+    RUN_QUALITY_FLAGGED,
     RUN_QUALITY_MOCK,
     Preflight,
     PreflightAbort,
     check_determinism_settings,
+    check_gated_fraction,
     check_import_time_env,
     check_lora_choice,
+    check_pad_fraction,
+    check_pe_event_sufficiency,
+    check_precision_saturation,
     check_pythonhashseed,
     check_seed_derivation,
     check_tool_identity,
@@ -385,6 +391,84 @@ def test_broken_check_counts_as_failure() -> None:
     assert "sensor unplugged" in gate.details()["I0.1"]["detail"]
 
 
+def test_i3_1_detects_starved_pe_log() -> None:
+    full = [{"n_pe_events_audited": 10}, {"n_pe_events_audited": 10}]
+    assert check_pe_event_sufficiency(
+        full, expected_per_section=10, min_fraction=0.5
+    )[0] is True
+
+    starved = [{"n_pe_events_audited": 2}, {"n_pe_events_audited": 2}]
+    passed, detail = check_pe_event_sufficiency(
+        starved, expected_per_section=10, min_fraction=0.5
+    )
+    assert passed is False
+    assert "4/20" in detail
+
+
+def test_i3_2_detects_saturated_sensor() -> None:
+    healthy = {
+        "n_pe_events_audited": 100,
+        "saturation_rate": 0.002,
+        "pi_n_distinct": 14,
+    }
+    assert check_precision_saturation(
+        healthy, max_rate=0.05, min_distinct=8
+    )[0] is True
+
+    saturated = {
+        "n_pe_events_audited": 100,
+        "saturation_rate": 0.9,
+        "pi_n_distinct": 1,
+    }
+    passed, detail = check_precision_saturation(
+        saturated, max_rate=0.05, min_distinct=8
+    )
+    assert passed is False
+    assert "saturation_rate" in detail and "pi_n_distinct" in detail
+
+    # Zero audited events must not read as zero saturation (GAP-13).
+    passed, detail = check_precision_saturation(
+        {"n_pe_events_audited": 0, "saturation_rate": 0.0, "pi_n_distinct": 0},
+        max_rate=0.05,
+        min_distinct=8,
+    )
+    assert passed is False
+    assert "cannot be assessed" in detail
+
+
+def test_i3_3_detects_too_many_gated_arms() -> None:
+    sections = [{"gated": False}] * 4 + [{"gated": True}]
+    assert check_gated_fraction(sections, max_fraction=0.20)[0] is True
+
+    sections = [{"gated": True}] * 3 + [{"gated": False}] * 2
+    passed, detail = check_gated_fraction(sections, max_fraction=0.20)
+    assert passed is False
+    assert "3/5" in detail
+
+
+def test_i3_4_flags_any_padding() -> None:
+    unpadded = [{"n_pe_events_audited": 10}]
+    assert check_pad_fraction(
+        unpadded, expected_per_section=10, max_fraction=0.0
+    )[0] is True
+
+    padded = [{"n_pe_events_audited": 7}]
+    passed, detail = check_pad_fraction(
+        padded, expected_per_section=10, max_fraction=0.0
+    )
+    assert passed is False
+    assert "3/10 padded" in detail
+
+
+def test_flag_failure_does_not_stop_the_run() -> None:
+    """FLAG labels the result; only ABORT withholds it."""
+
+    gate = Preflight()
+    gate.record("I3.2", False, mode=MODE_FLAG, detail="saturated")
+    gate.enforce()  # must not raise
+    assert gate.run_quality() == RUN_QUALITY_FLAGGED
+
+
 def test_not_applicable_is_not_a_pass() -> None:
     gate = Preflight()
     gate.record("I1.1", None, mode=MODE_ABORT, detail="no training in mock")
@@ -544,9 +628,16 @@ def test_multigen_smoke_mock_llm_end_to_end(
             assert section["pi_n_distinct"] > 0, generation
     # A mock run must never read as clean: canned decisions make the arms
     # identical by construction.
-    assert doc["run_quality"] == RUN_QUALITY_MOCK
-    assert set(doc["invariants"]) >= {"I0.1", "I0.2", "I0.3", "I0.4", "I0.5", "I0.6"}
-    assert all(v is True for v in doc["invariants"].values())
+    assert doc["run_quality"] in {RUN_QUALITY_MOCK, RUN_QUALITY_FLAGGED}
+    assert doc["run_quality"] != RUN_QUALITY_CLEAN
+    assert set(doc["invariants"]) >= {
+        "I0.1", "I0.2", "I0.3", "I0.4", "I0.5", "I0.6",
+        "I3.1", "I3.2", "I3.3", "I3.4", "I5.2",
+    }
+    # Every phase-0 invariant is ABORT, so reaching this line proves they held.
+    assert all(
+        doc["invariants"][f"I0.{i}"] is True for i in range(1, 7)
+    )
 
     audit = doc["summary"]["precision_audit"]
     assert audit["gen1"]["n_pe_events_audited"] > 0
