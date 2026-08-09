@@ -332,6 +332,12 @@ def transfer_to_heir(
     callers must not stream the heir graph until after this returns.
     """
 
+    # GAP-12: this runs after gen1 training, so the incoming RNG state is
+    # arm-dependent. Birth-drift is the primary endpoint (D-002) and no code on
+    # this path draws from RNG today — the lock keeps that true by construction
+    # rather than by grep.
+    _lock_seeds(seed)
+
     self_model = build_self_model(parent_state)
     f_agent = float(self_model.f_agent)
     reward = float(self_model.emotional_weight.somatic_markers.get(MARKER_REWARD, 0.0))
@@ -485,6 +491,11 @@ def run_gen2_measure(
     """Single-phase PE measure on the heir (fresh LoRA weights — no adapter)."""
 
     started = time.perf_counter()
+    # GAP-12: lived/shuffle just ran DPO and consumed torch RNG, null did not,
+    # and shuffle also drew from Python RNG when permuting pairs. Without this
+    # lock the three heirs enter gen2 from three different RNG states, and the
+    # arm contrast carries an RNG contrast inside it.
+    _lock_seeds(seed)
     # 3A: do not load parent adapter; heir agent_id has no trained adapter.
     pe_list, lived_examples, _rows, _final = run_life_keep_vault(
         agent_id=heir.agent_id,

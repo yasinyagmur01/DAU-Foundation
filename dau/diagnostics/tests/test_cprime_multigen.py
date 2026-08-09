@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import hashlib
+import random
 from typing import Any
 from unittest.mock import patch
 
+import numpy as np
 import pytest
 
+import dau.diagnostics.run_cprime_multigen as multigen_mod
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
     heir_agent_id,
     parent_agent_id,
     run_cprime_multigen,
+    run_gen2_measure,
     transfer_to_heir,
     write_multigen_results_json,
 )
+from dau.diagnostics.run_protocol_c_prime import _lock_seeds
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
     GENERATION_INHERITED_KEY,
@@ -169,6 +175,82 @@ def test_transfer_logs_birth_drift_independent_of_gen2_pe(store: MemoryStore) ->
     assert birth.gen1_arm == ARM_UNIT
     assert "resource" in birth.birth_drift_magnitudes
     assert birth.n_retrieval_context == len(heir.retrieval_context)
+
+
+def _rng_digest() -> str:
+    """Fingerprint of every RNG _lock_seeds pins (torch optional)."""
+
+    digest = hashlib.sha256()
+    digest.update(repr(random.getstate()).encode("utf-8"))
+    digest.update(repr(np.random.get_state()).encode("utf-8"))
+    try:
+        import torch
+    except ImportError:
+        pass
+    else:
+        digest.update(torch.random.get_rng_state().numpy().tobytes())
+    return digest.hexdigest()
+
+
+def _burn_rng(n_draws: int) -> None:
+    """Stand in for the RNG an arm consumes before gen2 (DPO, shuffle)."""
+
+    for _ in range(n_draws):
+        random.random()
+    np.random.random(n_draws + 1)
+    try:
+        import torch
+    except ImportError:
+        pass
+    else:
+        torch.rand(n_draws + 1)
+
+
+def test_gen2_measure_locks_rng_for_every_arm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GAP-12: heirs must enter gen2 from one RNG state, not three.
+
+    lived/shuffle run DPO between gen1 and gen2 and consume torch RNG; null
+    does not; shuffle additionally permutes pairs from Python RNG. Unlocked,
+    the arm contrast would carry an RNG contrast inside it.
+    """
+
+    # _lock_seeds writes these; declare them so monkeypatch restores them.
+    monkeypatch.setenv("DAU_LLM_SEED", "0")
+    monkeypatch.setenv("DAU_LLM_TEMPERATURE", "0.2")
+
+    digests: dict[str, str] = {}
+
+    def _fake_life(*, agent_id, seed, n_events, store, initial):
+        digests[str(agent_id)] = _rng_digest()
+        return [0.25] * n_events, [], [], initial
+
+    monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
+
+    for arm, n_draws in (("lived", 7), ("null", 0), ("shuffle", 31)):
+        _burn_rng(n_draws)
+        heir_id = heir_agent_id(arm, SEED_UNIT)
+        heir = _initial_state(heir_id, SEED_UNIT)
+        run_gen2_measure(
+            heir=heir,
+            store=None,
+            seed=SEED_UNIT,
+            gen1_arm=arm,
+            events_gen2=EVENTS_SMOKE,
+            k_gen2=1,
+            pe_window=EVENTS_SMOKE,
+        )
+
+    assert len(digests) == 3
+    assert len(set(digests.values())) == 1, (
+        f"heirs entered gen2 from different RNG states: {digests}"
+    )
+
+    # Equality alone could be an accident; pin it to the lock itself.
+    _burn_rng(13)
+    _lock_seeds(SEED_UNIT)
+    assert set(digests.values()) == {_rng_digest()}
 
 
 def test_multigen_smoke_mock_llm_end_to_end(
