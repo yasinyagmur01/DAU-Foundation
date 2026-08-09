@@ -20,23 +20,34 @@ Tarihi hatırlamıyorsan yaklaşık ver, `~` koy: `2026-07~_konu.md`.
 Kural: **bir Deep Research koşumu = bir dosya.** Nerede bittiğini
 hatırlamıyorsan konuya göre böl, sorun değil.
 
-## Her dosyanın başına
+## Dosya yapısı
 
-`_TEMPLATE.md`'yi kopyala. Sadece dört alan, hatırlamadığını boş bırak:
+`_TEMPLATE.md`'yi kopyala. Üç frontmatter alanı + iki bölüm:
 
 ```markdown
 ---
 tarih: 2026-08-05
 konu: Layer 5 özbilinç / metacognition
 tetikleyen soru: ...
-prompt: ...
 ---
+
+## Kaynak prompt
+## Rapor
 ```
 
-`tetikleyen soru` en değerlisi — "bunu neden araştırdık" bilgisi, araştırmanın
-kendisinden daha hızlı kayboluyor. Hatırlamıyorsan boş bırak, zorlama.
+`tetikleyen soru` en değerlisi — "bunu neden araştırdık" bilgisi,
+araştırmanın kendisinden daha hızlı kayboluyor. Hatırlamıyorsan boş bırak,
+uydurma.
+
+`## Kaynak prompt` bölümü orijinal Deep Research prompt'unu birebir tutar.
+Prompt'un kendisi provenansın yarısıdır: hangi soruyu sorduğun, gelen
+cevabın neden o şekilde geldiğini açıklar.
 
 ## İçeriğe dokunma
+
+Tek izinli dönüşüm: başlıkların markdown biçimine normalize edilmesi
+(`##`, `###`) — Claude Code'un başlık ağacını taraması için gerekli.
+Metnin kendisi değişmez.
 
 Kısaltma, özetleme, "işe yaramaz" kısımları atma. İki nedenle:
 

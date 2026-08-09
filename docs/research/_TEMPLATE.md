@@ -2,7 +2,15 @@
 tarih:
 konu:
 tetikleyen soru:
-prompt:
 ---
 
-<!-- Ham Deep Research çıktısı buraya. Düzenleme, kısaltma, temizleme yok. -->
+## Kaynak prompt
+
+```text
+Gemini Deep Research'e verilen orijinal prompt, birebir.
+```
+
+## Rapor
+
+Ham Deep Research çıktısı. Düzenleme, kısaltma, özetleme yok — yalnızca
+başlıklar markdown biçimine normalize edilir (`##`, `###`).
