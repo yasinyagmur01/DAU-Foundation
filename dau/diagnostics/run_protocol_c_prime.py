@@ -22,6 +22,7 @@ import json
 import math
 import os
 import random
+import re
 import statistics
 import tempfile
 import time
@@ -171,6 +172,9 @@ NICHE_TIME_PRESSURE_RANGE: tuple[float, float] = (0.00, 0.60)
 NICHE_POOL_FRACTION_RANGE: tuple[float, float] = (0.40, 1.00)
 
 OPPONENT_ID: str = "cprime-npc-opponent"
+# Protocol C′ ids end in the seed (``cprime-{arm}-{seed}``); multigen appends a
+# generation suffix (``…-g1`` / ``…-g2``). Both must yield the same seed.
+AGENT_ID_SEED_PATTERN: re.Pattern[str] = re.compile(r"-(?P<seed>\d+)(?:-g\d+)?$")
 ARM_LIVED: str = "lived"
 ARM_NULL: str = "null"
 ARM_SHUFFLE: str = "shuffle"
@@ -565,12 +569,22 @@ def _pad_pe_list(pe_list: list[float], n_events: int) -> list[float]:
 
 
 def _seed_from_agent_id(agent_id: str) -> int:
-    """Parse trailing seed from ``cprime-{arm}-{seed}``; fallback hash."""
+    """Parse the seed from ``cprime-{arm}-{seed}`` or ``…-{seed}-g{n}``.
 
-    try:
-        return int(str(agent_id).rsplit("-", 1)[-1])
-    except ValueError:
-        return abs(hash(agent_id)) % (2**31)
+    No fallback. ``hash()`` varies per process unless PYTHONHASHSEED is
+    pinned, so an id that misses this pattern silently costs the run its
+    replay guarantee — GAP-11 was exactly that: the generation suffix made
+    ``int("g1")`` raise, and the shuffle arm drew a different permutation in
+    every process.
+    """
+
+    match = AGENT_ID_SEED_PATTERN.search(str(agent_id))
+    if match is None:
+        raise ValueError(
+            f"agent_id {agent_id!r} carries no seed segment — expected "
+            f"cprime-{{arm}}-{{seed}} or cprime-{{arm}}-{{seed}}-g{{n}}"
+        )
+    return int(match.group("seed"))
 
 
 def _build_lived_examples(

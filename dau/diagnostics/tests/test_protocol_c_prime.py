@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -17,6 +20,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _compute_stats,
     _diversity_gate_reason,
     _phase1_diversity,
+    _seed_from_agent_id,
     _train_adapter,
     _window_mean,
     write_results_json,
@@ -282,6 +286,51 @@ def test_train_adapter_skips_when_lora_disabled(
     n_trained, n_rejected = _train_adapter("test-agent", lived_examples)
     assert n_trained == 0
     assert n_rejected == 0
+
+
+def test_seed_from_agent_id_parses_generation_suffix() -> None:
+    """Multigen appends ``-g1`` / ``-g2``; the seed must survive it (GAP-11)."""
+
+    assert _seed_from_agent_id("cprime-shuffle-2001") == 2001
+    assert _seed_from_agent_id("cprime-shuffle-2001-g1") == 2001
+    assert _seed_from_agent_id("cprime-shuffle-2001-g2") == 2001
+
+
+@pytest.mark.parametrize("agent_id", ["cprime-shuffle-g1", "agent-x", ""])
+def test_seed_from_agent_id_rejects_unparseable_id(agent_id: str) -> None:
+    """A silent fallback here would cost the run its replay guarantee."""
+
+    with pytest.raises(ValueError):
+        _seed_from_agent_id(agent_id)
+
+
+_SEED_PROBE = (
+    "from dau.diagnostics.run_protocol_c_prime import _seed_from_agent_id;"
+    "print(_seed_from_agent_id('cprime-shuffle-2001-g1'))"
+)
+
+
+def _seed_in_subprocess(hash_seed: str) -> str:
+    env = dict(os.environ, PYTHONHASHSEED=hash_seed)
+    completed = subprocess.run(
+        [sys.executable, "-c", _SEED_PROBE],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=env,
+        cwd=Path(__file__).resolve().parents[3],
+    )
+    return completed.stdout.strip()
+
+
+def test_seed_from_agent_id_stable_across_processes() -> None:
+    """The GAP-11 regression itself: hash() differs per PYTHONHASHSEED.
+
+    The parse tests above never reach the old fallback, so only a real
+    two-process comparison proves the shuffle arm is reproducible.
+    """
+
+    assert _seed_in_subprocess("0") == _seed_in_subprocess("1") == "2001"
 
 
 def test_results_path_under_dau_runs() -> None:
