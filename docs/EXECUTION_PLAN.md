@@ -186,17 +186,10 @@ kilitlenmedi. Kaynağı olan mekanizmalar kabul edildi, **sayılar ölçüme
 bırakıldı** — model seçimi, SNR eşiği, VRAM'e bağlı üç ayar ve
 consolidation'ın miras etkisi.
 
-### Uygulama borçları (kod henüz değişmedi)
+### Uygulama borçları
 
-| # | İş | Kayıt |
-|---|---|---|
-| U1 | `LLM_BACKEND_DEFAULT` → `local` (`llm_backend.py:18`, `graph.py:293`); `install_mock_llm`'in groq `setdefault`'u gözden geçirilir | D-018 |
-| U2 | `build_load_kwargs`: `quant_type="nf4"` + `use_double_quant=True` | D-020 |
-| U3 | Model ölçümü: 3 seed × 10 olay, iki model, NF4 açık; `n_unique` + VRAM tepe | D-019 |
-| U4 | Gradient accumulation (`local_llm`); alet kimliği `effective_batch_size`'ı kendiliğinden düzeltir | D-021/A1 |
-| U5 | `build_pe_ranked_pairs`'e mutlak PE filtresi; elenen çift sayısı **loglanmalı** (`MIN_PAIRS` kalibresiz, I1.5 FLAG) | D-021/A5 |
-| U6 | `consolidate_run` deney yolunda yaşam sonunda; **hangi fazın sonu olduğu açık soru** | D-022 |
-| U7 | A2/A3/A4 kararı — U3'ün VRAM sonucundan sonra | D-021 |
+Ayrıntılı adım planı: **§F (Faz 2)**. Özet sıra:
+`U1 → U2 → U3 → (U7 kararı) → U4 → U5 → U6`.
 
 ---
 
@@ -224,3 +217,165 @@ consolidation'ın miras etkisi.
 - `RUNPATH_AUDIT.md`'deki 28 BELİRSİZ'in kalanını kovalamak (altın kaplama)
 - GAP-5 / GAP-10'a dokunmak (ayrı kararlar, baseline'ı etkiler)
 - Yeni katman, yeni özellik, refactor
+
+---
+
+# F. Faz 2 — Kararların uygulanması (U1–U7)
+
+**Açıldı:** 2026-08-10, karar kapısı kapandıktan sonra.
+**Girdi:** D-018 · D-019 · D-020 · D-021 · D-022 — hepsi `DECISIONS.md`'de.
+**Çıktı:** alet kilitli, ölçümler yapılmış, pilota hazır kod.
+
+## F.0 — Bu fazın sözleşmesi (her adımda geçerli)
+
+1. **Önce doğrula, sonra dokun.** Bu plandaki her satır numarası
+   2026-08-10'da doğrulandı — ama koda dokunmadan önce **yeniden oku**.
+   Bu projede belge iki kez yanıldı: GAP-11 (docstring eski formatı
+   yazıyordu) ve GAP-14 ("hiç kimse çağırmıyor" — yanlıştı, `graph.py:1426`
+   çağırıyor). Hafızaya ve belgeye değil, dosyaya güven.
+2. **Gate-and-confirm.** Analiz → öneri → **Yasin'in onayı** → uygulama.
+   Onaysız kod değişmez. Analiz şunu içerir: ne bulundu, ne değişecek,
+   hangi test gelecek, ne riskli.
+3. **Her düzeltme testiyle gelir**, ve test **mutasyon kontrolünden geçer**:
+   düzeltme geçici olarak geri alınır, test kırılmalı, sonra geri konur.
+   Kırılmıyorsa test o hatayı yakalamıyor demektir.
+4. **Commit ritmi:** tek konu → tam suite (`python -m pytest -q`) →
+   gerekçeli commit. Ölçüm veya karar içeriyorsa **ayrıca D-kaydı**.
+5. **Sessiz fallback yasak.** Bu fazda eklenen hiçbir kod, belirlenemeyen
+   bir durumu varsayılana düşürerek geçiştirmez — `SystemExit`, `ValueError`
+   veya en azından `[WARN]`.
+6. **`constraints.py`'deki eşik değerleri** yalnızca bir D-kaydıyla değişir.
+   Taşımak/yeniden adlandırmak serbest, **değerini değiştirmek** ön-kaydı
+   ilgilendirir.
+7. **Ön-kayıt henüz yazılmadı** → alet değişikliği hâlâ meşru. Ama her biri
+   D-kaydı ister; pre-reg kilitlendiği an bu pencere kapanır.
+
+## F.1 — Sıra ve bağımlılıklar
+
+```
+U1 (backend=local) ─┐
+U2 (NF4)  ──────────┴─→ U3 (model + VRAM ölçümü) ─→ U7 (A2/A3/A4 kararı)
+U4 (accumulation)   ← bağımsız, ama U3'ten sonra ölçüm tekrarı gerekmesin diye sonraya
+U5 (SNR filtresi)   ← bağımsız
+U6 (consolidation)  ← bağımsız, ama gen2 mirasını değiştirir → U3'ten sonra
+```
+
+**Neden bu sıra:** U3 ölçümü **NF4 açıkken ve lokal backend'de** yapılmalı,
+yoksa ölçülen alet pilotun aleti olmaz. U7 tamamen U3'ün VRAM sonucuna bağlı.
+
+---
+
+## U1 — Backend varsayılanı `local` (D-018)
+
+| | |
+|---|---|
+| **Kayıt** | D-018 (kilitli) |
+| **Dosya** | `dau/foundation/llm_backend.py:18` · `dau/foundation/graph.py:293` — ikisinde de `LLM_BACKEND_DEFAULT: str = "groq"` |
+| **Değişiklik** | İkisi de `"local"` |
+| **Dikkat** | `install_mock_llm` (`run_cprime_multigen.py`) `os.environ.setdefault("DAU_LLM_BACKEND", "groq")` yapıyor. Mock **yalnızca groq yolunda** mock — backend `local` olursa graph gerçek `LocalBackend`'i çağırır ve 8B modeli yükler. Bu `setdefault` **kalmalı**, ama artık varsayılanı değil, mock'un kendi gereksinimini ifade ediyor; yorumu buna göre güncellensin. |
+| **Test** | Env set edilmemişken `_resolve_llm_backend() == "local"`; mock yolunda hâlâ `"groq"` görünmeli (mock testi zaten bunu kontrol ediyor) |
+| **Dur-kontrol** | Tam suite yeşil mi — groq varsayımına dayanan başka test var mı |
+| **Yan etki** | Adım 5'in `--lora` + uzak backend kontrolü fiilen ateşlenmez hale gelir. **Kaldırılmaz** — yanlış env set eden koşumu hâlâ yakalar. |
+
+## U2 — NF4 + double_quant, açıkça (D-020)
+
+| | |
+|---|---|
+| **Kayıt** | D-020 (kilitli), D-016'yı kapatır |
+| **Dosya** | `dau/foundation/local_llm.py:99` `build_load_kwargs()`, içindeki `BitsAndBytesConfig(...)` (`:115` civarı) |
+| **Değişiklik** | `bnb_4bit_quant_type="nf4"` + `bnb_4bit_use_double_quant=True` **açıkça** eklenir |
+| **İlke** | Asıl mesele fp4 değil, **bayrağın hiç yazılmamış olması**. Kütüphane varsayılanı değişirse alet habersiz değişir — D-018'de uzak backend için reddedilen riskin aynısı. |
+| **Test** | `describe_quantization()` `quant_type == "nf4"` ve `double_quant is True` döndürmeli; `build_load_kwargs`'ın config'iyle birebir eşleşmeli (bu test `afbb552`'de zaten var, değeri güncellenir) |
+| **Bedava kazanç** | Alet kimliği kendiliğinden doğru raporlar — `describe_quantization` config'i loader'dan okuyor, ikinci bir yer güncellenmez |
+| **Dur-kontrol** | `--no-lora --mock-llm` koşumunda JSON `quantization.quant_type: "nf4"` yazıyor mu |
+
+## U3 — Model + VRAM ölçümü (D-019) ⚠ ön-kayıtlı
+
+| | |
+|---|---|
+| **Kayıt** | D-019 — **kabul kriteri zaten kilitli, değiştirilemez** |
+| **Ön koşul** | U1 ve U2 bitmiş olmalı (lokal backend + NF4 açık) |
+| **Tasarım** | 3 seed × 10 olay, **iki model**, aynı seed'ler / prompt'lar / sıcaklık, greedy decoding |
+| **Ölçülen** | `_phase1_diversity`'nin saydığı `n_unique` — üretim metriğinin aynısı, yeni metrik icat edilmez. Ayrıca VRAM tepe değeri (karar kriteri değil, envanter) |
+| **Kabul kriteri (ÖNCEDEN KİLİTLİ)** | Qwen benimsenir **ancak ve ancak** (1) medyan `n_unique ≥ DIVERSITY_MIN_UNIQUE (5)` **ve** (2) medyan Llama'nınkinden **kesin büyük**. **Beraberlik/belirsizlikte statüko kazanır — Llama'da kalınır.** |
+| **YASAK** | Sayıları gördükten sonra kriteri gevşetmek. Bu, ölçümü tavsiyeyi onaylatma törenine çevirir. |
+| **Kayıt** | Sonuç **D-kaydına** girer (ham sayılarla): hangi model, hangi seed'ler, `n_unique` dağılımı, VRAM tepe değerleri. Karar bu kayıtla kilitlenir. |
+| **Maliyet** | ~15GB indirme. Reddedilirse boşa gider — D-019'da kabul edilen bedel. |
+| **Not** | Brief'in ~6.4 / ~7.2 GiB rakamları **fp4 varsayımıyla** verilmişti; NF4+double_quant ölçümü onları düzeltecek. |
+
+## U7 — A2/A3/A4 kararı (D-021) — U3'ten sonra
+
+| | |
+|---|---|
+| **Kayıt** | D-021 (bölünmüş paketin ölçüme bağlanan yarısı) |
+| **Girdi** | U3'ün VRAM tepe ölçümü → gerçek boşluk |
+| **Karar** | A2 (`DPO_MAX_SEQUENCE_TOKENS` 256→512) · A3 (`DPO_EPOCHS` 1→3) · A4 (%10 yüksek-somatik replay, `F_agent ≥ 0.7`) |
+| **Maliyetler** | A2 aktivasyon belleğini ~2×; A3 koşum süresini 3×; A4 ~+0.3 GiB |
+| **Kim karar verir** | **Yasin.** Claude Code ölçümü sunar, seçenekleri ve bütçeyi gösterir, öneri verir |
+| **Sonra** | Karar D-kaydına girer, sonra kod |
+
+## U4 — Gradient accumulation (D-021/A1)
+
+| | |
+|---|---|
+| **Kayıt** | D-021 (kilitli) |
+| **Dosya** | `dau/foundation/local_llm.py` — `_run_dpo_epochs`, `:659` epoch döngüsü, `:677` `zero_grad()`, `:701` `clip_grad_norm_`, `:702` `step()` |
+| **Sorun** | Her çift için ayrı `zero_grad()`+`step()` ⇒ **efektif batch = 1**. Uygulanan şey gradient *checkpointing* (bellek tekniği); tavsiye edilen gradient *accumulation* (gradyan tekniği). İkisi karıştırılmış görünüyor. |
+| **Değişiklik** | Mikro-batch 1 kalır; `step()` ve `zero_grad()` **N mikro-adımda bir** atılır. `clip_grad_norm_` step'ten hemen önce. Bölen: kayıp `N`'e bölünür ki gradyan büyüklüğü batch=N ile aynı olsun |
+| **N nerede** | Yeni UPPER_CASE sabit, `constraints.py` (örn. `DPO_GRADIENT_ACCUMULATION_STEPS`). Değeri bu adımda **karara bağlanır** — yeni sabit, mevcut bir eşiğin değişmesi değil |
+| **Bellek** | Accumulation OOM **vermez** — mikro-batch değişmiyor |
+| **Test** | N mikro-adımda tek `optimizer.step()` (sayaçla doğrula); son kısmi grup da işlensin (pairs % N ≠ 0 durumu **kaybolmamalı**) |
+| **Bedava kazanç** | Alet kimliği `gradient_accumulation_steps` ve `effective_batch_size`'ı kendiliğinden doğru raporlar (`tool_identity.py`) — **sabiti oradan da güncellemeyi unutma**, bugün `GRADIENT_ACCUMULATION_STEPS: int = 1` olarak sabitlenmiş durumda |
+| **Dur-kontrol** | I1.3 (grad adımı atıldı) ileride yazılırken bu sayaç kullanılabilir mi |
+
+## U5 — Mutlak PE (SNR) filtresi (D-021/A5)
+
+| | |
+|---|---|
+| **Kayıt** | D-021 (mekanizma kilitli, **eşik kilitli değil**) |
+| **Dosya** | `dau/foundation/lora_update.py` — `build_pe_ranked_pairs`, `:286` `abs(pe_left - pe_right) < PE_RANK_MIN_GAP` |
+| **Sorun** | Yalnızca PE **farkı** aranıyor, PE **büyüklüğü** aranmıyor ⇒ `PE=0.030` vs `0.031` farkı, `0.8` vs `0.2` farkı kadar meşru sinyal sayılıyor |
+| **Değişiklik** | Mutlak eşik: her iki tarafın (veya en azından `chosen`'ın) PE'si `SNR_FLOOR`'un altındaysa çift **elenir** |
+| **Eşik** | Başlangıç `0.40` (brief), ama **`calibrated: false`** işaretlenir ve pilotun ölçtüğü PE dağılımıyla kilitlenir. `PREFLIGHT_INVARIANTS.md` `SNR_FLOOR`'u zaten "kaynağı var, kalibre edilmeli" diyor ve I1.4'ü bu yüzden FLAG'de tutuyor |
+| **ZORUNLU** | **Elenen çift sayısı loglanmalı** ve sonuç JSON'una yazılmalı. `MIN_PAIRS` kalibre edilmemiş (I1.5 FLAG) — bu sayı olmadan "az sayıda güçlü çift" ile "eğitim seti boşaldı" ayırt edilemez |
+| **Test** | Düşük-PE çiftler eleniyor, yüksek-PE çiftler kalıyor; elenen sayı raporlanıyor; eşik `0` iken davranış eskisiyle birebir aynı (geriye dönük kapı) |
+| **Dur-kontrol** | Mock koşumunda kaç çift eleniyor — hepsi eleniyorsa eşik pilottan önce gözden geçirilir |
+
+## U6 — Consolidation'ı deney yoluna bağla (D-022)
+
+| | |
+|---|---|
+| **Kayıt** | D-022 (kilitli), GAP-14'ü kapatır |
+| **Dosya** | `dau/diagnostics/run_cprime_multigen.py` — `run_lineage` (`:669`); `consolidate_run` `dau/foundation/memory_bridge.py:102` |
+| **Doğrulanmış durum** | `consolidate_run` **ölü kod değil** — `graph.py:1426` çağırıyor (demo/long-run yolu). Deney yolu `app.stream()`'i doğrudan sürüyor ve o fonksiyona uğramıyor |
+| **AÇIK SORU — bu adımda karara bağlanacak** | Gen1 **iki yaşam** sürüyor (phase-1, phase-2). "Yaşam sonu" hangisi? Phase-1 sonrası mı, phase-2 sonrası mı, ikisi de mi? D-022 bunu bilerek açık bıraktı. **Sessizce seçme — analiz et, öner, onay al, D-kaydına yaz.** |
+| **Kapsam uyarısı** | `run_consolidation` üç iş yapıyor: **siler** (Ebbinghaus unutması), **güçlendirir**, **kenar yazar**. Yani bu değişiklik yalnızca PPR'ı canlandırmıyor — **unutmayı da açıyor**, ve unutma gen2'ye giden miras malzemesini değiştiriyor ⇒ **birincil uç noktaya (doğum-drift, D-002) dokunuyor** |
+| **Zamanlama** | Vault `run_lineage`'in `finally`'sinde kapanıyor — consolidation ondan **önce** çalışmalı |
+| **Test** | Consolidation sonrası `store.count_edges() > 0`; `deleted_count` / `strengthened_count` / `edges_created` sonuç JSON'una giriyor |
+| **I5.1** | **FLAG kalır.** Pilot kenarların gerçekten oluştuğunu doğrulayınca ABORT'a yükseltilir — doğrulanmamış bir düzeltmeye koşum öldürme yetkisi verilmez |
+| **Pilot borcu** | Pilot `deleted` / `strengthened` / `edges_created` **ve transfer aday sayısındaki değişimi** raporlamalı |
+
+---
+
+## F.2 — Faz 2 bittiğinde nerede olunur
+
+Alet kilitli ve ölçülmüş. Sıradaki (bu fazın dışı, `D.` bölümündeki sıra):
+
+8. **Pilot** — hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu,
+   consolidation'ın miras etkisi ne
+9. **Güç hesabı** — pilotun gözlediği `d`'den gerçek `N`
+   (⚠ GAP-9: N=15 varsayılan alınamaz)
+10. **Pre-registration** — kilitlendiği an alet donar
+11. **Master reference v2.4.2** — birikmiş borçlar (§21 NLI satırı yanlış,
+    §6/§19 ADIM 4 iddiası, multigen hiç geçmiyor, D-020 quantization notu)
+12. **main merge** (D-013)
+
+## F.3 — Bu fazda YAPILMAYACAKLAR
+
+- **Pre-registration yazmak** — alet kilitlenmeden olmaz
+- **Gerçek pilot koşumu** — U3 ölçümü pilot değildir, kapsamı 3 seed × 10 olay
+- Kalan 7 preflight değişmezini (I1.1–I1.5, I2.3, I4.1) yazmak — ikisi
+  zaten U5/U7'ye bağlı, ötekiler ayrı bir parça
+- **main merge** (D-013)
+- GAP-5 / GAP-10'a dokunmak (ayrı kararlar, baseline'ı etkiler)
+- Yeni katman, yeni özellik, kapsam dışı refactor

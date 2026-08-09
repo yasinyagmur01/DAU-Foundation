@@ -18,54 +18,86 @@ Kilitli her madde bir `D-00X` kaydına işaret etmelidir. (2026-08-09'da
 kaynaksız bir kilitli madde bulundu — bkz. `DECISIONS.md` "Bu dosya neden
 var".)
 
-## Şu An Neredeyiz (2026-08-09)
+## Şu An Neredeyiz (2026-08-10)
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
-- **Sıradaki adım:** karar kapısı **kapandı** (2026-08-10, D-018..D-022).
-  Sıradaki iş bu kararların **uygulanması** — plan modunda ele alınacak.
-- **Son durum:** Adım 1–5 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
-  GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`), **GAP-1 (`afbb552`)**.
-  Adım 6 **kısmen**: `dau/diagnostics/preflight.py`, **24 değişmezin 17'si**
-  (`75239d1` faz 0 · `0b48f93` faz 3 · `30c80da` faz 4/5 · `b8c3e69` faz 2).
-  Adım 7 ✅ gate ateşlendi — flagsız koşum `exit=1`, `--lora --mock-llm`
-  koşumu I2.1/I3.2/I5.1/I5.4 FLAG'leriyle geçti.
-  Kalan 7 değişmez (I1.1–I1.5, I2.3, I4.1) eğitim yoluna ölçüm istiyor;
-  ikisi zaten GAP-8 kararına bağlı. Kalan gap'ler: GAP-2..10, GAP-14.
-- **Gate'in kendi bulduğu:** I5.1 → GAP-14 (PPR atıl), I5.4 → GAP-3
-  (inherited somatic scale hiç uygulanmıyor). Denetimle bulunmuş iki maddeyi
-  koşum artık kendisi söylüyor.
+- **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
+  ve karar kapısı (D-018..D-022) kapandı.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U1** (backend
+  varsayılanı `local`). Sıra: `U1 → U2 → U3 → U7 → U4 → U5 → U6`.
+- **Biten:** Adım 1–5 (GAP-11 `8cf2ac0`, GAP-12 `ab8966c`, GAP-15
+  `ab30f9c`, GAP-13 `090a5bc`, GAP-1 `afbb552`) · Adım 6 **kısmen**
+  (`preflight.py`, **24 değişmezin 17'si**: `75239d1` faz 0 · `0b48f93`
+  faz 3 · `30c80da` faz 4/5 · `b8c3e69` faz 2) · Adım 7 ✅ gate ateşlendi
+  (flagsız koşum `exit=1`; `--lora --mock-llm` I2.1/I3.2/I5.1/I5.4
+  FLAG'leriyle geçti — D-017).
+- **Karar kapısının çıktısı — hepsi kilitli, hiçbiri henüz kodda:**
+  **D-018** backend `local` (groq legacy kalır) · **D-019** Qwen-2.5-7B
+  ölçülmeden kilitlenmez, **kabul kriteri ön-kayıtlı** · **D-020** NF4 +
+  `double_quant` açıkça yazılır · **D-021** GAP-8 bölündü (A1+A5 kilitli,
+  A2/A3/A4 VRAM ölçümüne bağlı) · **D-022** consolidation deney yoluna
+  bağlanır, I5.1 pilota kadar FLAG.
 - **Yön:** nesil zinciri 2 ile sınırlı değil, hedef **N nesil** (**D-014**).
-- **Karar kapısının çıktısı (hepsi kayıtlı, hiçbiri henüz kodda):**
-  **D-018** backend `local` kilitlendi (groq legacy kalır) ·
-  **D-019** Qwen-2.5-7B ölçülmeden kilitlenmez, kabul kriteri ön-kayıtlı ·
-  **D-020** NF4 + `double_quant`, bayrak açıkça yazılır (D-016 kapandı) ·
-  **D-021** GAP-8 bölündü: A1 (accumulation) + A5 (SNR filtresi) kilitli,
-  A2/A3/A4 VRAM ölçümüne bağlı · **D-022** consolidation deney yoluna
-  bağlanır, I5.1 pilota kadar FLAG (GAP-14 kapandı).
-- ⚠ **GAP-14'ün eski tarifi yanlıştı** — `consolidate_run`'ı `graph.py:1426`
-  çağırıyor. Ölü kod değil, **yanlış yolda**: demo yolu çağırıyor, deney
-  yolu çağırmıyor. Ayrıca deney yolunda **unutma da hiç çalışmamış**
-  (bkz. D-022).
+- **Gate'in kendi bulduğu:** I5.1 → GAP-14 (PPR atıl), I5.4 → GAP-3.
+  Denetimle bulunmuş iki maddeyi koşum artık kendisi söylüyor.
 
-**Bu fazın üç kuralı:**
-1. Tek konu → tek commit → gerekçeli mesaj → karar varsa D-kaydı.
-2. **Her düzeltme, o hatayı yakalayacak testle birlikte gelir.** Yoksa
-   N+1'inci düzeltme N'inciyi bozar ve kimse görmez.
-3. Koda dokunmadan önce mevcut davranışı teste bağla. Onaysız kod değiştirme.
+## Yeni Oturum Protokolü (bu bölüm bağlayıcıdır)
+
+**1. Nereden başla.** Bu dosyanın "SIRADAKİ İŞ" satırı → `EXECUTION_PLAN.md`
+§F'de o U-adımının tablosu → gerekçesini merak edersen `DECISIONS.md`'de
+ilgili D-kaydı. Üçünü okumadan koda dokunma.
+
+**2. Önce doğrula, sonra dokun.** Plandaki satır numaraları yazıldıkları
+gün doğruydu; **yeniden oku**. Bu projede belge iki kez yanıldı: GAP-11
+(docstring eski `agent_id` formatını yazıyordu) ve GAP-14 ("hiç kimse
+çağırmıyor" — `graph.py:1426` çağırıyordu). Hafızaya ve belgeye değil,
+dosyaya güven.
+
+**3. Gate-and-confirm.** Analiz → öneri → **Yasin'in onayı** → uygulama.
+Analiz şunları içerir: ne bulundu (kanıtla), ne değişecek, hangi test
+gelecek, ne riskli. Onaysız kod değişmez.
+
+**4. Her düzeltme testiyle gelir, test mutasyon kontrolünden geçer.**
+Düzeltmeyi geçici geri al → test kırılmalı → geri koy. Kırılmıyorsa test o
+hatayı yakalamıyordur.
+
+**5. Commit ritmi.** Tek konu → tam suite (`python -m pytest -q`) →
+gerekçeli commit. Suite yeşil değilse commit yok.
+
+**6. Ne nereye yazılır:**
+
+| Ne | Nereye | Mod |
+|---|---|---|
+| Karar, ölçüm sonucu, gerekçe, reddedilen alternatif | `docs/DECISIONS.md` (**D-kaydı**) | **append-only**, asla düzenleme |
+| "Şu an neredeyiz", sıradaki iş, açık GAP | `CLAUDE.md` (bu dosya) | üzerine yazılır, **kısa tutulur** |
+| Adım ayrıntısı, dur-kontrol, adım durumu | `docs/EXECUTION_PLAN.md` | adım bitince ✅ + commit hash |
+| Formül, tarihçe, empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` | sürüm sürüm (v2.4.2 borcu var) |
+
+**7. Neye sadık kal.** 5 Değiştirilemez Yasak · Değiştirilemez Süreç
+Kuralları · sessiz fallback yasağı (belirlenemeyen durum `SystemExit`/
+`ValueError`/`[WARN]` ile gürültü çıkarır, varsayılana düşmez) ·
+`constraints.py` eşik **değerleri yalnızca D-kaydıyla** değişir.
+
+**8. Ön-kayıt henüz yazılmadı** → alet değişikliği hâlâ meşru, ama her biri
+D-kaydı ister. Pre-reg kilitlendiği an bu pencere kapanır ve aynı değişiklik
+post-hoc olur.
+
+**9. Çelişki görürsen sessizce seçme.** Belge ile kod, ya da iki belge
+çelişiyorsa: raporla, kullanıcıya sor. (Bu oturumda üç kez oldu: değişmez
+sayısı 20↔24, saturation eşiği 0.30↔0.05, GAP-14'ün tarifi.)
 
 **Okuma haritası — hangi soruda hangi dosya:**
 
 | Ne zaman | Dosya |
 |---|---|
 | Her oturum başı | `CLAUDE.md` (otomatik yüklenir) |
-| Sıradaki iş ne | `docs/EXECUTION_PLAN.md` |
+| **Sıradaki iş ne** | `docs/EXECUTION_PLAN.md` **§F (Faz 2, U1–U7)** |
 | "Bunu neden böyle kararlaştırdık?" | `docs/DECISIONS.md`, D-numarasıyla |
 | Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (D-012, I0.1–I5.4 — **24 madde**, "20" yanlıştı) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
-| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` ⚠ 4+ commit geride, v2.4.2 borcu var |
+| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` ⚠ geride, v2.4.2 borcu var |
 
 ## Axiom
 
@@ -135,32 +167,35 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
   (D-003). Kapı kaldırılmaz: aksiyom içeri trait enjeksiyonunu yasaklar,
   dışarıdan seçilim baskısını değil.
 
-## Açık Gap'ler (öncelik sırasıyla — doğrulanmadan "kapalı" sayılmaz)
+## Açık Gap'ler (doğrulanmadan "kapalı" sayılmaz)
 
-### GAP-1 (en kritik): LoRA default-off → eğitim hiç çalışmıyor — **DOĞRULANDI**
-Read-only denetim (2026-08-09) sonucu: `run_cprime_multigen.py`
-`DAU_LORA_ENABLED`'ı **hiçbir yerde set etmiyor**; yalnızca satır 692'de
-JSON'a raporlamak için okuyor. CLI'da flag yok. `run_protocol_c_prime.py`
-da zorlamıyor. Gate üç katmanlı ve hepsi kapalı:
-`_train_adapter` (run_protocol_c_prime.py:697) · `run_micro_train_
-preference_step` (lora_update.py:369) · `lora_update` (lora_update.py:404).
+**Kapanmışlar — yeniden açılmaz, kanıtı commit'te:**
 
-**Sonucu sanılandan sert:** `run_gen1_arm_lineage`'de `arm` değişkeni
-davranışa **tek bir yerde** dokunuyor — `_train_adapter` çağrısı
-(satır 429-443). Niş yalnızca `seed`'den geliyor (`_seed_niche`), `agent_id`
-prompt'a girmiyor, hafıza deposu her soy için taze. Eğitim no-op olunca
-`lived`/`null`/`shuffle` üç kol değil, **aynı deneyin üç kopyası**; strict
-seed lock ile muhtemelen bit-identik. Böyle bir koşumdan çıkacak p-değeri
-bilimsel sonuç değil, tautolojidir. `null ΔPE=0.000 clean` metriği bu yüzden
-ikircikli: "alet deterministik" de demek olabilir, "hiçbir kol eğitilmedi" de.
+| GAP | Nasıl kapandı |
+|---|---|
+| GAP-1 | LoRA kapısı + alet kimliği (D-004, `afbb552`); I0.1/I0.2 olarak gate'e bağlandı (`75239d1`) |
+| GAP-7 | Backend `local` kilitlendi — **D-018** |
+| GAP-11 | Shuffle seed process'ler arası deterministik (`8cf2ac0`) |
+| GAP-12 | Gen2 + transfer öncesi RNG kilidi (`ab8966c`); I4.2 olarak gate'te (`30c80da`) |
+| GAP-13 | Precision audit gen1 **ve** gen2'de dolduruluyor (`090a5bc`); I3.2 gate'te |
+| GAP-14 | Consolidation deney yoluna bağlanacak — **D-022** (uygulama U6) |
+| GAP-15 | `TEMPERATURE` çağrı anında okunuyor (`ab30f9c`) |
+| GAP-16 (D-016) | Quantization NF4 + double_quant — **D-020** (uygulama U2) |
 
-**Fix kararı — D-004 · ✅ UYGULANDI (`afbb552`).** `dau/diagnostics/
-tool_identity.py`: flag verilmemişse `SystemExit`; `--no-lora` meşru ama
-`explicit_off` diye kayda geçiyor ve env'i de o yazıyor; `--lora` + uzak
-backend `SystemExit` (uzakta ağırlık yok, eğitim sessizce atlanırdı);
-her results JSON'unda alet kimliği. İlke: bir koşum kendi konfigürasyonunu
-inkâr edememeli. Kalan: Adım 6'da I0.1/I0.2 olarak değişmez çerçevesine
-bağlanması.
+⚠ **GAP-14'ün eski tarifi yanlıştı ve düzeltildi.** "Sarmalayıcıyı hiç kimse
+çağırmıyor" deniyordu; `graph.py:1426` çağırıyor. Consolidation **ölü kod
+değil, yanlış yolda** — demo yolu çağırıyor, deney yolu çağırmıyor. Bunun
+sonucu sanılandan geniş: deney yolunda **unutma da hiç çalışmamış**, yani
+gen2'ye giden miras malzemesi olduğundan farklı ve **birincil uç noktaya**
+(doğum-drift, D-002) dokunuyor. Ayrıntı: **D-022**.
+
+**GAP-8 bölündü (D-021):** A1 (gradient accumulation) ve A5 (mutlak PE / SNR
+filtresi) **kilitli** — uygulama U4 ve U5. A2 (`seq_len` 512), A3 (3 epoch),
+A4 (%10 somatik replay) **VRAM ölçümüne bağlı** — U3'ten sonra, U7'de karara
+bağlanacak. A5'in eşiği (`0.40`) kilitli **değil**: mekanizma şimdi, değer
+pilottan sonra kalibre edilir.
+
+**Hâlâ açık olanlar:**
 
 ### GAP-2: Silent train failure — kısmen açık
 Doğrulandı, ama CLAUDE.md'nin önceki tarifi olduğundan geniş:
@@ -205,30 +240,6 @@ değil. `local_llm.py`'de `empty_cache` / `synchronize` **yok**, yalnızca
 `optimizer.zero_grad()` var. `f25b0ef` disk izolasyonunu çözdü; bellek
 tarafındaki bu şart doğrulanmadı.
 
-### GAP-8 (en kritik ikinci): DPO sinyal gücünü düşüren beş ayar
-Arşiv mutabakatının (D-010) en tutarlı bulgusu: **beş bağımsız brief
-tavsiyesi aynı yöne işaret ediyor, beşi de kısmen veya hiç uygulanmamış.**
-Tek tek küçük, birlikte sinyali katlayarak zayıflatıyorlar.
-
-| | Tavsiye | Kod | Kaynak |
-|---|---|---|---|
-| A1 | gradient **accumulation** | yok — `local_llm.py:610-627` her çift için ayrı `zero_grad()`+step ⇒ efektif batch=1. Uygulanan: gradient *checkpointing* (bellek tekniği, farklı şey) | 08-08~ §2 |
-| A2 | `seq_len` 512 | `DPO_MAX_SEQUENCE_TOKENS = 256` (128'den yükseltilmiş, yarı yol) | cprime-teshis H-B1 |
-| A3 | 3 epoch | `DPO_EPOCHS = 1` | cprime-teshis H-B2 |
-| A4 | %10 yüksek-somatik **replay** (`F_agent ≥ 0.7`), +0.3 GiB | kodda hiç yok | cprime-teshis H-A2 |
-| A5 | **SNR eşiği `PE ≥ 0.40`**; `PE < 0.15` sinyalleri ön-eğitilmiş ağırlık gürültüsünde kaybolur | `build_pe_ranked_pairs` yalnızca `PE_RANK_MIN_GAP = 1e-6` fark arıyor, **mutlak PE eşiği yok** ⇒ eğitim seti gürültü çiftleriyle dolabilir | sentetik-kognisyon §1.2 |
-
-A5 muhtemelen en kritik olanı: tercih çiftleri PE **farkına** göre
-seçiliyor ama PE **büyüklüğüne** göre filtrelenmiyor.
-
-A1 ve A4 `fark edilmemiş kayma`; A2/A3 kısmi sapma. `BATCH_SIZE=2` OOM
-verdiği için batching kapatılmış — ama accumulation OOM vermez
-(micro-batch 1 kalır, step N mikro-adımda bir atılır); iki teknik
-karıştırılmış görünüyor.
-
-⚠ **Alet değişikliği** — D-005 ile aynı pencerede, pre-reg kilitlenmeden
-önce karara bağlanmalı.
-
 ### GAP-9: N=15 güç analizine göre baştan yetersizdi
 `protocol-c-metacognition-eval` güç analizi: `σ_PE = 0.256`, eşleştirilmiş
 tasarımda `d_z ≈ 1.5·d`. Gerekli çift sayısı **d=0.5 → 16 · d=0.4 → 24 ·
@@ -245,59 +256,6 @@ ya beklenen etki büyüklüğü açıkça gerekçelendirilip N ona göre hesapla
 ya da D-002'nin yüksek güçlü uç noktası (doğum-drift, tamsayı sayımlar)
 kullanılır — ki bu D-002'yi bağımsız olarak destekliyor.
 
-### GAP-11 (canlı hata): Shuffle kolu process'ler arası reproducible değil
-`_seed_from_agent_id` (`run_protocol_c_prime.py:567-573`) trailing segmenti
-int'e çevirir, olmazsa `abs(hash(agent_id)) % 2**31` döner. Multigen
-`agent_id`'si `cprime-{arm}-{seed}-g1` → `int("g1")` ValueError → hash
-fallback. `PYTHONHASHSEED` **hiçbir yerde set edilmiyor**.
-
-Ampirik kanıt — aynı `agent_id`, üç ayrı process:
-`419643228` · `227385495` · `229629477`.
-
-**Kök neden:** `cd64cc8` multigen `agent_id`'ye `-g1` ekledi; Protocol C′'de
-`cprime-shuffle-2001` → `int("2001")` çalışıyordu. Docstring hâlâ eski
-formatı yazıyor. Uzaktaki dosyada sessizce kırıldı.
-
-**Etki:** üç koldan biri replay garantisinin dışında. Düzeltme tek satır,
-ama determinizm assertion'ı ile birlikte gelmeli.
-
-### GAP-12: Gen2 seed-locked değil — ve asimetrik
-`run_gen1_arm_lineage` phase-1 (`:411`) ve phase-2 (`:446`) `_lock_seeds`
-çağırıyor; `run_gen2_measure` çağırmıyor.
-
-Asıl sorun asimetri: lived/shuffle eğitim yapıyor (LoRA reset + DPO, torch
-RNG tüketiyor), null yapmıyor → üç varis gen2'ye **farklı RNG durumlarıyla**
-giriyor. Kol farkı ile RNG farkı karışıyor.
-
-### GAP-13: Multigen'de precision audit hiç yapılmıyor
-`ArmResult`'ın `saturation_rate` / `pi_n_distinct` / `n_pe_events_audited` /
-`n_saturated` / `pi_values` alanları `run_cprime_multigen.py`'de **hiç
-doldurulmuyor** → JSON'a default sıfırlar gidiyor.
-
-v2.4.1'de v3 smoke'un tüm anlamı bu alanlardı. Multigen koşumunda alet
-sağlık kontrolü yok; doygunluk geri gelse haberimiz olmaz.
-
-### GAP-14: PPR (ADIM 4) koşum yolunda inert
-`memory_edges` tablosunu dolduran tek yer `store.write_edge`; onu çağıran
-tek yer `consolidation.run_consolidation`; onu çağıran `memory_bridge.py:113`
-sarmalayıcısını **hiç kimse çağırmıyor** (testler hariç).
-
-Sonuç: tablo boş → `compute_ppr_scores` boş graf → `{seed_domain: 1.0}`
-sabit dönüyor:
-```
-memory_score = 0.21·recency + 0.28·magnitude + 0.21·domain_match + 0.30·ppr
-             → fiilen 0.21·recency + 0.28·magnitude + 0.51·domain_match
-```
-PPR bir çağrışım motoru değil, domain_match'in ağırlığını büyüten sabit.
-⚠ **Master reference §6 ve §19 ADIM 4'ü uygulanmış entegrasyon olarak
-sunuyor** — v2.4.2'de düzeltilmeli. Karar gerekiyor: consolidation'ı koşum
-yoluna bağla mı, yoksa "inert" diye belgele mi?
-
-### GAP-15: `TEMPERATURE` import anında donuyor
-`run_protocol_c_prime.py:73` `DAU_LLM_TEMPERATURE`'ı import anında okuyor;
-`_lock_seeds` her çağrıda env'i o değerle geri yazıyor (`:460`). Import'tan
-sonra env değiştirmek sessizce etkisiz.
-
 ### GAP-10: Süresi dolmuş ölçüm ertelemeleri (v1 denetimlerinden)
 - **`W_SEM = 0.0`** — ChromaDB vektörü skorlamaya girmiyor, sadece depo.
   `v1-kritik-sistem-audit` "**baseline kilitlenince** `W_SEM = 0.3–0.4`
@@ -311,38 +269,6 @@ sonra env değiştirmek sessizce etkisiz.
   `S=0.20` yerine domain-özgü matris öneriyor
   (`S_res→unc=0.35`, `S_soc→res=0.10`…). Kod skaler kullanıyor
   (`CROSS_AXIS_SPILLOVER = 0.20`). Bilinçli mi bilinmiyor.
-
-### GAP-7 (D-005, henüz kilitlenmedi): Backend aksiyomu test edemeyen konfigürasyon
-`DAU_LLM_BACKEND=groq` default. Ama Kanal 2 (per-agent adapter,
-`switch_adapter`, DPO) ağırlık erişimi ister — **Groq'ta ontolojik olarak
-imkânsız**. Yani projenin merkezî iddiasının test edilemediği konfigürasyon,
-varsayılan konfigürasyon. Mimari zaten %90 lokal (MiniLM, DeBERTa NLI,
-Chroma, SQLite, PPR); uzak olan tek bileşen karar veren LLM.
-
-Ek riskler:
-- **Ön-kayıt bütünlüğü:** uzak endpoint sahibi olmadığın bir alettir;
-  sağlayıcı model sürümünü/quantization'ı habersiz değiştirirse ön-kayıt
-  **geriye dönük** geçersiz olur. `sha256(DAU_LLM_SEED:prompt)` + strict
-  CUDA lock makinesi yalnızca lokalde anlamlı.
-- **Kayıtsız alet uyumsuzluğu:** Protocol C = Groq `llama-3.1-8b-instant`;
-  C′ = lokal Llama-3.1-8B 4-bit NF4. Farklı aletler, ama belgede backend
-  farkına dair **hiçbir alet etiketi yok** (§10b etiketleri yalnızca ADIM 5
-  precision'a dair).
-- Groq'un kalan tek işlevi (büyük-N frozen koşum) zaten anti-roadmap'te
-  yasak; hızlı iterasyon ihtiyacını `DAU_MULTIGEN_MOCK_LLM=1` daha iyi
-  karşılıyor.
-
-Karşı maliyet: 8GB VRAM tavanı (çok-ajanlı eşzamanlılık). Punica adapter
-takası bunu çözüyor — bedeli bellek değil, zaman.
-
-**Zamanlama uyarısı:** backend default'unu değiştirmek aleti değiştirmektir.
-Çok-nesilli pre-reg **henüz yazılmadı**, yani pencere şu an açık; pre-reg
-kilitlendiği an bu değişiklik post-hoc olur ve kendi kuralını çiğner.
-
-Önerilen (henüz kilitlenmedi): deney runner'larının default'u `local`;
-`groq` "legacy/keşif" etiketiyle kalsın (Protocol C provenance'ı için
-gerekli); her results JSON'una **alet kimliği** yazılsın — backend, model
-id, quantization, `DAU_LORA_ENABLED`, adapter durumu, sampling parametreleri.
 
 ## Kapatılmış/Geçersiz Sayılan Geçmiş Bulgular (yeniden açılmaz)
 
@@ -358,11 +284,20 @@ id, quantization, `DAU_LORA_ENABLED`, adapter durumu, sampling parametreleri.
 
 - `TransferCandidate` → `dau/foundation/generation.py` (generation/ değil).
   Doğrulandı: `generation.py:55`.
-- `_train_adapter` → `dau/diagnostics/run_protocol_c_prime.py:684`
+- `_train_adapter` → `dau/diagnostics/run_protocol_c_prime.py:726`
   (**`lora_update.py`'de değil** — multigen oradan import ediyor).
-- Multigen orkestrasyon: `dau/diagnostics/run_cprime_multigen.py` (792 satır)
-  + `dau/diagnostics/tests/test_cprime_multigen.py` (226 satır) — mevcut,
-  LoRA gate'i doğrulandı ve kapalı (GAP-1).
+- Multigen orkestrasyon: `dau/diagnostics/run_cprime_multigen.py` (~1086
+  satır) + `dau/diagnostics/tests/test_cprime_multigen.py` (~805 satır).
+- **Faz 2'de en çok dokunulacak dosyalar:** `dau/foundation/local_llm.py`
+  (U2 quantization `build_load_kwargs:99`, U4 DPO döngüsü `:659–702`) ·
+  `dau/foundation/lora_update.py` (U5, `build_pe_ranked_pairs:286`) ·
+  `dau/foundation/llm_backend.py:18` + `dau/foundation/graph.py:293` (U1) ·
+  `run_cprime_multigen.run_lineage:669` (U6).
+- Gate altyapısı (Adım 6'da yazıldı): `dau/diagnostics/preflight.py` (~805
+  satır, I0.x/I2.x/I3.x/I4.2/I5.x) + `dau/diagnostics/tool_identity.py`
+  (~228 satır, LoRA kapısı + alet kimliği).
+- ⚠ **Satır numaraları kayar.** Bu bölüm 2026-08-10'da doğrulandı; her
+  oturumda `grep` ile teyit et, güvenme.
 - `CLAUDE.md` **repo kökünde** durur, `docs/`'a taşınamaz — Claude Code
   onu yalnızca kökten otomatik yükler.
 - Deep Research arşivi: `docs/research/` (ham brief'ler + `RECONCILIATION.md`).
@@ -370,6 +305,13 @@ id, quantization, `DAU_LORA_ENABLED`, adapter durumu, sampling parametreleri.
   devredildi (D-008).
 
 ## Master Reference ↔ Kod Gecikmesi (2026-08-09 denetimi)
+
+⚠ **Gecikme 2026-08-10'da büyüdü:** o denetimden bu yana 13 commit daha
+geçti (Adım 1–7 + karar kapısı). v2.4.2'ye eklenecek yeni borçlar:
+`preflight.py` ve `tool_identity.py` belgede hiç geçmiyor · GAP-14'ün
+düzeltilmiş tarifi (D-022) · quantization NF4 kararı (D-020) · gate
+ateşleme sonucu (D-017). **v2.4.2 Faz 2 bitince tek seferde yazılır** —
+her adımda güncellemek iki kez yazmak olur.
 
 `docs/DAU_MASTER_REFERENCE_v20.md` (v2.4.1) koddan **4 commit geride**.
 `04adbdc` yalnızca docs dosyalarına dokunmuş, içeriği bir gün önceki koda
