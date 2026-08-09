@@ -16,6 +16,7 @@ No trait injection. No LLM-as-judge. Do not re-run frozen Protocol C.
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import datetime
 import json
@@ -34,6 +35,11 @@ import numpy as np
 from scipy import stats
 
 import dau.foundation.graph as graph_mod
+from dau.diagnostics.tool_identity import (
+    LORA_CHOICE_OFF,
+    build_tool_identity,
+    resolve_lora_choice,
+)
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
     NLI_CONTRADICTION_THRESHOLD,
@@ -1218,8 +1224,18 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
     }
 
 
-def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path:
-    """Persist Protocol C′ pairs + summary to RESULTS_PATH (indent=2)."""
+def write_results_json(
+    results: list[PairResult],
+    stats: dict[str, Any],
+    *,
+    lora_choice: str,
+) -> Path:
+    """Persist Protocol C′ pairs + summary to RESULTS_PATH (indent=2).
+
+    ``lora_choice`` has no default on purpose: the writer cannot recover it
+    from the environment, and guessing it would let the file misreport how
+    the run was configured (D-004).
+    """
 
     path = RESULTS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1238,6 +1254,10 @@ def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
             "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
             "llm_do_sample": os.environ.get(LLM_DO_SAMPLE_ENV, "0"),
+            "tool_identity": build_tool_identity(
+                lora_choice=lora_choice,
+                seeds=list(SEEDS),
+            ),
             "pairs": [asdict(r) for r in results],
             "summary": stats,
         }
@@ -1247,8 +1267,39 @@ def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path
     return path
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Protocol C′ — lived/null/shuffle")
+    # No default: the run refuses to start until one of these is given, so a
+    # forgotten flag can never be mistaken for an untrained run on purpose.
+    lora_group = parser.add_mutually_exclusive_group()
+    lora_group.add_argument(
+        "--lora",
+        dest="lora",
+        action="store_true",
+        default=None,
+        help="Train per-agent adapters (requires DAU_LLM_BACKEND=local).",
+    )
+    lora_group.add_argument(
+        "--no-lora",
+        dest="lora",
+        action="store_false",
+        default=None,
+        help="Deliberately run without training; recorded in the results JSON.",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
     """CLI: run Protocol C′, print summary, write JSON."""
+
+    args = build_arg_parser().parse_args(argv)
+    lora_choice = resolve_lora_choice(args.lora)
+    if lora_choice == LORA_CHOICE_OFF:
+        print(
+            "[PROTOCOL_C_PRIME][WARN] LoRA training is OFF — lived and shuffle "
+            "differ from null only in bookkeeping, not in weights.",
+            flush=True,
+        )
 
     print(
         f"Protocol C′ — N={N_PAIRS} seeds, {EVENTS_PER_ARM} events/arm, "
@@ -1266,7 +1317,7 @@ def main() -> None:
     print(f"Checkpoint: {CHECKPOINT_PATH}")
     results = run_protocol_c_prime()
     stats_out = _compute_stats(results)
-    path = write_results_json(results, stats_out)
+    path = write_results_json(results, stats_out, lora_choice=lora_choice)
 
     print("\n=== RESULTS ===", flush=True)
     print(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import random
 from typing import Any
 from unittest.mock import patch
@@ -27,6 +28,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     PE_W_SATURATION_VALUE,
     _lock_seeds,
 )
+from dau.diagnostics.tool_identity import LORA_CHOICE_OFF, LORA_ENABLED_ENV
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
     GENERATION_INHERITED_KEY,
@@ -348,7 +350,8 @@ def test_multigen_smoke_mock_llm_end_to_end(
     """N=1, events=5 mock path writes gen1/transfer/gen2 JSON sections."""
 
     monkeypatch.setenv(MOCK_LLM_ENV, "1")
-    monkeypatch.setenv("DAU_LORA_ENABLED", "0")
+    # LoRA off is now a stated choice, not an env default we lean on (GAP-1).
+    monkeypatch.setenv(LORA_ENABLED_ENV, "1")
     monkeypatch.setenv("DAU_LLM_BACKEND", "groq")
     # Keep MiniLM out of the critical path when available stub is cleaner.
     monkeypatch.setattr(
@@ -364,7 +367,11 @@ def test_multigen_smoke_mock_llm_end_to_end(
         k_gen2=1,
         pe_window_gen2=EVENTS_SMOKE,
         mock_llm=True,
+        lora=False,
     )
+    # The stated choice wins over the environment, so the three gate layers
+    # downstream cannot disagree with what the JSON reports.
+    assert os.environ[LORA_ENABLED_ENV] == "0"
     assert len(results) == 1
     assert len(results[0].lineages) == 3
     arms = {lin.gen1_arm for lin in results[0].lineages}
@@ -381,6 +388,7 @@ def test_multigen_smoke_mock_llm_end_to_end(
     out = tmp_path / "multigen_smoke.json"
     path = write_multigen_results_json(
         results,
+        lora_choice=LORA_CHOICE_OFF,
         path=out,
         events_gen1=EVENTS_SMOKE,
         events_gen2=EVENTS_SMOKE,

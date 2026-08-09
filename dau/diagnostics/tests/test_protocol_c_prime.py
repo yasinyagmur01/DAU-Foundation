@@ -29,6 +29,14 @@ from dau.diagnostics.run_protocol_c_prime import (
     _window_mean,
     write_results_json,
 )
+from dau.diagnostics.tool_identity import (
+    BACKEND_LOCAL,
+    LORA_CHOICE_OFF,
+    LORA_CHOICE_ON,
+    LORA_ENABLED_ENV,
+    build_tool_identity,
+    resolve_lora_choice,
+)
 
 
 def _arm(
@@ -246,7 +254,7 @@ def test_write_results_json_structure(
     monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.N_PAIRS", 1)
     results = [_pair(2001, -0.05, 0.02, 0.01)]
     stats = _compute_stats(results)
-    path = write_results_json(results, stats)
+    path = write_results_json(results, stats, lora_choice=LORA_CHOICE_OFF)
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert "protocol" in payload
     assert "signal_version" in payload
@@ -277,7 +285,7 @@ def test_write_results_json_sanitizes_nan(
         )
     ]
     stats = _compute_stats(results)
-    path = write_results_json(results, stats)
+    path = write_results_json(results, stats, lora_choice=LORA_CHOICE_OFF)
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["pairs"][0]["lived"]["delta_pe"] is None
 
@@ -331,7 +339,7 @@ def test_write_results_json_reports_effective_temperature(
     monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.N_PAIRS", 1)
     monkeypatch.setenv(LLM_TEMPERATURE_ENV, "0.7")
     results = [_pair(2001, -0.05, 0.02, 0.01)]
-    path = write_results_json(results, _compute_stats(results))
+    path = write_results_json(results, _compute_stats(results), lora_choice=LORA_CHOICE_OFF)
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["temperature"] == 0.7
 
@@ -379,6 +387,119 @@ def test_seed_from_agent_id_stable_across_processes() -> None:
     """
 
     assert _seed_in_subprocess("0") == _seed_in_subprocess("1") == "2001"
+
+
+@pytest.fixture
+def lora_env(monkeypatch: pytest.MonkeyPatch):
+    """Declare the env resolve_lora_choice writes so it is restored after."""
+
+    monkeypatch.setenv(LORA_ENABLED_ENV, "0")
+    monkeypatch.setenv("DAU_LLM_BACKEND", "groq")
+    return monkeypatch
+
+
+def test_lora_choice_required(lora_env) -> None:
+    """GAP-1: falling through to the default is not a choice."""
+
+    with pytest.raises(SystemExit) as excinfo:
+        resolve_lora_choice(None)
+    assert "--lora" in str(excinfo.value)
+    assert "--no-lora" in str(excinfo.value)
+
+
+def test_lora_off_is_allowed_but_recorded(lora_env) -> None:
+    """An untrained run stays legal — it just cannot be silent."""
+
+    assert resolve_lora_choice(False) == LORA_CHOICE_OFF
+    assert os.environ[LORA_ENABLED_ENV] == "0"
+
+
+def test_lora_on_requires_local_backend(lora_env) -> None:
+    """Remote endpoints have no weights to train; skipping would be silent."""
+
+    with pytest.raises(SystemExit) as excinfo:
+        resolve_lora_choice(True)
+    assert "local" in str(excinfo.value)
+    # The gate must not leave the environment claiming training is on.
+    assert os.environ[LORA_ENABLED_ENV] == "0"
+
+
+def test_lora_on_sets_env_under_local_backend(lora_env) -> None:
+    lora_env.setenv("DAU_LLM_BACKEND", BACKEND_LOCAL)
+    assert resolve_lora_choice(True) == LORA_CHOICE_ON
+    assert os.environ[LORA_ENABLED_ENV] == "1"
+
+
+def test_backend_local_name_matches_graph() -> None:
+    """tool_identity spells the backend name; graph owns it."""
+
+    from dau.foundation.graph import LLM_BACKEND_LOCAL
+
+    assert BACKEND_LOCAL == LLM_BACKEND_LOCAL
+
+
+def test_tool_identity_has_no_undeterminable_field(lora_env) -> None:
+    """I0.1: any field that cannot be determined must not ship as null."""
+
+    identity = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[2001, 2002])
+
+    def _walk(node, path: str) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                _walk(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for i, value in enumerate(node):
+                _walk(value, f"{path}[{i}]")
+        else:
+            assert node is not None, f"undeterminable field: {path}"
+
+    _walk(identity, "tool_identity")
+    for key in ("backend", "model_id", "quantization", "dpo", "lora", "sampling",
+                "seeds", "versions"):
+        assert key in identity
+    assert identity["seeds"]["start"] == 2001
+    assert identity["seeds"]["end"] == 2002
+    assert identity["versions"]["torch"]
+    assert identity["dpo"]["effective_batch_size"] == 1
+
+
+def test_tool_identity_quantization_matches_loader(lora_env) -> None:
+    """The report must read the loader's config, not rebuild its own.
+
+    Two constructions would drift, and a results file that misreports its own
+    quantization is the failure this block exists to prevent.
+    """
+
+    lora_env.setenv("DAU_LLM_BACKEND", BACKEND_LOCAL)
+    from dau.foundation.local_llm import build_load_kwargs
+
+    reported = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[2001])
+    config = build_load_kwargs().get("quantization_config")
+    quantization = reported["quantization"]
+    if config is None:  # CPU-only build without bitsandbytes
+        assert quantization["load_in_4bit"] is False
+    else:
+        assert quantization["load_in_4bit"] == config.load_in_4bit
+        assert quantization["quant_type"] == str(config.bnb_4bit_quant_type)
+
+
+def test_results_json_carries_tool_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    out = tmp_path / "protocol_c_prime_results.json"
+    monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.RESULTS_PATH", out)
+    monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.N_PAIRS", 1)
+    results = [_pair(2001, -0.05, 0.02, 0.01)]
+    path = write_results_json(
+        results,
+        _compute_stats(results),
+        lora_choice=LORA_CHOICE_OFF,
+    )
+    identity = json.loads(path.read_text(encoding="utf-8"))["tool_identity"]
+    assert identity["lora"]["choice"] == LORA_CHOICE_OFF
+    assert identity["backend"] in {"groq", BACKEND_LOCAL}
+    assert identity["model_id"]
 
 
 def test_results_path_under_dau_runs() -> None:

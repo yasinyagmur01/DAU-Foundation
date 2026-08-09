@@ -96,6 +96,62 @@ def get_loaded_model() -> Any | None:
     return _model
 
 
+def build_load_kwargs() -> dict[str, Any]:
+    """from_pretrained kwargs for the base model — the single source of truth.
+
+    4-bit when bitsandbytes is importable, full precision on CPU otherwise.
+    Note that bnb_4bit_quant_type is left at the BitsAndBytesConfig default
+    rather than pinned here; describe_quantization reports whatever that
+    turns out to be instead of asserting what the docs assume.
+    """
+
+    import torch
+
+    kwargs: dict[str, Any] = {"device_map": "auto"}
+    try:
+        from transformers import BitsAndBytesConfig
+
+        kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+        )
+    except Exception:  # noqa: BLE001 — CPU / no bitsandbytes: smoke only
+        kwargs["torch_dtype"] = torch.float32
+        kwargs["device_map"] = "cpu"
+    return kwargs
+
+
+def describe_quantization() -> dict[str, Any]:
+    """Report the quantization the base model is actually loaded with.
+
+    Read from build_load_kwargs, never re-derived: a tool-identity block that
+    builds its own config would eventually disagree with the loader, which is
+    exactly the silent mismatch it is meant to expose.
+    """
+
+    try:
+        kwargs = build_load_kwargs()
+    except ImportError:
+        return {"available": False, "reason": "torch not installed"}
+
+    config = kwargs.get("quantization_config")
+    if config is None:
+        return {
+            "available": True,
+            "load_in_4bit": False,
+            "dtype": str(kwargs.get("torch_dtype")),
+            "device_map": str(kwargs.get("device_map")),
+        }
+    return {
+        "available": True,
+        "load_in_4bit": bool(getattr(config, "load_in_4bit", False)),
+        "quant_type": str(getattr(config, "bnb_4bit_quant_type", "")),
+        "compute_dtype": str(getattr(config, "bnb_4bit_compute_dtype", "")),
+        "double_quant": bool(getattr(config, "bnb_4bit_use_double_quant", False)),
+        "device_map": str(kwargs.get("device_map")),
+    }
+
+
 def _ensure_peft_model(model: Any) -> Any:
     """Wrap base model with an empty LoRA config when peft is available."""
 
@@ -121,6 +177,11 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
 
     Signature is backward compatible: ``load_local_model(agent_id=\"default\")``.
     First generation (no adapter yet) uses base weights only.
+
+    Quantization comes from build_load_kwargs so describe_quantization() can
+    report what is actually loaded. Two constructions would drift, and a
+    results file that misreports its own quantization is the failure D-004
+    exists to prevent.
     """
 
     global _model, _tokenizer, _active_agent_id
@@ -142,18 +203,7 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    load_kwargs: dict[str, Any] = {"device_map": "auto"}
-    try:
-        from transformers import BitsAndBytesConfig
-
-        load_kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-        )
-    except Exception:
-        # CPU / no bitsandbytes — load full precision for smoke only.
-        load_kwargs["torch_dtype"] = torch.float32
-        load_kwargs["device_map"] = "cpu"
+    load_kwargs = build_load_kwargs()
 
     model = AutoModelForCausalLM.from_pretrained(LOCAL_MODEL_NAME, **load_kwargs)
     model = _ensure_peft_model(model)

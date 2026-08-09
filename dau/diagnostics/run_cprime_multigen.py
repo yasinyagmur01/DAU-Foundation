@@ -66,6 +66,11 @@ from dau.diagnostics.run_protocol_c_prime import (
     _train_adapter,
     _window_mean,
 )
+from dau.diagnostics.tool_identity import (
+    LORA_CHOICE_OFF,
+    build_tool_identity,
+    resolve_lora_choice,
+)
 from dau.foundation.drift import DriftState
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
 from dau.foundation.generation import (
@@ -648,8 +653,23 @@ def run_cprime_multigen(
     k_gen2: int = K_GEN2,
     pe_window_gen2: int = PE_WINDOW_GEN2,
     mock_llm: bool | None = None,
+    lora: bool | None = None,
 ) -> list[MultigenPairResult]:
-    """Run N seeds × 3 arms through gen1 → transfer → gen2."""
+    """Run N seeds × 3 arms through gen1 → transfer → gen2.
+
+    ``lora`` must be stated: True trains, False deliberately does not, and
+    None exits (GAP-1 — the default was off and nothing said so out loud).
+    """
+
+    lora_choice = resolve_lora_choice(lora)
+    print(f"[MULTIGEN] lora={lora_choice}", flush=True)
+    if lora_choice == LORA_CHOICE_OFF:
+        print(
+            "[MULTIGEN][WARN] LoRA training is OFF — the three arms differ "
+            "only in bookkeeping, not in weights. Any arm contrast from this "
+            "run is not evidence about lived experience.",
+            flush=True,
+        )
 
     use_mock = mock_llm_enabled() if mock_llm is None else bool(mock_llm)
     previous_builder: Callable[[], Any] | None = None
@@ -743,6 +763,7 @@ def _summary(results: list[MultigenPairResult]) -> dict[str, Any]:
 def write_multigen_results_json(
     results: list[MultigenPairResult],
     *,
+    lora_choice: str,
     path: Path | None = None,
     events_gen1: int = EVENTS_GEN1,
     events_gen2: int = EVENTS_GEN2,
@@ -751,7 +772,12 @@ def write_multigen_results_json(
     seed_start: int = SEED_START,
     pe_window_gen2: int = PE_WINDOW_GEN2,
 ) -> Path:
-    """Persist gen1 / transfer / gen2 sections in one JSON document."""
+    """Persist gen1 / transfer / gen2 sections in one JSON document.
+
+    ``lora_choice`` has no default on purpose: the writer cannot recover it
+    from the environment, and inventing one would be the writer guessing at
+    the run's configuration (D-004).
+    """
 
     out = path if path is not None else RESULTS_PATH
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -768,6 +794,10 @@ def write_multigen_results_json(
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
             "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
             "mock_llm": mock_llm_enabled(),
+            "tool_identity": build_tool_identity(
+                lora_choice=lora_choice,
+                seeds=list(range(seed_start, seed_start + n_pairs)),
+            ),
             "notes": {
                 "gen2_env": "fresh _seed_niche(seed) — same draw as null arm",
                 "gen2_metric": "single-phase window mean PE (not train ΔPE)",
@@ -820,6 +850,23 @@ def build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use deterministic MockLLM (no API/GPU).",
     )
+    # No default: the run refuses to start until one of these is given, so a
+    # forgotten flag can never be mistaken for an untrained run on purpose.
+    lora_group = parser.add_mutually_exclusive_group()
+    lora_group.add_argument(
+        "--lora",
+        dest="lora",
+        action="store_true",
+        default=None,
+        help="Train per-agent adapters (requires DAU_LLM_BACKEND=local).",
+    )
+    lora_group.add_argument(
+        "--no-lora",
+        dest="lora",
+        action="store_false",
+        default=None,
+        help="Deliberately run without training; recorded in the results JSON.",
+    )
     parser.add_argument(
         "--results",
         type=Path,
@@ -831,6 +878,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
+    # Gate first: a refused run should print the reason, not a run banner.
+    lora_choice = resolve_lora_choice(args.lora)
     if args.mock_llm:
         os.environ[MOCK_LLM_ENV] = "1"
     print(
@@ -847,9 +896,11 @@ def main(argv: list[str] | None = None) -> None:
         k_gen2=args.k_gen2,
         pe_window_gen2=args.pe_window_gen2,
         mock_llm=True if args.mock_llm else None,
+        lora=args.lora,
     )
     path = write_multigen_results_json(
         results,
+        lora_choice=lora_choice,
         path=args.results,
         events_gen1=args.events_gen1,
         events_gen2=args.events_gen2,
