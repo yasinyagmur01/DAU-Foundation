@@ -619,3 +619,50 @@ türetildi, kalanlar açık bırakıldı.
 olması gerekip olmayan şeyler). Koşum yolu denetimi *sessiz sapmaları*
 buldu (bu kayıt). İki yöntem farklı hata sınıfları yakalıyor; ikisi de
 gerekliydi. Hiçbiri kavramsal hataları yakalayamaz (GAP-5 tipi).
+
+---
+
+## D-012 · 2026-08-09 · Preflight değişmezleri kilitlendi
+
+**Durum:** kabul edildi (koda dökülmeyi bekliyor)
+
+**Karar:** `docs/PREFLIGHT_INVARIANTS.md` — 20 değişmez, 6 faz. Koşum,
+sonuç yazmadan önce kendisi hakkında bu listeyi kanıtlamak zorunda.
+İki mod: **ABORT** (JSON yazılmaz) ve **FLAG** (yazılır ama etiketlenir).
+
+**Gerekçe:** Bu projede yedi alet arızası oluştu ve yedisi de sayı üretti
+(`lora_B=0`, adapter sızıntısı, greedy plato, precision doygunluğu,
+GAP-1, GAP-11, GAP-14). Hiçbiri çökmedi. Hastalık "bug kaçırdık" değil,
+sistemin anlamlılıktan bağımsız çıktı üretmesi. Değişmez bunu tersine
+çevirir.
+
+Daha çok kod okumak bu sorunu çözmez: okuma tek seferlik fotoğraftır ve
+yalnızca *orada olanı* gösterir. GAP-1 okumayla bulundu; GAP-8
+(gradient accumulation, replay, PE eşiği **yoklukları**) okumayla
+bulunamazdı. Değişmez ise kalıcıdır ve regresyonu da yakalar.
+
+**Kilitlenen tasarım kararları:**
+1. I4.1 (replay testi) yalnızca ilk seed'de — maliyet ~1/N. RNG sızıntısı
+   sistemiktir; seed'e özgü olsaydı I2.1 yakalardı.
+2. I2.1 hash = `sha256(karar dizisi ++ PE dizisi)`. Ajan son durumu hariç
+   (türev bilgi + kayan nokta yanlış-pozitifi). Kararlar tek başına yetmez:
+   aynı kararlar farklı PE üretebilir, bu gerçek ayrışmadır.
+3. I5.1 (PPR canlılığı) GAP-14 kararına kadar FLAG.
+4. Raporlama: JSON'a `invariants: {}` + `run_quality: clean|flagged|aborted`.
+   **`flagged` koşumlar analizde varsayılan olarak dışlanır**; dahil etmek
+   ön-kayıtta gerekçe ister.
+
+**Kural:** Eşiği kalibre edilmemiş hiçbir değişmez ABORT olamaz —
+keyfi sabitle koşum öldürmek olur. `SNR_FLOOR=0.40` ve
+`SATURATION_MAX≈0.05` kaynaklı (sırasıyla sentetik-kognisyon §1.2 ve
+v3 smoke ölçümü); `MIN_PAIRS`, `SNR_PAIR_RATIO_MIN`, `GATED_FRACTION_MAX`
+kaynaksız → pilotta ölçülüp **sonra** ön-kayıtla kilitlenecek.
+
+**Kapsam dışı (bilinçli):** K1'deki 98 sessiz yolun çoğu (iyi huylu),
+28 BELİRSİZ'in kalanı (altın kaplama), GAP-5 (değişmezle yakalanamaz —
+kod doğru olanı yapıyor, sorun kavramsal), GAP-10 (baseline'ı değiştirir,
+ayrı karar).
+
+**Kabul edilen sınır:** Değişmezler mekanik arızayı yakalar, kavramsal
+arızayı yakalamaz. Kalan riski sıfırlamıyoruz; riski *sessiz* olmaktan
+çıkarıp *gürültülü* yapıyoruz.
