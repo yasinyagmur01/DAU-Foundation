@@ -38,7 +38,11 @@ from dau.diagnostics.preflight import (
     PreflightAbort,
     check_determinism_settings,
     check_gated_fraction,
+    check_gen2_rng_uniform,
     check_import_time_env,
+    check_memory_written,
+    check_ppr_active,
+    check_somatic_scale_applied,
     check_lora_choice,
     check_pad_fraction,
     check_pe_event_sufficiency,
@@ -458,6 +462,76 @@ def test_i3_4_flags_any_padding() -> None:
     )
     assert passed is False
     assert "3/10 padded" in detail
+
+
+def test_i4_2_detects_arm_dependent_rng_entry() -> None:
+    same = [
+        {"seed": 1, "gen1_arm": arm, "rng_digest": "abc"}
+        for arm in ("lived", "null", "shuffle")
+    ]
+    assert check_gen2_rng_uniform(same)[0] is True
+
+    diverged = [
+        {"seed": 1, "gen1_arm": "lived", "rng_digest": "abc"},
+        {"seed": 1, "gen1_arm": "null", "rng_digest": "def"},
+    ]
+    passed, detail = check_gen2_rng_uniform(diverged)
+    assert passed is False
+    assert "RNG states" in detail
+
+    # A missing digest is not agreement.
+    passed, _ = check_gen2_rng_uniform([{"seed": 1, "gen1_arm": "lived"}])
+    assert passed is False
+
+
+def test_i5_1_detects_inert_ppr() -> None:
+    assert check_ppr_active([{"memory_edges": 4}, {"memory_edges": 0}])[0] is True
+
+    passed, detail = check_ppr_active([{"memory_edges": 0}, {"memory_edges": 0}])
+    assert passed is False
+    assert "inert" in detail
+
+    # An unreadable store is not an empty graph.
+    passed, detail = check_ppr_active([{"memory_edges": -1}])
+    assert passed is False
+    assert "unreadable" in detail
+
+
+def test_i5_3_detects_life_that_wrote_nothing() -> None:
+    lives = [{"agent_id": "a", "memory_written": 3}]
+    assert check_memory_written(lives)[0] is True
+
+    lives = [{"agent_id": "a", "memory_written": 3}, {"agent_id": "b", "memory_written": 0}]
+    passed, detail = check_memory_written(lives)
+    assert passed is False
+    assert "b" in detail
+
+
+def test_i5_4_detects_somatic_scale_never_applied() -> None:
+    from dau.foundation.emotional_weight import (
+        EmotionalWeight,
+        apply_inherited_somatic_scale,
+        reset_somatic_scale_stats,
+    )
+
+    reset_somatic_scale_stats()
+    ew = EmotionalWeight(somatic_markers={"threat": 0.5})
+    apply_inherited_somatic_scale(ew, [])
+    passed, detail = check_somatic_scale_applied()
+    assert passed is False
+    assert "never applied" in detail
+
+    apply_inherited_somatic_scale(
+        ew, [{"inherited_warning": True, "somatic_scale": -0.3}]
+    )
+    assert check_somatic_scale_applied()[0] is True
+    reset_somatic_scale_stats()
+
+
+def test_count_edges_reports_zero_on_empty_graph(store: MemoryStore) -> None:
+    """I5.1's data source: an empty graph counts zero, it does not error."""
+
+    assert store.count_edges() == 0
 
 
 def test_flag_failure_does_not_stop_the_run() -> None:

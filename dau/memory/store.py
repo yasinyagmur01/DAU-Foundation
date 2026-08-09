@@ -405,6 +405,20 @@ class MemoryStore:
         )
         return cur.fetchone() is not None
 
+    def count_edges(self) -> int:
+        """Number of association edges stored.
+
+        Liveness read for preflight I5.1: PPR scores an empty graph without
+        complaining, returning a constant that looks like a real score
+        (GAP-14). Zero edges is the difference between "association found
+        nothing" and "association never ran".
+        """
+
+        cur = self._conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM memory_edges")
+        row = cur.fetchone()
+        return int(row[0]) if row is not None else 0
+
     def update_activation(self, record_id: str, now_counter: int) -> None:
         """Bump last_activated_counter and increment strength on recall.
 

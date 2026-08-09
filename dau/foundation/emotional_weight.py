@@ -38,6 +38,18 @@ INHERITED_SOMATIC_MARKERS: tuple[str, ...] = (MARKER_THREAT, MARKER_LOSS)
 SOMATIC_SCALE_UNIT: float = 1.0
 DEFAULT_INHERITED_SOMATIC_SCALE: float = 0.0
 
+# Liveness counter for preflight I5.4 (same pattern as NLI_FILTER_STATS).
+# The question is not "is the scaling correct" but "did it ever run": this
+# function returns its input unchanged when nothing was inherited, so a
+# lineage that never applied an ancestral scale is indistinguishable from
+# one where the scaling silently never fired (GAP-3).
+SOMATIC_SCALE_STATS: dict[str, int] = {"applied": 0, "skipped": 0}
+
+
+def reset_somatic_scale_stats() -> None:
+    SOMATIC_SCALE_STATS["applied"] = 0
+    SOMATIC_SCALE_STATS["skipped"] = 0
+
 LOSS_ON_TRAUMA: float = 1.0
 LOSS_DEFAULT: float = 0.0
 
@@ -131,7 +143,9 @@ def apply_inherited_somatic_scale(
             float(entry.get(SOMATIC_SCALE_KEY, DEFAULT_INHERITED_SOMATIC_SCALE))
         )
     if not scales:
+        SOMATIC_SCALE_STATS["skipped"] += 1
         return ew
+    SOMATIC_SCALE_STATS["applied"] += 1
 
     # Strongest caution (most negative) wins when mixed scales are present.
     scale = min(scales)

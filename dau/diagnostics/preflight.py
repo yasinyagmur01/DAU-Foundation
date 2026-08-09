@@ -475,6 +475,125 @@ def _both_generations(
     )
 
 
+# ---------------------------------------------------------------------------
+# Phase 4 — determinism evidence · Phase 5 — component liveness
+# ---------------------------------------------------------------------------
+
+
+def rng_state_digest() -> str:
+    """Fingerprint of every RNG _lock_seeds pins (torch optional)."""
+
+    import hashlib
+    import random
+
+    import numpy as np
+
+    digest = hashlib.sha256()
+    digest.update(repr(random.getstate()).encode("utf-8"))
+    digest.update(repr(np.random.get_state()).encode("utf-8"))
+    try:
+        import torch
+    except ImportError:
+        pass
+    else:
+        digest.update(torch.random.get_rng_state().numpy().tobytes())
+    return digest.hexdigest()
+
+
+def check_gen2_rng_uniform(gen2_sections: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I4.2 — every heir of a seed enters gen2 from the same RNG state.
+
+    lived/shuffle run DPO before gen2 and consume torch RNG; null does not.
+    Unlocked, the arm contrast would carry an RNG contrast inside it (GAP-12).
+    """
+
+    if not gen2_sections:
+        return False, "no gen2 sections to compare"
+    by_seed: dict[Any, dict[str, str]] = {}
+    for section in gen2_sections:
+        digest = str(section.get("rng_digest", ""))
+        if not digest:
+            return False, f"seed={section.get('seed')} has no rng_digest recorded"
+        by_seed.setdefault(section.get("seed"), {})[
+            str(section.get("gen1_arm"))
+        ] = digest
+    for seed, digests in by_seed.items():
+        if len(set(digests.values())) > 1:
+            return False, f"seed={seed} entered gen2 from {len(set(digests.values()))} RNG states"
+    return True, f"{len(by_seed)} seeds, one RNG state per seed"
+
+
+def check_ppr_active(life_stats: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I5.1 — the association graph has edges at all.
+
+    compute_ppr_scores returns {seed_domain: 1.0} on an empty graph without
+    complaining, so PPR reads as a working component while contributing a
+    constant (GAP-14).
+    """
+
+    if not life_stats:
+        return False, "no lives sampled"
+    total = sum(int(s.get("memory_edges", 0)) for s in life_stats if
+                int(s.get("memory_edges", -1)) >= 0)
+    unreadable = sum(1 for s in life_stats if int(s.get("memory_edges", -1)) < 0)
+    if unreadable:
+        return False, f"{unreadable} lives had an unreadable store"
+    if total <= 0:
+        return False, "memory_edges is empty in every life — PPR is inert"
+    return True, f"{total} edges across {len(life_stats)} lives"
+
+
+def check_memory_written(life_stats: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I5.3 — each life actually wrote to its vault."""
+
+    if not life_stats:
+        return False, "no lives sampled"
+    empty = [s["agent_id"] for s in life_stats if int(s.get("memory_written", 0)) <= 0]
+    if empty:
+        return False, f"{len(empty)} lives wrote nothing, e.g. {empty[0]}"
+    total = sum(int(s.get("memory_written", 0)) for s in life_stats)
+    return True, f"{total} writes across {len(life_stats)} lives"
+
+
+def check_somatic_scale_applied() -> tuple[bool, str]:
+    """I5.4 — an inherited somatic scale was applied at least once.
+
+    The function returns its input unchanged when nothing was inherited, so
+    a lineage that never applied one is indistinguishable from scaling that
+    silently never fired (GAP-3).
+    """
+
+    from dau.foundation.emotional_weight import SOMATIC_SCALE_STATS
+
+    applied = int(SOMATIC_SCALE_STATS.get("applied", 0))
+    if applied <= 0:
+        return False, (
+            f"never applied (skipped={int(SOMATIC_SCALE_STATS.get('skipped', 0))})"
+        )
+    return True, f"applied {applied}x"
+
+
+def run_phase4_5(
+    preflight: Preflight,
+    *,
+    gen2_sections: list[dict[str, Any]],
+    life_stats: list[dict[str, Any]],
+) -> Preflight:
+    """Record I4.2 (ABORT) and I5.1 / I5.3 / I5.4 (FLAG)."""
+
+    preflight.check(
+        "I4.2",
+        lambda: check_gen2_rng_uniform(gen2_sections),
+        mode=MODE_ABORT,
+    )
+    # I5.1 stays FLAG until the GAP-14 decision: whether PPR should be wired
+    # into the run path or documented as inert is not the gate's call.
+    preflight.check("I5.1", lambda: check_ppr_active(life_stats), mode=MODE_FLAG)
+    preflight.check("I5.3", lambda: check_memory_written(life_stats), mode=MODE_FLAG)
+    preflight.check("I5.4", check_somatic_scale_applied, mode=MODE_FLAG)
+    return preflight
+
+
 def _both_audits(
     gen1_audit: dict[str, Any],
     gen2_audit: dict[str, Any],

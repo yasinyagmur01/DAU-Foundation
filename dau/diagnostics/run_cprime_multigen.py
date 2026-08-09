@@ -69,8 +69,10 @@ from dau.diagnostics.run_protocol_c_prime import (
 from dau.diagnostics.preflight import (
     Preflight,
     PreflightAbort,
+    rng_state_digest,
     run_phase0,
     run_phase3,
+    run_phase4_5,
 )
 from dau.diagnostics.tool_identity import (
     LORA_CHOICE_OFF,
@@ -78,7 +80,11 @@ from dau.diagnostics.tool_identity import (
     resolve_lora_choice,
 )
 from dau.foundation.drift import DriftState
-from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
+from dau.foundation.emotional_weight import (
+    MARKER_REWARD,
+    MARKER_THREAT,
+    reset_somatic_scale_stats,
+)
 from dau.foundation.generation import (
     INHERITED_WARNING_KEY,
     SOMATIC_SCALE_KEY,
@@ -120,6 +126,14 @@ PARENT_SUFFIX: str = "g1"
 # A gen1 arm lives twice on the same vault (before and after training), so its
 # PE log holds two lives' worth of events; the heir lives once.
 GEN1_PHASES: int = 2
+UNKNOWN_COUNT: int = -1
+
+# Per-life liveness samples for phase 5. Module-level because the values are
+# only readable inside run_life_keep_vault's teardown, and threading a
+# collector through run_multigen_pair → run_lineage → run_life_keep_vault
+# would put plumbing in four signatures to carry two integers. The runner is
+# single-threaded and run_cprime_multigen clears this at the start of a run.
+LIFE_STATS: list[dict[str, Any]] = []
 TMP_PREFIX: str = "dau_cprime_multigen_"
 
 MOCK_DECISION_TEXTS: tuple[str, ...] = (
@@ -183,6 +197,10 @@ class Gen2Result:
     n_pe_events_audited: int = EMPTY_COUNT
     n_saturated: int = EMPTY_COUNT
     pi_values: list[float] = field(default_factory=list)
+    # RNG fingerprint at the moment this heir's life starts. Recorded rather
+    # than asserted so I4.2 can prove the gen2 lock is still in place in a
+    # real run, not only under test (GAP-12).
+    rng_digest: str = ""
 
 
 @dataclass
@@ -314,11 +332,37 @@ def run_life_keep_vault(
         lived_examples = _build_lived_examples(state, pe_rows)
         return pe_list, lived_examples, pe_rows, state
     finally:
+        # Liveness sample taken here because the finally below drops
+        # _memory_written and the caller closes the vault: after this point
+        # neither number can be recovered (I5.1, I5.3).
+        LIFE_STATS.append(
+            {
+                "agent_id": agent_id,
+                "memory_written": int(graph_mod._memory_written.get(agent_id, 0)),
+                "memory_edges": _count_edges(store),
+            }
+        )
         unbind_memory_store(agent_id)
         graph_mod._memory_stores.pop(agent_id, None)
         graph_mod._memory_written.pop(agent_id, None)
         graph_mod.MAX_EVENTS = original_max
         graph_mod.AB_ENERGY_FLOOR = original_floor
+
+
+def _count_edges(store: Any) -> int:
+    """Edge count for a live store, or -1 when it cannot be read.
+
+    -1 rather than 0: an unreadable store is not an empty graph, and I5.1
+    exists precisely to tell "found nothing" from "never ran".
+    """
+
+    counter = getattr(store, "count_edges", None)
+    if counter is None:
+        return UNKNOWN_COUNT
+    try:
+        return int(counter())
+    except Exception:  # noqa: BLE001 — a closed store must not kill the life
+        return UNKNOWN_COUNT
 
 
 def import_time_bindings() -> list[tuple[str, Any, str, Any]]:
@@ -552,6 +596,7 @@ def run_gen2_measure(
     # lock the three heirs enter gen2 from three different RNG states, and the
     # arm contrast carries an RNG contrast inside it.
     _lock_seeds(seed)
+    rng_digest = rng_state_digest()
     # 3A: do not load parent adapter; heir agent_id has no trained adapter.
     pe_list, lived_examples, pe_rows, _final = run_life_keep_vault(
         agent_id=heir.agent_id,
@@ -582,6 +627,7 @@ def run_gen2_measure(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
+        rng_digest=rng_digest,
     )
 
 
@@ -706,6 +752,10 @@ def run_cprime_multigen(
     seeds = list(range(seed_start, seed_start + n_pairs))
     gate = preflight if preflight is not None else Preflight(mock=use_mock)
     gate.mock = use_mock
+    # Liveness counters are per-run, not per-process: a previous run's counts
+    # would let a component that never fired this time still look alive.
+    LIFE_STATS.clear()
+    reset_somatic_scale_stats()
     # Lock before checking I0.6: the check reports the determinism state the
     # run will have, it does not create it.
     _lock_seeds(seed_start)
@@ -758,6 +808,11 @@ def run_cprime_multigen(
         gen1_audit=_precision_audit_totals(gen1_sections),
         gen2_audit=_precision_audit_totals(gen2_sections),
     )
+    run_phase4_5(gate, gen2_sections=gen2_sections, life_stats=list(LIFE_STATS))
+    # I4.2 is ABORT and can only be judged once the heirs have run: a lineage
+    # whose arms entered gen2 from different RNG states has no separable arm
+    # contrast, so it must not be written as a result.
+    gate.enforce()
     return results
 
 
