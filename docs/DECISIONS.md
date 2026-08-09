@@ -417,3 +417,113 @@ Provenans araması sıradaki brief'te sürecek
 **Zamanlama uyarısı:** Bulgu 1 ve 3 **alet değişikliği** anlamına gelir.
 D-005 ile aynı pencerede — pre-reg kilitlenmeden önce karara bağlanmalı,
 sonrasında post-hoc olur.
+
+---
+
+## D-010 · 2026-08-09 · Deep Research arşivi mutabakatı tamamlandı (9 brief)
+
+**Durum:** kabul edildi
+
+**Karar:** D-006 mutabakat süreci 9 brief için tamamlandı. Tam tablo:
+`docs/research/RECONCILIATION.md`, DAU konusuna göre indeksli.
+`2026~_agent-curriculum-engine.md` Yasin tarafından "DAU sonrası proje"
+olarak ertelendi, işlenmedi.
+
+**Üretilen kayıtlar:**
+- `CLAUDE.md` GAP-8 genişletildi (beş ayarlı DPO sinyal gücü)
+- `CLAUDE.md` GAP-9 eklendi (N=15 güç analizi)
+- `CLAUDE.md` GAP-10 eklendi (süresi dolmuş ölçüm ertelemeleri)
+- GAP-5'e provenans notu eklendi
+- GAP-6 önceliği yükseltildi (CUDA sync = izolasyon doğruluğu şartı)
+
+### Bulgu 1 — Beş tavsiye, tek yön: DPO sinyal gücü
+
+Beş bağımsız brief maddesi aynı şeye işaret ediyor ve beşi de kısmen veya
+hiç uygulanmamış: gradient accumulation yok · `seq_len` 512 yerine 256 ·
+1 epoch yerine 3 önerilmiş · %10 somatik replay hiç yok · **tercih
+çiftlerinde mutlak PE eşiği yok** (`PE_RANK_MIN_GAP = 1e-6`, oysa brief
+`PE < 0.15`'in ön-eğitilmiş ağırlık gürültüsünde kaybolduğunu, SNR için
+`PE ≥ 0.40` gerektiğini söylüyor).
+
+Tek tek küçük; birlikte "eğitim çalıştı ama iz bırakmadı" sonucunun
+teknik açıklaması olabilirler.
+
+**Kanıt:** `local_llm.py:610-627` · `constraints.py:51,56` ·
+`lora_update.py:66` (`PE_RANK_MIN_GAP`) · `grep replay|rehearsal|anchor`
+yalnızca biyoloji-analojisi docstring'leri buluyor.
+
+### Bulgu 2 — N=15 baştan yetersizdi, ve bu öngörülmüştü
+
+`protocol-c-metacognition-eval` güç analizi: `σ_PE = 0.256`, eşleştirilmiş
+tasarımda `d_z ≈ 1.5·d`. Gerekli çift sayısı d=0.5→16, d=0.4→24,
+d=0.3→41, d=0.2→90; Protocol C için **N=40-50** öneriliyor.
+`sentetik-kognisyon` §1.6 de N=15-20'yi **açıkça d=0.5 varsayımına**
+bağlıyor.
+
+DAU'nun gözlediği etki: `lived +0.008` vs `shuffle +0.019`, σ≈0.256
+⇒ **d ≈ 0.04**. Bu büyüklük için yüzlerce çift gerekir.
+
+`SAMPLE_N15_UNDERPOWERED` bir sürpriz değildi; güç analizi onu önceden
+söylüyordu. **Sonuç:** çok-nesilli pre-reg'de N varsayılan olarak 15
+alınamaz. Bu, D-002'yi bağımsız olarak destekliyor — doğum-drift tamsayı
+sayımları PE'den yüksek güçlü.
+
+### Bulgu 3 — KW / FFH provenansı yok, arama bitti
+
+`Kruskal-Wallis` ve `Fisher-Freeman-Halton` **9 brief'in hiçbirinde
+geçmiyor.** Brief'lerin önerdiği testler: paired t-test, Wilcoxon
+(08-08~ §5 ve protocol-c-eval) ve eşleştirilmiş ikili travma sonuçları
+için **McNemar** (protocol-c-eval).
+
+**Karar:** bu iki test adı **türetilmiş** kabul edilir, kaynaklı değil.
+Silinmiyorlar — 3-grup eşleştirilmemiş doğum-drift tasarımına teknik
+olarak uygunlar — ama `CLAUDE.md`'de "kilitli" etiketleri kaldırıldı.
+McNemar eksik test olarak kaydedildi.
+
+### Bulgu 4 — D-002'ye dokunan üç tasarım girdisi
+
+- **Duyarlılık hiyerarşisi gerilimi:** protocol-c-eval `PE_{t+1}`'i
+  Rank 1 (en duyarlı) sayıyor; D-002 PE'yi ikincile düşürdü. Farklı
+  deney (Protocol C nesil-içi vs doğum-drift nesiller-arası), yani
+  doğrudan çelişki değil — ama kayda geçmeli.
+- **OOD Behavioral Probing** (sentetik §1.6): yaşantıdan sonra ChromaDB
+  retrieval **tamamen kapatılır**, yalnızca ağırlıklara yansıyan değişim
+  ölçülür. Kanal 2'yi Kanal 1'den izole etmenin temiz yolu; DAU'da yok.
+  D-002'nin doğrudan tamamlayıcısı — pre-reg'e alınmalı.
+- **≥3 nesil:** sentetik §1.4 trait stabilizasyonu için ≥30-50 olay **ve
+  ≥3 nesil konsolidasyonu** gerektiğini söylüyor. Multigen 2 nesil.
+
+### Bulgu 5 — Süresi dolmuş ertelemeler
+
+`W_SEM = 0.0` (ChromaDB skorlamaya girmiyor) ve negation kural
+sarmalayıcısı, `v1-kritik-sistem-audit` tarafından "baseline kilitlenince
+yap" diye ertelenmişti. Protocol C baseline'ı artık paper-locked — koşul
+gerçekleşti, kimse dönmedi. → GAP-10.
+
+### Bulgu 6 — Bir brief yanıldı, DAU deneyle çürüttü
+
+`metacognition-neuroscience` §"Feasibility": *"Genuine metacognition is
+**fully achievable** with frozen-weight LLMs when implemented as a
+system-level property… Metacognition is a property of the structural
+control loop, not the individual model weights."*
+
+DAU bunu Protocol C ile **yanlışladı** (ΔPE ≈ 0, paper-locked null).
+Brief out-of-band meta-observer mimarisini doğru tarif etti ama
+etkinliğini yanlış öngördü.
+
+**Bu paper için değerli:** projenin ana katkısı, literatürün "sistem
+seviyesinde çözülür" beklentisini ampirik olarak karşılamıyor. Paper
+anlatısına girdi olarak kaydedildi.
+
+### Doğrulananlar (aksiyon yok)
+
+DAERM formülleri, `MAGNITUDE_PEAK_WEIGHT=0.70` / `M=0.82·PE`, ham-PE
+decoupling, Punica `r=8/α=16`, HippoRAG 2 PPR, crisis somatic enforcement,
+adapter disk izolasyonu, Protocol C tasarımı, null framing çerçevesi ve
+trait injection yasağı — hepsi brief tavsiyeleriyle **birebir uyumlu**.
+Trait yasağı dört bağımsız kaynakta doğrulanmış.
+
+**Kabul edilen bedel:** Bulgu 1 ve 2 birlikte, GAP-1 fix'inden önce bir
+"alet yükseltmesi" kararı gerektiğini gösteriyor. Bu, pre-reg'i geciktirir.
+Alternatif — mevcut aletle koşmak — güç analizine göre baştan başarısız
+olacağı bilinen bir deney koşmak demektir.

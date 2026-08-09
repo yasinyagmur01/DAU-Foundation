@@ -77,9 +77,11 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
 - **Çok-nesilli C′ birincil uç noktası = doğum-drift** (D-002). Gen2 PE +
   gen2 davranışsal = ön-kayıtlı ikincil. Testler: Kruskal-Wallis (doğum
   drift magnitude, 3 grup), Fisher-Freeman-Halton (transfer aday sayıları),
-  paired t-test/Wilcoxon (destekleyici — ✅ bu ikisinin provenansı §5'te).
-  ⚠ Kruskal-Wallis + FFH provenansı **hâlâ kayıp**; sıradaki aday
-  `2026-08-06_protocol-c-metacognition-eval.md` (D-006).
+  paired t-test/Wilcoxon (destekleyici — ✅ provenansı 08-08~ §5'te,
+  ayrıca protocol-c-eval bunları birincil test olarak öneriyor + travma
+  için **McNemar**). ⚠ Kruskal-Wallis + FFH provenansı **9 brief'in
+  hiçbirinde yok** — arama bitti (D-010). Türetilmiş kabul edilir, kilitli
+  değil; 3-grup tasarımına uygun oldukları için korunuyorlar.
 - **F_agent transfer kapısı korunur** + `f_agent=None` duyarlılık kolu
   (D-003). Kapı kaldırılmaz: aksiyom içeri trait enjeksiyonunu yasaklar,
   dışarıdan seçilim baskısını değil.
@@ -133,6 +135,14 @@ teorik mi — doğrulanmalı.**
 (extract/cooperate/...) doğru dilsel çıktıyı yönlendiriyor olabilir — bu
 "serbest dilsel emergence" iddiasını ne kadar zedeler, tartışılmalı.
 
+**Provenans (D-010):** iki bağımsız denetim aynı şeyi işaret etmiş.
+`v1-kritik-sistem-audit` S1: "ajanın beklentisi kendi kognitif süreçleriyle
+değil, `f(dominant_load_domain)` ile tasarımcı şablonundan atanır → PE,
+tasarımcının şablonu ile ajanın eylemi arasındaki mesafeyi ölçer."
+`minilm-meta-ab-audit` aynı maddeyi S1 olarak sıralıyor ve endojen
+`expected_outcome` mikro-pilotu öneriyor. GAP-5 teorik bir kaygı değil,
+iki kez bağımsız tespit edilmiş bir ölçüm sapması.
+
 ### GAP-6: Magic number kalıntıları + adapter hot-swap CUDA temizliği
 Temizlik (düşük öncelik): `time.sleep(10)` (run_protocol_c_prime.py), bare
 `0.5` (shuffle_preference_pairs), default `k: int = 5` (retrieval.py).
@@ -144,23 +154,59 @@ değil. `local_llm.py`'de `empty_cache` / `synchronize` **yok**, yalnızca
 `optimizer.zero_grad()` var. `f25b0ef` disk izolasyonunu çözdü; bellek
 tarafındaki bu şart doğrulanmadı.
 
-### GAP-8: Gradient accumulation yok — DPO efektif batch = 1
-`2026-08-08~_per-agent-lora-serving.md` §2 açıkça "`BATCH_SIZE=1` **ve
-gradyan biriktirme (gradient accumulation)**" öneriyor. DAU `BATCH_SIZE=1`
-uyguladı ama accumulation'ı değil — uygulanan şey gradient
-**checkpointing** (bellek tekniği), accumulation (sinyal tekniği) değil.
+### GAP-8 (en kritik ikinci): DPO sinyal gücünü düşüren beş ayar
+Arşiv mutabakatının (D-010) en tutarlı bulgusu: **beş bağımsız brief
+tavsiyesi aynı yöne işaret ediyor, beşi de kısmen veya hiç uygulanmamış.**
+Tek tek küçük, birlikte sinyali katlayarak zayıflatıyorlar.
 
-`local_llm.py:610-627`: her çift için ayrı `optimizer.zero_grad()` + step.
-İç `batch_loss` toplaması var ama `DPO_BATCH_SIZE=1` olduğu için işlevsiz.
-Sonuç: **efektif batch = 1, gradyan varyansı yüksek** — ve DAU'nun
-`n_pairs` rejimi zaten küçük.
+| | Tavsiye | Kod | Kaynak |
+|---|---|---|---|
+| A1 | gradient **accumulation** | yok — `local_llm.py:610-627` her çift için ayrı `zero_grad()`+step ⇒ efektif batch=1. Uygulanan: gradient *checkpointing* (bellek tekniği, farklı şey) | 08-08~ §2 |
+| A2 | `seq_len` 512 | `DPO_MAX_SEQUENCE_TOKENS = 256` (128'den yükseltilmiş, yarı yol) | cprime-teshis H-B1 |
+| A3 | 3 epoch | `DPO_EPOCHS = 1` | cprime-teshis H-B2 |
+| A4 | %10 yüksek-somatik **replay** (`F_agent ≥ 0.7`), +0.3 GiB | kodda hiç yok | cprime-teshis H-A2 |
+| A5 | **SNR eşiği `PE ≥ 0.40`**; `PE < 0.15` sinyalleri ön-eğitilmiş ağırlık gürültüsünde kaybolur | `build_pe_ranked_pairs` yalnızca `PE_RANK_MIN_GAP = 1e-6` fark arıyor, **mutlak PE eşiği yok** ⇒ eğitim seti gürültü çiftleriyle dolabilir | sentetik-kognisyon §1.2 |
 
-`BATCH_SIZE=2` OOM verdiği için batching kapatılmış; ama accumulation
-**OOM vermez** (micro-batch 1 kalır, step N mikro-adımda bir atılır). İki
-teknik karıştırılmış görünüyor.
+A5 muhtemelen en kritik olanı: tercih çiftleri PE **farkına** göre
+seçiliyor ama PE **büyüklüğüne** göre filtrelenmiyor.
 
-⚠ Bu bir **alet değişikliğidir** — D-005 ile aynı pencerede, pre-reg
-kilitlenmeden önce karara bağlanmalı.
+A1 ve A4 `fark edilmemiş kayma`; A2/A3 kısmi sapma. `BATCH_SIZE=2` OOM
+verdiği için batching kapatılmış — ama accumulation OOM vermez
+(micro-batch 1 kalır, step N mikro-adımda bir atılır); iki teknik
+karıştırılmış görünüyor.
+
+⚠ **Alet değişikliği** — D-005 ile aynı pencerede, pre-reg kilitlenmeden
+önce karara bağlanmalı.
+
+### GAP-9: N=15 güç analizine göre baştan yetersizdi
+`protocol-c-metacognition-eval` güç analizi: `σ_PE = 0.256`, eşleştirilmiş
+tasarımda `d_z ≈ 1.5·d`. Gerekli çift sayısı **d=0.5 → 16 · d=0.4 → 24 ·
+d=0.3 → 41 · d=0.2 → 90**; Protocol C için **N=40-50** öneriliyor.
+`sentetik-kognisyon` §1.6: "d=0.5 için minimum N=15-20".
+
+Yani N=15 **yalnızca d ≥ 0.5 varsayımı altında** geçerliydi. DAU'nun
+gözlediği etki: `lived +0.008` vs `shuffle +0.019`, σ≈0.256 ⇒ **d ≈ 0.04**.
+Bu büyüklük için yüzlerce çift gerekir.
+
+**`SAMPLE_N15_UNDERPOWERED` sürpriz değildi — güç analizi onu önceden
+söylüyordu.** Çok-nesilli pre-reg'de N varsayılan olarak 15 alınamaz:
+ya beklenen etki büyüklüğü açıkça gerekçelendirilip N ona göre hesaplanır,
+ya da D-002'nin yüksek güçlü uç noktası (doğum-drift, tamsayı sayımlar)
+kullanılır — ki bu D-002'yi bağımsız olarak destekliyor.
+
+### GAP-10: Süresi dolmuş ölçüm ertelemeleri (v1 denetimlerinden)
+- **`W_SEM = 0.0`** — ChromaDB vektörü skorlamaya girmiyor, sadece depo.
+  `v1-kritik-sistem-audit` "**baseline kilitlenince** `W_SEM = 0.3–0.4`
+  yapılmalı" demiş. Protocol C baseline'ı **artık kilitli** — erteleme
+  koşulu gerçekleşti, kimse geri dönmedi.
+- **Negation kural sarmalayıcı yok** — `minilm-meta-ab-audit`
+  SELECTIVE_FIX #3 `semantic_similarity.py`'ye MiniLM cosine öncesi
+  olumsuzluk eki denetimi (not/never/no/refuse) istiyor. Kodda yok. NLI
+  yalnızca tercih çiftlerinde, **PE sensörünün kendisinde değil**.
+- **Asimetrik spillover matrisi** — `daerm-trauma-magnitude` skaler
+  `S=0.20` yerine domain-özgü matris öneriyor
+  (`S_res→unc=0.35`, `S_soc→res=0.10`…). Kod skaler kullanıyor
+  (`CROSS_AXIS_SPILLOVER = 0.20`). Bilinçli mi bilinmiyor.
 
 ### GAP-7 (D-005, henüz kilitlenmedi): Backend aksiyomu test edemeyen konfigürasyon
 `DAU_LLM_BACKEND=groq` default. Ama Kanal 2 (per-agent adapter,

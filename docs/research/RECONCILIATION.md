@@ -1,122 +1,140 @@
 # Deep Research ↔ DAU kod tabanı mutabakatı
 
-Bu dosya **DAU konularına göre** indekslenir, brief'e göre değil. "Backend
-hakkında literatür ne diyor" sorusunun cevabı tek başlık altında, kaynak
-atıflarıyla bulunur.
+**DAU konusuna göre** indekslidir, brief'e göre değil. Karar sütunu:
+`uyumlu` · `bilinçli sapma` · `fark edilmemiş kayma` · `brief yanılmış` · `açık`
 
-Karar sütunu: `uyumlu` · `bilinçli sapma` · `fark edilmemiş kayma` ·
-`brief geçerli değil` · `açık`
-
-Süreç: D-006. Kaynak dosyalar: `docs/research/*.md`.
+Süreç: D-006. Kaynaklar: `docs/research/*.md`. Tamamlanma: 2026-08-09.
 
 ## İşlenen brief'ler
 
 | Dosya | Durum |
 |---|---|
-| `2026-08-08~_per-agent-lora-serving.md` | ✅ işlendi (2026-08-09) |
-| `2026-08-06_protocol-c-metacognition-eval.md` | sırada (#1) |
-| `2026-08-06_protocol-cprime-teshis.md` | sırada (#2) |
-| `2026-08-06_sentetik-kognisyon-mimari.md` | sırada (#3) |
-| `2026-08-04_metacognition-neuroscience.md` | sırada (#4) |
-| `2026-08-04_v1-kritik-sistem-audit.md` | tarama yeterli |
-| `2026-08-04_minilm-meta-ab-audit.md` | tarama yeterli |
-| `2026-08-04_daerm-allostatic-recovery.md` | formül uyum kontrolü |
-| `2026-08-05_daerm-trauma-magnitude.md` | formül uyum kontrolü |
-| `2026~_agent-curriculum-engine.md` | **ertelendi** — Yasin: DAU sonrası proje |
+| `2026-08-08~_per-agent-lora-serving.md` | ✅ tam tur |
+| `2026-08-06_protocol-c-metacognition-eval.md` | ✅ tam tur |
+| `2026-08-06_protocol-cprime-teshis.md` | ✅ tam tur |
+| `2026-08-06_sentetik-kognisyon-mimari.md` | ✅ tam tur |
+| `2026-08-04_metacognition-neuroscience.md` | ✅ tam tur |
+| `2026-08-04_v1-kritik-sistem-audit.md` | ✅ tarandı |
+| `2026-08-04_minilm-meta-ab-audit.md` | ✅ tarandı |
+| `2026-08-05_daerm-trauma-magnitude.md` | ✅ formül kontrolü |
+| `2026-08-04_daerm-allostatic-recovery.md` | ✅ formül kontrolü |
+| `2026~_agent-curriculum-engine.md` | ertelendi — Yasin: DAU sonrası proje |
 
 ---
 
-## Adapter izolasyonu (per-agent LoRA serving)
+# A. DPO eğitim sinyali — beş ayrı ayar, tek sonuç
+
+Arşivin en tutarlı teması bu: **beş bağımsız brief tavsiyesi aynı yöne
+işaret ediyor ve beşi de kısmen veya hiç uygulanmamış.** Hepsi DPO'nun
+sinyal gücünü etkiliyor.
+
+| # | Kaynak | İddia | DAU'da durum | Karar |
+|---|---|---|---|---|
+| A1 | 08-08~ §2 | `BATCH_SIZE=1` **+ gradient accumulation** | accumulation yok; `local_llm.py:610-627` her çift için ayrı `zero_grad()`+step → efektif batch = 1. Uygulanan şey gradient *checkpointing* (bellek tekniği) | **fark edilmemiş kayma** → GAP-8 |
+| A2 | cprime-teshis H-B1 | `seq_len` 128 → **512**; "128 tokenlik sınır olayın ve bellek bağlamının kırpılmasına yol açarak eğitimin etkinliğini düşürmektedir" | `DPO_MAX_SEQUENCE_TOKENS = 256` — yarı yol | **kısmi sapma** → GAP-8 |
+| A3 | cprime-teshis H-B2 | Nesil sonu eğitimde **3 epoch** | `DPO_EPOCHS = 1` | **sapma** → GAP-8 |
+| A4 | cprime-teshis H-A2 | **%10 yüksek-somatik replay** (`F_agent ≥ 0.7`) SQLite'tan micro-train batch'ine karıştırılsın; +0.3 GiB VRAM; felaket unutmayı önler | Kodda **hiç yok** — `grep replay/rehearsal/anchor` yalnızca biyoloji analojisi docstring'leri buluyor | **fark edilmemiş kayma** → GAP-8 |
+| A5 | sentetik-kognisyon §1.2 | **SNR eşiği:** 8B'de PE'nin parametrik güncellemeyi yönlendirebilmesi için `PE ≥ 0.40` (DEEP) gerekir; **`PE < 0.15` sinyalleri modelin ön-eğitilmiş ağırlık gürültüsünde kaybolur** | `build_pe_ranked_pairs` yalnızca `PE_RANK_MIN_GAP = 1e-6` fark arıyor. **Mutlak PE eşiği yok** → eğitim seti gürültü bandındaki çiftlerle dolabilir | **fark edilmemiş kayma** → GAP-8, muhtemelen en kritik olanı |
+| A6 | 08-08~ §7 | Qwen-2.5-7B: "keskin logit ayrımı" vs Llama "platoya düşebilir" | Llama-3.1-8B | **bilinçli sapma**, D-005 ile yeniden açıldı |
+| A7 | sentetik-kognisyon Öneri 1 | Unlikelihood kaybı: `L = CE_chosen − 0.5·CE_rejected` | Standart DPO kaybı (`−logsigmoid(β·logits)`) | **bilinçli sapma** (DPO daha ilkeli), gerekçesi kayıtlı değildi |
+| A8 | sentetik-kognisyon §1.3 | EWC mikro-ölçekte verimsiz; yerine **KL-divergence veya L2 penalty** | Hiçbiri yok | **açık** (düşük öncelik) |
+| A9 | sentetik-kognisyon §1.3 | %10-20 **anchor rehearsal** (genel veri) temel yetenekleri korur | Yok | **açık** — A4 ile aynı aileden |
+
+**Sentez:** A1+A2+A3+A4+A5 birlikte, "eğitim çalıştı ama iz bırakmadı"
+sonucunun teknik açıklaması olabilir. Beşi de tek tek küçük; birlikte
+sinyal gücünü katlayarak düşürüyorlar. Ve `SAMPLE_N15_UNDERPOWERED`
+tam olarak bu tabloyla uyumlu.
+
+# B. İstatistiksel güç — N=15 baştan yetersizdi
 
 | Kaynak | İddia | DAU'da durum | Karar |
 |---|---|---|---|
-| 08-08~ §1 | Yüksek seviye PEFT/PyTorch soyutlamaları bellekte aktif adaptörleri karıştırır; izolasyon **disk düzeyinde** zorunlu, bellekte tek `default` slot tutulmalı | `f25b0ef` tam olarak bunu yaptı; `test_no_dead_adapter_root_reference` koruyor | **uyumlu** |
-| 08-08~ §1 / Kritik Bulgu 1 | Hot-swap'te **CUDA akış senkronizasyonu + gradyan önbellek temizliği** zorunlu | `local_llm.py`'de `empty_cache` / `synchronize` **yok**; yalnızca `optimizer.zero_grad()` var | **açık** — GAP-6'daki `empty_cache()` maddesi "temizlik" değil, brief'e göre **izolasyon doğruluğu** meselesi. Önceliği yükseltilmeli. |
+| protocol-c-eval "Statistical Power" | `σ_PE = 0.256`. Eşleştirilmiş tasarımda `d_z ≈ 1.5·d`. Gerekli çift sayısı: **d=0.5 → 16 · d=0.4 → 24 · d=0.3 → 41 · d=0.2 → 90**. Protocol C için **N=40-50 çift** öneriliyor | Protocol C′ N=15 koşuldu | **fark edilmemiş kayma** → GAP-9 |
+| sentetik-kognisyon §1.6 | "`d = 0.5` (orta etki) için minimum **N = 15 ila 20**" | N=15 kullanıldı | uyumlu — **ama yalnızca d≥0.5 için** |
+| 08-08~ §5 | `N ≥ 15`, `K = 5`, `n_eff ≥ 12` | aynı | uyumlu |
 
-## Nesil sonu eğitim vs online öğrenme
+**Bu bulgu tabloyu değiştiriyor.** N=15 rakamı iki brief'ten geliyor ama
+**yalnızca orta-büyük etki (d ≥ 0.5) varsayımı altında** geçerli. DAU'nun
+gözlediği etkiler çok daha küçük (`lived +0.008` vs `shuffle +0.019`,
+σ≈0.256 ⇒ d ≈ 0.04). Bu büyüklükte bir etki için gereken çift sayısı
+yüzlerce.
 
-| Kaynak | İddia | DAU'da durum | Karar |
-|---|---|---|---|
-| 08-08~ §2 | Generation-end batch ≫ per-event online (felaket unutma, gradyan patlaması, LayerNorm bozulması) | Kilitli karar, uygulanmış | **uyumlu** |
-| 08-08~ §2 | Tercih çiftleri PE büyüklüğüne göre sıralanmalı | `build_pe_ranked_pairs` (`f2ac7db`) | **uyumlu** |
-| 08-08~ §2 | `K ≥ 5` benzersiz çıktı çeşitlilik kapısı | `DIVERSITY_MIN_UNIQUE=5` (`500c32d`) | **uyumlu** |
-| 08-08~ §2 | `BATCH_SIZE=1` **ve gradyan biriktirme (gradient accumulation)** | `BATCH_SIZE=1` ✅ ama accumulation **yok** — `local_llm.py:610-627` her çift için ayrı `zero_grad()` + step. Uygulanan şey gradient **checkpointing** (bellek tekniği), accumulation (sinyal tekniği) değil. | **fark edilmemiş kayma** → CLAUDE.md GAP-8 |
+Yani **`SAMPLE_N15_UNDERPOWERED` bir sürpriz değildi — güç analizi onu
+önceden söylüyordu.** N=15 hiçbir zaman "etki var mı" sorusunu
+cevaplayabilecek bir tasarım değildi; yalnızca büyük bir etkiyi
+yakalayabilirdi.
 
-**Neden önemli:** efektif batch = 1 → gradyan varyansı yüksek. DAU'nun
-`n_pairs` rejimi zaten küçük; accumulation **ek VRAM maliyeti olmadan**
-(micro-batch 1 kalır, step N mikro-adımda bir atılır) efektif batch'i
-büyütür. `BATCH_SIZE=2` OOM verdiği için batching kapatılmış, ama
-accumulation OOM vermez — iki teknik karıştırılmış görünüyor.
+**Sonuç:** çok-nesilli pre-reg'de N, varsayılan olarak 15 alınamaz.
+Ya (a) beklenen etki büyüklüğü açıkça gerekçelendirilip N ona göre
+hesaplanmalı, ya da (b) D-002'nin daha yüksek güçlü uç noktası
+(doğum-drift, tamsayı sayımlar) kullanılmalı — ki bu D-002'yi bağımsız
+olarak destekliyor.
 
-## Tercih öğrenmesi (DPO)
-
-| Kaynak | İddia | DAU'da durum | Karar |
-|---|---|---|---|
-| 08-08~ §3 | NLI çelişki skoru ≥ 0.60 şartı zorunlu | `NLI_CONTRADICTION_THRESHOLD=0.60`, `18fb01e` üretim yoluna bağladı | **uyumlu** |
-| 08-08~ §3 | 8B'de greedy → benzersiz çıktı düşer → DPO platosu; `T=0.2` sampling uygulanmalı | `DAU_LLM_DO_SAMPLE=1`, `T=0.2` | **uyumlu** |
-| 08-08~ §3 | IPO, DPO'nun küçük veri kümelerinde aşırı özgüvenli marj üretmesini düzenler | DAU düz DPO kullanıyor | **açık** — DAU'nun rejimi (küçük `n_pairs`) tam olarak IPO'nun hedeflediği rejim. Aksiyon değil, D-005 alet kilidinde değerlendirilecek bir girdi. |
-
-## Çift kanallı hafıza (sembolik ↔ parametrik)
+# C. Değerlendirme tasarımı — D-002'ye dokunanlar
 
 | Kaynak | İddia | DAU'da durum | Karar |
 |---|---|---|---|
-| 08-08~ §4 | Olgusal bellek ile davranışsal uyum **kesinlikle ayrı** tutulmalı (Mem0, MAGMA, Zep, ECAI 2026) | Dual-channel mimari | **uyumlu** — kilitli karar |
-| 08-08~ §4 | Sembolik kasadan Ebbinghaus ile silinen bir anının drift'i LoRA'da kalıcı kalabilir → tutarsızlık | Kodda doğrulanmadı | **açık** — GAP-4'ün kaynağı. Etiket doğru: "araştırmadan çıktı, kodda doğrulanmadı". |
-| 08-08~ §4 | LoRA yalnızca **uzun vadeli genel tutumları** kodlamalı (risk alma, işbirliği, kaynak koruma) | Yaşam-PE tercih çiftleri olay bazlı; "uzun vadeli tutum" kısıtı açıkça uygulanmıyor | **açık** — GAP-4 ile birlikte değerlendirilmeli |
+| protocol-c-eval "Sensitivity Hierarchy" | Duyarlılık sırası: **Rank 1 `PE_{t+1}`** · Rank 2 travma sıklığı · Rank 3 `W_transfer` · Rank 4 `γ(t)` | D-002 PE'yi **ikincile** düşürdü | **gerilim** — aynı deney değil (Protocol C nesil-içi, doğum-drift nesiller-arası) ama kayda geçmeli |
+| sentetik-kognisyon §1.6 | **OOD Behavioral Probing:** yaşantıdan sonra ChromaDB retrieval **tamamen kapatılır**, yalnızca ağırlıklara (LoRA) yansıyan değişim ölçülür | DAU'da yok | **açık** — Kanal 2'yi Kanal 1'den izole etmenin temiz yolu; D-002'nin doğrudan tamamlayıcısı |
+| sentetik-kognisyon §1.4 | Trait stabilizasyonu **≥30-50 olay VE ≥3 nesil konsolidasyonu** gerektirir | Multigen **2 nesil** | **açık** → pre-reg tasarımını etkiler |
+| protocol-c-eval "Primary Hypothesis Tests" | PE için **tek-kuyruklu paired t-test / Wilcoxon**; travma için **McNemar** (eşleştirilmiş ikili) | CLAUDE.md paired t/Wilcoxon'u destekleyici sayıyor; McNemar hiç geçmiyor | uyumlu + **eksik test** |
+| — | **Kruskal-Wallis / Fisher-Freeman-Halton** | `CLAUDE.md`'de kilitli maddeydi | **PROVENANS BULUNAMADI** — 9 brief'in hiçbirinde yok. Muhtemelen 3-grup tasarımı için **türetildi**, kaynaklanmadı |
+| sentetik-kognisyon §1.6 | Ek metrikler: çapraz-bağlamsal transfer, eylem dağılımı entropisi `H(A)`, NLI kararsal tutarlılık indeksi | Yok | **açık** (düşük öncelik) |
 
-## Çok-nesilli deney / ön-kayıt standartları
-
-| Kaynak | İddia | DAU'da durum | Karar |
-|---|---|---|---|
-| 08-08~ §5 | `K = 5` (DIVERSITY_MIN_UNIQUE) | aynı | **uyumlu** — ✅ provenans bulundu |
-| 08-08~ §5 | `N ≥ 15` | aynı | **uyumlu** — ✅ provenans bulundu |
-| 08-08~ §5 | `n_eff ≥ 12` | aynı | **uyumlu** — ✅ provenans bulundu |
-| 08-08~ §5 | Varsayılan hipotez testleri: **paired t-test + Wilcoxon** | CLAUDE.md bunları "destekleyici" diyor | **uyumlu** (gen1 ΔPE eşleştirilmiş tasarımına oturuyor) |
-| — | **Kruskal-Wallis + Fisher-Freeman-Halton** | `CLAUDE.md:64`'te "kilitli" olarak duruyor | **açık** — bu brief'te **yok**. Provenans hâlâ kayıp. Sıradaki aday: `2026-08-06_protocol-c-metacognition-eval.md` ("Statistical Power Analysis", "Primary Hypothesis Tests"). |
-
-Not: çelişki değil, farklı uç noktaların testleri. Paired t/Wilcoxon =
-eşleştirilmiş 2 kol (gen1 lived vs shuffle, aynı seed). Kruskal-Wallis =
-eşleştirilmemiş 3 grup (D-002 doğum-drift tasarımı). D-002 yanlışlanmadı.
-
-## Model seçimi / backend
+# D. Ölçüm geçerliliği — süresi dolmuş ertelemeler
 
 | Kaynak | İddia | DAU'da durum | Karar |
 |---|---|---|---|
-| 08-08~ §7 | **Qwen-2.5-7B-Instruct şiddetle önerilir**: ~6.4 GiB (Llama 7.2), DPO sinyal tepkisi "yüksek, keskin logit ayrımı" vs Llama "orta, platoya düşebilir". *"Qwen gibi modellere geçilmemesi sinyal gücünü kısıtlamaktadır."* | Hâlâ Llama-3.1-8B 4-bit NF4 | **bilinçli sapma** — kök triyajda "aksiyon değil, karşılaştırma önerisi" olarak ertelenmişti. **D-005 ile yeniden açıldı.** |
-| 08-08~ §7 | 4-bit NF4'te `double_quant=True`, `quant_type="nf4"` sabit tutulmalı | doğrulanmadı | **açık** (küçük) |
+| v1-audit S1 / "Erteletilebilir" | `W_SEM = 0.0` → ChromaDB vektörü skorlamaya girmiyor, sadece depo. "**Baseline kilitlenince** `W_SEM = 0.3–0.4` yapılmalı" | Hâlâ `W_SEM = 0`. Baseline (Protocol C) **artık kilitli** — erteleme koşulu gerçekleşti, kimse dönmedi | **fark edilmemiş kayma** → GAP-10 |
+| minilm-audit SELECTIVE_FIX #3 | `semantic_similarity.py`'ye MiniLM cosine öncesi **olumsuzluk eki kural denetimi** (not/never/no/refuse) eklensin | `grep negation/refuse` → **hiç yok**. NLI yalnızca tercih çiftlerinde, PE sensöründe değil | **fark edilmemiş kayma** → GAP-10 |
+| v1-audit S1 / minilm-audit S1 | **El yazısı `expected_outcome`**: ajanın beklentisi kendi kognisyonundan değil, tasarımcı şablonundan geliyor → "PE, tasarımcının şablonu ile ajanın eylemi arasındaki mesafeyi ölçüyor" | Devam ediyor | **açık** — GAP-5'in ta kendisi, iki bağımsız denetim aynı şeyi işaret etmiş ⇒ GAP-5'e provenans |
+| daerm-trauma §"Spillover" | Skaler `S=0.20` yerine **domain-özgü asimetrik spillover matrisi** (`S_res→unc=0.35`, `S_soc→res=0.10`, …) benimsensin | `CROSS_AXIS_SPILLOVER: float = 0.20` — skaler | **açık** — bilinçli mi bilinmiyor |
+| v1-audit "İmkansızlıklar" | `F_agent` doğal seçilim değil, **tasarımcı puanlama fonksiyonu**; doğal seçilim iddiası savunulamaz, dokümante edilmeli | Master reference §18 kabul ediyor | **uyumlu** — D-003'ün gerekçesini bağımsız olarak destekliyor |
+| v1-audit / minilm-audit | AB_ENERGY_FLOOR yapay yaşam uzatması ölçümü düzleştiriyor | Devam ediyor, dokümante | **uyumlu** (kabul edilmiş sınır) |
 
-**Doğrulama (2026-08-09):** Qwen yalnızca bu brief'te geçiyor (arşivde
-başka hiçbir dosya model seçimi tartışmıyor). Ve bu brief arşivin **en
-yenisi** — bkz. tarih düzeltmesi D-008. Yani Yasin'in "en güncel öneri
-olmalı" sezgisi **doğrulandı**.
+# E. Uyumlu — birebir uygulanmış
 
-**Bağlam değişikliği:** greedy-plato sampling (`T=0.2`) ile *çözülmedi,
-etrafından dolaşıldı*. D-005 aleti kilitlemek üzere; model seçimi aletin
-parçası. Pre-reg kilitlendikten sonra model değişimi post-hoc olur.
-
-## Deterministik değerlendirme (LLM-as-judge yasağı)
-
-| Kaynak | İddia | DAU'da durum | Karar |
+| Kaynak | İddia | DAU | Karar |
 |---|---|---|---|
-| 08-08~ §8 | MiniLM PE + DAERM + Precision-PE + NLI yığını doğru | aynı | **uyumlu** |
-| 08-08~ §8 | Hipotez testinden önce null/shuffle kontrol kolları + doygunluk audit'i | v3 smoke (`null_arm_clean`, `saturation_rate`) | **uyumlu** |
+| daerm-trauma §"Formal Spec" | `MAGNITUDE_PEAK_WEIGHT = 0.70`, `M = 0.70·max + 0.30·mean = 0.82·PE`; PE≥0.854 → TRAUMA | `constraints.py:33` birebir | **uyumlu** |
+| daerm-recovery "Unified Spec" | `μ = min(M_drift/(1+M_drift), 0.75)`, `γ = E/(1+M_total)`, `L(t+1) = clamp(L + PE − γ(L−μ), μ, 1)` | birebir | **uyumlu** |
+| daerm-trauma "Decoupling" | Magnitude, DAERM recovery çıkarılmadan **ham PE vektörü** üzerinden hesaplansın | Uygulandı (v1.2) | **uyumlu** |
+| sentetik Öneri 2 | Punica deseni, ajan başına `r=8, α=16` | `PER_AGENT_LORA_RANK=8`, `ALPHA=16` | **uyumlu** |
+| sentetik Öneri 3 | HippoRAG 2 tarzı PPR bellek motoru | ADIM 4 | **uyumlu** |
+| sentetik Öneri 4 | Havuz kritik eşiğin altına inince somatik travma + `F_agent` cezası | ADIM 1 crisis | **uyumlu** |
+| 08-08~ §1 | Adapter izolasyonu disk düzeyinde, bellekte tek slot | `f25b0ef` | **uyumlu** |
+| protocol-c-eval | Protocol C = seed-locked counterfactual paired, T=0.2, eşik 0.65 | Birebir uygulanmış | **uyumlu** |
+| protocol-c-eval "Null Framing" | Null sonucun akademik çerçevesi: Intervention Paradox · Performative Metacognition · Verification Theatre | Master reference'ın "paper-locked null" çerçevesi bununla örtüşüyor | **uyumlu** |
+| Tüm brief'ler | Trait injection yasağı | Aksiyom | **uyumlu**, dört bağımsız kaynakla doğrulanmış |
 
-## Uygulanabilir olmayan / reddedilen
+Kısmen: 08-08~ §1 hot-swap'te **CUDA sync + gradyan önbellek temizliği**
+istiyor; `local_llm.py`'de `empty_cache`/`synchronize` yok → GAP-6.
 
-| Kaynak | İddia | Neden geçersiz | Karar |
-|---|---|---|---|
-| 08-08~ §1 (kök triyaj) | Scheduler-state drift / stale KV-cache reuse — concurrent multi-tenant serving riski | DAU sıralı (tek thread) çalışıyor; concurrent serving yok | **brief geçerli değil** (Yasin doğru triyaj etmiş) |
-| 08-08~ §6 | Single-pass hierarchical extraction ile RAG sorgu maliyeti düşürülmeli | Maliyet DAU'da darboğaz değil; PPR + Ebbinghaus zaten var | **açık** (düşük öncelik) |
+# F. Brief yanılmış
 
----
-
-## Bu brief'ten çıkan aksiyonlar
-
-| # | Bulgu | Nereye gitti |
+| Kaynak | İddia | Ne oldu |
 |---|---|---|
-| 1 | Gradient accumulation yok | CLAUDE.md **GAP-8** (yeni) |
-| 2 | CUDA sync / `empty_cache` adapter hot-swap'te yok | GAP-6 önceliği yükseltildi |
-| 3 | Qwen-2.5-7B tavsiyesi güncel | **D-005** girdisi (alet kilidi) |
-| 4 | K=5 / N≥15 / n_eff≥12 provenansı | ✅ kapandı |
-| 5 | Kruskal-Wallis / FFH provenansı | hâlâ açık → sıradaki brief |
-| 6 | GAP-4 kaynağı doğrulandı | etiket doğru, aksiyon yok |
+| metacognition-neuroscience §"Feasibility" | *"Genuine metacognition is **fully achievable** with frozen-weight LLMs when implemented as a system-level property… Metacognition is a property of the structural control loop, not the individual model weights."* | **DAU bunu deneyle yanlışladı.** Protocol C: ΔPE ≈ 0, paper-locked null. Brief fazla iyimserdi; out-of-band meta-observer mimarisini doğru tarif etti ama etkinliğini yanlış öngördü. |
+| metacognition-neuroscience §7 | Blueprint hâlâ `Δ = 1 − JaccardOverlap` varsayıyor | 08-04 tarihli, MiniLM geçişinden önce — tarihsel, sorun değil |
+| 08-08~ (kök triyaj) | Scheduler-state drift / stale KV-cache — concurrent multi-tenant riski | DAU sıralı çalışıyor, geçerli değil (Yasin doğru triyaj etmişti) |
+
+**F1 kayda değer:** bu, projenin ana bilimsel katkısının bir Deep Research
+öngörüsünü çürütmesi demek. Paper'da bu açıkça söylenebilir — literatürün
+"sistem seviyesinde çözülür" beklentisi, frozen ağırlıklarda ampirik
+olarak karşılanmadı.
+
+---
+
+## Aksiyonlar
+
+| # | Bulgu | Nereye |
+|---|---|---|
+| 1 | A1-A5, A9: DPO sinyal gücü beş ayarı | CLAUDE.md **GAP-8** (genişletildi) |
+| 2 | B: N=15 güç analizine göre yetersiz | CLAUDE.md **GAP-9** (yeni) |
+| 3 | D: W_SEM=0 + negation wrapper, süresi dolmuş ertelemeler | CLAUDE.md **GAP-10** (yeni) |
+| 4 | C: OOD probing, ≥3 nesil, McNemar | **D-010** — pre-reg tasarım girdisi |
+| 5 | A6 Qwen | **D-005** girdisi |
+| 6 | 08-08~ §1 CUDA sync | GAP-6 (önceliği yükseltildi) |
+| 7 | KW/FFH provenansı | **BULUNAMADI** — 9 brief'te yok; türetilmiş kabul edilmeli |
+| 8 | GAP-5'e provenans (iki denetim bağımsız işaret etmiş) | CLAUDE.md GAP-5 notu |
+| 9 | F1: brief yanıldı, DAU çürüttü | Paper anlatısına girdi |
