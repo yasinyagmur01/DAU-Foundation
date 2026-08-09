@@ -1,5 +1,5 @@
 ---
-tarih: 2026-08-03
+tarih: 2026-08-08~   # düzeltildi: rapor v2.4 / v3 smoke / SAMPLE_N15 atıfları içeriyor (08-07+); kaynak prompt içermiyor
 konu: Per-agent LoRA serving, dual-channel memory, DPO ve deterministik değerlendirme
 tetikleyen soru: 
 ---

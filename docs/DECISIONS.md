@@ -337,3 +337,83 @@ metni üretirdi ve kaynaksız satır sayısı ikiye çıkardı.
 
 **Kanıt:** Çelişki fiilen arkeolojiyle çözüldü (`grep` + `git log` +
 `find`), literatürle değil — bkz. D-002 `Süperseder` alanı.
+
+---
+
+## D-008 · 2026-08-09 · Deep Research arşivi: konum, tarih düzeltmesi, ilk mutabakat
+
+**Durum:** kabul edildi
+
+**Karar:**
+1. Ham brief'ler `docs/research/` altında durur (D-006'nın "repo kökü"
+   maddesini **süperseder** — 10+ dosya kökü dağıtıyordu).
+2. Damıtılmış mutabakat: `docs/research/RECONCILIATION.md`, **DAU konusuna
+   göre** indeksli (brief'e göre değil).
+3. Kök `RESEARCH_BRIEF_v1.md` **kaldırıldı**; içeriği (Yasin'in elle yaptığı
+   triyaj) `RECONCILIATION.md`'ye devredildi. Mutabakatın iki dosyaya
+   bölünmesi D-001'in önlemek için var olduğu sürüklenme desenidir.
+4. `2026-08-03_per-agent-lora-serving.md` → `2026-08-08~_...` olarak
+   yeniden adlandırıldı.
+
+**Gerekçe (tarih düzeltmesi):** Raporun gövdesi `v2.3`, `v2.4`,
+`SAMPLE_N15_UNDERPOWERED` ve v3 smoke sonuçlarına (`saturation_rate=0.0025`,
+`π_n=14`) atıf yapıyor. Master reference §22'ye göre v2.3/v2.4 = 2026-08-07,
+v2.4.1 (v3 smoke PASS) = 2026-08-08. Kaynak prompt'un tamamı tarandı; bu
+dizgelerin **hiçbiri** prompt'ta yok. Dolayısıyla rapor en erken 08-07'de,
+gerçekçi olarak 08-08'de üretilmiş. Kök triyaj dosyasının mtime'ı
+2026-08-09 15:05.
+
+**Kanıt:**
+- `grep -c -i qwen docs/research/*.md` → yalnızca bu dosyada (3 eşleşme);
+  arşivde başka hiçbir brief model seçimi tartışmıyor.
+- Sürüm işaretçisi taraması: `v2.3`/`v2.4`/`SAMPLE_N15` yalnızca bu
+  dosyada; diğer 9 brief kendi tarih damgası dışında hiçbir DAU sürüm
+  etiketi içermiyor.
+
+**Sonuç:** Bu brief arşivin **en yenisi**, en eskisi değil. Dolayısıyla
+§7'deki Qwen-2.5-7B tavsiyesi bayat değil, **güncel** tavsiye —
+Yasin'in sezgisi doğrulandı.
+
+**Kabul edilen bedel:** Tarih `~` ile yaklaşık işaretlendi (08-08 ile 08-09
+arası kesinleştirilemedi). Yasin tam tarihi hatırlarsa `git mv` ile
+sabitlenebilir.
+
+**Süperseder:** D-006 (yalnızca dosya konumu maddesi; süreç maddeleri
+geçerliliğini korur).
+
+---
+
+## D-009 · 2026-08-09 · İlk mutabakattan çıkan üç bulgu
+
+**Durum:** kabul edildi (bulgu kaydı — aksiyonlar ayrı kararlara bağlı)
+
+**Karar:** `2026-08-08~_per-agent-lora-serving.md` mutabakatı üç yeni bulgu
+üretti; üçü de kaydedildi ve yönlendirildi:
+
+1. **Gradient accumulation yok** → `CLAUDE.md` GAP-8 (yeni).
+   Brief §2 "`BATCH_SIZE=1` ve gradyan biriktirme" diyor; DAU
+   `BATCH_SIZE=1` + gradient **checkpointing** uygulamış — farklı teknik.
+   `local_llm.py:610-627` her çift için ayrı `zero_grad()` + step →
+   efektif batch = 1. `fark edilmemiş kayma`.
+2. **Adapter hot-swap'te CUDA sync / `empty_cache` yok** → GAP-6 önceliği
+   yükseltildi. Brief §1 bunu izolasyon **doğruluğu** şartı sayıyor;
+   CLAUDE.md ise "temizlik" olarak listeliyordu. `açık`.
+3. **Qwen-2.5-7B tavsiyesi güncel** → D-005 girdisi. `bilinçli sapma`
+   (kök triyajda "aksiyon değil" diye ertelenmişti), ama D-005 aleti
+   kilitlemek üzere olduğu için yeniden açıldı.
+
+**Ayrıca kapandı:** `K=5` / `N≥15` / `n_eff≥12` provenansı — brief §5.
+D-002'nin `Süperseder` alanındaki provenans boşluğunun bu kısmı çözüldü.
+
+**Ayrıca hâlâ açık:** Kruskal-Wallis + Fisher-Freeman-Halton bu brief'te
+**yok**. Brief §5'in önerdiği varsayılan testler paired t-test + Wilcoxon.
+Çelişki değil — paired testler gen1'in eşleştirilmiş 2-kol tasarımına,
+KW ise D-002'nin eşleştirilmemiş 3-grup doğum-drift tasarımına oturuyor.
+Provenans araması sıradaki brief'te sürecek
+(`2026-08-06_protocol-c-metacognition-eval.md`).
+
+**Kanıt:** `docs/research/RECONCILIATION.md`, tam tablo.
+
+**Zamanlama uyarısı:** Bulgu 1 ve 3 **alet değişikliği** anlamına gelir.
+D-005 ile aynı pencerede — pre-reg kilitlenmeden önce karara bağlanmalı,
+sonrasında post-hoc olur.

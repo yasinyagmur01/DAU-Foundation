@@ -61,9 +61,9 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
 ## Kilitli Kararlar (yeniden tartışılmaz)
 
 - Generation-end batch micro-QLoRA ≫ per-event online learning (literatür +
-  8GB VRAM kararlılığı ile doğrulandı, bkz. RESEARCH_BRIEF_v1.md §2).
+  8GB VRAM kararlılığı ile doğrulandı, bkz. `docs/research/2026-08-08~_per-agent-lora-serving.md` §2).
 - Dual-channel mimari (sembolik vault ayrı, parametrik LoRA ayrı) — 2026
-  sanayi/akademi konsensüsüyle örtüşüyor (bkz. RESEARCH_BRIEF_v1.md §4).
+  sanayi/akademi konsensüsüyle örtüşüyor (bkz. `docs/research/2026-08-08~_per-agent-lora-serving.md` §4).
 - Per-agent adapter disk izolasyonu (`dau_runs/adapters/{agent_id}/`) —
   Punica deseni, tek GPU/8GB VRAM için doğru seçim.
 - `heal_drift` çift-uygulama riski KAPANDI: `meta_observer._evaluator_healed_domains`
@@ -72,12 +72,14 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
   düzeltti (saturation_rate=0.0025), kalibrasyon doğrulandı.
 - NLI contradiction threshold: `NLI_CONTRADICTION_THRESHOLD=0.60`,
   `cross-encoder/nli-deberta-v3-small`.
-- İstatistik eşikleri: N≥15, K≥5 (DIVERSITY_MIN_UNIQUE), n_eff≥12.
+- İstatistik eşikleri: N≥15, K≥5 (DIVERSITY_MIN_UNIQUE), n_eff≥12 —
+  ✅ provenans bulundu: `2026-08-08~_per-agent-lora-serving.md` §5.
 - **Çok-nesilli C′ birincil uç noktası = doğum-drift** (D-002). Gen2 PE +
   gen2 davranışsal = ön-kayıtlı ikincil. Testler: Kruskal-Wallis (doğum
   drift magnitude, 3 grup), Fisher-Freeman-Halton (transfer aday sayıları),
-  paired t-test/Wilcoxon (destekleyici). ⚠ Bu iki test adının provenansı
-  repoda yok — Deep Research arşivi gelince aranacak (D-006).
+  paired t-test/Wilcoxon (destekleyici — ✅ bu ikisinin provenansı §5'te).
+  ⚠ Kruskal-Wallis + FFH provenansı **hâlâ kayıp**; sıradaki aday
+  `2026-08-06_protocol-c-metacognition-eval.md` (D-006).
 - **F_agent transfer kapısı korunur** + `f_agent=None` duyarlılık kolu
   (D-003). Kapı kaldırılmaz: aksiyom içeri trait enjeksiyonunu yasaklar,
   dışarıdan seçilim baskısını değil.
@@ -131,9 +133,34 @@ teorik mi — doğrulanmalı.**
 (extract/cooperate/...) doğru dilsel çıktıyı yönlendiriyor olabilir — bu
 "serbest dilsel emergence" iddiasını ne kadar zedeler, tartışılmalı.
 
-### GAP-6 (düşük öncelik, temizlik): Magic number kalıntıları
-`time.sleep(10)` (run_protocol_c_prime.py), bare `0.5`
-(shuffle_preference_pairs), default `k: int = 5` (retrieval.py).
+### GAP-6: Magic number kalıntıları + adapter hot-swap CUDA temizliği
+Temizlik (düşük öncelik): `time.sleep(10)` (run_protocol_c_prime.py), bare
+`0.5` (shuffle_preference_pairs), default `k: int = 5` (retrieval.py).
+
+**Önceliği yükseltilen madde:** `2026-08-08~_per-agent-lora-serving.md` §1,
+adapter hot-swap'te **CUDA akış senkronizasyonu + gradyan önbellek
+temizliğini izolasyon doğruluğu şartı** olarak sayıyor — sadece temizlik
+değil. `local_llm.py`'de `empty_cache` / `synchronize` **yok**, yalnızca
+`optimizer.zero_grad()` var. `f25b0ef` disk izolasyonunu çözdü; bellek
+tarafındaki bu şart doğrulanmadı.
+
+### GAP-8: Gradient accumulation yok — DPO efektif batch = 1
+`2026-08-08~_per-agent-lora-serving.md` §2 açıkça "`BATCH_SIZE=1` **ve
+gradyan biriktirme (gradient accumulation)**" öneriyor. DAU `BATCH_SIZE=1`
+uyguladı ama accumulation'ı değil — uygulanan şey gradient
+**checkpointing** (bellek tekniği), accumulation (sinyal tekniği) değil.
+
+`local_llm.py:610-627`: her çift için ayrı `optimizer.zero_grad()` + step.
+İç `batch_loss` toplaması var ama `DPO_BATCH_SIZE=1` olduğu için işlevsiz.
+Sonuç: **efektif batch = 1, gradyan varyansı yüksek** — ve DAU'nun
+`n_pairs` rejimi zaten küçük.
+
+`BATCH_SIZE=2` OOM verdiği için batching kapatılmış; ama accumulation
+**OOM vermez** (micro-batch 1 kalır, step N mikro-adımda bir atılır). İki
+teknik karıştırılmış görünüyor.
+
+⚠ Bu bir **alet değişikliğidir** — D-005 ile aynı pencerede, pre-reg
+kilitlenmeden önce karara bağlanmalı.
 
 ### GAP-7 (D-005, henüz kilitlenmedi): Backend aksiyomu test edemeyen konfigürasyon
 `DAU_LLM_BACKEND=groq` default. Ama Kanal 2 (per-agent adapter,
@@ -186,8 +213,11 @@ id, quantization, `DAU_LORA_ENABLED`, adapter durumu, sampling parametreleri.
 - Multigen orkestrasyon: `dau/diagnostics/run_cprime_multigen.py` (792 satır)
   + `dau/diagnostics/tests/test_cprime_multigen.py` (226 satır) — mevcut,
   LoRA gate'i doğrulandı ve kapalı (GAP-1).
-- `CLAUDE.md` ve `RESEARCH_BRIEF_v1.md` **repo kökünde** durur. CLAUDE.md
-  `docs/`'a taşınamaz — Claude Code onu yalnızca kökten otomatik yükler.
+- `CLAUDE.md` **repo kökünde** durur, `docs/`'a taşınamaz — Claude Code
+  onu yalnızca kökten otomatik yükler.
+- Deep Research arşivi: `docs/research/` (ham brief'ler + `RECONCILIATION.md`).
+  Eski kök `RESEARCH_BRIEF_v1.md` kaldırıldı — içeriği mutabakat dosyasına
+  devredildi (D-008).
 
 ## Master Reference ↔ Kod Gecikmesi (2026-08-09 denetimi)
 
@@ -225,7 +255,7 @@ girer.
 Bu bir yedek değil, karar sürecinin bir organı. İki işlevi var:
 
 1. **İleri bakış** — yeni katman/teknoloji seçiminden önce literatür
-   haritası (örn. `RESEARCH_BRIEF_v1.md`: generation-end batch QLoRA ≫
+   haritası (örn. `2026-08-08~_per-agent-lora-serving.md`: generation-end QLoRA ≫
    per-event online öğrenme; dual-channel mimari konsensüsü).
 2. **Geriye dönük tutarlılık denetimi** — Layer 5 (özbilinç) araştırılırken
    önceki 4 katmanın iç tutarlılığı dışarıdan bağımsız olarak doğrulandı.
