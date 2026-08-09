@@ -13,14 +13,18 @@ import pytest
 
 from dau.diagnostics.run_protocol_c_prime import (
     DIVERSITY_MIN_UNIQUE,
+    LLM_TEMPERATURE_ENV,
     PE_WINDOW_EVENTS,
     RESULTS_PATH,
+    TEMPERATURE_DEFAULT,
     ArmResult,
     PairResult,
     _compute_stats,
     _diversity_gate_reason,
+    _lock_seeds,
     _phase1_diversity,
     _seed_from_agent_id,
+    _temperature,
     _train_adapter,
     _window_mean,
     write_results_json,
@@ -286,6 +290,50 @@ def test_train_adapter_skips_when_lora_disabled(
     n_trained, n_rejected = _train_adapter("test-agent", lived_examples)
     assert n_trained == 0
     assert n_rejected == 0
+
+
+def test_lock_seeds_honours_env_temperature_set_after_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GAP-15: _lock_seeds used to write the import-time value back."""
+
+    monkeypatch.setenv("DAU_LLM_SEED", "0")
+    monkeypatch.setenv(LLM_TEMPERATURE_ENV, "0.7")
+    _lock_seeds(2001)
+    assert os.environ[LLM_TEMPERATURE_ENV] == "0.7"
+
+
+def test_temperature_defaults_when_env_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(LLM_TEMPERATURE_ENV, raising=False)
+    assert _temperature() == TEMPERATURE_DEFAULT
+
+
+def test_temperature_rejects_unparseable_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A silent fallback would run one tool and report another."""
+
+    monkeypatch.setenv(LLM_TEMPERATURE_ENV, "warm")
+    with pytest.raises(ValueError):
+        _temperature()
+
+
+def test_write_results_json_reports_effective_temperature(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The JSON must report the T the backend actually reads (D-004)."""
+
+    out = tmp_path / "protocol_c_prime_results.json"
+    monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.RESULTS_PATH", out)
+    monkeypatch.setattr("dau.diagnostics.run_protocol_c_prime.N_PAIRS", 1)
+    monkeypatch.setenv(LLM_TEMPERATURE_ENV, "0.7")
+    results = [_pair(2001, -0.05, 0.02, 0.01)]
+    path = write_results_json(results, _compute_stats(results))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["temperature"] == 0.7
 
 
 def test_seed_from_agent_id_parses_generation_suffix() -> None:

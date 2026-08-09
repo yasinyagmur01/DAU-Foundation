@@ -71,7 +71,7 @@ from dau.society.environment import (
 
 N_PAIRS: int = int(os.environ.get("DAU_CPRIME_N_PAIRS", "15"))
 EVENTS_PER_ARM: int = int(os.environ.get("DAU_CPRIME_EVENTS", "50"))
-TEMPERATURE: float = float(os.environ.get("DAU_LLM_TEMPERATURE", "0.2"))
+TEMPERATURE_DEFAULT: float = 0.2
 SEED_START: int = int(os.environ.get("DAU_CPRIME_SEED_START", "2001"))
 SEEDS: list[int] = list(range(SEED_START, SEED_START + N_PAIRS))
 SIGNAL_VERSION: str = os.environ.get("DAU_CPRIME_SIGNAL", "v2")
@@ -454,6 +454,23 @@ def _lock_torch_seed(seed: int) -> None:
     )
 
 
+def _temperature() -> float:
+    """Effective sampling temperature, read now — not at import time.
+
+    GAP-15: this used to be bound at import and _lock_seeds wrote the frozen
+    value back into the environment on every call, so a change made after
+    import was silently discarded — while local_llm reads the env at call time
+    and could therefore disagree with what the results JSON reported.
+    """
+
+    raw = os.environ.get(LLM_TEMPERATURE_ENV, "").strip()
+    if not raw:
+        return TEMPERATURE_DEFAULT
+    # An unparseable temperature must fail the run, not fall back to a value
+    # the operator never chose and the JSON would then report as fact.
+    return float(raw)
+
+
 def _lock_seeds(seed: int) -> None:
     """Pin Python, NumPy, torch, and Groq seed for counterfactual replay."""
 
@@ -461,7 +478,7 @@ def _lock_seeds(seed: int) -> None:
     np.random.seed(seed)
     _lock_torch_seed(seed)
     os.environ[LLM_SEED_ENV] = str(seed)
-    os.environ[LLM_TEMPERATURE_ENV] = str(TEMPERATURE)
+    os.environ[LLM_TEMPERATURE_ENV] = str(_temperature())
 
 
 def _seed_niche(seed: int) -> tuple[Any, EnvironmentState]:
@@ -950,7 +967,7 @@ def run_protocol_c_prime() -> list[PairResult]:
 
     assert len(SEEDS) == N_PAIRS, "SEEDS length must equal N_PAIRS"
     graph_mod.load_env_file()
-    os.environ[LLM_TEMPERATURE_ENV] = str(TEMPERATURE)
+    os.environ[LLM_TEMPERATURE_ENV] = str(_temperature())
 
     run_start = time.perf_counter()
     completed_seeds = _load_checkpoint()
@@ -1216,7 +1233,7 @@ def write_results_json(results: list[PairResult], stats: dict[str, Any]) -> Path
             "pe_window_events": PE_WINDOW_EVENTS,
             "diversity_min_unique": DIVERSITY_MIN_UNIQUE,
             "diversity_min_pe_gap": DIVERSITY_MIN_PE_GAP,
-            "temperature": TEMPERATURE,
+            "temperature": _temperature(),
             "seeds": list(SEEDS),
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
             "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
