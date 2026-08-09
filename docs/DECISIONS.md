@@ -997,3 +997,63 @@ belgeyi sessizce haklı çıkarmış gibi göstermemek için.
 **D-019 ile ilişki:** model ölçümü NF4 açıkken yapılır. İki modelin VRAM
 tepe değerleri de bu konfigürasyonda ölçülür; brief'in ~6.4 / ~7.2 GiB
 rakamları fp4 varsayımıyla verilmişti, ölçüm onları düzeltecek.
+
+---
+
+## D-021 · 2026-08-10 · GAP-8 bölündü: A1+A5 kilitli, A2/A3/A4 ölçüme bağlı
+
+**Durum:** kabul edildi (Yasin, 2026-08-10). GAP-8'i **kısmen** kapatır.
+
+**Karar:** GAP-8'in beş maddesi tek paket olarak ele alınmaz. İkisi
+bellek bütçesinden bağımsız — şimdi kilitlenir. Üçü doğrudan VRAM
+harcıyor — D-019'un ölçümü gelmeden karar verilmez.
+
+### Şimdi kilitlenen
+
+**A1 — gradient accumulation eklenir.** Bu bir tavsiye kabulünden çok
+**hata düzeltmesi**: `BATCH_SIZE=2` OOM verdiği için batching kapatılmış,
+ama accumulation OOM vermez — mikro-batch 1 kalır, optimizer adımı N
+mikro-adımda bir atılır. Kodda uygulanan şey gradient **checkpointing**
+(bellek tekniği); tavsiye edilen şey gradient **accumulation** (gradyan
+tekniği). İki teknik karıştırılmış görünüyor. Bugün `local_llm.py` her
+çift için ayrı `zero_grad()` + `step()` çağırıyor ⇒ **efektif batch = 1**.
+Bellek bedeli yok.
+
+⚠ `afbb552`'nin alet kimliği bugün `gradient_accumulation_steps: 1` ve
+`effective_batch_size: 1` yazıyor — olguydu, A1 uygulanınca kendiliğinden
+doğru değeri raporlayacak. `N` değeri uygulama adımında belirlenir.
+
+**A5 — mutlak PE (SNR) filtresi eklenir.** Bugün `build_pe_ranked_pairs`
+yalnızca `PE_RANK_MIN_GAP = 1e-6` **farkı** arıyor; PE **büyüklüğüne**
+göre filtre yok. Yani `PE=0.030` ile `PE=0.031` arasındaki fark,
+`PE=0.8` ile `PE=0.2` arasındaki fark kadar meşru bir eğitim sinyali
+sayılıyor. Brief (`sentetik-kognisyon` §1.2): `PE < 0.15` sinyalleri
+ön-eğitilmiş ağırlık gürültüsünde kaybolur.
+
+**Eşik ayrıca karara bağlandı: mekanizma şimdi, değer pilottan sonra.**
+Filtre koda girer, başlangıç değeri brief'in `0.40`'ı olur, ama
+`calibrated: false` işaretlenir ve pilotun ölçtüğü PE dağılımıyla
+kilitlenir. Gerekçe: `0.40` bu repoda ölçülmedi ve
+`PREFLIGHT_INVARIANTS.md` `SNR_FLOOR`'u zaten "kaynağı var, kalibre
+edilmeli" diye işaretleyip I1.4'ü bu yüzden FLAG'de tutmuş. Karar o
+tutumla tutarlı: **eşik önce ölçülür, sonra kilitlenir.**
+
+⚠ Uygulama uyarısı: eşik çift **sayısını** düşürür. `MIN_PAIRS` hâlâ
+kalibre edilmemiş (I1.5 FLAG). Filtre eklenirken elenen çift sayısı
+loglanmalı, yoksa "az sayıda güçlü çift" ile "eğitim seti boşaldı" ayırt
+edilemez.
+
+### Ölçüme bağlananlar
+
+**A2 (`seq_len` 256→512), A3 (1→3 epoch), A4 (%10 yüksek-somatik
+replay).** Üçü de doğrudan VRAM/zaman harcıyor: `seq_len` aktivasyon
+belleğini kabaca iki katına çıkarır, 3 epoch koşum süresini üçe katlar,
+replay +0.3 GiB.
+
+Kullanılabilir bütçe şu an **bilinmiyor**: D-020 (double_quant) ~0.3–0.4
+GiB açıyor, D-019 Qwen'i seçerse brief'e göre ~0.8 GiB daha. İkisi de
+henüz ölçülmedi. Şimdi karar vermek, miktarını bilmediğimiz bir bütçeyi
+harcamak olurdu — ve fatura pilotta OOM olarak gelir.
+
+**Sıra:** D-019 ölçümü (model + VRAM tepe değerleri, NF4 açıkken) →
+gerçek boşluk → A2/A3/A4 kararı → pre-registration.
