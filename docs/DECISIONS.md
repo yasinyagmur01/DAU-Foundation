@@ -1057,3 +1057,77 @@ harcamak olurdu — ve fatura pilotta OOM olarak gelir.
 
 **Sıra:** D-019 ölçümü (model + VRAM tepe değerleri, NF4 açıkken) →
 gerçek boşluk → A2/A3/A4 kararı → pre-registration.
+
+---
+
+## D-022 · 2026-08-10 · Consolidation deney yoluna bağlanır; I5.1 pilota kadar FLAG
+
+**Durum:** kabul edildi (Yasin, 2026-08-10). **GAP-14'ü kapatır**, ama
+tarifini önce düzeltir.
+
+### GAP-14'ün tarifi yanlıştı
+
+`CLAUDE.md` GAP-14 şöyle diyordu: *"onu çağıran `memory_bridge.py:113`
+sarmalayıcısını **hiç kimse çağırmıyor** (testler hariç)."*
+
+**Kod bunu doğrulamıyor.** `consolidate_run` (`memory_bridge.py:102`)
+`graph.py:1426`'dan çağrılıyor — `persist_run_snapshot` ve
+`_print_summary`'nin bulunduğu demo/long-run bloğunda.
+
+Doğru tespit: **consolidation ölü kod değil, yanlış yolda.** Demo yolu
+çağırıyor, deney yolu çağırmıyor — çünkü C′ runner'ları `app.stream()`'i
+doğrudan sürüyor ve o fonksiyona hiç uğramıyor. İki yol arasındaki sessiz
+sapma.
+
+**Ölçüm (preflight I5.1, `30c80da`):** `memory_edges is empty in every
+life`. Sonuç doğruydu, sebebi yanlış yazılmıştı.
+
+### Sanılandan geniş: unutma da kapalıymış
+
+`run_consolidation` üç iş yapıyor, kenar yazmak yalnızca biri:
+1. Solmuş izleri **siler** (`deleted_count`) — Ebbinghaus unutması burada
+2. DEEP/TRAUMA izleri **güçlendirir** (`boost_strength`)
+3. Eş-zamanlı baskılar arasına **kenar yazar** → PPR'ın yakıtı
+
+Yani deney yolunda consolidation çalışmadığı için **unutma da hiç
+çalışmamış.** Bunun iki sonucu var:
+- Gen2'ye hangi anıların miras kalacağı olduğundan farklı ⇒ **birincil uç
+  noktaya (doğum-drift, D-002) doğrudan dokunuyor.**
+- **GAP-4** ("kasadan silinen anının drifti LoRA'da kalıyor olabilir") şu
+  an teorik olarak bile test edilemez — hiçbir şey silinmiyor.
+
+### Skorlamadaki fiili durum
+
+`memory_score = 0.21·recency + 0.28·magnitude + 0.21·domain_match +
+0.30·ppr` → PPR boş grafta sabit döndüğü için fiilen
+`0.21·recency + 0.28·magnitude + 0.51·domain_match`.
+`PPR_WEIGHT_IN_SCORE = 0.30`, domain_match'i gizlice büyüten bir sabit.
+
+### Karar
+
+**1. `consolidate_run` deney yolunda da yaşam sonunda çağrılır.** Bu bir
+özellik ekleme değil, **tasarlanmış davranışın geri gelmesi**:
+fonksiyonun docstring'i "end-of-life sleep consolidation" diyor ve demo
+yolu onu doğru çağırıyor.
+
+**2. I5.1 pilota kadar FLAG kalır.** Bağladıktan sonra kenarların
+gerçekten oluştuğunu ölçmeden ABORT'a yükseltmek, doğrulanmamış bir
+düzeltmeye koşum öldürme yetkisi vermek olurdu. Pilot kenarları
+doğrularsa ABORT'a yükselir.
+
+**3. Miras etkisi pilotta ölçülür, pre-reg'de kilitlenir.** Pilot
+`deleted_count` · `strengthened_count` · `edges_created` sayılarını **ve
+transfer aday sayısındaki değişimi** raporlar. Değişiklik gen2'ye giden
+malzemeyi değiştiriyor ve etkisi ölçülmedi; D-019 ve D-021'deki tutumun
+aynısı — bağla, ama ölçmeden kilitleme.
+
+**Uygulama notu:** çağrı noktası, vault'un hâlâ açık olduğu yer olmalı.
+`run_lineage` store'u `finally`'de kapatıyor; consolidation ondan önce,
+gen1 yaşamının sonunda çalışmalı. Hangi fazın sonunda çağrılacağı
+(phase-1 sonrası mı, phase-2 sonrası mı, ikisinde de mi) uygulama
+adımında karara bağlanır — gen1 iki yaşam sürüyor ve "yaşam sonu"nun
+karşılığı belirsiz. Bu belirsizlik burada açıkça bırakılıyor, sessizce
+seçilmiyor.
+
+**Belge borcu:** master reference §6 ve §19 ADIM 4'ü uygulanmış entegrasyon
+olarak sunuyor. v2.4.2'de düzeltilir: "atıldı, D-022 ile bağlandı".
