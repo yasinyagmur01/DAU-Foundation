@@ -719,3 +719,48 @@ bölümüyle çözüldü.
 **Kabul edilen bedel:** Branch adı (`per-agent-qlora-adapter-c116`) artık
 içeriği tarif etmiyor — repoda karar kaydı, araştırma arşivi ve denetimler
 de var. Kozmetik, zararsız.
+
+---
+
+## D-014 · 2026-08-09 · Nesil zinciri 2 ile sınırlı değil — hedef N nesil
+
+**Durum:** yön beyanı (Yasin, 2026-08-09). Kilitli karar **değil** — ön-kayıt
+yazılmadı, N belirlenmedi. Kaybolmaması için kayda geçiriliyor.
+
+**Beyan:** "Uzun nesiller devam etmek gibi bir düşüncem var." Yani gen1 → gen2
+tek sıçraması nihai tasarım değil, şu an koşulabilen en kısa hal. Asıl hedef,
+evrimin birden fazla nesil boyunca aktarılıp aktarılmadığını görmek.
+
+**Neden şimdi kayda giriyor:** GAP-13 düzeltmesinin kapsamı bu beyanla
+belirlendi. Plan yalnızca gen1'in precision audit alanlarını doldurmayı
+istiyordu; gen2 de eklendi (`090a5bc`), çünkü zincir uzayacaksa her nesil
+kendi alet sağlığını taşımalı — yoksa N. nesildeki doygunluk, N-1'in
+verisiyle örtülür ve zincir boyunca sessizce birikir.
+
+**Kodun bugünkü durumu (2026-08-09'da doğrulandı):**
+
+Nesil-agnostik olan (değişiklik gerektirmez):
+- `consolidate_generation` / `apply_generation` (`generation.py:236`, `:316`)
+  — sayaç bire bir artıyor, derinlik varsayımı yok.
+- `_seed_from_agent_id` (`8cf2ac0`) — `-g{n}` ekini herhangi bir `n` için
+  ayrıştırıyor, `-g3`/`-g7` bugünden çalışır.
+
+İki nesle çakılı olan (zincir uzatılırken elden geçecek):
+- `PARENT_SUFFIX = "g1"` / `HEIR_SUFFIX = "g2"` sabitleri
+  (`run_cprime_multigen.py:104-105`) — nesil indeksinin fonksiyonu olmalı.
+- `run_lineage` tek sıçrama: gen1 → transfer → gen2. Döngüye dönmeli.
+- `Gen2Result` adı ve `EVENTS_GEN1` / `EVENTS_GEN2` parametre çifti —
+  nesil başına liste ya da tek parametre.
+- Vault ömrü: bugün soy başına bir `TemporaryDirectory`, zincir boyunca
+  büyüyecek bir kasanın maliyeti ölçülmedi.
+
+**Açık sorular (ön-kayıttan önce cevaplanmalı):**
+- N kaç? Her nesil ayrı bir ölçüm noktası ⇒ istatistiksel güç N ile nasıl
+  değişiyor (GAP-9 güç analizi 2 nesil varsayımıyla yapıldı).
+- Adapter mirası: bugün 3A kuralı "varis ebeveynin adaptörünü yüklemez".
+  Zincir uzarsa bu kural her nesilde mi geçerli, yoksa parametrik mi olmalı?
+- Ebbinghaus decay + N nesil: GAP-4'ün (kasa↔LoRA senkron kopukluğu)
+  şiddeti nesil sayısıyla artar mı?
+
+**Etki:** `EXECUTION_PLAN.md` D-10'daki "2 vs 3 nesil" maddesi artık
+"2 vs N" olarak okunmalı.

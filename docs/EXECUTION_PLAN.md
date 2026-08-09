@@ -29,6 +29,10 @@ Bu dosya, kod fazının adım adım yürütülmesi içindir. Her oturum başınd
 
 Bağımlılık sırasına göre. Adım 1–4 birer satırlık; asıl iş 5 ve 6.
 
+**Durum (2026-08-09):** Adım 1 ✅ `8cf2ac0` · Adım 2 ✅ `ab8966c` ·
+Adım 3 ✅ `ab30f9c` · Adım 4 ✅ `090a5bc` — dördü de mutasyon kontrolünden
+geçti (düzeltme geri alınınca ilgili testler kırılıyor). Sıradaki: Adım 5.
+
 ### Adım 1 — GAP-11: shuffle kolu reproducible değil
 
 | | |
@@ -131,7 +135,8 @@ gücü) etkiliyor:
    ⚠ **N=15 varsayılan olarak alınmayacak** (GAP-9: güç analizi N=15'i
    yalnızca `d ≥ 0.5` için geçerli sayıyor; gözlenen `d ≈ 0.04`)
 10. **Pre-registration** — D-002 (doğum-drift birincil), D-003
-    (`f_agent=None` duyarlılık kolu), OOD probing kararı, 2 vs 3 nesil
+    (`f_agent=None` duyarlılık kolu), OOD probing kararı, **kaç nesil**
+    (D-014: hedef 2 değil N; N'in kendisi ve güç etkisi açık soru)
 11. **Master reference v2.4.2** — biriken borçlar: §21 NLI satırı **yanlış**
     (`lora_update.py:297` tersini yapıyor) · §6 ve §19 ADIM 4 iddiası
     (GAP-14: PPR inert) · multigen belgede hiç geçmiyor · 4 commit gecikmesi

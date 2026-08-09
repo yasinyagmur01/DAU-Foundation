@@ -23,9 +23,12 @@ var".)
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** kod düzeltmeleri. Salt-yazı denetim fazı D-010/011/012 ile kapandı.
-- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 1 (GAP-11)**.
-- **Son durum:** GAP-1..15 açık; 20 preflight değişmezi kilitli (D-012),
-  koda dökülmeyi bekliyor.
+- **Sıradaki adım:** `docs/EXECUTION_PLAN.md` → **Adım 5 (GAP-1 / D-004)**.
+- **Son durum:** Adım 1–4 kapandı: GAP-11 (`8cf2ac0`), GAP-12 (`ab8966c`),
+  GAP-15 (`ab30f9c`), GAP-13 (`090a5bc`). Kalan: GAP-1..10, GAP-14.
+  20 preflight değişmezi kilitli (D-012), koda dökülmeyi bekliyor.
+- **Yön:** nesil zinciri 2 ile sınırlı değil, hedef **N nesil** (**D-014**).
+  Nesil sayısına bağlı her tasarım kararı buna göre verilir.
 
 **Bu fazın üç kuralı:**
 1. Tek konu → tek commit → gerekçeli mesaj → karar varsa D-kaydı.
