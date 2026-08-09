@@ -55,6 +55,14 @@ from .emotional_weight import (
     apply_inherited_somatic_scale,
     compute_emotional_weight,
 )
+from .llm_backend import (
+    LLM_BACKEND_DEFAULT,
+    LLM_BACKEND_ENV,
+    LLM_BACKEND_GROQ,
+    LLM_BACKEND_LOCAL,
+    LLM_BACKEND_VALID,
+    resolve_backend_name,
+)
 from .lod import (
     DOMAIN_RESOURCE_LOAD,
     DOMAIN_SOCIAL_LOAD,
@@ -289,20 +297,6 @@ ENV_FILE_NAME: str = ".env"
 # Diagnostic overrides for deterministic Meta A/B seed replay (noise probe).
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
 LLM_SEED_ENV: str = "DAU_LLM_SEED"
-LLM_BACKEND_ENV: str = "DAU_LLM_BACKEND"
-LLM_BACKEND_GROQ: str = "groq"
-LLM_BACKEND_LOCAL: str = "local"
-# D-018: the experiment default is local. Channel 2 (per-agent adapter + DPO)
-# needs weight access a remote endpoint cannot give, so the configuration in
-# which the central claim is untestable cannot be the default. groq is kept as
-# the legacy/exploration path, opt-in via DAU_LLM_BACKEND=groq.
-LLM_BACKEND_DEFAULT: str = LLM_BACKEND_LOCAL
-LLM_BACKEND_VALID: tuple[str, ...] = (LLM_BACKEND_LOCAL, LLM_BACKEND_GROQ)
-LLM_BACKEND_UNKNOWN_MESSAGE: str = (
-    "Unknown {env}={value!r}. Valid values: {valid}. Refusing to fall back to "
-    "the default: since D-018 that default is '{default}', so a typo would "
-    "silently load the local model for a run that asked for something else."
-)
 
 
 def _project_root() -> Path:
@@ -413,28 +407,14 @@ def _resolve_llm_seed() -> int | None:
 
 
 def _resolve_llm_backend() -> str:
-    """Return local|groq from DAU_LLM_BACKEND (default local, D-018).
+    """Return local|groq — thin alias for llm_backend.resolve_backend_name.
 
-    Unset or blank counts as "not set" and yields the default, matching
-    _resolve_llm_temperature (GAP-15). Any other value raises instead of
-    falling back: with the default flipped to local, a silent fallback
-    would load the local model for a run that asked for something else
-    (D-023).
+    Kept as a name because graph.agent_node and tool_identity.resolve_backend
+    both call it; the rule it applies (default local per D-018, raise rather
+    than guess per D-023) lives with the constants in llm_backend.
     """
 
-    raw = os.environ.get(LLM_BACKEND_ENV, "").strip().lower()
-    if not raw:
-        return LLM_BACKEND_DEFAULT
-    if raw not in LLM_BACKEND_VALID:
-        raise ValueError(
-            LLM_BACKEND_UNKNOWN_MESSAGE.format(
-                env=LLM_BACKEND_ENV,
-                value=raw,
-                valid=", ".join(LLM_BACKEND_VALID),
-                default=LLM_BACKEND_DEFAULT,
-            )
-        )
-    return raw
+    return resolve_backend_name()
 
 
 def _build_llm() -> ChatGroq:

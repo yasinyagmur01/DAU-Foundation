@@ -80,13 +80,9 @@ def test_unknown_backend_raises_instead_of_defaulting(
 
 
 def test_llm_backend_module_mirrors_graph_constants() -> None:
-    """The duplicate copy must not drift — tekilleştirme is deferred, not free."""
+    """graph re-exports the same objects — tekilleştirme is identity, not equality."""
 
-    assert backend_mod.LLM_BACKEND_ENV == graph_mod.LLM_BACKEND_ENV
-    assert backend_mod.LLM_BACKEND_DEFAULT == graph_mod.LLM_BACKEND_DEFAULT
-    assert backend_mod.LLM_BACKEND_GROQ == graph_mod.LLM_BACKEND_GROQ
-    assert backend_mod.LLM_BACKEND_LOCAL == graph_mod.LLM_BACKEND_LOCAL
-    assert backend_mod.LLM_BACKEND_VALID == graph_mod.LLM_BACKEND_VALID
+    assert backend_mod.LLM_BACKEND_VALID is graph_mod.LLM_BACKEND_VALID
 
 
 def test_llm_backend_module_resolver_agrees_with_graph(
