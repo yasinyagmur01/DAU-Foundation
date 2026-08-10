@@ -104,7 +104,7 @@ from dau.foundation.graph import (
 from dau.foundation.memory_bridge import consolidate_run
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
 from dau.foundation.polarity_filter import describe_polarity_filter
-from dau.foundation.self_model import build_self_model
+from dau.foundation.self_model import build_self_model, f_agent_inputs
 from dau.foundation.state import DAUAgentState
 from dau.generation.fitness import classify_fitness
 from dau.memory.store import MemoryStore
@@ -172,6 +172,16 @@ class BirthDriftLog:
     gen1_arm: str
     seed: int
     f_agent: float
+    # The two inputs F_agent is most sensitive to, recorded because the pilot
+    # returned f_agent=0.000 and fitness_class="low" for all nine lineages
+    # (D-034). F = 0.4*(E/E_max) + 0.3*(1 - |dpool|/POOL_MAX) + 0.3*survival,
+    # clamped to [0,1], and agent_delta_pool sums EVERY extraction of the life
+    # rather than a net change — so over 50 events the pool term can run far
+    # enough negative to clamp the whole score to zero regardless of what the
+    # agent did. Without these two numbers a structurally dead gate and a
+    # genuinely unfit cohort look identical in the results file.
+    f_agent_energy_final: float
+    f_agent_delta_pool: float
     fitness_class: str
     n_transfer_candidates: int
     inherited_memory_ids: list[str]
@@ -478,6 +488,11 @@ def transfer_to_heir(
 
     self_model = build_self_model(parent_state)
     f_agent = float(self_model.f_agent)
+    # Read through the same helper _resolve_f_agent uses, so the report cannot
+    # drift from the score it explains (CLAUDE.md 2.8).
+    f_inputs = f_agent_inputs(parent_state)
+    f_agent_energy = float(f_inputs["energy_final"])
+    f_agent_dpool = float(f_inputs["delta_pool"])
     reward = float(self_model.emotional_weight.somatic_markers.get(MARKER_REWARD, 0.0))
     threat = float(self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0))
 
@@ -517,6 +532,8 @@ def transfer_to_heir(
         gen1_arm=gen1_arm,
         seed=seed,
         f_agent=f_agent,
+        f_agent_energy_final=f_agent_energy,
+        f_agent_delta_pool=f_agent_dpool,
         fitness_class=classify_fitness(f_agent),
         n_transfer_candidates=len(record.inherited_memories),
         inherited_memory_ids=list(record.inherited_memories),
@@ -530,7 +547,9 @@ def transfer_to_heir(
     print(
         f"[MULTIGEN][TRANSFER] {parent_state.agent_id} → {heir_id} "
         f"arm={gen1_arm} n_transfer={birth.n_transfer_candidates} "
-        f"f_agent={f_agent:.3f} warnings={birth.n_inherited_warnings} "
+        f"f_agent={f_agent:.3f} (E={f_agent_energy:.3f} "
+        f"|dpool|={abs(f_agent_dpool):.1f}) "
+        f"warnings={birth.n_inherited_warnings} "
         f"drift_flags={birth.birth_drift_flags}",
         flush=True,
     )

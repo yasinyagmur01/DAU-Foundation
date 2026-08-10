@@ -79,6 +79,9 @@ from dau.society.environment import EnvironmentState
 
 SEED_UNIT: int = 9101
 ARM_UNIT: str = "lived"
+# Cumulative extraction past POOL_MAX=100 — the 50-event regime where the
+# F_agent pool term runs negative and clamps the score (D-034).
+POOL_EXTRACTED: float = 250.0
 EVENTS_SMOKE: int = 5
 N_SMOKE: int = 1
 
@@ -215,6 +218,87 @@ def test_transfer_logs_birth_drift_independent_of_gen2_pe(store: MemoryStore) ->
     assert birth.gen1_arm == ARM_UNIT
     assert "resource" in birth.birth_drift_magnitudes
     assert birth.n_retrieval_context == len(heir.retrieval_context)
+
+
+def test_transfer_records_what_f_agent_was_computed_from(store: MemoryStore) -> None:
+    """A zero F_agent must be explainable from the results file alone.
+
+    The pilot returned f_agent=0.000 for all nine lineages (D-034) and the
+    score by itself cannot say whether the cohort was unfit or the pool term
+    clamped it. These two numbers must come from the same reader
+    _resolve_f_agent uses, not from a second derivation (CLAUDE.md 2.8).
+    """
+
+    from dau.foundation.self_model import f_agent_inputs
+    from dau.society.environment import (
+        EXTRACTION_KEY_AGENT_ID,
+        EXTRACTION_KEY_AMOUNT,
+        EXTRACTION_KEY_EVENT,
+    )
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    # A life that extracted. The default fixture never touches the pool, so
+    # delta_pool is 0 there and a report that hardcoded zero would pass — the
+    # first version of this test did exactly that until the mutation check
+    # caught it (CLAUDE.md 2.4). POOL_EXTRACTED also exceeds POOL_MAX, which
+    # is the regime D-034 suspects clamps F_agent to zero.
+    import dataclasses
+
+    env = dataclasses.replace(
+        parent.env_state,
+        extraction_history=[
+            {
+                EXTRACTION_KEY_AGENT_ID: parent.agent_id,
+                EXTRACTION_KEY_AMOUNT: POOL_EXTRACTED,
+                EXTRACTION_KEY_EVENT: 1,
+            }
+        ],
+    )
+    parent = parent.model_copy(update={"env_state": env})
+    expected = f_agent_inputs(parent)
+    assert expected["delta_pool"] == POOL_EXTRACTED, "fixture must extract"
+
+    _heir, _record, birth = transfer_to_heir(
+        parent_state=parent,
+        memory_store=store,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+    )
+
+    assert birth.f_agent_energy_final == expected["energy_final"]
+    assert birth.f_agent_delta_pool == expected["delta_pool"]
+    # The regime the record exists to expose: score clamped, inputs readable.
+    assert birth.f_agent == 0.0
+    assert birth.f_agent_delta_pool > 0.0
+
+
+def test_f_agent_inputs_is_the_only_reader(store: MemoryStore) -> None:
+    """_resolve_f_agent must go through the helper, so both cannot drift.
+
+    Mutation guard: if _resolve_f_agent re-reads the state itself, a change
+    to one reader would leave the report describing a score it no longer
+    explains.
+    """
+
+    from dau.foundation import self_model
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    sentinel = {
+        "energy_final": 0.5,
+        "delta_pool": 12.5,
+        "t_survived": 7.0,
+        "t_generation": 7.0,
+    }
+    original = self_model.f_agent_inputs
+    try:
+        self_model.f_agent_inputs = lambda _state: sentinel
+        from dau.generation.fitness import compute_fitness
+
+        assert self_model._resolve_f_agent(parent) == compute_fitness(
+            energy_final=0.5, delta_pool=12.5, t_survived=7, t_generation=7
+        )
+    finally:
+        self_model.f_agent_inputs = original
 
 
 def _rng_digest() -> str:

@@ -142,23 +142,40 @@ def _resolve_memory_retrieval_scores(state: DAUAgentState) -> list[float]:
     return scores[-META_HISTORY_SIZE:]
 
 
+def f_agent_inputs(state: DAUAgentState) -> dict[str, float]:
+    """The quantities compute_fitness reads, straight off the state.
+
+    Public so a results file can report what F_agent was computed FROM
+    without re-deriving it — the pilot returned f_agent=0.000 for all nine
+    lineages (D-034) and the score alone cannot distinguish a genuinely
+    unfit cohort from a term that clamped. Anything reporting these must
+    call this, not rebuild the reads (CLAUDE.md 2.8).
+    """
+
+    env = state.env_state
+    t_survived = len(state.event_log)
+    return {
+        "energy_final": float(state.internal_state.energy),
+        "delta_pool": (
+            float(agent_delta_pool(env, state.agent_id))
+            if isinstance(env, EnvironmentState)
+            else DEFAULT_DELTA_POOL
+        ),
+        "t_survived": float(t_survived),
+        "t_generation": float(max(t_survived, MIN_SURVIVAL_DENOMINATOR)),
+    }
+
+
 def _resolve_f_agent(state: DAUAgentState) -> float:
     """Compute live F_agent from energy, pool extraction, and event survival."""
 
-    energy = float(state.internal_state.energy)
-    env = state.env_state
-    if isinstance(env, EnvironmentState):
-        delta_pool = float(agent_delta_pool(env, state.agent_id))
-    else:
-        delta_pool = DEFAULT_DELTA_POOL
-    t_survived = len(state.event_log)
-    t_generation = max(t_survived, MIN_SURVIVAL_DENOMINATOR)
+    inputs = f_agent_inputs(state)
     return float(
         compute_fitness(
-            energy_final=energy,
-            delta_pool=delta_pool,
-            t_survived=t_survived,
-            t_generation=t_generation,
+            energy_final=inputs["energy_final"],
+            delta_pool=inputs["delta_pool"],
+            t_survived=int(inputs["t_survived"]),
+            t_generation=int(inputs["t_generation"]),
         )
     )
 
