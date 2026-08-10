@@ -1538,3 +1538,57 @@ kendi başına, bellek bütçesine sıkıştırılmadan tartışılacak.
 `constraints.py` eşik değeri değişiyor — CLAUDE.md bunu yalnızca D-kaydıyla
 mümkün kılıyor, kayıt bu. Ön-kayıt henüz yazılmadı, pencere açık; pre-reg
 kilitlendikten sonra aynı değişiklik post-hoc olurdu.
+
+---
+
+## D-028 · 2026-08-10 · U4 uygulandı; `N = 4` **kalibre edilmemiş**
+
+**Durum:** D-021/A1'in uygulama kaydı (`9718737`). Mekanizma D-021'de
+kilitliydi; bu kayıt **yeni sabitin değerini** ve uygulama sırasında
+çıkanları tutar.
+
+**Yeni sabit:** `constraints.DPO_GRADIENT_ACCUMULATION_STEPS = 4`.
+Mevcut bir eşiğin değişmesi değil, yeni bir sabit — plan (§F U4) değerin
+bu adımda karara bağlanmasını istiyordu.
+
+**Değer neden kalibre edilmemiş sayılıyor:** Bugün ölçüldü ki filtre
+yaşam başına **1–2 çift** geçiriyor (D-026, D-027). `len(pairs) = 1` iken
+herhangi bir `N` tek bir kısmi gruba düşer — yani U4'ün bugün ölçülebilir
+etkisi **yok**. `N`'in değeri ancak U5 (A5, SNR filtresi) çift
+darboğazını açtıktan sonra kalibre edilebilir. `4` muhafazakâr bir
+varsayılan, ölçülmüş bir değer değil — A5'in `0.40` eşiğiyle aynı statüde.
+
+**A3 ile aynı bağımlılık, farklı sonuç:** A3 (D-027) bu yüzden
+**ertelendi**; A1 ertelenmedi çünkü D-021'de **kilitli** ve bellek maliyeti
+yok. Yani U4 bugün bir davranış iyileştirmesi değil, **U5 sonrası anlam
+kazanacak bir doğruluk düzeltmesi**. Bu kayıt onu iyileştirme gibi
+sunmuyor.
+
+### Uygulama sırasında karara bağlananlar
+
+**1. Kısmi son grup boyutu hesaplanır, varsayılmaz.** `group_size =
+min(N, micro_batches - group_index * N)`. Bu savunmacı bir süs değil:
+1–2 çiftle **tek çalışan grup kısa gruptur**. Düşen bir tail, "eğitim hiç
+olmadı ama koşum başarılı raporladı" demek olurdu. Artakalan `pending`
+varsa `RuntimeError` — sessiz kayıp yasağı.
+
+**2. İki metrik anlamını korudu, bilerek.** `dpo_loss` hâlâ çift başına
+ortalama (bölen yalnızca `backward()`'a giden tensöre uygulanıyor);
+`dpo_steps` hâlâ mikro-adım sayıyor. Optimizer adımı **yeni alan** olarak
+eklendi (`dpo_optimizer_steps`) — mevcut bir alanın anlamını sessizce
+değiştirmek, bu projenin tam olarak kaçındığı şey.
+
+**3. `tool_identity.GRADIENT_ACCUMULATION_STEPS` literal `1`'di.**
+`afbb552` onu **olgu** olarak yazmıştı ve o gün doğruydu. U4 olguyu
+değiştirdi; sabit artık `constraints`'ten okunuyor. Aynı sınıf tuzak
+U3a'da (`model_id`) ve U2'de (quantization) da çıkmıştı: **rapor, aleti
+takip etmeli, aleti tekrar etmemeli.**
+
+**4. Kasıtlı test kırılması.** `test_tool_identity_has_no_undeterminable_
+field` içinde `effective_batch_size == 1` sabitlenmişti. Faz kuralı gereği
+aynı commit'te güncellendi — ama literal yerine
+`DPO_BATCH_SIZE * DPO_GRADIENT_ACCUMULATION_STEPS`'e bağlandı. Literal
+bir değer, alanın var oluş amacını (raporun aleti izlemesi) test edemez.
+
+**Kanıt:** 3 mutasyon, 3 kırılma — her mikro-adımda step · kısmi tail'i
+düşür · tool_identity literalini geri koy. Tam suite **289 passed**.
