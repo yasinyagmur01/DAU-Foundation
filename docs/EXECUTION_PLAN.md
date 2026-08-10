@@ -377,7 +377,13 @@ Ret sayıları JSON'da (`pair_filter`). Yan bulgu → **GAP-18**.
 | **Test** | Düşük-PE çiftler eleniyor, yüksek-PE çiftler kalıyor; elenen sayı raporlanıyor; eşik `0` iken davranış eskisiyle birebir aynı (geriye dönük kapı) |
 | **Dur-kontrol** | Mock koşumunda kaç çift eleniyor — hepsi eleniyorsa eşik pilottan önce gözden geçirilir |
 
-## U6 — Consolidation'ı deney yoluna bağla (D-022)
+## U6 — Consolidation'ı deney yoluna bağla (D-022) ✅ `987a1bc` — kaydı **D-031**
+
+**Bitti** 2026-08-10. **Faz 2 kapandı.** Açık soru (hangi faz sonu) karara
+bağlandı: **faz-2 sonrası, transfer'den önce**. Gerekçe null kolu — consolidation
+siliyor, fazların arasına girerse hiç eğitilmeyen null'ın `delta_pe`'si saf
+unutma etkisi olur ve kontrol ölçmesi gereken sıfırı ölçemez. Rapor JSON'da,
+hata yükseltiliyor, I5.1 FLAG kalıyor. Yan gözlem → **GAP-19**.
 
 | | |
 |---|---|

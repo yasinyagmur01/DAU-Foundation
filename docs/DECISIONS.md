@@ -1748,3 +1748,72 @@ tasarımı**; U5'e sıkıştırmak yanlış olurdu. **GAP-18** olarak açıldı.
 D-029'un ölçtüğü −4.37'lik çöküşü de kısmen açıklıyor (aynı metin 9 kez
 aşağı itiliyor) ve DR brief'inin F8 uyarısıyla (hizalama evresi ihlali)
 örtüşüyor.
+
+---
+
+## D-031 · 2026-08-10 · U6: consolidation **faz-2'den sonra**, transfer'den önce
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `987a1bc`.
+D-022'nin **bilerek açık bıraktığı** zamanlama sorusunu kapatır.
+GAP-14 kapanır.
+
+### Açık soru neydi
+
+Gen1 **iki yaşam** sürüyor (faz-1 → eğitim → faz-2), ikisi de aynı vault
+üzerinde. "Yaşam sonu" hangisi? D-022 bunu sessizce seçmemek için açık
+bırakmıştı.
+
+### Karar: **faz-2 sonrası, `transfer_to_heir`'den hemen önce**
+
+Reddedilen alternatifler: *faz-1 sonrası* ve *her iki faz sonrası*.
+
+**Gerekçe — null kolu.** `delta_pe = pe_after − pe_before` iki faz
+arasındaki **tek müdahaleyi** (eğitimi) yalıtmak için tasarlanmış. Kod
+`_train_adapter`'ı yalnızca `{ARM_LIVED, ARM_SHUFFLE}` için çağırıyor;
+**null iki fazı da eğitimsiz koşuyor**, yani `delta_pe ≈ 0` olmalı —
+kontrolün varlık sebebi bu.
+
+`run_consolidation` **siliyor** (Ebbinghaus unutması). Fazların arasına
+girerse faz-2'nin bellek çağırması faz-1'inkinden farklı bir kasa görür ve
+null'ın `delta_pe`'si **saf unutma etkisi** olur. **Kontrol, ölçmesi
+gereken sıfırı ölçemez hale gelir.** Faz-1 ve "her ikisi" seçenekleri bunu
+yapıyor; faz-2 yapmıyor.
+
+Ek olarak faz-2 seçeneği D-022'nin hedefini tam karşılıyor (mirasa giden
+malzeme uykudan geçsin) ve demo yolunun semantiğiyle örtüşüyor —
+`graph.py:1433` koşum sonunda **bir kez** çağırıyor.
+
+### Kapsam uyarısı tekrarlanıyor
+
+Bu yalnızca PPR'ı canlandırmıyor: `run_consolidation` siler, güçlendirir,
+kenar yazar. **Unutmayı da açıyor**, ve unutma gen2'ye giden miras
+malzemesini değiştiriyor ⇒ **birincil uç noktaya (doğum-drift, D-002)
+dokunuyor.** D-022 bunu kabul etmişti; etkisi pilotta ölçülecek.
+
+### Raporlama
+
+Her soy için `consolidation` bloğu: `deleted_count` · `strengthened_count`
+· `edges_created` · `drift_flag_count` · `now_counter`. Ayrıca
+`[CONSOLIDATE]` log satırı. Hata **yükseltiliyor**, sessizce atlanmıyor —
+atlanan bir uyku, JSON'un "uyku oldu" demesiyle birlikte gelirdi.
+
+**I5.1 FLAG kalıyor** (D-022 madde 2): pilot kenarların gerçekten
+oluştuğunu göstermeden, doğrulanmamış bir düzeltmeye koşum öldürme yetkisi
+verilmiyor.
+
+**Kanıt:** 2 mutasyon, 2 kırılma — çağrıyı fazların arasına taşı · hatayı
+yut. Tam suite **299 passed**.
+
+### Yan gözlem → **GAP-19** (kapsam dışı bırakıldı)
+
+Faz-2 taze gövdeyle başlıyor (`initial=None`), yani `event_log` sıfırdan
+sayıyor. İki fazın anıları **aynı sayaç uzayını** paylaşıyor: faz-1
+anıları, faz-2'ninkiler kadar taze görünüyor. Ebbinghaus decay
+`now_counter − last_activated_counter`'a dayandığı için bu doğrudan
+unutma kararını etkiliyor.
+
+U6'nın getirdiği bir sorun **değil** — zaten vardı. Ama consolidation
+deney yoluna bağlandığı için **ilk kez etkisi olacak**. `now_counter`
+olarak `len(parent_final.event_log)` seçildi, çünkü vault'a yazılan
+sayaçlar da faz-yerel; farklı bir değer seçmek uyumsuzluğu büyütürdü.
+Doğru çözüm sayaç uzayının kendisini düzeltmek — ayrı iş.

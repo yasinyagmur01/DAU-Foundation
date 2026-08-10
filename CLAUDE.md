@@ -211,7 +211,7 @@ kısıtlar (kıtlık, kriz, sosyal sürtünme, drift) agent'ı şekillendirir. B
 | GAP-11 | Shuffle seed process'ler arası deterministik (`8cf2ac0`) |
 | GAP-12 | Gen2 + transfer öncesi RNG kilidi (`ab8966c`); I4.2 olarak gate'te (`30c80da`) |
 | GAP-13 | Precision audit gen1 **ve** gen2'de dolduruluyor (`090a5bc`); I3.2 gate'te |
-| GAP-14 | Consolidation deney yoluna bağlanacak — **D-022** (uygulama U6) |
+| GAP-14 | Consolidation deney yoluna bağlandı — **D-022** kararı, **D-031** uygulaması (`987a1bc`); faz-2 sonrası, null kolunu korumak için |
 | GAP-15 | `TEMPERATURE` çağrı anında okunuyor (`ab30f9c`) |
 | GAP-16 (D-016) | Quantization NF4 + double_quant — **D-020** (uygulama U2) |
 
@@ -229,6 +229,13 @@ bağlanacak. A5'in eşiği (`0.40`) kilitli **değil**: mekanizma şimdi, değer
 pilottan sonra kalibre edilir.
 
 **Hâlâ açık olanlar:**
+
+### GAP-19: faz-1 ve faz-2 anıları aynı sayaç uzayını paylaşıyor (D-031)
+Faz-2 taze gövdeyle başlıyor (`initial=None`), `event_log` sıfırdan sayıyor —
+yani faz-1 anıları faz-2'ninkiler kadar taze görünüyor. Ebbinghaus decay
+`now_counter − last_activated_counter`'a dayandığından **unutma kararını
+doğrudan** etkiliyor. U6'nın getirdiği sorun değil, zaten vardı; ama
+consolidation deney yoluna bağlandığı için **ilk kez etkisi olacak**.
 
 ### GAP-18: her çiftin `rejected` tarafı aynı metin (D-030)
 `best_by_event` verilen bir chosen için en büyük marjı seçtiğinden, global
