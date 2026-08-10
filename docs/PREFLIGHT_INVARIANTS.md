@@ -95,7 +95,7 @@ hiç çalıştı mı?"**
 | id | Değişmez | Mod | Yakaladığı |
 |---|---|---|---|
 | I5.1 | **PPR aktif mi.** `memory_edges` satır sayısı > 0. | FLAG (+ JSON'a `ppr_active`) | GAP-14 |
-| I5.2 | **NLI aktif mi.** `NLI_FILTER_STATS.total_candidates > 0`. | FLAG | `nli_filter.py:55` kapalıyken sessizce `True` döner |
+| I5.2 | **Polarite kapısı aktif mi.** `POLARITY_FILTER_STATS.total_candidates > 0` (D-032'de NLI→kosinüs; sayaç da yeniden adlandırıldı). | FLAG | kapı kapalıyken sessizce `True` döner |
 | I5.3 | **Hafıza yazıldı mı.** `_memory_written[agent_id] > 0`. | FLAG | boş vault zinciri (K6) |
 | I5.4 | **Inherited somatic scale uygulandı mı.** Gen2'de ≥1 kez. | FLAG | GAP-3 |
 

@@ -23,8 +23,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `323 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-035.** Sıradaki kayıt **D-036** olarak açılır.
+- **Suite:** `326 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-037.** Sıradaki kayıt **D-038** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 
 ## ✅ Faz 2 KAPANDI
@@ -130,22 +130,32 @@ faz 50 olay. Uç nokta her fazın **ilk beşte birini** okuyor:
 
 D-034'ün "sinyal kurulmadı"sının sebebi büyük ölçüde bu.
 
-## ▶ SIRADAKİ İŞ: **dört karar** — hepsi Yasin'in (D-007)
+## ✅ D-035'in dört kararından **ikisi kapandı**
 
-1. **`PE_WINDOW_EVENTS = 10`** — ön-kayıtlı. Pencere mi büyüsün, yoksa uç
-   nokta mı değişsin (D-002 zaten doğum-driftı birincil sayıyor)?
-2. **`F_agent` formülü** — **D-003 kilitli.** Dokuz soyda da `f=0.000`:
-   `|dpool|` 381–394, `POOL_MAX=100`, `E=0.000`. `agent_delta_pool` yaşam
-   boyu **kümülatif** topluyor, formül ise bunu bütçe **sapması** sanıyor ⇒
-   pool terimi −0.87, kapı ayırt etmiyor.
-3. **Eğitim determinizmi** — `null` bit düzeyinde tekrarlanıyor, `lived`/
-   `shuffle` tekrarlanmıyor (aynı çiftler, farklı `pe_after`).
-   `TORCH_DETERMINISTIC_WARN_ONLY=True` muhtemel kaynak.
-4. **İki eşiğin değeri** — dağılım artık var (aşağıda), seçim yapılmadı.
+| Karar | Durum |
+|---|---|
+| **1. Ölçüm penceresi** | ✅ **D-036** — pencere = fazın tamamı (`1489548`). İlk koşumda işe yaradı: seed 2001'in üç kolu eskiden bit düzeyinde aynıydı, şimdi ayrışıyor |
+| **3. Eğitim determinizmi** | ✅ **D-037** — `TORCH_DETERMINISTIC_WARN_ONLY=False` (`48be16e`), I0.6 artık **bunu zorunlu kılıyor** |
+| **2. `F_agent`** | ⏸ dokunulmadı, sınır kayda geçti. Girdilerin **üçü de dejenere**: `E=0.000` (9/9), survival=1.0 (9/9), `\|dpool\|` yayılımı %3.3. Formül düzeltmesi ayrım üretmiyor (denendi: fark 0.0008–0.0016) |
+| **4. İki eşik** | ⏸ değer seçilmedi (§2.7). Dağılım var; sınır başına red sayısı hâlâ loglanmıyor |
 
-**Kalibrasyon verisi:** SNR marjı p25 0.0778 · **p50 0.1717** · p75 0.3646
-(taban 0.15, %45 eliyor) · kosinüs p25 0.2119 · **p50 0.4289** · **max
-0.8049** ⇒ **üst sınır 0.80 fiilen atıl**, iş yapan alt sınır.
+**D-037'nin ölçtüğü:** dört kontrollü koşum, aynı seed/kod. `warn_only`
+altında iki koşum **farklı adapter** ve 21/50 · 23/50 karar farkı üretti;
+strict altında **birebir aynı adapter, 0/50 fark**, aynı süre (20dk24 vs
+20dk25), abort yok. Koşumdan koşuma gürültü **0.026**, ölçülen `lived−null`
+farkı 0.015–0.025 ⇒ **gürültü etkiden büyüktü.** Ön-kayıtın önündeki asıl
+engel buydu ve kalktı.
+
+## ▶ SIRADAKİ İŞ
+
+1. **Yeni bir N=3 koşum** — artık hem tam-faz penceresi hem strict determinizm
+   açık. D-034/D-035'in ΔPE sayıları **karşılaştırılamaz** (onlar ilk 10
+   olayın ortalamasıydı), yani taban yeniden kurulmalı.
+2. **Güç hesabı** — tekrarlanabilirlik geldiğine göre `d` artık kestirilebilir.
+3. **Ön-kayıt** — 2 ve 4 numaralı kararların sınırları beyan edilerek.
+
+⚠ `dau_runs/adapters/` her koşumdan sonra temizlenmeli (I0.7 bloke eder).
+Arşiv: `archive/adapters_*`.
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 
