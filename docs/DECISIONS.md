@@ -2269,3 +2269,67 @@ nokta (D-002) ΔPE'nin göremediği yerde ayrışıyor — madde 1'in kararına 
 
 **Kanıt:** 8 mutasyon, 8 kırılma (ilk turda ikisi geçti, testler düzeltildi).
 Tam suite **323 passed, 2 deselected**.
+
+---
+
+## D-036 · 2026-08-10 · Uç nokta fazın **tamamını** okuyor (`PE_WINDOW_EVENTS`)
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `1489548` · `42e966c`.
+D-035'in açtığı **dört karardan birincisi**. Ön-kayıtlı bir parametreye
+dokunur, o yüzden kendi kaydını ister.
+
+### Sorun
+
+`PE_WINDOW_EVENTS = 10`, faz ise `EVENTS_PER_ARM = 50`. `_window_mean` =
+`pe_list[:10]` ⇒ uç nokta her fazın **ilk beşte birini** okuyordu.
+
+D-035 bunun bedelini ölçtü: adapter faz-2 kararlarının 21/43/38'ini
+değiştiriyor, ama `delta_pe` yalnızca **pencereye kaç tanesinin düştüğüne**
+tepki veriyor. Seed 2001'de 21 karar değişmiş, **ilk 10'da sıfırı**, ilk fark
+16. indekste — ve `pe_after` iki ayrı koşumda da `null` ile bit düzeyinde
+aynı çıkmıştı.
+
+`W=10` bu faz uzunluğu için hiç seçilmemişti: fazların 10 olay olduğu bir
+mini-testten geliyordu, orada **pencere = fazın kendisi**ydi. Faz 50'ye
+çıktı, pencere 10'da kaldı.
+
+### Karar: pencere = fazın tamamı
+
+**İlkeden seçildi, veriden değil.** Müdahale tüm fazı etkiliyor, ölçüm de tüm
+fazı kapsıyor. Sonuca uydurulması **mümkün bile değildi**: karar verildiği an
+gen1 PE izleri kaydedilmiyordu, yani hiçbir alternatif pencere puanlanmamıştı
+(§2.7 — ölçüm yönü kanıtlar, değeri seçmez).
+
+`PE_WINDOW_ALL_EVENTS = 0` sentinel; pozitif değer eski prefix davranışını
+korur (gen2 smoke testleri hâlâ onu kullanıyor). Raporlar
+`describe_pe_window()` üzerinden gidiyor — ham sabiti basmak sonuç dosyasında
+`"pe_window_events": 0` yazardı, bu da "tüm faz" değil "bozuk koşum" gibi
+okunurdu (§2.8).
+
+**İlk kanıt:** değişiklikten sonraki ilk koşumda (`repro_a`) seed 2001'in üç
+kolu **ayrıştı** — eski pencerede üçü de bit düzeyinde aynıydı.
+`lived +0.0445 · null +0.0296 · shuffle +0.0304`.
+
+### Yanında kapanan iki enstrümantasyon kusuru
+
+**1. gen1 PE izleri kaydedilmiyordu.** gen2 `pe_list`'ini saklıyordu, gen1
+saklamıyordu; pencere sorusu çıktığında uç noktayı özetlediği izle
+karşılaştırmanın yolu yoktu. `pe_before_list` / `pe_after_list` eklendi.
+Bunları saklamak pencere seçimini etkileyemez — seçim, bunlar yokken ilkeden
+yapılmıştı.
+
+**2. `phase2_decision_divergence` hesaplanıyor, yazılmıyordu.** `pairs`
+listesi elle kurulan bir dict, dolayısıyla dataclass'a alan eklemek dosyaya
+ulaşmıyor. Bekçi testi **nesneyi** kontrol ediyordu, **dosyayı** değil — suite
+yeşil kalırken her sonuç dosyası o alan olmadan yazıldı. `a0d54f3`'te
+yakalanan iki boş-bekçiyle aynı sınıf; üçüncüsü.
+
+**Kanıt:** 4 mutasyon, 4 kırılma — sentinel'i yok say · ham sabiti raporla ·
+uç noktayı prefix'e döndür · JSON'a yazmayı kaldır. Tam suite
+**325 passed, 2 deselected**.
+
+### Kapsam uyarısı
+
+Bu, D-034/D-035'in ΔPE sayılarını **karşılaştırılamaz** kılar: onlar ilk 10
+olayın ortalamasıydı, bundan sonrakiler 50 olayın. Eski sayılar geçersiz
+değil, **başka bir şeyin** ölçümü.
