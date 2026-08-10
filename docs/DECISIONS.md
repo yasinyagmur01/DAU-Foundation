@@ -1592,3 +1592,72 @@ bir değer, alanın var oluş amacını (raporun aleti izlemesi) test edemez.
 
 **Kanıt:** 3 mutasyon, 3 kırılma — her mikro-adımda step · kısmi tail'i
 düşür · tool_identity literalini geri koy. Tam suite **289 passed**.
+
+---
+
+## D-029 · 2026-08-10 · `DPO_LEARNING_RATE` 5e-5 → **1e-6**
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `10697f1`.
+`constraints.py` eşik değeri değişikliği — CLAUDE.md bunu yalnızca
+D-kaydıyla mümkün kılıyor.
+
+**Tetikleyen:** DR brief'i (`2026-08-10_low-data-dpo-pair-selection.md`, F1)
+5e-5'in az veride **unlikelihood push** yarattığını, DPO başarılarının
+**5e-7 – 1e-6** kullandığını söyledi. Brief iddia, kanıt değil — ölçüldü.
+
+### Ölçüm
+
+Gerçek 10 olaylık koşumdan toplanan **9 tercih çifti** (NLI kapalı, bkz.
+tasarım notu), dört öğrenme oranı **aynı çiftler** üzerinde, her biri kendi
+process'inde. Eğitim öncesi adapter sıfır başlatıldığı için `π_θ = π_ref`.
+Ham JSON: `dau_runs/lr_probe_results.json` + `dau_runs/lr_probe_pairs.json`.
+
+| lr | Δlogp(chosen) | Δlogp(rejected) | Δmarj | chosen düşen | nötr perplexity oranı |
+|---|---|---|---|---|---|
+| **5e-5** (eski) | **−0.1230** | **−4.3715** | +4.2484 | 5/9 | ×0.998 |
+| 1e-5 | −0.0492 | −0.4213 | +0.3721 | 5/9 | ×0.992 |
+| **1e-6** (yeni) | **+0.0846** | −0.1435 | +0.2281 | **2/9** | ×1.003 |
+| 5e-7 | +0.1325 | −0.0375 | +0.1700 | 4/9 | ×0.998 |
+
+### Brief'in yarısı doğrulandı
+
+✅ **Unlikelihood push — doğrulandı, çarpıcı biçimde.** 5e-5'te seçilen
+cevabın log-olasılığı **düşüyor** (−0.12), reddedilen **çöküyor** (−4.37).
+Marjdaki +4.25'in **tamamı bastırmadan** geliyor; reddedilen taraf
+seçilenin **35 katı** hareket ediyor, ters yönde. 1e-6'da seçilen yükseliyor.
+
+❌ **Genel dil bozulması — gözlenmedi.** Nötr metin perplexity'si her lr'de
+sabit (0.992–1.003), 5e-5 dahil. **Bu "brief yanıldı" demek değil:** ölçüm
+**tek bir** mikro-eğitimdi; brief'in iddiası tekrarlı eğitim hakkında
+olabilir ve DAU tam olarak öyle çalışıyor (D-014, N nesil). Birikimli etki
+**dışlanmadı**, ölçülmedi.
+
+### Neden bu DAU için ayrıca önemli
+
+Bastırmayla öğrenen ajan *"düşük PE'li şeyi tercih et"* değil *"yüksek PE'li
+şeyi asla söyleme"* öğreniyor. Kanal 2'den gen2'ye aktarılan iz bir tercih
+değil bir **bastırma deseni** olur. Aksiyom "yaşamın izi aktarılabilir
+olmalı" diyor; hangi izin aktarıldığı bu ayrımla değişiyor. N nesil boyunca
+birikir.
+
+### Değer neden ölçümden seçilmedi
+
+1e-6, brief'in verdiği bandın **üst ucu** — literatür değeri. Kendi
+sweep'imizden seçmedim: 1 seed ve 9 çift, 1e-6 ile 5e-7 arasında ayrım
+yapacak güçte değil (1e-6 tutarlılıkta iyi — 9 çiftin 2'sinde chosen düştü;
+5e-7 ortalamada iyi ama 4'ünde düştü). Ölçüm **yönü** kanıtlıyor, **değeri**
+değil. Değeri ölçümden seçmek post-hoc tuning olurdu.
+
+`DPO_LEARNING_RATE_MIN/MAX = 5e-7 / 1e-6` bandı da kaydedildi ve test
+literal değil **bandı** iddia ediyor — gerekçesiyle birlikte, ki ileride
+değiştiren biri bir diff değil bir açıklama görsün.
+
+### Ölçümün sınırları (kayda geçiyor)
+
+1 seed · 9 çift · 1 mikro-eğitim · tek nötr paragraf · **ön-kayıtlı değil**.
+NLI çiftleri toplarken **bilerek kapatıldı**: açık olsaydı 1–2 çift gelirdi
+ve dört kol öğrenme oranından değil şanstan ayrışırdı. `build_pe_ranked_pairs`
+kendi kuralını (olay başına en güçlü marj) uygulamaya devam etti.
+
+**U5 ile ilişki:** sıra bilerek böyle kuruldu. 5e-5'te kalıp U5 ile daha çok
+çift eklemek, daha çok öğrenme değil **daha çok bastırma** üretirdi.
