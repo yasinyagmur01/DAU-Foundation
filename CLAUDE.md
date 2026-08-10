@@ -69,6 +69,12 @@ verisinde **9 çift** · **9 farklı prompt** · 2 benzersiz `rejected`
 **2dk 47sn**. D-032'nin dur-kontrolü canlıda doğrulandı: `lived` **8 çift**,
 `shuffle` 6, `null` 0 · `[LORA][WARN]` **sıfır** · I5.2 geçti.
 
+⚠ **Ama bu koşumun kendisi de kirliydi** — kusuru koşum sırasında buldu.
+`lived` ve `shuffle` 08-09 ağırlıklarıyla başladı, yani **8 ve 6 sayıları
+temiz ölçüm değil**. Adapter üretilen completion'ları, o da çeşitliliği ve
+çift sayısını etkiliyor. Güvenilir olan **yön**: 1–2'den 8'e çıkması, ve
+`[LORA][WARN]=0`. Kesin sayı I0.7 temizken yeniden ölçülmeli.
+
 ⚠ Aynı koşum bir kusur buldu: **adapter'lar koşumlar arası diskte kalıyordu**
 ve `switch_adapter` faz-1 başında yüklüyordu (üstelik `DAU_LORA_ENABLED`'a
 bağlı değil ⇒ `--no-lora` da kirlenir). Kollar bu yüzden ayrıştı. Sapma
