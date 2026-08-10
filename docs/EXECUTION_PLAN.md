@@ -336,7 +336,14 @@ değilmiş** — batch=1'de bellek maliyeti yok, ayrı tasarım kararı.
 | **Kim karar verir** | **Yasin.** Claude Code ölçümü sunar, seçenekleri ve bütçeyi gösterir, öneri verir |
 | **Sonra** | Karar D-kaydına girer, sonra kod |
 
-## U4 — Gradient accumulation (D-021/A1)
+## U4 — Gradient accumulation (D-021/A1) ✅ `9718737` — kaydı **D-028**
+
+**Bitti** 2026-08-10. Mikro-batch 1 kaldı; `step()`/`zero_grad()` artık
+`DPO_GRADIENT_ACCUMULATION_STEPS = 4` mikro-adımda bir. ⚠ **N kalibre
+edilmemiş** — filtre 1–2 çift geçirdiği için bugün her N tek kısmi gruba
+düşüyor, yani U4'ün **ölçülebilir etkisi yok**; U5'ten sonra kalibre edilir.
+Kısmi tail'in boyutu hesaplanıyor (bugün çalışan **tek** grup o).
+`tool_identity`'nin literal `1`'i sabite bağlandı.
 
 | | |
 |---|---|

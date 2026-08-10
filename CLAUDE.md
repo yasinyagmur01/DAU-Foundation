@@ -24,8 +24,13 @@ var".)
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
   ve karar kapısı (D-018..D-022) kapandı.
-- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U4** (gradient
-  accumulation, D-021/A1). Sıra: `U1 ✅ U2 ✅ U3 ✅ U7 ✅(A2) → U4 → U5 → U6`.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U5** (mutlak PE / SNR
+  filtresi, D-021/A5). Sıra: `U1 ✅ U2 ✅ U3 ✅ U7 ✅(A2) U4 ✅ → U5 → U6`.
+- **U5 artık fazın kilit taşı.** Bugün üç ayrı madde ona bağlandı: A3
+  (D-027), U4'ün `N` kalibrasyonu (D-028), ve DR brief'inin konusu. Sebep
+  tek: filtre yaşam başına **1–2 çift** geçiriyor (746 adaydan 745'i NLI'de
+  eleniyor + olay başına tek çift tasarımı). Çift darboğazı açılmadan
+  bunların hiçbiri ölçülemez.
 - **Karar bekleyen iki madde** (ikisi de bugünden kaldı):
   1. **Sampling: greedy mi sampled mı** — D-026'da açık bırakıldı. Reçetenin
      gerekçesi çürüdü (greedy 50 olayda `n_unique=27`, kapı 5) ama sampled
@@ -33,7 +38,8 @@ var".)
   2. **A4 (%10 somatik replay)** — D-027 bunu VRAM bütçesinden çıkardı
      (batch=1'de bellek maliyeti yok). Deney tasarımı kararı, ayrıca
      tartışılacak. **A3 U5'ten sonraya ertelendi.**
-- **Bugün bitenler:** U2 (`70edeba`, D-024 — alet fp4 koşuyormuş) · U3a
+- **Bugün bitenler:** U4 (`9718737`, **D-028** — efektif batch 1'di) ·
+  U2 (`70edeba`, D-024 — alet fp4 koşuyormuş) · U3a
   (`64f953a` model env + alet kimliği) · U3b (`13e3b9e` ölçüm harness) ·
   **U3 ölçüldü → Llama kalıyor** (`9fcfcbe`, **D-026**) · **U7/A2**
   (`8cff2fd`, **D-027** — DPO penceresi 256→512).
