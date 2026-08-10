@@ -24,7 +24,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `317 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-034.** Sıradaki kayıt **D-035** olarak açılır.
+- **Son D-kaydı: D-035.** Sıradaki kayıt **D-036** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 
 ## ✅ Faz 2 KAPANDI
@@ -110,20 +110,42 @@ ortalaması**. Bu, lr'nin yanında **`PE_WINDOW_EVENTS=10`'un 50 olayda etkiyi
 kaçırıyor olabileceğini** de şüpheli hale getiriyor. Digest "bir şey değişti"
 diyor ama "ne kadar" demiyor — Adım 0 bunu sayıya çeviriyor.
 
-## ▶ SIRADAKİ İŞ: pilotun açtığı üç soru
+## ✅ ADIM 0 + ikinci N=3 koşumu (D-035) — **`run_quality=clean`**, ilk kez
 
-1. **lr=1e-6 etkiyi bastırıyor mu** — seed 2001'de 47 çiftlik eğitim faz-2'yi
-   hiç değiştirmedi, `acc` 0.40–0.54. D-029 bandı `[5e-7, 1e-6]`; bandın
-   kendisi sorgulanacaksa **yeni D-kaydı** ister.
-2. **Eşik kalibrasyonu** — artık gerçek dağılım var: SNR tabanı 6800 adayın
-   %45'ini, kosinüs bandı kalan 3724'ün %29'unu eliyor. ⚠ D-032'nin "SNR
-   tabanı etkisiz" ifadesi **10 olaylık veriye dayanıyordu, 50 olayda
-   doğrulanmadı**.
-3. **Güç hesabı** — N=3'ten `d` kestirilemez (GAP-9). Ya N artacak
-   (N=15 ≈ 4.9 saat) ya da D-002'nin doğum-drift uç noktasına dönülecek.
+`dau_runs/step0_d035_n3_local.json` · aynı şekil, temiz adapter · 59dk 37sn ·
+**18 değişmezin hepsi geçti.**
 
-⚠ **Ön-kayıt hâlâ yazılmadı.** Pilot sonrası her alet değişikliği bu pencereyi
-biraz daha zorluyor (§2.10).
+**Kanal 2 atıl değil:** adapter faz-2 kararlarının **%68'ini** değiştiriyor
+(21/50 · 43/50 · 38/50). Faz-1 kollar arasında özdeş, yani fark yalnız
+adapter'ın eseri.
+
+⚠ **Asıl bulgu — ölçüm penceresi darboğaz.** `_window_mean` = `pe_list[:10]`,
+faz 50 olay. Uç nokta her fazın **ilk beşte birini** okuyor:
+
+| Seed | değişen karar | **ilk 10'da** | ΔPE ayrıştı mı |
+|---|---|---|---|
+| 2001 | 21/50 | **0** (ilk fark idx 16) | **hayır** — `pe_after` null ile bit düzeyinde aynı |
+| 2002 | 43/50 | 6 | evet |
+| 2003 | 38/50 | 8 | evet |
+
+D-034'ün "sinyal kurulmadı"sının sebebi büyük ölçüde bu.
+
+## ▶ SIRADAKİ İŞ: **dört karar** — hepsi Yasin'in (D-007)
+
+1. **`PE_WINDOW_EVENTS = 10`** — ön-kayıtlı. Pencere mi büyüsün, yoksa uç
+   nokta mı değişsin (D-002 zaten doğum-driftı birincil sayıyor)?
+2. **`F_agent` formülü** — **D-003 kilitli.** Dokuz soyda da `f=0.000`:
+   `|dpool|` 381–394, `POOL_MAX=100`, `E=0.000`. `agent_delta_pool` yaşam
+   boyu **kümülatif** topluyor, formül ise bunu bütçe **sapması** sanıyor ⇒
+   pool terimi −0.87, kapı ayırt etmiyor.
+3. **Eğitim determinizmi** — `null` bit düzeyinde tekrarlanıyor, `lived`/
+   `shuffle` tekrarlanmıyor (aynı çiftler, farklı `pe_after`).
+   `TORCH_DETERMINISTIC_WARN_ONLY=True` muhtemel kaynak.
+4. **İki eşiğin değeri** — dağılım artık var (aşağıda), seçim yapılmadı.
+
+**Kalibrasyon verisi:** SNR marjı p25 0.0778 · **p50 0.1717** · p75 0.3646
+(taban 0.15, %45 eliyor) · kosinüs p25 0.2119 · **p50 0.4289** · **max
+0.8049** ⇒ **üst sınır 0.80 fiilen atıl**, iş yapan alt sınır.
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 

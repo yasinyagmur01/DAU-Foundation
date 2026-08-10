@@ -2161,3 +2161,111 @@ VRAM yetiyor · süre = **seed başına ~19.4 dk** ⇒ N=15 ≈ **4.9 saat**.
 (dağılım verisi artık var, seçim yapılmadı) · U4'ün `N`'i · A3 ·
 `MIN_PAIRS` · GAP-9'un güç hesabı (N=3'ten `d` kestirilemez) ·
 **lr=1e-6 etkiyi bastırıyor mu**.
+
+---
+
+## D-035 · 2026-08-10 · Enstrümantasyon + ikinci N=3: **ölçüm penceresi darboğaz**
+
+**Durum:** ölçüm kaydı + Adım 0 uygulaması (`1250483` · `c2dd2ae` · `a0d54f3`).
+Karar içermez; **dört karar açar** (aşağıda). Ham:
+`dau_runs/step0_d035_n3_local.json`. **`run_quality=clean`** — 18 değişmezin
+**hepsi** geçti, projede ilk kez.
+
+### Koşum
+
+Pilotla birebir aynı şekil (N=3, seed 2001–2003, gen1=50, greedy, `--lora`),
+temiz adapter dizini, **59 dk 37 sn**, `exit 0`.
+
+**Sınırlar:** N=3, tek atış. Aşağıdakiler alet bulgusu; etki büyüklüğü değil.
+
+### 1. Kanal 2 atıl değil — kararların **%68'ini** değiştiriyor
+
+| Seed | `lived` ≠ `null` | `shuffle` ≠ `null` | **ilk 10 olayda** | ilk fark |
+|---|---|---|---|---|
+| 2001 | 21/50 (%42) | 19/50 | **0** | index 16 |
+| 2002 | 43/50 (%86) | 44/50 | 6 | index 3 |
+| 2003 | 38/50 (%76) | 39/50 | 8 | index 0 |
+
+Faz-1 kollar arasında özdeş (adapter henüz yok), dolayısıyla bu fark
+**yalnızca adapter'ın eseri**.
+
+### 2. Asıl bulgu: **ΔPE, değişimin düştüğü yere bakmıyor**
+
+`_window_mean` = `pe_list[:10]`, faz ise **50 olay**. Uç nokta, her fazın
+yalnızca **ilk beşte birini** okuyor. Sonuç mekanik:
+
+- **s2001'de 21 karar değişti, ilk 10'da sıfırı.** İlk fark 16. indekste.
+  `pe_after` `null` ile **bit düzeyinde aynı** çıktı — hem pilotta hem burada.
+- s2002 (ilk 10'da 6) ve s2003 (ilk 10'da 8) ΔPE'de ayrıştı.
+
+Yani uç nokta, müdahalenin büyüklüğüne değil, **penceresine kaç tanesinin
+düştüğüne** tepki veriyor. D-034'te "sinyal kurulmadı" diye kaydettiğim şeyin
+sebebi büyük ölçüde bu: yaşamın %68'ini yeniden yazan bir müdahale, %20'lik
+bir pencereden küçük ve tutarsız bir fark olarak görünüyor.
+
+⚠ `PE_WINDOW_EVENTS = 10` kodda **ön-kayıtlı** işaretli. Değiştirmek D-kaydı
+ve Yasin'in kararını ister — burada **değiştirilmedi**.
+
+### 3. `F_agent` yapısal olarak sıfır — D-003'e dokunuyor
+
+Dokuz soyun **hepsinde** `f=0.000`, `E=0.000`, `|dpool|` **381–394**;
+`POOL_MAX = 100`. Formül `0.4·(E/E_max) + 0.3·(1 − |dpool|/POOL_MAX) +
+0.3·survival`, `[0,1]`'e kırpılıyor. Pool terimi ≈ **−0.87**, enerji terimi
+**0**, hayatta kalma terimi en fazla **+0.3** ⇒ toplam negatif ⇒ **0**.
+
+Sebep: `agent_delta_pool` yaşam boyunca yapılan **bütün çıkarımların
+toplamı** — hep pozitif, monoton. Formül ise bunu bir bütçe **sapması** gibi
+kullanıyor. 10 olayda görünmez, 50 olayda kaçınılmaz.
+
+Sonucu: **D-003'ün F_agent transfer kapısı bu rejimde ayırt etmiyor** —
+her ajan "low", davranışı ne olursa olsun. Kilitli karar, düzeltilmedi.
+
+### 4. Eğitilmiş kol **tekrarlanabilir değil**
+
+Pilotla karşılaştırma (aynı seed, aynı şekil):
+
+| | `pe_before` | çift sayısı | `pe_after` |
+|---|---|---|---|
+| `null` (9 kol) | aynı | 0 | **aynı** |
+| `lived`/`shuffle` | aynı | aynı (47/41/38) | **s2002 ve s2003'te FARKLI** |
+
+Girdi birebir aynı, çıktı farklı ⇒ sapma **eğitimde**. Eğitimsiz yol bit
+düzeyinde tekrarlanabilir, eğitilen yol değil. `TORCH_DETERMINISTIC_WARN_ONLY
+= True` bunun muhtemel kaynağı. **Ön-kayıtlı bir deneyde test edilen kolun
+replay edilememesi ayrı bir sorundur.**
+
+(s2001'de `pe_after` aynı çıktı — çünkü değişen 21 kararın hiçbiri pencereye
+düşmüyor; madde 2 ile tutarlı.)
+
+### 5. Kalibrasyon dağılımları — ilk kez elimizde
+
+**SNR marjı** (n=6800): min 0.0000 · p25 **0.0778** · **p50 0.1717** ·
+p75 0.3646 · p95 0.5494 · max 0.7416.
+Mevcut taban **0.15**, medyanın hemen altında, %45 eliyor.
+
+**Polarite / kosinüs** (n=3724): min 0.0010 · p25 **0.2119** ·
+**p50 0.4289** · p75 0.5649 · p95 0.6746 · **max 0.8049**.
+Mevcut bant **[0.25, 0.80]**. ⚠ **Üst sınır fiilen atıl** — gözlenen en büyük
+değer 0.8049, yani 0.80'i aşan neredeyse hiç yok. İş yapan alt sınır.
+
+İkisi de hâlâ `*_CALIBRATED = False`; **değer seçilmedi** (§2.7: ölçüm yönü
+kanıtlar, değeri seçmez).
+
+### Bu koşumun açtığı dört karar — hepsi Yasin'in (D-007)
+
+1. **`PE_WINDOW_EVENTS`** — ön-kayıtlı parametre. Pencere mi büyümeli, yoksa
+   uç nokta mı değişmeli (D-002 zaten doğum-driftı birincil sayıyor)?
+2. **`F_agent` formülü** — D-003 kilitli. `agent_delta_pool` kümülatif mi
+   kalmalı, net değişime mi dönmeli, yoksa pool terimi mi normalize edilmeli?
+3. **Eğitim determinizmi** — `TORCH_DETERMINISTIC_WARN_ONLY` sıkılaştırılsın
+   mı, yoksa tekrarlanamazlık kabul edilip çoklu seed'e mi yaslanılsın?
+4. **İki eşiğin değerleri** — dağılım var, seçim yok.
+
+### Yan bulgu: doğum-drift kola tepki veriyor
+
+s2001 ve s2002'de `lived` ile `null` farklı drift bayrakları üretti
+(`{social,resource}` vs `{uncertainty,resource}`), s2003'te aynı. Birincil uç
+nokta (D-002) ΔPE'nin göremediği yerde ayrışıyor — madde 1'in kararına girdi.
+
+**Kanıt:** 8 mutasyon, 8 kırılma (ilk turda ikisi geçti, testler düzeltildi).
+Tam suite **323 passed, 2 deselected**.
