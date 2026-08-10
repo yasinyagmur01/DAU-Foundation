@@ -94,6 +94,45 @@ def test_cosine_bounds_ship_uncalibrated() -> None:
     assert polarity_filter.describe_polarity_filter()["polarity_calibrated"] is False
 
 
+def test_every_scored_pair_lands_in_the_distribution(stub_distance) -> None:
+    """Counts locate nothing; the calibration needs the scores themselves."""
+
+    polarity_filter.POLARITY_SCORE_SAMPLES.clear()
+    stub_distance(DISTANCE_MIDBAND)
+    polarity_filter.is_genuine_polarity_pair(CHOSEN, REJECTED)
+    stub_distance(DISTANCE_FAR_OFF_TOPIC)
+    polarity_filter.is_genuine_polarity_pair(CHOSEN, REJECTED)
+
+    # Rejected pairs count too — a distribution built only from survivors
+    # would be truncated exactly where the threshold has to move.
+    assert polarity_filter.POLARITY_SCORE_SAMPLES == [
+        DISTANCE_MIDBAND,
+        DISTANCE_FAR_OFF_TOPIC,
+    ]
+
+
+def test_disabled_nli_still_accepts_everything(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression guard for the sampling change.
+
+    Recording the score meant inlining NLI's threshold comparison here, and
+    contradiction_score returns 0.0 when the filter is disabled — so a naive
+    inline would have flipped "accept everything" into "reject everything".
+    """
+
+    from dau.foundation import nli_filter
+
+    monkeypatch.setattr(polarity_filter, "POLARITY_FILTER", POLARITY_FILTER_NLI)
+    monkeypatch.setattr(nli_filter, "NLI_ENABLED", False)
+
+    def _boom(*_args: object, **_kwargs: object) -> float:
+        raise AssertionError("disabled filter must not score")
+
+    monkeypatch.setattr(nli_filter, "contradiction_score", _boom)
+    assert polarity_filter.is_genuine_polarity_pair(CHOSEN, REJECTED) is True
+
+
 @pytest.mark.integration
 def test_real_encoder_separates_contrast_from_paraphrase() -> None:
     """Opt-in: real MiniLM. Run: pytest -m integration."""

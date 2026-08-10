@@ -43,6 +43,13 @@ from dau.foundation.semantic_similarity import (
 )
 
 
+# D-035 step 0, item 2. Every score the active gate actually compared against
+# its bounds. A rejection count cannot locate a threshold; the distribution
+# can. Whichever gate resolved writes here, so the samples always describe the
+# instrument that ran rather than the one the constants happen to name.
+POLARITY_SCORE_SAMPLES: list[float] = []
+
+
 def _resolve_filter_name() -> str:
     """Return the active filter, or fail loudly on an unrecognised one.
 
@@ -69,13 +76,19 @@ def is_genuine_polarity_pair(chosen: str, rejected: str) -> bool:
     """True when the two decisions are far enough apart, but still on topic."""
 
     if _resolve_filter_name() == POLARITY_FILTER_NLI:
-        from dau.foundation.nli_filter import (
-            is_genuine_polarity_pair as _nli_gate,
-        )
+        from dau.foundation import nli_filter
 
-        return _nli_gate(chosen, rejected)
+        # NLI_ENABLED=0 accepts everything and must keep doing so: inlining
+        # the threshold comparison alone would turn "score 0.0 when disabled"
+        # into a gate that rejects everything — the opposite behaviour.
+        if not nli_filter.NLI_ENABLED:
+            return True
+        score = nli_filter.contradiction_score(chosen, rejected)
+        POLARITY_SCORE_SAMPLES.append(float(score))
+        return score >= NLI_CONTRADICTION_THRESHOLD
 
     distance = polarity_distance(chosen, rejected)
+    POLARITY_SCORE_SAMPLES.append(float(distance))
     return POLARITY_COSINE_MIN <= distance <= POLARITY_COSINE_MAX
 
 

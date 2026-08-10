@@ -725,6 +725,31 @@ def _collect_pe_events(
                 pass
 
 
+PERCENTILES: tuple[int, ...] = (5, 10, 25, 50, 75, 90, 95)
+
+
+def _distribution(samples: list[float]) -> dict[str, Any]:
+    """Percentile summary of a filter's scores (D-035 step 0, item 2).
+
+    Percentiles rather than the raw list: 6800 floats per run would bloat the
+    results file, and a threshold is chosen from the shape of the
+    distribution, not from individual values (CLAUDE.md 2.7 — the measurement
+    proves the direction, it does not pick the number).
+    """
+
+    if not samples:
+        return {"n": 0}
+    ordered = sorted(samples)
+    return {
+        "n": len(ordered),
+        "min": ordered[0],
+        "max": ordered[-1],
+        "percentiles": {
+            str(p): float(np.percentile(ordered, p)) for p in PERCENTILES
+        },
+    }
+
+
 def _pair_filter_report() -> dict[str, Any]:
     """Pair-filter counts and the floor's calibration status (D-030).
 
@@ -740,8 +765,12 @@ def _pair_filter_report() -> dict[str, Any]:
             POLARITY_FILTER_STATS,
             PROMPT_FILTER_STATS,
             SNR_FILTER_STATS,
+            SNR_MARGIN_SAMPLES,
         )
-        from dau.foundation.polarity_filter import describe_polarity_filter
+        from dau.foundation.polarity_filter import (
+            POLARITY_SCORE_SAMPLES,
+            describe_polarity_filter,
+        )
     except ImportError:
         return {"available": False, "reason": "lora_update unavailable"}
 
@@ -765,6 +794,10 @@ def _pair_filter_report() -> dict[str, Any]:
         "polarity_candidates": int(POLARITY_FILTER_STATS.get("total_candidates", 0)),
         "polarity_rejected": int(POLARITY_FILTER_STATS.get("rejected", 0)),
         "pairs_passed": int(POLARITY_FILTER_STATS.get("passed", 0)),
+        # D-035. Both thresholds ship UNCALIBRATED; these are what a
+        # calibration would have to be read off.
+        "snr_margin_distribution": _distribution(SNR_MARGIN_SAMPLES),
+        "polarity_score_distribution": _distribution(POLARITY_SCORE_SAMPLES),
     }
 
 

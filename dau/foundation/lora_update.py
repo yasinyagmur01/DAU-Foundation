@@ -96,6 +96,14 @@ SNR_FILTER_STATS: dict[str, int] = {
     "rejected_below_margin": 0,
 }
 
+# D-035 step 0, item 2. Counts say how many a threshold dropped; they cannot
+# say where to put it. The pilot reported 3076 of 6800 candidates below
+# SNR_MARGIN_FLOOR=0.15 (D-034) — a rejection rate, not a distribution, so
+# neither that floor nor the cosine band can be moved off the brief's numbers
+# without guessing. Every candidate margin that reaches the SNR gate lands
+# here; percentiles are computed at report time, not stored per-run.
+SNR_MARGIN_SAMPLES: list[float] = []
+
 # D-032. An event whose decision carries no recorded prompt cannot be trained
 # on: System 1 (NPC) decisions never ran the policy, and a life recorded before
 # agent_node stored the prompt has nothing to condition on. Both are skipped,
@@ -382,6 +390,7 @@ def build_pe_ranked_pairs(
             # two sentences read, and this gate is cheaper than the NLI pass.
             margin = float(high.prediction_error) - float(low.prediction_error)
             SNR_FILTER_STATS["total_candidates"] += 1
+            SNR_MARGIN_SAMPLES.append(margin)
             if margin < SNR_MARGIN_FLOOR:
                 SNR_FILTER_STATS["rejected_below_margin"] += 1
                 continue
