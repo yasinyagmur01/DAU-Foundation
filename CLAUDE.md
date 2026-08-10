@@ -24,19 +24,25 @@ var".)
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
   ve karar kapısı (D-018..D-022) kapandı.
-- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U3** (model + VRAM
-  ölçümü, D-019 — **ön-kayıtlı, kriter değiştirilemez**).
-  Sıra: `U1 ✅ → U2 ✅ → U3 → U7 → U4 → U5 → U6`.
-- ⚠ **U3'e girmeden önce çözülmesi gereken:** HF cache'inde `Qwen/Qwen2.5-7B`
-  var — **base**. Brief (§7) ve D-019'un kastettiği **`-Instruct`**.
-  Instruction-tuned Llama'yı base Qwen'e karşı ölçmek model ailesini değil
-  instruction-tuning'i ölçer. Instruct indirilecek (~15.2G) mi, yoksa D-019'un
-  ön-kayıtlı protokolü açıkça düzeltilecek mi — **bir D-kaydı ister**.
-- **U2 bitti** (`70edeba`, kaydı **D-024**): alet fp4 koşuyormuş, artık
-  `nf4` + `double_quant` açıkça yazılı. Planın iki maddesi yanlış çıktı
-  (mevcut test değeri sabitlemiyormuş; dur-kontrol `--mock-llm`'de
-  ateşlenemezmiş). ⚠ `vram_spike_results.json`'daki **6386 MiB fp4'te
-  ölçülmüştü — U7 bütçesi için artık geçersiz**, U3 yeniden ölçecek.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U4** (gradient
+  accumulation, D-021/A1). Sıra: `U1 ✅ U2 ✅ U3 ✅ U7 ✅(A2) → U4 → U5 → U6`.
+- **Karar bekleyen iki madde** (ikisi de bugünden kaldı):
+  1. **Sampling: greedy mi sampled mı** — D-026'da açık bırakıldı. Reçetenin
+     gerekçesi çürüdü (greedy 50 olayda `n_unique=27`, kapı 5) ama sampled
+     %63 daha çok çift veriyor. Yasin verecek (D-007).
+  2. **A4 (%10 somatik replay)** — D-027 bunu VRAM bütçesinden çıkardı
+     (batch=1'de bellek maliyeti yok). Deney tasarımı kararı, ayrıca
+     tartışılacak. **A3 U5'ten sonraya ertelendi.**
+- **Bugün bitenler:** U2 (`70edeba`, D-024 — alet fp4 koşuyormuş) · U3a
+  (`64f953a` model env + alet kimliği) · U3b (`13e3b9e` ölçüm harness) ·
+  **U3 ölçüldü → Llama kalıyor** (`9fcfcbe`, **D-026**) · **U7/A2**
+  (`8cff2fd`, **D-027** — DPO penceresi 256→512).
+- ⚠ **A2 bir ayar değil, hata düzeltmesiydi:** `_encode_pair_side` taşmada
+  prompt'un **başını** kesiyor — chat template başlığı + `SYSTEM_PROMPT`.
+  Gerçek prompt 3 anıyla 306 token, tavan 256'ydı; yani **tek anı çekildiği
+  anda talimat budanıyordu**, `generate_completion` ise hiç kesmiyor.
+  Eğitim/çıkarım uyumsuzluğu, `d18ffe9`'un format tarafında düzelttiğinin
+  uzunluk tarafındaki eşi.
 - **U1 bitti** (`7adb01d`): backend varsayılanı `local`. Yan ürün **D-023** —
   tanınmayan `DAU_LLM_BACKEND` değeri artık `ValueError`; varsayılanı
   çevirmek, eskiden zararsız olan sessiz fallback'i zararlı hale getirdi
@@ -213,6 +219,14 @@ bağlanacak. A5'in eşiği (`0.40`) kilitli **değil**: mekanizma şimdi, değer
 pilottan sonra kalibre edilir.
 
 **Hâlâ açık olanlar:**
+
+### GAP-17: üretim çeşitliliği açıklanamayan biçimde 3–4 kat arttı (D-026)
+08-09 pilotu 50 olayda `n_unique` 7·4·8 vermiş (bir seed gate'lenmiş).
+Bugün greedy, aynı yolda, **29·22·27**. Sebep izole edilmedi — adaylar
+GAP-11/12/13/15 düzeltmeleri, GAP-1 kapısı, fp4→nf4. Ayrıca o pilotun
+JSON'unda **sampling durumu kayıtlı değil** (`tool_identity`'den önce), o
+yüzden delil olarak kullanılamıyor. **Pre-reg'den önce kapatılmalı:**
+aletin davranışı bu ölçekte oynuyorsa, ön-kayıt neyi kilitlediğini bilmiyor.
 
 ### GAP-2: Silent train failure — kısmen açık
 Doğrulandı, ama CLAUDE.md'nin önceki tarifi olduğundan geniş:

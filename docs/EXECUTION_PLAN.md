@@ -298,7 +298,13 @@ bağlıyor, temizlik ayrı iş.
 | **Dur-kontrol** | ⚠ **Planın dur-kontrolü ateşlenemez.** `tool_identity._quantization` backend `local` değilse `{"available": false, "reason": "remote backend"}` döndürüyor; `--mock-llm` koşumu `install_mock_llm` yüzünden backend'i `groq`'a sabitliyor, yani mock JSON'unda `quant_type` **hiç yazmıyor**. Yerine geçen kontrol: `describe_quantization()` model **yüklemiyor**, yalnızca config kuruyor — GPU'ya dokunmadan birim testinde doğrulanır. |
 | **Kalan risk** | Birim testi config'in **ne olduğunu** kanıtlıyor, modelin o config'le **yüklendiğini** değil. NF4+double_quant ilk kez U3'te gerçek yükleme görecek. |
 
-## U3 — Model + VRAM ölçümü (D-019) ⚠ ön-kayıtlı
+## U3 — Model + VRAM ölçümü (D-019) ✅ `9fcfcbe`
+
+**Bitti** 2026-08-10. **Llama'da kalındı** — Qwen medyanı 4.0, hem kapının
+(5) hem Llama'nın (9.0) altında; kriterin iki şartı da başarısız. D-025 iki
+kolu da Instruct'a sabitledi. Brief'in iki iddiası doğrulanmadı. Yan
+bulgular: greedy platosu yok (50 olayda 27), sampling reçetesinin gerekçesi
+çürüdü (karar **açık**), ve **GAP-17** açıldı. Kaydı **D-026**.
 
 | | |
 |---|---|
@@ -312,7 +318,14 @@ bağlıyor, temizlik ayrı iş.
 | **Maliyet** | ~15GB indirme. Reddedilirse boşa gider — D-019'da kabul edilen bedel. |
 | **Not** | Brief'in ~6.4 / ~7.2 GiB rakamları **fp4 varsayımıyla** verilmişti; NF4+double_quant ölçümü onları düzeltecek. |
 
-## U7 — A2/A3/A4 kararı (D-021) — U3'ten sonra
+## U7 — A2/A3/A4 kararı (D-021) ✅ `8cff2fd` (A2) — kaydı **D-027**
+
+**A2 uygulandı** (`DPO_MAX_SEQUENCE_TOKENS` 256→512): bellek sorusu değil,
+eğitim/çıkarım uyumsuzluğu çıktı — taşmada prompt'un **başı** (SYSTEM_PROMPT)
+kesiliyordu, tek anı çekilince taşıyordu. Ölçülen maliyet +479 MiB
+(6139.5→6618.6, kart 7807.6). **A3 U5'ten sonraya ertelendi** (filtre 746
+çiftten 1'ini geçiriyor; tek örnekte 3 epoch ezberdir). **A4 bütçe kalemi
+değilmiş** — batch=1'de bellek maliyeti yok, ayrı tasarım kararı.
 
 | | |
 |---|---|
