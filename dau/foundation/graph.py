@@ -73,6 +73,11 @@ from .lod import (
     should_run_llm,
     update_lod,
 )
+from .lora_update import (
+    DECISION_PAYLOAD_KEY,
+    DECISION_PROMPT_SYSTEM_KEY,
+    DECISION_PROMPT_USER_KEY,
+)
 from .memory_bridge import (
     MAX_RETRIEVED_MEMORIES,
     MemoryStore,
@@ -862,11 +867,15 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         npc_domain = DOMINANT_DOMAIN_TO_NPC.get(dominant, dominant)
         decision = npc_decision(state.agent_id, npc_domain, pool_ratio)
         clock = EventClock(counter=len(state.event_log))
+        # No DECISION_PROMPT_* keys here, deliberately: System 1 never ran the
+        # LLM, so this decision is not a sample from the policy and there is no
+        # prompt it was made under. Their absence is what tells the pair builder
+        # to skip the event instead of training the policy on NPC heuristic text.
         event = build_event(
             clock,
             "agent_decision",
             {
-                "decision": decision,
+                DECISION_PAYLOAD_KEY: decision,
                 "energy": float(state.internal_state.energy),
                 "expected_outcome": expected_outcome,
                 EXPECTED_SOURCE_PAYLOAD_KEY: expected_source,
@@ -932,12 +941,18 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         if model is not None:
             switch_adapter(model, state.agent_id)
 
+    # Bound once, then both sent AND stored. Channel 2 trains on the prompt the
+    # decision was made under, so the record has to be the same string the model
+    # saw — rebuilding it from SYSTEM_PROMPT at train time would silently drop
+    # the memory block, the strategic expectation and the somatic/drift layers,
+    # i.e. everything that made this moment this agent's.
+    user_content = view.model_dump_json()
     if backend == LLM_BACKEND_LOCAL:
         from dau.foundation.llm_backend import LocalBackend
 
         decision = LocalBackend().complete(
             system_content,
-            view.model_dump_json(),
+            user_content,
             agent_id=state.agent_id,
         )
     else:
@@ -945,7 +960,7 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         response = llm.invoke(
             [
                 {"role": "system", "content": system_content},
-                {"role": "user", "content": view.model_dump_json()},
+                {"role": "user", "content": user_content},
             ]
         )
         decision = _decision_text(response)
@@ -954,10 +969,12 @@ def agent_node(state: DAUAgentState) -> dict[str, Any]:
         clock,
         "agent_decision",
         {
-            "decision": decision,
+            DECISION_PAYLOAD_KEY: decision,
             "energy": float(state.internal_state.energy),
             "expected_outcome": expected_outcome,
             EXPECTED_SOURCE_PAYLOAD_KEY: expected_source,
+            DECISION_PROMPT_SYSTEM_KEY: system_content,
+            DECISION_PROMPT_USER_KEY: user_content,
         },
     )
     new_state = append_event(state, event)

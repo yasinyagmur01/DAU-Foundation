@@ -54,6 +54,13 @@ PROMPT_TEMPLATE: str = (
 COMPLETION_FALLBACK: str = "continue"
 DECISION_PAYLOAD_KEY: str = "decision"
 EVENT_TYPE_DECISION: str = "agent_decision"
+# The two halves of the prompt the decision was actually made under, stored on
+# the decision event by agent_node. Channel 2 trains on these verbatim, so they
+# must be the strings that went to the model — never regenerated from
+# SYSTEM_PROMPT or rebuilt from state, which would drift from what was lived.
+# System 1 (NPC) decisions carry neither key: they never had a prompt.
+DECISION_PROMPT_SYSTEM_KEY: str = "decision_prompt_system"
+DECISION_PROMPT_USER_KEY: str = "decision_prompt_user"
 
 SIGNAL_V1_ID: str = "pe_delta_trauma_drift_v1"
 SIGNAL_V2_ID: str = "pe_ranked_pref_v2"
