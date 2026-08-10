@@ -1266,3 +1266,78 @@ tasarlanmış, ilk gerçek koşum o. **Ama bir sonucu var:**
 `dau_runs/vram_spike_results.json`'daki **6386 MiB** ölçümü fp4 /
 double-quant-kapalı konfigürasyonda alınmıştı — U7'nin bellek bütçesi
 için **artık geçerli bir sayı değil**, U3'ün taze ölçümü beklenmeli.
+
+---
+
+## D-025 · 2026-08-10 · D-019 düzeltmesi: iki kol da **instruction-tuned** olmalı
+
+**Durum:** ön-kayıt düzeltmesi (Yasin onayı, 2026-08-10). **Hiçbir sayı
+görülmeden, indirme yapılmadan önce yazıldı** — sıra bilerek böyle: kayıt
+önce, indirme sonra, ölçüm en son.
+
+**Değişen:** D-019'un ölçüm kollarının tanımı. İki kol da
+instruction-tuned checkpoint olacak:
+`meta-llama/Meta-Llama-3.1-8B-Instruct` **vs** `Qwen/Qwen2.5-7B-Instruct`.
+
+**DEĞİŞMEYEN — D-019'un kabul kriteri aynen kilitli kalır:**
+> Qwen benimsenir ancak ve ancak (1) medyan `n_unique ≥
+> DIVERSITY_MIN_UNIQUE (5)` **ve** (2) medyanı Llama'nınkinden **kesin
+> olarak büyük**. Beraberlik/belirsizlikte **statüko kazanır — Llama'da
+> kalınır.**
+
+Bu kayıt **kolun tanımını** düzeltiyor, **kriteri değil**. Kriteri
+gevşetmek D-019'da açıkça yasaklanmıştı; o yasak yürürlükte.
+
+### Neden — üç gerekçe, en ağırı sonda
+
+**1. Provenans.** Brief `2026-08-08~_per-agent-lora-serving.md` §7 iki
+ayrı yerde **`Qwen-2.5-7B-Instruct`** yazıyor (tavsiye tablosu + kapanış
+paragrafı). D-019'daki "Qwen-2.5-7B" onun kısaltmasıydı. Cache'de duran
+`Qwen/Qwen2.5-7B` ise **base** sürüm.
+
+**2. Asimetri.** `LOCAL_MODEL_NAME` instruction-tuned bir checkpoint.
+Instruct'ı base'e karşı ölçmek model ailesini değil, **instruction
+tuning'in kendisini** ölçer. D-019'un "aynı seed, aynı prompt, aynı
+sıcaklık" simetrisi bu ekseni hiç kapsamıyordu.
+
+**3. Metrik ters dönebilir — ve sessizce.** Ölçülen şey
+`_phase1_diversity`'nin saydığı `n_unique`: **benzersiz completion
+string sayısı** (`run_protocol_c_prime.py:386`, boş ve
+`COMPLETION_FALLBACK="continue"` olanlar eleniyor). Instruction tuning
+görmemiş bir model, karar vermek yerine prompt'u sürdürür/yankılar; her
+olayın prompt'u farklı olduğu için **çıktılar da farklı olur ve
+`n_unique` yükselir — yanlış sebeple.** Yani base Qwen bu metrikte
+Llama'yı yenebilir, üstelik hiçbir işe yaramazken.
+
+**Ve bu sessiz olurdu:** `Qwen/Qwen2.5-7B` base sürümü **chat_template
+taşıyor** (kontrol edildi). `_build_prompt` (`local_llm.py:412`) template
+bulduğu için `used_chat_template=True` döndürür, hiçbir uyarı çıkmaz.
+Ölçüm temiz görünür ve yanlış olur. Bu, projenin tekrar tekrar
+yakaladığı hata sınıfının aynısı (GAP-1, D-018, D-020).
+
+### Ön-kayda eklenen iki madde (D-019'da belirsizdi)
+
+**a. "Aynı prompt" ne demek — açıkça:** aynı **mesaj listesi**
+(system+user), her modele **kendi chat template'i** ile uygulanır
+(`_build_prompt`). Ortak düz-metin formatı **kullanılmaz** — o, her iki
+modeli de kendi eğitildiği formatın dışında çalıştırırdı.
+
+**b. Template yoksa kol geçersizdir.** `_build_prompt` template
+bulamazsa sessizce düz birleştirmeye düşüyor. U3'te bu **kabul
+edilmez**: her iki kol için `used_chat_template` **True** olmalı, aksi
+halde ölçüm geçersiz sayılır ve rapor edilir. Sessiz fallback yasağının
+bu ölçüme uygulanması.
+
+**c. Greedy decoding** — `local_llm` varsayılanı zaten greedy
+(`LLM_DO_SAMPLE_DEFAULT="0"`); ölçümde `DAU_LLM_DO_SAMPLE` set edilmez.
+
+### Bedel
+
+`Qwen/Qwen2.5-7B-Instruct` ≈ 15.2 GB indirme. Disk temizliği sonrası
+39 GB boş — sığıyor. Cache'deki base Qwen (15 GB) ölçüm için işe
+yaramaz hale gelir; Instruct doğrulandıktan sonra silinebilir (ayrı,
+mekanik iş).
+
+**D-019 iptal edilmiyor** — protokolü, metriği, kabul kriteri ve
+"statüko kazanır" kuralı aynen yürürlükte. Bu kayıt yalnızca hangi iki
+checkpoint'in karşılaştırılacağını netleştiriyor.
