@@ -64,6 +64,7 @@ from dau.foundation.graph import (
 )
 from dau.foundation.lod import CognitiveMode, LODState
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
+from dau.foundation.polarity_filter import describe_polarity_filter
 from dau.foundation.state import DAUAgentState, InternalState
 from dau.memory.store import MemoryStore
 from dau.society.environment import (
@@ -1313,7 +1314,11 @@ def write_results_json(
             "temperature": _temperature(),
             "seeds": list(SEEDS),
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
-            "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
+            # D-032 — see the same block in run_cprime_multigen: the env var
+            # only gates anything under POLARITY_FILTER=nli, so the active gate
+            # is reported from its own resolver rather than inferred.
+            **describe_polarity_filter(),
+            "nli_filter_enabled_env": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
             "llm_do_sample": os.environ.get(LLM_DO_SAMPLE_ENV, "0"),
             # D-030. MIN_PAIRS is uncalibrated (I1.5), so without these counts
             # "few but strong pairs" reads exactly like "the filter emptied the

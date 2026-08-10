@@ -102,6 +102,7 @@ from dau.foundation.graph import (
 )
 from dau.foundation.memory_bridge import consolidate_run
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
+from dau.foundation.polarity_filter import describe_polarity_filter
 from dau.foundation.self_model import build_self_model
 from dau.foundation.state import DAUAgentState
 from dau.generation.fitness import classify_fitness
@@ -1016,7 +1017,14 @@ def write_multigen_results_json(
             "pe_window_gen2": pe_window_gen2,
             "pe_window_gen1": PE_WINDOW_EVENTS,
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
-            "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
+            # D-032: the polarity gate is cosine now, so DAU_NLI_FILTER_ENABLED
+            # only means anything under POLARITY_FILTER=nli. Reporting the env
+            # var alone would have every cosine run claim "nli_filter_enabled:
+            # 1" — the report repeating a constant instead of following the
+            # tool (CLAUDE.md 2.8). The active gate is read from its own
+            # resolver; the env var stays, labelled for what it now gates.
+            **describe_polarity_filter(),
+            "nli_filter_enabled_env": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
             "mock_llm": mock_llm_enabled(),
             "tool_identity": build_tool_identity(
                 lora_choice=lora_choice,
