@@ -193,18 +193,48 @@ Ayrıntılı adım planı: **§F (Faz 2)**. Özet sıra:
 
 ---
 
-## D. Sonrası (bu fazın dışı — sırayı kaybetmemek için)
+## D. Sonrası — **Faz 3**, sıradaki iş burada
 
-8. **Pilot** — hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu
+⚠ **Faz 2 kapandı (2026-08-10).** `CLAUDE.md` "SIRADAKİ İŞ" bu bölüme
+işaret eder. §F artık tarihsel kayıt — U1–U7 hepsi ✅.
+
+### 8.0 — ÇİFT DARBOĞAZI (sıradaki iş, **tek karar**)
+
+Faz 2 sonunda ortaya çıktı ve pilotu bloke ediyor: eğitim yaşam başına
+**1–2 çift** alıyor, yani kanal 2 (LoRA) fiilen test edilemiyor. Üç bağlı
+madde, **tek oturumda tek D-kaydıyla** kapatılmalı:
+
+| Madde | Ölçülen | Ham veri |
+|---|---|---|
+| **NLI eşiği** | 85 gerçek çiftte medyan **0.0024**; 0.60→0.30 indirmek **sıfır** kazanç (çift tepeli dağılım). Kosinüs 0.35'te %56.5 vs NLI %12.9 | `dau_runs/nli_score_distribution.json` |
+| **GAP-18** | Bütün çiftler **aynı `rejected`**'ı paylaşıyor — `best_by_event` yapısı. NLI'yi tek başına düzeltmek dejenere yapıdan daha çok üretir | `dau_runs/lr_probe_pairs.json` |
+| **`SNR_MARGIN_FLOOR`** | Kalibre değil (0.15), gerçek veride ateşlenmiyor | D-030 |
+
+**Girdi:** DR brief `docs/research/2026-08-10_low-data-dpo-pair-selection.md`
+(§4 NLI'nin yapısal olarak yanlış araç olduğunu savunuyor; §2 KTO/IPO
+alternatifleri) + mutabakat `RECONCILIATION.md` §F.
+
+⚠ `NLI_CONTRADICTION_THRESHOLD = 0.60` **kilitli karar** → kendi D-kaydını
+ister. Seçenekler brief'te üç yol: kosinüs filtresi · KTO'ya geçiş ·
+IPO'ya geçiş. Üçü farklı büyüklükte değişiklik.
+
+**Dur-kontrol:** değişiklikten sonra gerçek koşumda kaç çift eğitime giriyor?
+1–2'de kalıyorsa darboğaz kapanmamıştır.
+
+---
+
+8. **Pilot** — hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu.
+   Beş şeyi aynı anda kalibre eder: U4'ün `N`'i (D-028) · `SNR_MARGIN_FLOOR`
+   (D-030) · A3 · `MIN_PAIRS` (I1.5) · GAP-9'un güç hesabı. Ayrıca I5.1'in
+   FLAG'den ABORT'a yükselip yükselemeyeceğini söyler (D-022 madde 2)
 9. **Güç hesabı** — pilotun gözlenen `d`'sinden gerçek `N`.
    ⚠ **N=15 varsayılan olarak alınmayacak** (GAP-9: güç analizi N=15'i
    yalnızca `d ≥ 0.5` için geçerli sayıyor; gözlenen `d ≈ 0.04`)
 10. **Pre-registration** — D-002 (doğum-drift birincil), D-003
     (`f_agent=None` duyarlılık kolu), OOD probing kararı, **kaç nesil**
     (D-014: hedef 2 değil N; N'in kendisi ve güç etkisi açık soru)
-11. **Master reference v2.4.2** — biriken borçlar: §21 NLI satırı **yanlış**
-    (`lora_update.py:297` tersini yapıyor) · §6 ve §19 ADIM 4 iddiası
-    (GAP-14: PPR inert) · multigen belgede hiç geçmiyor · 4 commit gecikmesi
+11. **Master reference v2.4.2** — borç ~20 commit'e çıktı. Bilinen
+    yanlışların tam listesi `CLAUDE.md` §8'de
 12. **main merge** — D-013
 
 ---
