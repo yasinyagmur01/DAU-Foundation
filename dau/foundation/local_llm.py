@@ -52,6 +52,13 @@ LLM_TEMPERATURE_DEFAULT: float = 0.0
 LLM_DO_SAMPLE_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "YES"})
 # Floor below which sampling is treated as greedy even if the flag is on.
 LLM_SAMPLE_TEMPERATURE_FLOOR: float = 1e-6
+# D-020: pinned, not inherited. The point is not that nf4 beats fp4 — it is
+# that leaving the flag unwritten hands the tool to a library default (fp4 /
+# double_quant off in transformers 5.14.1), which can change under us and
+# invalidate a pre-registration with nobody noticing. Same risk D-018 refused
+# to accept for a remote endpoint, only on our own machine.
+QUANT_TYPE_NF4: str = "nf4"
+DOUBLE_QUANT_ENABLED: bool = True
 
 # Process-wide singleton — frozen base loaded once; adapters hot-swapped.
 _model: Any | None = None
@@ -100,9 +107,10 @@ def build_load_kwargs() -> dict[str, Any]:
     """from_pretrained kwargs for the base model — the single source of truth.
 
     4-bit when bitsandbytes is importable, full precision on CPU otherwise.
-    Note that bnb_4bit_quant_type is left at the BitsAndBytesConfig default
-    rather than pinned here; describe_quantization reports whatever that
-    turns out to be instead of asserting what the docs assume.
+    quant_type and double_quant are written out rather than inherited from
+    BitsAndBytesConfig (D-020): a library default can change between versions
+    and silently change the instrument. describe_quantization reads this
+    config back, so the tool-identity block cannot disagree with the loader.
     """
 
     import torch
@@ -114,6 +122,8 @@ def build_load_kwargs() -> dict[str, Any]:
         kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type=QUANT_TYPE_NF4,
+            bnb_4bit_use_double_quant=DOUBLE_QUANT_ENABLED,
         )
     except Exception:  # noqa: BLE001 — CPU / no bitsandbytes: smoke only
         kwargs["torch_dtype"] = torch.float32

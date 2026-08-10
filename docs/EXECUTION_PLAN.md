@@ -285,7 +285,7 @@ bağlıyor, temizlik ayrı iş.
 | **Dur-kontrol** | ✅ tam suite 255 → **270 passed**. Backend'e dokunan 4 test env'i zaten açıkça set ediyordu; groq varsayımına dayanan test çıkmadı. |
 | **Yan etki** | Adım 5'in `--lora` + uzak backend kontrolü fiilen ateşlenmez hale gelir. **Kaldırılmaz** — yanlış env set eden koşumu hâlâ yakalar. |
 
-## U2 — NF4 + double_quant, açıkça (D-020)
+## U2 — NF4 + double_quant, açıkça (D-020) ✅
 
 | | |
 |---|---|
@@ -293,9 +293,10 @@ bağlıyor, temizlik ayrı iş.
 | **Dosya** | `dau/foundation/local_llm.py:99` `build_load_kwargs()`, içindeki `BitsAndBytesConfig(...)` (`:115` civarı) |
 | **Değişiklik** | `bnb_4bit_quant_type="nf4"` + `bnb_4bit_use_double_quant=True` **açıkça** eklenir |
 | **İlke** | Asıl mesele fp4 değil, **bayrağın hiç yazılmamış olması**. Kütüphane varsayılanı değişirse alet habersiz değişir — D-018'de uzak backend için reddedilen riskin aynısı. |
-| **Test** | `describe_quantization()` `quant_type == "nf4"` ve `double_quant is True` döndürmeli; `build_load_kwargs`'ın config'iyle birebir eşleşmeli (bu test `afbb552`'de zaten var, değeri güncellenir) |
-| **Bedava kazanç** | Alet kimliği kendiliğinden doğru raporlar — `describe_quantization` config'i loader'dan okuyor, ikinci bir yer güncellenmez |
-| **Dur-kontrol** | `--no-lora --mock-llm` koşumunda JSON `quantization.quant_type: "nf4"` yazıyor mu |
+| **Test** | ✅ **yeni** `test_quantization_flags_are_pinned_not_inherited`. ⚠ Planın "`afbb552`'deki test zaten var, değeri güncellenir" ifadesi **yanlıştı**: `test_tool_identity_quantization_matches_loader` rapor↔loader **tutarlılığını** ölçüyor, değeri değil — bayraklar silinince de geçiyor (mutasyonla doğrulandı). O test doğru şeyi yapıyor, dokunulmadı; değeri sabitleyen ayrı bir test eklendi. |
+| **Bedava kazanç** | ✅ doğrulandı — `describe_quantization` config'i loader'dan okuyor, ikinci bir yer güncellenmedi |
+| **Dur-kontrol** | ⚠ **Planın dur-kontrolü ateşlenemez.** `tool_identity._quantization` backend `local` değilse `{"available": false, "reason": "remote backend"}` döndürüyor; `--mock-llm` koşumu `install_mock_llm` yüzünden backend'i `groq`'a sabitliyor, yani mock JSON'unda `quant_type` **hiç yazmıyor**. Yerine geçen kontrol: `describe_quantization()` model **yüklemiyor**, yalnızca config kuruyor — GPU'ya dokunmadan birim testinde doğrulanır. |
+| **Kalan risk** | Birim testi config'in **ne olduğunu** kanıtlıyor, modelin o config'le **yüklendiğini** değil. NF4+double_quant ilk kez U3'te gerçek yükleme görecek. |
 
 ## U3 — Model + VRAM ölçümü (D-019) ⚠ ön-kayıtlı
 

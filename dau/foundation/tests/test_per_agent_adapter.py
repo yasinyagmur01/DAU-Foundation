@@ -172,3 +172,29 @@ def test_no_dead_adapter_root_reference() -> None:
     assert get_adapter_path.__code__.co_filename == local_llm.__file__
     assert save_agent_adapter.__code__.co_filename == local_llm.__file__
     assert switch_adapter.__code__.co_filename == local_llm.__file__
+
+
+def test_quantization_flags_are_pinned_not_inherited() -> None:
+    """D-020: nf4 + double_quant are written out, not left to the library.
+
+    The neighbouring tool-identity test asserts that the report matches the
+    loader, which holds whatever the values are — it would still pass if the
+    flags were dropped and transformers' fp4 default came back. This one
+    pins the values, so that regression has somewhere to break.
+    """
+
+    pytest.importorskip("torch")
+    pytest.importorskip("bitsandbytes")
+
+    config = local_llm.build_load_kwargs().get("quantization_config")
+    if config is None:  # CPU-only build — 4-bit path not taken at all
+        pytest.skip("bitsandbytes unavailable in this build")
+
+    assert config.bnb_4bit_quant_type == local_llm.QUANT_TYPE_NF4
+    assert config.bnb_4bit_use_double_quant is local_llm.DOUBLE_QUANT_ENABLED
+    assert local_llm.QUANT_TYPE_NF4 == "nf4"
+    assert local_llm.DOUBLE_QUANT_ENABLED is True
+
+    reported = local_llm.describe_quantization()
+    assert reported["quant_type"] == "nf4"
+    assert reported["double_quant"] is True
