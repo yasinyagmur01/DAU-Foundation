@@ -1661,3 +1661,90 @@ kendi kuralını (olay başına en güçlü marj) uygulamaya devam etti.
 
 **U5 ile ilişki:** sıra bilerek böyle kuruldu. 5e-5'te kalıp U5 ile daha çok
 çift eklemek, daha çok öğrenme değil **daha çok bastırma** üretirdi.
+
+---
+
+## D-030 · 2026-08-10 · A5 yeniden tanımlandı: mutlak PE değil **marj** eşiği
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `5ad70a8`.
+**D-021/A5'in mekanizmasını korur, neyi filtrelediğini değiştirir.**
+A5'te mekanizma kilitliydi, eşik kilitli değildi — bu kayıt eşiğin hem
+değerini hem **anlamını** belirliyor.
+
+### Neden planın yazdığı gibi uygulanmadı
+
+§F U5 ve D-021/A5 `SNR_FLOOR = 0.40`'ı **mutlak PE eşiği** olarak tarif
+ediyordu. Gerçek dağılım ölçüldü (9 çift, 10 olay, greedy;
+`dau_runs/lr_probe_pairs.json`):
+
+```
+pe_chosen  : min 0.220  medyan 0.376  max 0.451
+pe_rejected: 0.8728 — dokuz çiftin hepsinde aynı
+marj       : min 0.422  medyan 0.497  max 0.653
+```
+
+Üç okumanın üçü de başarısız:
+
+| Okuma | Sonuç |
+|---|---|
+| `chosen ≥ 0.40` | **3/9 kalır** — ve elenen 6'sı **en iyileri** |
+| `rejected ≥ 0.40` | 9/9 — hiç ateşlenmez |
+| "her ikisi de < 0.40 ise ele" | 9/9 — hiç ateşlenmez |
+
+**Birinci okuma tanım gereği ters:** `chosen` düşük-PE tarafıdır (iyi
+sonuç). Ondan yüksek PE istemek "iyi sonucun kötü olmasını" şart koşmaktır.
+
+### Karar
+
+Eşik **marja** taşındı: `SNR_MARGIN_FLOOR`. A5'in gerekçesi
+(*"`PE=0.030` vs `0.031` farkı, `0.8` vs `0.2` kadar meşru sayılıyor"*)
+zaten marj hakkındaydı; `PE_RANK_MIN_GAP = 1e-6` onu fiilen kapısız
+bırakıyordu. DR brief'i de aynı yeri işaret etmişti (F7: *"A5/U5'in
+SNR_FLOOR'u tam bunu hedefliyor ama mutlak eşik, marj değil"*).
+
+**Filtre NLI'den ÖNCE koşuyor:** daha ucuz, ve "burada sinyal var mı"
+sorusu "dilsel kutupsallık var mı" sorusundan önce gelir.
+
+### `0.15` **KALİBRE EDİLMEMİŞ**
+
+Değer brief'in *"PE < 0.15 sinyalleri ön-eğitilmiş ağırlık gürültüsünde
+kaybolur"* iddiasından geliyor — **ölçümden değil**. Gözlenen marjlar
+0.42–0.65 olduğu için bu eşik o örneklemde **hiç ateşlenmiyor**; bu
+bilinçli: eğitim seti zaten 1–2 çifte inmiş durumda, dar bir eşik onu
+büsbütün boşaltırdı. Pilot, raporlanan ret sayılarından kalibre edecek.
+
+`SNR_MARGIN_FLOOR_CALIBRATED = False` sabiti ve sonuç JSON'undaki
+`pair_filter.snr_margin_floor_calibrated` alanı bunu **koşumun kendi
+kaydına** yazıyor — kalibre edilmemiş bir eşiğin yerleşmiş gibi
+okunmasını engellemek için. Plan bunu şart koşuyordu ("`calibrated: false`
+işaretlenir").
+
+### Raporlama zorunluluğu (plan şartı, uygulandı)
+
+`pair_filter` bloğu: `snr_candidates`, `snr_rejected_below_margin`,
+`nli_candidates`, `nli_rejected`, `pairs_passed`, eşik ve kalibrasyon
+bayrağı. Ayrıca `[SNR]` log satırı. Gerekçe: `MIN_PAIRS` kalibre edilmemiş
+(I1.5), bu sayılar olmadan **"az ama güçlü çift"** ile **"filtre eğitim
+setini boşalttı"** JSON'da birbirinin aynısı görünür.
+
+### Kanıt
+
+3 mutasyon, 3 kırılma: filtreyi kaldır · NLI'den sonraya taşı ·
+`calibrated=True` yalanı söyle. Ayrıca planın istediği geriye dönük kapı
+test altında: **eşik 0 iken davranış eskisiyle birebir aynı** (marjlar
+sıralama sonrası pozitif olduğundan sıfır eşik hiç ateşlenemez).
+Tam suite **296 passed**.
+
+### Bu kayıtta karara BAĞLANMAYAN
+
+Ölçüm sırasında çıkan yapısal bulgu: **dokuz çiftin `rejected` tarafı aynı
+metin.** Örneklem tesadüfü değil, `best_by_event`'in yapısı — verilen bir
+chosen için en büyük marj her zaman global maksimum-PE olaydan gelir, yani
+en kötü tek completion bütün çiftlerin reddedilen tarafı olur. Eğitim seti
+"bir kötü örnek vs diğer her şey" biçiminde.
+
+Bu bir eşik ayarı değil, `build_pe_ranked_pairs`'in **eşleştirme
+tasarımı**; U5'e sıkıştırmak yanlış olurdu. **GAP-18** olarak açıldı.
+D-029'un ölçtüğü −4.37'lik çöküşü de kısmen açıklıyor (aynı metin 9 kez
+aşağı itiliyor) ve DR brief'inin F8 uyarısıyla (hizalama evresi ihlali)
+örtüşüyor.
