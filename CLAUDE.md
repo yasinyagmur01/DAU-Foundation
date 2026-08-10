@@ -24,7 +24,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `317 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-033.** Sıradaki kayıt **D-034** olarak açılır.
+- **Son D-kaydı: D-034.** Sıradaki kayıt **D-035** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 
 ## ✅ Faz 2 KAPANDI
@@ -80,29 +80,40 @@ ve `switch_adapter` faz-1 başında yüklüyordu (üstelik `DAU_LORA_ENABLED`'a
 bağlı değil ⇒ `--no-lora` da kirlenir). Kollar bu yüzden ayrıştı. Sapma
 **H1 lehineydi**. → **I0.7** ABORT kapısı eklendi (`782ca33`).
 
-## ▶ SIRADAKİ İŞ: **pilot**
+## ✅ PİLOT KOŞULDU (D-034) — alet çalışıyor, sinyal kurulmadı
 
-Hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu. Beş şeyi aynı
-anda kalibre eder: U4'ün `N`'i (D-028) · `SNR_MARGIN_FLOOR` (D-030) · A3 ·
-`MIN_PAIRS` (I1.5) · **GAP-9'un güç hesabı**. Ayrıca I5.1'in FLAG'den
-ABORT'a yükselip yükselemeyeceğini söyler (D-022 madde 2).
+`dau_runs/pilot_d033_n3_local.json` · N=3 (seed 2001–2003), gen1=50 olay,
+greedy, `--lora` · **58 dk**, `exit 0`, I0.7 yeşil başladı.
 
-⚠ **Pilot öncesi:**
-1. **`dau_runs/adapters/` temizlenmeli** (ya da taze seed'ler). I0.7 artık
-   unutmaya izin vermiyor ama temizliği **yapmıyor** — 35 dolu dizin var,
-   en eskisi 08-07.
-2. `POLARITY_COSINE_MIN/MAX` ve `SNR_MARGIN_FLOOR` **kalibre değil** —
-   ikisi de brief'ten geldi, ikisi de bayrağıyla öyle raporlanıyor.
-3. 10 olayda **7 benzersiz completion** tavanı duruyor. Uzun yaşam açar
-   (U3: 50 olayda 27), ama olay sayısı pilotun kararı.
-4. **VRAM payı yok:** D-032 eğitim dizisini ~370 token'a çıkardı, 8 GB kartta
-   3 OOM uyarısı alındı (allocator toparladı). 50 olayda daha çok anı
-   çağrılacağı için prompt uzar — bu risk ölçülmedi.
+| Ne | Sonuç |
+|---|---|
+| Değişmezler | **18'in 17'si geçti**; yalnız I3.2 bayrak (kalibre değil). **I5.4 ilk kez geçti** |
+| D-032 | `prompt_skipped_no_record = 0 / 300` — her kararın kayıtlı prompt'u vardı |
+| Çift | **252** (47/47 · 41/41 · 38/38). `lived`=`shuffle` simetrisi geri geldi ⇒ I0.7 çalışıyor |
+| `n_unique` | 29 · 22 · 27 (50 olayda) — 7-benzersiz tavanı **açıldı** |
+| VRAM | 1 OOM uyarısı, çökme yok |
+| Süre | seed başına **~19.4 dk** ⇒ N=15 ≈ **4.9 saat** |
 
-**Süre (ölçülen):** kol başına gen1 39–65sn (10 olay). Doğrusal varsayarsak
-gen1=50'de seed başına ~11–12 dk ⇒ N=3 ≈ 35 dk, N=15 ≈ 3 saat.
+**Sinyal (N=3, hipotez testi değil):** ΔPE ortalaması lived **+0.080** ·
+null +0.058 · shuffle +0.113. `lived − null` bir seed'de H1 yönünde, birinde
+ters, birinde tam berabere. `lived ≤ shuffle` **3/3** seed'de ama farklar
+küçük. ⚠ **Seed 2001'de eğitim hiçbir şeyi değiştirmedi** — `pe_after` üç
+kolda bit düzeyinde aynı. lr=1e-6 (D-029) etkiyi bastırıyor olabilir.
 
-**Sonra:** güç hesabı → ön-kayıt.
+## ▶ SIRADAKİ İŞ: pilotun açtığı üç soru
+
+1. **lr=1e-6 etkiyi bastırıyor mu** — seed 2001'de 47 çiftlik eğitim faz-2'yi
+   hiç değiştirmedi, `acc` 0.40–0.54. D-029 bandı `[5e-7, 1e-6]`; bandın
+   kendisi sorgulanacaksa **yeni D-kaydı** ister.
+2. **Eşik kalibrasyonu** — artık gerçek dağılım var: SNR tabanı 6800 adayın
+   %45'ini, kosinüs bandı kalan 3724'ün %29'unu eliyor. ⚠ D-032'nin "SNR
+   tabanı etkisiz" ifadesi **10 olaylık veriye dayanıyordu, 50 olayda
+   doğrulanmadı**.
+3. **Güç hesabı** — N=3'ten `d` kestirilemez (GAP-9). Ya N artacak
+   (N=15 ≈ 4.9 saat) ya da D-002'nin doğum-drift uç noktasına dönülecek.
+
+⚠ **Ön-kayıt hâlâ yazılmadı.** Pilot sonrası her alet değişikliği bu pencereyi
+biraz daha zorluyor (§2.10).
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 

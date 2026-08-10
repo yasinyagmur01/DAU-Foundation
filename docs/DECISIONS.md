@@ -2053,3 +2053,111 @@ yerel-olmayanı `True` sayan kapı. Tam suite **317 passed, 2 deselected**.
 
 `dau_runs/adapters/` **temizlenmeli** (ya da pilot taze seed'lerle
 koşulmalı) — I0.7 artık unutmaya izin vermiyor ama temizliği yapmıyor.
+
+---
+
+## D-034 · 2026-08-10 · Pilot koşuldu (N=3): alet çalışıyor, sinyal **kurulmadı**
+
+**Durum:** ölçüm kaydı. Karar içermez — pilotun işi kalibrasyondu.
+Ham: `dau_runs/pilot_d033_n3_local.json`. Kod değişikliği yok.
+
+### Koşum
+
+Yerel Llama-3.1-8B, greedy, **N=3** (seed 2001–2003), gen1=50 olay,
+gen2=20, k=3, `--lora`. **58 dk** (15:18:39 → 16:17:00), `exit 0`.
+Adapter dizini koşumdan önce `archive/adapters_pre_pilot_2026-08-10/`'a
+taşındı, **I0.7 yeşil** başladı.
+
+**Sınırlar:** N=3, tek atış, tek seed ailesi. **Hipotez testi değil** —
+GAP-9'a göre N=3 hiçbir etkiyi saptayamaz. Aşağıdaki yön ifadeleri
+kanıt değil, kalibrasyon girdisidir.
+
+### Alet: çalışıyor
+
+| Ne | Sonuç |
+|---|---|
+| Değişmezler | **18'in 17'si geçti.** Yalnız I3.2 bayrak (`gen2 pi_n_distinct=7 < 8`, **kalibre değil**) |
+| I0.7 | geçti — temiz başlangıç doğrulandı |
+| **I5.4** | **ilk kez geçti** — somatik ölçek uygulandı. Smoke'larda "never applied" bayraktaydı; 50 olayda GAP-3'ün belirtisi çıkmıyor |
+| I2.2 / I4.2 | null eğitimsiz + adapter'sız · gen2 RNG üç kolda birebir aynı |
+| **D-032 doğrulaması** | `prompt_examples_seen=300`, **`prompt_skipped_no_record=0`** — pilotun bütün kararlarının kayıtlı prompt'u vardı |
+| VRAM | **1** OOM uyarısı (10 olaylık smoke'ta 3'tü), çökme yok |
+
+**Çift simetrisi — I0.7'nin doğrudan kanıtı:** her seed'de `lived` ve
+`shuffle` **birebir aynı** sayıda çift aldı: **47/47 · 41/41 · 38/38**
+(toplam 252). Kirli smoke'ta 8'e karşı 6'ydı. Tasarımın gerektirdiği eşitlik
+geri geldi ⇒ kolların ayrışma sebebi gerçekten adapter sızıntısıymış.
+
+**Çeşitlilik tavanı açıldı:** `n_unique` = 29 · 22 · 27 (50 olayda),
+D-032'nin 10 olayda ölçtüğü 7'ye karşı. U3'ün greedy ölçümüyle (27) uyumlu.
+
+### Filtre kalibrasyon verisi — ilk gerçek sayılar
+
+| Kapı | Aday | Elenen | Oran |
+|---|---|---|---|
+| `SNR_MARGIN_FLOOR=0.15` | 6800 | 3076 | **%45** |
+| Polarite (kosinüs `[0.25, 0.80]`) | 3724 | 1078 | **%29** |
+| Geçen | — | — | **252 çift** |
+
+⚠ **D-032'nin bir ifadesi 50 olayda geçersiz.** Orada "SNR tabanı ateşleniyor
+ama **etkisiz**; `best_by_event` dururken kalibre edilemez" demiştim — bu
+**10 olaylık** veriye dayanıyordu (41 aday). 50 olayda aday uzayı
+C(50,2)≈1225'e çıkıyor ve taban 6800 adayın 3076'sını eliyor. Etkisizlik
+iddiası bu ölçekte **doğrulanmadı**; kalibrasyon artık mümkün.
+
+### Sinyal: kurulmadı
+
+`ΔPE = pe_after − pe_before` (gen1, eğitim iki faz arasındaki müdahale):
+
+| Kol | ortalama ΔPE | s2001 | s2002 | s2003 |
+|---|---|---|---|---|
+| lived | **+0.0800** | +0.0412 | +0.0601 | +0.1386 |
+| null | +0.0583 | +0.0412 | +0.1612 | −0.0276 |
+| shuffle | +0.1125 | +0.0412 | +0.1438 | +0.1527 |
+
+- **lived vs null:** 1 seed H1 yönünde (−0.101), 1 seed ters (+0.166),
+  1 seed **tam berabere**. Ortalamada lived null'dan **kötü**.
+- **lived vs shuffle:** 3 seed'in **üçünde de lived ≤ shuffle**
+  (0.000 · −0.084 · −0.014). Daha temiz karşılaştırma, çünkü iki kol aynı
+  sayıda çiftle, aynı hesapla eğitildi; yalnız **yön** farklıydı. Ama
+  farkların ikisi küçük ve biri sıfır.
+
+**Seed 2001'de eğitim hiçbir şey değiştirmedi:** `pe_after` üç kolda da
+**bit düzeyinde aynı** (0.45483523726463315). 47 çiftle eğitilmiş adapter,
+faz-2 davranışını ölçülebilir biçimde etkilemedi. Diğer iki seed'de etkiledi.
+lr=1e-6'nın (D-029) etkiyi ne kadar bastırdığı **açık soru** — D-029 bilerek
+küçük seçmişti, bu onun bedeli olabilir.
+
+`acc` (eğitim sonrası marj doğruluğu): 0.404 · 0.537 · 0.447 (lived) —
+yarının altında ya da civarında, yani politika referanstan çok az kımıldıyor.
+
+### gen2 (ikincil; **adapter miras alınmıyor** ⇒ yalnızca Kanal 1)
+
+ortalama PE: lived 0.500 · null 0.484 · shuffle 0.444. Ters yönde, ama
+gen2'ye adapter geçmediği için bu Kanal 2'yi değil, eğitimin faz-2
+davranışını değiştirmesi üzerinden **kasaya yazılanı** ölçüyor.
+`n_transfer_candidates` toplam 14; her soyda `f_agent=0.000`,
+`fitness=low` — **f_agent üç kolda da sıfır**, ayrıca bakılmalı.
+
+### ⚠ Çelişki — raporlanıyor, sessizce seçilmiyor (§2.11)
+
+`NULL_ARM_MAX_ABS_DELTA = 1e-9` ve yorumu: *"NULL takes no training, so with
+the harness clean its replay is exact."* Pilotta null'ın ΔPE'si
+**+0.041 / +0.161 / −0.028**. Sabit yalnızca `run_protocol_c_prime`'da
+kullanılıyor (satır 326, 1186), **multigen'de değil** — ve multigen'de faz-2
+aynı kasayla devam ettiği için (`run_life_keep_vault`) null'ın ΔPE'si
+doğal olarak sıfır değil. Yani kod hatası **değil**, ama yorumun iddiası
+deney yolunda geçerli değil ve şu sonucu doğuruyor: **multigen'de ΔPE
+eğitimi tek başına yalıtmıyor**, kasa büyümesiyle birlikte ölçüyor. Bu
+yüzden yorumlanabilir kontrast `lived − null`, ham ΔPE değil.
+
+### Pilotun cevapladıkları / cevaplamadıkları
+
+**Cevapladı:** alet uçtan uca koşuyor · kapılar geçiyor · çift darboğazı
+gerçekten açık (252 çift) · çeşitlilik tavanı 50 olayda açılıyor ·
+VRAM yetiyor · süre = **seed başına ~19.4 dk** ⇒ N=15 ≈ **4.9 saat**.
+
+**Cevaplamadı:** `SNR_MARGIN_FLOOR` ve kosinüs bandının **değerleri**
+(dağılım verisi artık var, seçim yapılmadı) · U4'ün `N`'i · A3 ·
+`MIN_PAIRS` · GAP-9'un güç hesabı (N=3'ten `d` kestirilemez) ·
+**lr=1e-6 etkiyi bastırıyor mu**.
