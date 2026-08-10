@@ -35,6 +35,8 @@ DRIFT_SUM_ZERO: float = 0.0
 DELTA_MAGNITUDE_UNIT: float = 0.4
 EVENT_COUNTER_LOW: int = 1
 EVENT_COUNTER_HIGH: int = 2
+# D-032: pairing needs the prompt the decision was made under.
+SYSTEM_PROMPT_STUB: str = "You are a living being in a simulation universe."
 
 
 def _lived_example(
@@ -43,7 +45,11 @@ def _lived_example(
     prediction_error: float,
     completion: str,
 ) -> LivedTraceExample:
-    """Minimal lived-trace row for build_pe_ranked_pairs wiring tests."""
+    """Minimal lived-trace row for build_pe_ranked_pairs wiring tests.
+
+    Carries a recorded decision prompt: D-032 makes that a precondition for
+    entering pair construction at all.
+    """
 
     return LivedTraceExample(
         event_counter=event_counter,
@@ -55,6 +61,8 @@ def _lived_example(
         loss_weight=LOSS_WEIGHT_UNIT,
         prompt="test-prompt",
         completion=completion,
+        decision_system=SYSTEM_PROMPT_STUB,
+        decision_user=f'{{"event_count": {event_counter}}}',
     )
 
 
@@ -180,7 +188,14 @@ def test_nli_real_model_smoke() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _lived(event: int, pe: float, completion: str):
+def _lived(event: int, pe: float, completion: str, *, recorded_prompt: bool = True):
+    """One lived row. ``recorded_prompt=False`` mimics a System 1 decision.
+
+    D-032 made the recorded decision prompt a precondition for pairing, so
+    these fixtures now have to carry one — before that, ``prompt`` was a label
+    the pair builder overwrote with a PE-value template and nothing read it.
+    """
+
     from dau.foundation.lora_update import LivedTraceExample
 
     return LivedTraceExample(
@@ -193,6 +208,8 @@ def _lived(event: int, pe: float, completion: str):
         loss_weight=1.0,
         prompt=f"event {event}",
         completion=completion,
+        decision_system="You are a living being." if recorded_prompt else "",
+        decision_user=f'{{"event_count": {event}}}' if recorded_prompt else "",
     )
 
 

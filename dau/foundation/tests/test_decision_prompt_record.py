@@ -156,3 +156,104 @@ def test_system_1_decision_records_no_prompt(
     assert DECISION_PROMPT_SYSTEM_KEY not in payload
     assert DECISION_PROMPT_USER_KEY not in payload
     assert payload["decision"]
+
+
+# ---------------------------------------------------------------------------
+# The reader: what build_pe_ranked_pairs does with the record
+# ---------------------------------------------------------------------------
+
+RECORDED_SYSTEM: str = "You are a living being.\nPriority: resource."
+LOW_PE: float = 0.22
+HIGH_PE: float = 0.87
+CHOSEN_TEXT: str = "I cooperate and share resources."
+REJECTED_TEXT: str = "I extract everything I can reach."
+
+
+def _lived_row(counter: int, pe: float, completion: str, *, recorded: bool = True):
+    from dau.foundation.lora_update import LivedTraceExample
+
+    return LivedTraceExample(
+        event_counter=counter,
+        prediction_error=pe,
+        delta_magnitude=pe,
+        delta_class="NORMAL",
+        trauma_flag=False,
+        drift_sum=0.0,
+        loss_weight=1.0,
+        prompt=f"lived scalars {counter}",
+        completion=completion,
+        decision_system=RECORDED_SYSTEM if recorded else "",
+        decision_user=f'{{"event_count": {counter}}}' if recorded else "",
+    )
+
+
+@pytest.fixture
+def pair_builder(monkeypatch: pytest.MonkeyPatch):
+    """Isolate prompt handling: NLI and the margin floor are tested elsewhere."""
+
+    from dau.foundation import lora_update
+
+    monkeypatch.setattr(lora_update, "is_genuine_polarity_pair", lambda _c, _r: True)
+    monkeypatch.setattr(lora_update, "SNR_MARGIN_FLOOR", 0.0)
+    lora_update.PROMPT_FILTER_STATS["examples_seen"] = 0
+    lora_update.PROMPT_FILTER_STATS["skipped_no_recorded_prompt"] = 0
+    return lora_update
+
+
+def test_pair_prompt_is_the_chosen_events_recorded_prompt(pair_builder) -> None:
+    """Not a PE-value template — the situation the chosen decision was made in.
+
+    Mutation guard for the retired PREF_LIVED_CONTEXT_TEMPLATE: a prompt built
+    from pe_chosen/pe_rejected states the answer key and never occurs at
+    inference, so it must not reappear.
+    """
+
+    chosen_row = _lived_row(1, LOW_PE, CHOSEN_TEXT)
+    pairs = pair_builder.build_pe_ranked_pairs(
+        [chosen_row, _lived_row(2, HIGH_PE, REJECTED_TEXT)]
+    )
+
+    assert len(pairs) == 1
+    assert pairs[0].prompt == chosen_row.decision_user
+    assert pairs[0].system == RECORDED_SYSTEM
+    assert "Lived preference" not in pairs[0].prompt
+    assert f"{LOW_PE:.3f}" not in pairs[0].prompt
+
+
+def test_event_without_recorded_prompt_is_skipped_and_counted(
+    pair_builder,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Skipping is allowed; skipping quietly is not (CLAUDE.md 2.9)."""
+
+    pairs = pair_builder.build_pe_ranked_pairs(
+        [
+            _lived_row(1, LOW_PE, CHOSEN_TEXT, recorded=False),
+            _lived_row(2, HIGH_PE, REJECTED_TEXT),
+        ]
+    )
+
+    assert pairs == []
+    assert pair_builder.PROMPT_FILTER_STATS["examples_seen"] == 2
+    assert pair_builder.PROMPT_FILTER_STATS["skipped_no_recorded_prompt"] == 1
+    assert "[LORA][WARN]" in capsys.readouterr().out
+
+
+def test_shuffled_control_keeps_the_same_conditioning(pair_builder) -> None:
+    """The control arm must differ in preference direction and nothing else.
+
+    Field-by-field reconstruction used to drop any newly added field; a
+    shuffled arm training without the system prompt would make the two arms
+    incomparable rather than opposite.
+    """
+
+    pairs = pair_builder.build_pe_ranked_pairs(
+        [_lived_row(1, LOW_PE, CHOSEN_TEXT), _lived_row(2, HIGH_PE, REJECTED_TEXT)]
+    )
+    shuffled = pair_builder.shuffle_preference_pairs(pairs, seed=7)
+
+    assert len(shuffled) == 1
+    assert shuffled[0].system == pairs[0].system
+    assert shuffled[0].prompt == pairs[0].prompt
+    assert shuffled[0].chosen == pairs[0].rejected
+    assert shuffled[0].rejected == pairs[0].chosen

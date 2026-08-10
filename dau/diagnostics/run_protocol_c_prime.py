@@ -735,12 +735,22 @@ def _pair_filter_report() -> dict[str, Any]:
     from dau.foundation.constraints import SNR_MARGIN_FLOOR_CALIBRATED
 
     try:
-        from dau.foundation.lora_update import NLI_FILTER_STATS, SNR_FILTER_STATS
+        from dau.foundation.lora_update import (
+            NLI_FILTER_STATS,
+            PROMPT_FILTER_STATS,
+            SNR_FILTER_STATS,
+        )
     except ImportError:
         return {"available": False, "reason": "lora_update unavailable"}
 
     return {
         "available": True,
+        # D-032. A life whose decisions carry no recorded prompt trains on
+        # nothing, and that must not read like a strict-filter result.
+        "prompt_examples_seen": int(PROMPT_FILTER_STATS.get("examples_seen", 0)),
+        "prompt_skipped_no_record": int(
+            PROMPT_FILTER_STATS.get("skipped_no_recorded_prompt", 0)
+        ),
         "snr_margin_floor": SNR_MARGIN_FLOOR,
         "snr_margin_floor_calibrated": SNR_MARGIN_FLOOR_CALIBRATED,
         "snr_candidates": int(SNR_FILTER_STATS.get("total_candidates", 0)),

@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import os
 import random
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -68,9 +68,12 @@ PREF_TRACES_FILE_NAME: str = "preference_pairs.jsonl"
 # Endogenous preference: lower lived PE beats higher lived PE. No designer
 # value sentence, no fixed reject template (those were recipe A — trait-
 # adjacent and mini-tested to inflate PE without teaching contrast).
-PREF_LIVED_CONTEXT_TEMPLATE: str = (
-    "Lived preference: pe={pe_chosen:.3f} decision over pe={pe_rejected:.3f}"
-)
+# D-032 retired PREF_LIVED_CONTEXT_TEMPLATE — it was
+# "Lived preference: pe={pe_chosen:.3f} decision over pe={pe_rejected:.3f}".
+# Measured at 51 prompt tokens with no system message, against 246-306 at
+# inference, and it handed the model both PE values, which are only computed
+# AFTER the decision. The pair prompt is now the chosen event's recorded
+# prompt.
 PE_RANK_MIN_GAP: float = 1e-6
 
 # total_candidates/rejected are per-candidate (pre-dedup); passed is
@@ -90,6 +93,17 @@ SNR_FILTER_STATS: dict[str, int] = {
     "rejected_below_margin": 0,
 }
 
+# D-032. An event whose decision carries no recorded prompt cannot be trained
+# on: System 1 (NPC) decisions never ran the policy, and a life recorded before
+# agent_node stored the prompt has nothing to condition on. Both are skipped,
+# and the count is reported rather than absorbed — a training set that shrank
+# because the log was old must not read like one that shrank because the
+# filters were strict.
+PROMPT_FILTER_STATS: dict[str, int] = {
+    "examples_seen": 0,
+    "skipped_no_recorded_prompt": 0,
+}
+
 
 @dataclass
 class LivedTraceExample:
@@ -104,6 +118,10 @@ class LivedTraceExample:
     loss_weight: float
     prompt: str
     completion: str
+    # The prompt this decision was actually made under (D-032). Empty means the
+    # event has none — System 1, or a log predating the record.
+    decision_system: str = ""
+    decision_user: str = ""
 
 
 @dataclass
@@ -116,6 +134,9 @@ class PreferencePair:
     pe_chosen: float
     pe_rejected: float
     event_counter: int = 0
+    # Read by local_llm._run_dpo_epochs via getattr; the hook predates the
+    # field and was dead until D-032 gave it something to carry.
+    system: str = ""
 
 
 @dataclass
@@ -172,8 +193,21 @@ def _drift_sum(drift_state: Any) -> float:
     return total
 
 
-def _decision_by_counter(agent_state: DAUAgentState) -> dict[int, str]:
-    mapping: dict[int, str] = {}
+@dataclass
+class LivedDecision:
+    """What the agent said, and the prompt it said it under (D-032)."""
+
+    text: str
+    system: str = ""
+    user: str = ""
+
+
+# Read-only sentinel for events with no decision at all.
+NO_LIVED_DECISION = LivedDecision(text=COMPLETION_FALLBACK)
+
+
+def _decision_by_counter(agent_state: DAUAgentState) -> dict[int, LivedDecision]:
+    mapping: dict[int, LivedDecision] = {}
     for event in agent_state.event_log:
         if event.event_type != EVENT_TYPE_DECISION:
             continue
@@ -181,7 +215,11 @@ def _decision_by_counter(agent_state: DAUAgentState) -> dict[int, str]:
         decision = payload.get(DECISION_PAYLOAD_KEY)
         if decision is None:
             continue
-        mapping[int(event.timestamp)] = str(decision).strip() or COMPLETION_FALLBACK
+        mapping[int(event.timestamp)] = LivedDecision(
+            text=str(decision).strip() or COMPLETION_FALLBACK,
+            system=str(payload.get(DECISION_PROMPT_SYSTEM_KEY) or ""),
+            user=str(payload.get(DECISION_PROMPT_USER_KEY) or ""),
+        )
     return mapping
 
 
@@ -219,6 +257,7 @@ def build_lived_trace_examples(
                 trauma=trauma_flag,
                 drift_sum=drift_total,
             )
+            lived = decisions.get(counter, NO_LIVED_DECISION)
             examples.append(
                 LivedTraceExample(
                     event_counter=counter,
@@ -229,7 +268,9 @@ def build_lived_trace_examples(
                     drift_sum=drift_total,
                     loss_weight=weight,
                     prompt=prompt,
-                    completion=decisions.get(counter, COMPLETION_FALLBACK),
+                    completion=lived.text,
+                    decision_system=lived.system,
+                    decision_user=lived.user,
                 )
             )
         return examples
@@ -258,6 +299,7 @@ def build_lived_trace_examples(
             trauma=trauma_flag,
             drift_sum=drift_total,
         )
+        lived = decisions.get(counter, NO_LIVED_DECISION)
         examples.append(
             LivedTraceExample(
                 event_counter=counter,
@@ -268,7 +310,9 @@ def build_lived_trace_examples(
                 drift_sum=drift_total,
                 loss_weight=weight,
                 prompt=prompt,
-                completion=decisions.get(counter, COMPLETION_FALLBACK),
+                completion=lived.text,
+                decision_system=lived.system,
+                decision_user=lived.user,
             )
         )
     return examples
@@ -286,14 +330,32 @@ def build_pe_ranked_pairs(
     from constraints / nli_filter); non-genuine pairs are dropped and counted
     in NLI_FILTER_STATS["rejected"]. Preference direction remains PE-defined;
     NLI only gates linguistic polarity.
+
+    D-032: the pair's prompt is the prompt the CHOSEN decision was made under,
+    replayed from the event log, not a template built from the two PE values.
+    An event with no recorded prompt cannot be trained on and is skipped with a
+    counted [WARN] — never absorbed silently (CLAUDE.md 2.9).
     """
 
-    usable = [
-        ex
-        for ex in examples
-        if (ex.completion or COMPLETION_FALLBACK).strip()
-        and (ex.completion or COMPLETION_FALLBACK).strip() != COMPLETION_FALLBACK
-    ]
+    usable: list[LivedTraceExample] = []
+    missing_prompt = 0
+    for ex in examples:
+        completion = (ex.completion or COMPLETION_FALLBACK).strip()
+        if not completion or completion == COMPLETION_FALLBACK:
+            continue
+        PROMPT_FILTER_STATS["examples_seen"] += 1
+        if not ex.decision_user.strip():
+            PROMPT_FILTER_STATS["skipped_no_recorded_prompt"] += 1
+            missing_prompt += 1
+            continue
+        usable.append(ex)
+    if missing_prompt:
+        print(
+            f"[LORA][WARN] {missing_prompt} lived decision(s) carry no recorded "
+            f"prompt and were skipped — System 1 decisions never ran the policy, "
+            f"and logs predating D-032 have nothing to condition on",
+            flush=True,
+        )
     best_by_event: dict[int, PreferencePair] = {}
     for index, left in enumerate(usable):
         for right in usable[index + 1 :]:
@@ -326,11 +388,13 @@ def build_pe_ranked_pairs(
             pe_chosen = float(low.prediction_error)
             pe_rejected = float(high.prediction_error)
             gap = pe_rejected - pe_chosen
+            # The chosen side's own situation. The rejected completion came
+            # from a different event, so it is off-policy for this prompt: the
+            # pair reads "in THIS situation, prefer what you said here over
+            # what you said when the world surprised you more".
             pair = PreferencePair(
-                prompt=PREF_LIVED_CONTEXT_TEMPLATE.format(
-                    pe_chosen=pe_chosen,
-                    pe_rejected=pe_rejected,
-                ),
+                prompt=low.decision_user,
+                system=low.decision_system,
                 chosen=chosen,
                 rejected=rejected,
                 pe_chosen=pe_chosen,
@@ -349,34 +413,30 @@ def shuffle_preference_pairs(
     *,
     seed: int,
 ) -> list[PreferencePair]:
-    """Control: swap chosen/rejected (wrong PE preference direction)."""
+    """Control: swap chosen/rejected (wrong PE preference direction).
+
+    Field-by-field reconstruction is what this used to do, and it silently
+    drops any field added later — the shuffled arm would then train under
+    different conditioning than the lived arm and the comparison would be
+    between two things. ``replace`` swaps only the two sides and carries the
+    rest, prompt and system included (D-032).
+    """
+
+    def _swap(pair: PreferencePair) -> PreferencePair:
+        return replace(
+            pair,
+            chosen=pair.rejected,
+            rejected=pair.chosen,
+            pe_chosen=pair.pe_rejected,
+            pe_rejected=pair.pe_chosen,
+        )
 
     rng = random.Random(seed)
     out: list[PreferencePair] = []
     for pair in pairs:
-        if rng.random() < 0.5:
-            out.append(
-                PreferencePair(
-                    prompt=pair.prompt,
-                    chosen=pair.rejected,
-                    rejected=pair.chosen,
-                    pe_chosen=pair.pe_rejected,
-                    pe_rejected=pair.pe_chosen,
-                    event_counter=pair.event_counter,
-                )
-            )
-        else:
-            out.append(pair)
+        out.append(_swap(pair) if rng.random() < 0.5 else pair)
     if pairs and out == pairs:
-        first = pairs[0]
-        out[0] = PreferencePair(
-            prompt=first.prompt,
-            chosen=first.rejected,
-            rejected=first.chosen,
-            pe_chosen=first.pe_rejected,
-            pe_rejected=first.pe_chosen,
-            event_counter=first.event_counter,
-        )
+        out[0] = _swap(pairs[0])
     return out
 
 
