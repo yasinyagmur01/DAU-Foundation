@@ -1341,3 +1341,112 @@ mekanik iş).
 **D-019 iptal edilmiyor** — protokolü, metriği, kabul kriteri ve
 "statüko kazanır" kuralı aynen yürürlükte. Bu kayıt yalnızca hangi iki
 checkpoint'in karşılaştırılacağını netleştiriyor.
+
+---
+
+## D-026 · 2026-08-10 · U3 ölçüldü: **Llama'da kalınıyor**
+
+**Durum:** D-019'un ön-kayıtlı kriteri ölçüme uygulandı. Karar kriterden
+mekanik olarak çıktı; yorum katılmadı. Kollar D-025 uyarınca iki
+instruction-tuned checkpoint.
+
+### Ham sayılar
+
+Harness: `dau/diagnostics/measure_model_diversity.py` (`13e3b9e`),
+3 seed (2001/2002/2003) × 10 olay, greedy, nf4 + double_quant, her model
+kendi process'inde. Ölçülen: `_phase1_diversity`'nin `n_unique`'i —
+üretim metriğinin aynısı.
+
+| | Llama-3.1-8B-Instruct | Qwen2.5-7B-Instruct |
+|---|---|---|
+| `n_unique` (2001/2002/2003) | 7 · 9 · 10 | 4 · 4 · 4 |
+| **medyan** | **9.0** | **4.0** |
+| `pe_gap_max` | 0.6526 · 0.7090 · 0.6153 | 0.6731 · 0.6731 · 0.6731 |
+| VRAM tepe (üretim) | 5804.5 MiB | 5662.8 MiB |
+| chat template | ✅ | ✅ |
+
+Ham JSON: `dau_runs/u3_model_diversity_meta-llama__Meta-Llama-3.1-8B-Instruct.json`
+ve `dau_runs/u3_model_diversity_Qwen__Qwen2.5-7B-Instruct.json`.
+
+### Kriterin uygulanması (D-019, değiştirilmedi)
+
+1. Qwen medyanı ≥ `DIVERSITY_MIN_UNIQUE` (5)? → **HAYIR** (4.0)
+2. Qwen medyanı Llama'nınkinden kesin büyük? → **HAYIR** (4 < 9)
+
+Her iki şart da başarısız — beraberlik bile değil. **`LOCAL_MODEL_NAME`
+`meta-llama/Meta-Llama-3.1-8B-Instruct` olarak kalır.** Kod değişmiyor.
+
+### Brief'in doğrulanmayan iki iddiası
+
+- **"Keskin logit ayrımı / şiddetle önerilir"** (§7): bu kod tabanında
+  **üretilmedi**. Qwen kapının altında kaldı.
+- **VRAM ~6.4 vs ~7.2 GiB (≈800 MiB fark)**: ölçülen fark **142 MiB**
+  (5662.8 vs 5804.5). Brief'in rakamları fp4 varsayımıyla verilmişti;
+  nf4 + double_quant altında iki model neredeyse aynı yeri kaplıyor.
+
+D-019'un "ölçmeden kilitleme" kuralı işini yaptı. Provenansı sağlam bir
+tavsiye, bu repoda tekrar üretilemedi.
+
+### Anomali: Qwen seed'e duyarsız
+
+Qwen'in `pe_gap_max`'i üç seed'de de **dört ondalık basamağa kadar aynı**
+(0.6731) ve `n_unique` sabit 4. Llama aynı harness'ta, aynı seed'lerle
+değişkenlik gösteriyor. **Bu, harness'ın seed'leri doğru uyguladığını
+kanıtlıyor** — aksi halde Llama da sabit çıkardı. Anlamı: Qwen niş
+değişse de aynı dört cevabı üretiyor. Karar zaten kriterden çıkmıştı;
+bu bulgu onu zayıflatmıyor, güçlendiriyor.
+
+### Keşifsel ek ölçüm — **ön-kayıtlı DEĞİL**
+
+D-019'un kriteri buna uygulanmaz; yalnızca sampling reçetesini
+bilgilendirir. Tek process, tek model yükü (Llama), 50 olay/seed —
+gerçek C′ gen1 kolu uzunluğu. U3 harness'ına dokunulmadı, scratchpad'den
+çağrıldı. Ham JSON: `dau_runs/exploratory_greedy_vs_sampled_50events.json`.
+
+| | `n_unique` (2001/2002/2003) | medyan | gate'lenen |
+|---|---|---|---|
+| greedy | 29 · 22 · 27 | **27** | 0 |
+| sampled (T=0.2) | 34 · 44 · 48 | **44** | 0 |
+
+**Master reference §2'nin gerekçesi çürüdü.** Belge sampling'i şu sebeple
+istiyor: *"Greedy plato (~3 unique/10 event) tercih verisini
+öldürüyordu."* Greedy 50 olayda **27** veriyor, kapı 5. "Greedy tercih
+verisini öldürüyor" iddiası artık yanlış.
+
+**Ama sampling boşa çalışmıyor:** %63 daha çok benzersiz completion.
+
+**Sampling kararı AÇIK bırakıldı** — Yasin verecek (D-007). Kayda geçen
+argümanlar:
+- *Greedy lehine:* gerekçe çürüdü; determinizm ek mekanizmaya
+  (`fb1b125` prompt-keyed tohumlama) bağımlı olmadan gelir; ve asıl
+  darboğaz çeşitlilik değil **eleme** — 08-09 pilotunda 746 aday çiftten
+  1'i eğitime girmiş (`n_pairs_rejected: 745`), kabul oranı binde 1.3.
+  Çeşitliliği ikiye katlamak 1'i 2 yapar. Doğru müdahale U5 (A5 filtresi).
+  GAP-9 (d≈0.04) altında gürültü kaynağı azaltmak değerli.
+- *Sampled lehine:* az çift = zayıf tedavi = küçük etki; o da gücü düşürür.
+
+### YENİ GAP — üretim çeşitliliği açıklanamayan biçimde değişti
+
+08-09 pilotu **aynı 50 olayda** `n_unique` 7 · 4 · 8 vermiş (bir seed
+gate'lenmiş). Bugün greedy **29 · 22 · 27**. Aynı protokol yolu, **3–4 kat
+fark.** Sebep izole edilmedi. Adaylar: GAP-11/12/13/15 düzeltmeleri,
+GAP-1 kapısı, fp4→nf4 (U2). Arşivden ayırt edilemiyor.
+
+**Ayrıca 08-09 pilotu bu tartışmada delil olarak kullanılamıyor:**
+JSON'unda sampling durumu **kayıtlı değil**, çünkü koşum `tool_identity`
+bloğundan önce. Alet kimliği tam da bu boşluk için yazılmıştı; yokluğu
+bugün bize bir cevap kaybettirdi.
+
+**Bu GAP pre-reg'den önce kapatılmalı.** Aletin davranışı bu ölçekte
+oynuyorsa, ön-kayıt neyi kilitlediğini bilmiyor demektir.
+
+### Düzeltme — VRAM sayısı U7 için kullanılamaz
+
+Oturum içinde "~2000 MiB boşluk var" denmişti; **erken bir çıkarımdı.**
+Bugün ölçülen 5804 MiB **yalnızca üretim** sırasında alındı. Eğitim
+gradyan, optimizer durumu ve aktivasyon ister. Eski 6386 MiB eğitimi
+kapsıyordu (`micro_train_ran: true`) ama **fp4**'teydi. İki sayı farklı
+işi, farklı konfigürasyonda ölçüyor.
+
+**nf4 + double_quant altında eğitim tepe değeri henüz yok.** U7 (A2/A3/A4)
+bu ölçüm yapılmadan karara bağlanamaz.
