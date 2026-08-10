@@ -432,20 +432,27 @@ def check_pad_fraction(
 
 
 def check_nli_active() -> tuple[bool, str]:
-    """I5.2 — the NLI filter was actually consulted.
+    """I5.2 — the polarity filter was actually consulted.
 
-    nli_filter returns True when disabled, so a silent no-op looks exactly
-    like a clean pass from the caller's side.
+    The gate returns True when disabled, so a silent no-op looks exactly like
+    a clean pass from the caller's side. D-032 swapped the instrument from NLI
+    contradiction to cosine distance; the invariant is unchanged, so the
+    message names whichever gate resolved rather than assuming NLI.
     """
 
-    from dau.foundation.lora_update import NLI_FILTER_STATS
+    from dau.foundation.lora_update import POLARITY_FILTER_STATS
+    from dau.foundation.polarity_filter import describe_polarity_filter
 
-    total = int(NLI_FILTER_STATS.get("total_candidates", 0))
+    active = describe_polarity_filter()["polarity_filter"]
+    total = int(POLARITY_FILTER_STATS.get("total_candidates", 0))
     if total <= 0:
-        return False, "NLI_FILTER_STATS.total_candidates == 0 — filter never ran"
+        return False, (
+            f"POLARITY_FILTER_STATS.total_candidates == 0 — "
+            f"{active} filter never ran"
+        )
     return True, (
-        f"total_candidates={total} "
-        f"rejected={int(NLI_FILTER_STATS.get('rejected', 0))}"
+        f"filter={active} total_candidates={total} "
+        f"rejected={int(POLARITY_FILTER_STATS.get('rejected', 0))}"
     )
 
 

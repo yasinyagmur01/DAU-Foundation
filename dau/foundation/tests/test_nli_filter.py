@@ -11,7 +11,7 @@ import pytest
 import dau.foundation.nli_filter as nli_filter
 from dau.foundation.constraints import NLI_CONTRADICTION_THRESHOLD
 from dau.foundation.lora_update import (
-    NLI_FILTER_STATS,
+    POLARITY_FILTER_STATS,
     LivedTraceExample,
     build_pe_ranked_pairs,
 )
@@ -137,22 +137,25 @@ def test_nli_filter_disabled_accepts_all(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 def test_nli_filter_stats_in_lora_update() -> None:
-    assert "total_candidates" in NLI_FILTER_STATS
-    assert "passed" in NLI_FILTER_STATS
-    assert "rejected" in NLI_FILTER_STATS
+    assert "total_candidates" in POLARITY_FILTER_STATS
+    assert "passed" in POLARITY_FILTER_STATS
+    assert "rejected" in POLARITY_FILTER_STATS
 
 
-def test_build_pe_ranked_pairs_rejects_weak_polarity(
-    stub_contradiction_score: dict,
-) -> None:
-    """Production path drops non-genuine polarity pairs and increments rejected."""
+def test_build_pe_ranked_pairs_rejects_weak_polarity() -> None:
+    """Production path drops non-genuine polarity pairs and increments rejected.
 
-    stub_contradiction_score[
-        (CHOSEN_TRUST_DOMAIN, REJECTED_TRUST_DOMAIN_WEAK)
-    ] = SCORE_BELOW_THRESHOLD
-    before_rejected = int(NLI_FILTER_STATS["rejected"])
-    before_passed = int(NLI_FILTER_STATS["passed"])
-    before_candidates = int(NLI_FILTER_STATS["total_candidates"])
+    No contradiction stub here any more: D-032 routed the production path
+    through polarity_filter, so stubbing contradiction_score would leave a
+    dead fixture in a test that still passes — the empty-guard failure mode
+    CLAUDE.md 2.4 exists to catch. The paraphrase below is rejected by the
+    cosine lower bound (measured distance 0.044 against a 0.25 floor); the
+    band itself is tested in test_polarity_filter.py.
+    """
+
+    before_rejected = int(POLARITY_FILTER_STATS["rejected"])
+    before_passed = int(POLARITY_FILTER_STATS["passed"])
+    before_candidates = int(POLARITY_FILTER_STATS["total_candidates"])
 
     examples = [
         _lived_example(
@@ -169,9 +172,9 @@ def test_build_pe_ranked_pairs_rejects_weak_polarity(
     pairs = build_pe_ranked_pairs(examples)
 
     assert pairs == []
-    assert NLI_FILTER_STATS["total_candidates"] == before_candidates + 1
-    assert NLI_FILTER_STATS["rejected"] == before_rejected + 1
-    assert NLI_FILTER_STATS["passed"] == before_passed
+    assert POLARITY_FILTER_STATS["total_candidates"] == before_candidates + 1
+    assert POLARITY_FILTER_STATS["rejected"] == before_rejected + 1
+    assert POLARITY_FILTER_STATS["passed"] == before_passed
 
 
 @pytest.mark.integration

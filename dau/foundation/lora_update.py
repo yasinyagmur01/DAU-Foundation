@@ -20,7 +20,7 @@ from typing import Any
 from dau.foundation.constraints import SNR_MARGIN_FLOOR
 from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
-from dau.foundation.nli_filter import is_genuine_polarity_pair
+from dau.foundation.polarity_filter import is_genuine_polarity_pair
 from dau.foundation.state import DAUAgentState, DeltaRecord
 
 # ---------------------------------------------------------------------------
@@ -78,8 +78,11 @@ PE_RANK_MIN_GAP: float = 1e-6
 
 # total_candidates/rejected are per-candidate (pre-dedup); passed is
 # per-event (post PE-rank dedup) — these do not sum to total_candidates
-# by design.
-NLI_FILTER_STATS: dict[str, int] = {
+# by design. Named for the job, not the instrument: D-032 swapped NLI for
+# cosine distance behind polarity_filter, and a counter still called
+# NLI_FILTER_STATS would have labelled cosine rejections "nli" in every
+# results file (CLAUDE.md 2.8).
+POLARITY_FILTER_STATS: dict[str, int] = {
     "total_candidates": 0,
     "passed": 0,
     "rejected": 0,
@@ -326,10 +329,12 @@ def build_pe_ranked_pairs(
     Chosen = lower lived prediction_error, rejected = higher. One strongest-
     contrast pair is kept per low-PE event so the train set stays O(n) rather
     than O(n²). Each PE-ranked candidate must also pass
-    ``is_genuine_polarity_pair`` (contradiction ≥ NLI_CONTRADICTION_THRESHOLD
-    from constraints / nli_filter); non-genuine pairs are dropped and counted
-    in NLI_FILTER_STATS["rejected"]. Preference direction remains PE-defined;
-    NLI only gates linguistic polarity.
+    ``is_genuine_polarity_pair`` from ``polarity_filter`` — cosine distance
+    within [POLARITY_COSINE_MIN, POLARITY_COSINE_MAX] since D-032, NLI
+    contradiction before it. Rejects are counted in
+    POLARITY_FILTER_STATS["rejected"]. Preference direction remains PE-defined;
+    the polarity gate only decides whether the two decisions differ enough to
+    be a contrast at all.
 
     D-032: the pair's prompt is the prompt the CHOSEN decision was made under,
     replayed from the event log, not a template built from the two PE values.
@@ -381,9 +386,9 @@ def build_pe_ranked_pairs(
                 SNR_FILTER_STATS["rejected_below_margin"] += 1
                 continue
 
-            NLI_FILTER_STATS["total_candidates"] += 1
+            POLARITY_FILTER_STATS["total_candidates"] += 1
             if not is_genuine_polarity_pair(chosen, rejected):
-                NLI_FILTER_STATS["rejected"] += 1
+                POLARITY_FILTER_STATS["rejected"] += 1
                 continue
             pe_chosen = float(low.prediction_error)
             pe_rejected = float(high.prediction_error)
@@ -404,7 +409,7 @@ def build_pe_ranked_pairs(
             previous = best_by_event.get(pair.event_counter)
             if previous is None or gap > (previous.pe_rejected - previous.pe_chosen):
                 best_by_event[pair.event_counter] = pair
-    NLI_FILTER_STATS["passed"] += len(best_by_event)
+    POLARITY_FILTER_STATS["passed"] += len(best_by_event)
     return list(best_by_event.values())
 
 

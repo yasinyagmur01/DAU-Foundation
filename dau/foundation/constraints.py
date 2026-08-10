@@ -50,6 +50,29 @@ SNR_MARGIN_FLOOR_CALIBRATED: bool = False
 NLI_MODEL_NAME: str = "cross-encoder/nli-deberta-v3-small"
 DAU_NLI_FILTER_ENABLED: bool = True  # override: DAU_NLI_FILTER_ENABLED=0
 
+# D-032. Which instrument decides that two lived decisions are opposite.
+# NLI_CONTRADICTION_THRESHOLD above is left at its locked value on purpose:
+# the measurement did not say 0.60 was wrong, it said the threshold was
+# irrelevant. On 85 real candidate pairs the pass rate is 12.9% at 0.60 and
+# 12.9% at 0.30 — the distribution is bimodal, so no threshold on that scale
+# opens the gate. Selecting the tool is the decision; the old threshold stays
+# readable and reachable via POLARITY_FILTER for comparison runs.
+POLARITY_FILTER_COSINE: str = "cosine"
+POLARITY_FILTER_NLI: str = "nli"
+POLARITY_FILTER_VALID: frozenset[str] = frozenset(
+    {POLARITY_FILTER_COSINE, POLARITY_FILTER_NLI}
+)
+POLARITY_FILTER: str = POLARITY_FILTER_COSINE
+# UNCALIBRATED: 0.25 and 0.80 are the bounds the DR brief proposed (lower to
+# reject paraphrase, upper to reject subject drift), not values chosen from our
+# own sweep — picking a number from one seed's distribution would be post-hoc
+# tuning (CLAUDE.md 2.7). Measured pass rates on those 85 pairs: 84.7% at 0.25,
+# 56.5% at 0.35, 18.8% at 0.50. The pilot calibrates them from the margin and
+# distance distributions this filter reports.
+POLARITY_COSINE_MIN: float = 0.25
+POLARITY_COSINE_MAX: float = 0.80
+POLARITY_COSINE_CALIBRATED: bool = False
+
 # Per-agent QLoRA (Punica pattern) — independent adapters, shared frozen base
 PER_AGENT_LORA_RANK: int = 8
 PER_AGENT_LORA_ALPHA: int = 16

@@ -736,15 +736,19 @@ def _pair_filter_report() -> dict[str, Any]:
 
     try:
         from dau.foundation.lora_update import (
-            NLI_FILTER_STATS,
+            POLARITY_FILTER_STATS,
             PROMPT_FILTER_STATS,
             SNR_FILTER_STATS,
         )
+        from dau.foundation.polarity_filter import describe_polarity_filter
     except ImportError:
         return {"available": False, "reason": "lora_update unavailable"}
 
     return {
         "available": True,
+        # D-032. Which gate ran, read from the resolver the gate itself uses —
+        # not from a separate constant that could drift out of step with it.
+        **describe_polarity_filter(),
         # D-032. A life whose decisions carry no recorded prompt trains on
         # nothing, and that must not read like a strict-filter result.
         "prompt_examples_seen": int(PROMPT_FILTER_STATS.get("examples_seen", 0)),
@@ -757,9 +761,9 @@ def _pair_filter_report() -> dict[str, Any]:
         "snr_rejected_below_margin": int(
             SNR_FILTER_STATS.get("rejected_below_margin", 0)
         ),
-        "nli_candidates": int(NLI_FILTER_STATS.get("total_candidates", 0)),
-        "nli_rejected": int(NLI_FILTER_STATS.get("rejected", 0)),
-        "pairs_passed": int(NLI_FILTER_STATS.get("passed", 0)),
+        "polarity_candidates": int(POLARITY_FILTER_STATS.get("total_candidates", 0)),
+        "polarity_rejected": int(POLARITY_FILTER_STATS.get("rejected", 0)),
+        "pairs_passed": int(POLARITY_FILTER_STATS.get("passed", 0)),
     }
 
 
@@ -772,7 +776,7 @@ def _train_adapter(
 
     Pairs come from ``build_pe_ranked_pairs``: PE-rank first, then
     ``is_genuine_polarity_pair``. Returns ``(n_pairs_trained, n_pairs_rejected)``
-    from NLI_FILTER_STATS deltas (passed is per-event; rejected per-candidate).
+    from POLARITY_FILTER_STATS deltas (passed is per-event; rejected per-candidate).
     Guard: ``DAU_LORA_ENABLED=0`` → skip and return ``(0, 0)``.
     """
 
@@ -787,7 +791,7 @@ def _train_adapter(
 
     try:
         from dau.foundation.lora_update import (
-            NLI_FILTER_STATS,
+            POLARITY_FILTER_STATS,
             build_pe_ranked_pairs,
             run_micro_train_preference_step,
             shuffle_preference_pairs,
@@ -799,8 +803,8 @@ def _train_adapter(
 
     from dau.foundation.lora_update import SNR_FILTER_STATS
 
-    before_passed = int(NLI_FILTER_STATS.get("passed", EMPTY_COUNT))
-    before_rejected = int(NLI_FILTER_STATS.get("rejected", EMPTY_COUNT))
+    before_passed = int(POLARITY_FILTER_STATS.get("passed", EMPTY_COUNT))
+    before_rejected = int(POLARITY_FILTER_STATS.get("rejected", EMPTY_COUNT))
     before_snr_rejected = int(SNR_FILTER_STATS.get("rejected_below_margin", 0))
 
     try:
@@ -808,9 +812,9 @@ def _train_adapter(
     except Exception:  # noqa: BLE001 — graceful fallback if PE/NLI path fails
         return EMPTY_COUNT, EMPTY_COUNT
 
-    n_pairs_trained = int(NLI_FILTER_STATS.get("passed", EMPTY_COUNT)) - before_passed
+    n_pairs_trained = int(POLARITY_FILTER_STATS.get("passed", EMPTY_COUNT)) - before_passed
     n_pairs_rejected = (
-        int(NLI_FILTER_STATS.get("rejected", EMPTY_COUNT)) - before_rejected
+        int(POLARITY_FILTER_STATS.get("rejected", EMPTY_COUNT)) - before_rejected
     )
     snr_rejected = (
         int(SNR_FILTER_STATS.get("rejected_below_margin", 0)) - before_snr_rejected
