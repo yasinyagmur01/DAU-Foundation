@@ -24,8 +24,19 @@ var".)
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
   ve karar kapısı (D-018..D-022) kapandı.
-- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U2** (NF4 +
-  `double_quant` açıkça, D-020). Sıra: `U1 ✅ → U2 → U3 → U7 → U4 → U5 → U6`.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U3** (model + VRAM
+  ölçümü, D-019 — **ön-kayıtlı, kriter değiştirilemez**).
+  Sıra: `U1 ✅ → U2 ✅ → U3 → U7 → U4 → U5 → U6`.
+- ⚠ **U3'e girmeden önce çözülmesi gereken:** HF cache'inde `Qwen/Qwen2.5-7B`
+  var — **base**. Brief (§7) ve D-019'un kastettiği **`-Instruct`**.
+  Instruction-tuned Llama'yı base Qwen'e karşı ölçmek model ailesini değil
+  instruction-tuning'i ölçer. Instruct indirilecek (~15.2G) mi, yoksa D-019'un
+  ön-kayıtlı protokolü açıkça düzeltilecek mi — **bir D-kaydı ister**.
+- **U2 bitti** (`70edeba`, kaydı **D-024**): alet fp4 koşuyormuş, artık
+  `nf4` + `double_quant` açıkça yazılı. Planın iki maddesi yanlış çıktı
+  (mevcut test değeri sabitlemiyormuş; dur-kontrol `--mock-llm`'de
+  ateşlenemezmiş). ⚠ `vram_spike_results.json`'daki **6386 MiB fp4'te
+  ölçülmüştü — U7 bütçesi için artık geçersiz**, U3 yeniden ölçecek.
 - **U1 bitti** (`7adb01d`): backend varsayılanı `local`. Yan ürün **D-023** —
   tanınmayan `DAU_LLM_BACKEND` değeri artık `ValueError`; varsayılanı
   çevirmek, eskiden zararsız olan sessiz fallback'i zararlı hale getirdi
