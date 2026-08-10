@@ -1450,3 +1450,91 @@ işi, farklı konfigürasyonda ölçüyor.
 
 **nf4 + double_quant altında eğitim tepe değeri henüz yok.** U7 (A2/A3/A4)
 bu ölçüm yapılmadan karara bağlanamaz.
+
+---
+
+## D-027 · 2026-08-10 · U7: A2 kabul (256→512) · A3 ertelendi · A4 yanlış yerde tartışılıyordu
+
+**Durum:** kabul edildi (Yasin, 2026-08-10). D-021'in ölçüme bağlanan
+yarısı. `constraints.DPO_MAX_SEQUENCE_TOKENS` **256 → 512**.
+
+### Ölçüm: eğitim VRAM tepe değeri, nf4 + double_quant
+
+Eksik olan sayı buydu — D-026 önceki "~2000 MiB boşluk" çıkarımını geri
+çekmişti, çünkü 5804 MiB **üretim** sırasında ölçülmüştü ve eski 6386 MiB
+eğitimi kapsıyordu ama **fp4**'teydi. Şimdi ikisi de aynı konfigürasyonda:
+
+Llama-3.1-8B-Instruct, nf4 + double_quant, `DPO_BATCH_SIZE=1`,
+`DPO_EPOCHS=1`, 6 çift, her konfigürasyon kendi process'inde.
+Ham JSON: `dau_runs/vram_train_peak_nf4.json`.
+
+| | seq=256 (mevcut) | seq=512 (A2) |
+|---|---|---|
+| Yükleme sonrası yerleşik | 5456.1 MiB | 5456.1 MiB |
+| **Eğitim tepe (allocated)** | **6139.5 MiB** | **6618.6 MiB** |
+| Eğitim tepe (reserved) | 6378.0 MiB | 6848.0 MiB |
+| Kart toplamı | 7807.6 MiB | 7807.6 MiB |
+| Kalan boşluk | 1668.1 MiB | **1189.0 MiB** |
+
+İkisi de `trained: true`. **A2'nin faturası 479.1 MiB.** D-021 "aktivasyon
+belleğini ~2×" diyordu; gerçek maliyet çok daha ucuz ve rahat sığıyor.
+
+### Ama A2'nin gerekçesi bellek değil — eğitim/çıkarım uyumsuzluğu
+
+`_encode_pair_side` (`local_llm.py:568`) sınır aşılınca **prompt'un başını**
+kesiyor ("Keep the completion intact; the prompt head is the expendable
+part"). Prompt'un başında chat template başlığı ve `SYSTEM_PROMPT` (78
+token) var — yani kesilen şey **talimatın kendisi**.
+
+Gerçek DAU prompt'u ölçüldü (Llama tokenizer, `_initial_state(2001)` view'ı
++ drift uyarısı + `_format_memory_context`):
+
+| Bellekten çekilen anı | Toplam token | 256 sınırı |
+|---|---|---|
+| 0 | 246 | sığıyor |
+| **1** | **274** | 18 token aşıyor |
+| 2 | 290 | 34 token aşıyor |
+| **3** (`MAX_RETRIEVED_MEMORIES`) | **306** | **50 token aşıyor** |
+
+`MEMORY_ENABLED = True` ve `retrieve_relevant` her kararda çağrılıyor, yani
+**tek bir anı çekildiği anda sınır aşılıyor.**
+
+**Sonuç:** `generate_completion` kesme yapmıyor — ajan karar verirken tam
+prompt'u görüyor. DPO ise sakatlanmış prompt üzerinden öğreniyor. Bu,
+projenin bir kez daha yakaladığı hata sınıfının aynısı: `d18ffe9` "Train
+DPO in the same chat format inference uses" aynı uyumsuzluğu **format**
+tarafında düzeltmişti; bu sefer **uzunluk** tarafında.
+
+**Bu, bugüne kadar yapılmış her DPO eğitimini etkiliyor.** Yeni bir
+geçersizlik ilanı gerekmiyor: `e4c026b`/`f25b0ef` öncesi sonuçlar zaten
+geçersizdi ve sonrasında geçerli sayılan bir C′ sonucu üretilmedi.
+
+512, en kötü durumda (306 token) rahat yetiyor. Aşılması için prompt'un
+%67 büyümesi gerekir.
+
+### A3 (`DPO_EPOCHS` 1→3) — **ertelendi, reddedilmedi**
+
+Bellek maliyeti yok (batch=1, epoch tepe değeri değiştirmez); maliyeti
+süre 3×. Ertelenme sebebi bütçe değil **sıra**: 08-09 pilotunda filtre 746
+aday çiftten 1'ini geçirdi (`n_pairs_rejected: 745`). Tek örnek üzerinde 3
+tur dönmek öğrenmek değil, o örneği ezberlemektir. A3'ün değeri U5'in (A5
+mutlak PE / SNR filtresi) çift darboğazını açmasına bağlı — **U5'ten sonra
+karara bağlanacak.**
+
+### A4 (%10 somatik replay) — bütçe kalemi değilmiş
+
+`DPO_BATCH_SIZE = 1` olduğu için replay daha büyük adım değil **daha çok
+adım** demek: tepe değer değişmez, süre uzar. D-021'in "~+0.3 GiB"
+tahmini bu nedenle yanlış görünüyor. **Doğrudan ölçülmedi**, batch=1'den
+çıkarıldı — bu kayıt onu ölçülmüş gibi sunmuyor.
+
+Yani A4 bir VRAM sorusu değil: ajanın **neyle** eğitildiğine dair deney
+tasarımı kararı (yüksek `F_agent` anılarının %10 oranında geri
+karıştırılması), ve aksiyoma değiyor. **Bu kayıtta karara bağlanmıyor**;
+kendi başına, bellek bütçesine sıkıştırılmadan tartışılacak.
+
+### Kabul edilen bedel
+
+`constraints.py` eşik değeri değişiyor — CLAUDE.md bunu yalnızca D-kaydıyla
+mümkün kılıyor, kayıt bu. Ön-kayıt henüz yazılmadı, pencere açık; pre-reg
+kilitlendikten sonra aynı değişiklik post-hoc olurdu.
