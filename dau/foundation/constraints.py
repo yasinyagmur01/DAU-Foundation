@@ -34,6 +34,19 @@ MAGNITUDE_PEAK_WEIGHT: float = 0.70
 
 # Signal v2 — NLI polarity gate for preference pairs (CPU cross-encoder)
 NLI_CONTRADICTION_THRESHOLD: float = 0.60
+# D-030 (A5, D-021). A5 was specified as an ABSOLUTE PE floor, but measurement
+# showed that reading cannot work: `chosen` is the low-PE side by construction,
+# so requiring PE >= 0.40 there discards the best pairs (6 of 9 on real data),
+# while requiring it of `rejected` never fires. The signal-to-noise concern is
+# real; it lives in the MARGIN, which PE_RANK_MIN_GAP=1e-6 left effectively
+# ungated.
+# UNCALIBRATED: 0.15 comes from the brief's "PE < 0.15 is lost in pretrained
+# weight noise", not from a measurement. Observed margins were 0.42-0.65, so
+# this floor does not fire on that sample — deliberately, since the training
+# set is already down to 1-2 pairs. The pilot calibrates it from the measured
+# margin distribution, using the rejection count this filter reports.
+SNR_MARGIN_FLOOR: float = 0.15
+SNR_MARGIN_FLOOR_CALIBRATED: bool = False
 NLI_MODEL_NAME: str = "cross-encoder/nli-deberta-v3-small"
 DAU_NLI_FILTER_ENABLED: bool = True  # override: DAU_NLI_FILTER_ENABLED=0
 

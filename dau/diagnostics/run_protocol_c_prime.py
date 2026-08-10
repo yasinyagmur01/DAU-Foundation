@@ -51,6 +51,7 @@ from dau.foundation.constraints import (
     PRECISION_MIN_HISTORY,
     PRECISION_MIN_WEIGHT,
     PRECISION_VAR_REF,
+    SNR_MARGIN_FLOOR,
     PPR_ALPHA,
     PPR_WEIGHT_IN_SCORE,
     build_default_constraints,
@@ -723,6 +724,35 @@ def _collect_pe_events(
                 pass
 
 
+def _pair_filter_report() -> dict[str, Any]:
+    """Pair-filter counts and the floor's calibration status (D-030).
+
+    ``calibrated`` ships false on purpose: the floor came from a brief's
+    claim, not from a measured margin distribution. A results file that
+    omitted this would let an uncalibrated threshold read as a settled one.
+    """
+
+    from dau.foundation.constraints import SNR_MARGIN_FLOOR_CALIBRATED
+
+    try:
+        from dau.foundation.lora_update import NLI_FILTER_STATS, SNR_FILTER_STATS
+    except ImportError:
+        return {"available": False, "reason": "lora_update unavailable"}
+
+    return {
+        "available": True,
+        "snr_margin_floor": SNR_MARGIN_FLOOR,
+        "snr_margin_floor_calibrated": SNR_MARGIN_FLOOR_CALIBRATED,
+        "snr_candidates": int(SNR_FILTER_STATS.get("total_candidates", 0)),
+        "snr_rejected_below_margin": int(
+            SNR_FILTER_STATS.get("rejected_below_margin", 0)
+        ),
+        "nli_candidates": int(NLI_FILTER_STATS.get("total_candidates", 0)),
+        "nli_rejected": int(NLI_FILTER_STATS.get("rejected", 0)),
+        "pairs_passed": int(NLI_FILTER_STATS.get("passed", 0)),
+    }
+
+
 def _train_adapter(
     agent_id: str,
     lived_examples: list[Any],
@@ -757,8 +787,11 @@ def _train_adapter(
 
     os.environ.setdefault(NLI_FILTER_ENABLED_ENV, "1")
 
+    from dau.foundation.lora_update import SNR_FILTER_STATS
+
     before_passed = int(NLI_FILTER_STATS.get("passed", EMPTY_COUNT))
     before_rejected = int(NLI_FILTER_STATS.get("rejected", EMPTY_COUNT))
+    before_snr_rejected = int(SNR_FILTER_STATS.get("rejected_below_margin", 0))
 
     try:
         pairs = build_pe_ranked_pairs(lived_examples)
@@ -769,6 +802,15 @@ def _train_adapter(
     n_pairs_rejected = (
         int(NLI_FILTER_STATS.get("rejected", EMPTY_COUNT)) - before_rejected
     )
+    snr_rejected = (
+        int(SNR_FILTER_STATS.get("rejected_below_margin", 0)) - before_snr_rejected
+    )
+    if snr_rejected:
+        print(
+            f"[SNR] {agent_id}: {snr_rejected} pair(s) dropped below "
+            f"SNR_MARGIN_FLOOR={SNR_MARGIN_FLOOR} before the NLI pass",
+            flush=True,
+        )
 
     if shuffled and pairs:
         pairs = shuffle_preference_pairs(
@@ -1259,6 +1301,10 @@ def write_results_json(
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
             "nli_filter_enabled": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
             "llm_do_sample": os.environ.get(LLM_DO_SAMPLE_ENV, "0"),
+            # D-030. MIN_PAIRS is uncalibrated (I1.5), so without these counts
+            # "few but strong pairs" reads exactly like "the filter emptied the
+            # training set". The floor ships uncalibrated and says so.
+            "pair_filter": _pair_filter_report(),
             "tool_identity": build_tool_identity(
                 lora_choice=lora_choice,
                 seeds=list(SEEDS),

@@ -173,3 +173,116 @@ def test_nli_real_model_smoke() -> None:
     nli_filter._get_nli_model.cache_clear()
     assert is_genuine_polarity_pair(CHOSEN_COOPERATE, REJECTED_DEFECT) is True
     assert is_genuine_polarity_pair(CHOSEN_SHARE, REJECTED_SHARE_PARAPHRASE) is False
+
+
+# ---------------------------------------------------------------------------
+# D-030 — SNR margin floor (A5 of D-021, reinterpreted from absolute PE)
+# ---------------------------------------------------------------------------
+
+
+def _lived(event: int, pe: float, completion: str):
+    from dau.foundation.lora_update import LivedTraceExample
+
+    return LivedTraceExample(
+        event_counter=event,
+        prediction_error=pe,
+        delta_magnitude=pe,
+        delta_class="NORMAL",
+        trauma_flag=False,
+        drift_sum=0.0,
+        loss_weight=1.0,
+        prompt=f"event {event}",
+        completion=completion,
+    )
+
+
+@pytest.fixture
+def _no_nli(monkeypatch: pytest.MonkeyPatch):
+    """Isolate the margin floor: NLI would otherwise reject nearly everything."""
+
+    from dau.foundation import lora_update
+
+    monkeypatch.setattr(lora_update, "is_genuine_polarity_pair", lambda _c, _r: True)
+    lora_update.SNR_FILTER_STATS["total_candidates"] = 0
+    lora_update.SNR_FILTER_STATS["rejected_below_margin"] = 0
+    return lora_update
+
+
+def test_margin_below_floor_is_dropped(_no_nli, monkeypatch) -> None:
+    """A 0.001 margin taught nothing; PE_RANK_MIN_GAP=1e-6 let it through."""
+
+    monkeypatch.setattr(_no_nli, "SNR_MARGIN_FLOOR", 0.15)
+    examples = [_lived(0, 0.030, "I wait."), _lived(1, 0.031, "I extract.")]
+
+    pairs = _no_nli.build_pe_ranked_pairs(examples)
+
+    assert pairs == []
+    assert _no_nli.SNR_FILTER_STATS["rejected_below_margin"] == 1
+    assert _no_nli.SNR_FILTER_STATS["total_candidates"] == 1
+
+
+def test_margin_above_floor_survives(_no_nli, monkeypatch) -> None:
+    """Real observed margins were 0.42-0.65; those must not be filtered."""
+
+    monkeypatch.setattr(_no_nli, "SNR_MARGIN_FLOOR", 0.15)
+    examples = [_lived(0, 0.220, "I cooperate."), _lived(1, 0.873, "I extract all.")]
+
+    pairs = _no_nli.build_pe_ranked_pairs(examples)
+
+    assert len(pairs) == 1
+    assert pairs[0].chosen == "I cooperate."
+    assert _no_nli.SNR_FILTER_STATS["rejected_below_margin"] == 0
+
+
+def test_floor_of_zero_reproduces_the_old_behaviour(_no_nli, monkeypatch) -> None:
+    """The backward gate the plan required: floor 0 must change nothing.
+
+    Margins are positive by construction once the sides are ordered, so a zero
+    floor can never fire. Without this, a regression could hide behind a floor
+    that silently rejects everything.
+    """
+
+    monkeypatch.setattr(_no_nli, "SNR_MARGIN_FLOOR", 0.0)
+    examples = [
+        _lived(0, 0.030, "I wait."),
+        _lived(1, 0.031, "I extract."),
+        _lived(2, 0.873, "I take everything."),
+    ]
+
+    pairs = _no_nli.build_pe_ranked_pairs(examples)
+
+    assert _no_nli.SNR_FILTER_STATS["rejected_below_margin"] == 0
+    assert len(pairs) == 2  # one per low-PE event, as before
+
+
+def test_margin_floor_runs_before_the_nli_pass(monkeypatch) -> None:
+    """Cheap gate first — and a sub-floor pair must not reach the cross-encoder."""
+
+    from dau.foundation import lora_update
+
+    calls: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        lora_update,
+        "is_genuine_polarity_pair",
+        lambda c, r: calls.append((c, r)) or True,
+    )
+    monkeypatch.setattr(lora_update, "SNR_MARGIN_FLOOR", 0.15)
+
+    lora_update.build_pe_ranked_pairs(
+        [_lived(0, 0.030, "I wait."), _lived(1, 0.031, "I extract.")]
+    )
+
+    assert calls == []
+
+
+def test_pair_filter_report_declares_the_floor_uncalibrated() -> None:
+    """A results file must not let an uncalibrated threshold read as settled."""
+
+    from dau.diagnostics.run_protocol_c_prime import _pair_filter_report
+
+    report = _pair_filter_report()
+
+    assert report["available"] is True
+    assert report["snr_margin_floor_calibrated"] is False
+    for key in ("snr_candidates", "snr_rejected_below_margin", "pairs_passed"):
+        assert key in report

@@ -17,6 +17,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from dau.foundation.constraints import SNR_MARGIN_FLOOR
 from dau.foundation.delta import is_trauma
 from dau.foundation.drift import DriftState, get_drift_bias
 from dau.foundation.nli_filter import is_genuine_polarity_pair
@@ -72,6 +73,14 @@ NLI_FILTER_STATS: dict[str, int] = {
     "total_candidates": 0,
     "passed": 0,
     "rejected": 0,
+}
+
+# D-030. Reported, not just applied: MIN_PAIRS is uncalibrated (I1.5), so
+# without this count "few but strong pairs" and "the filter emptied the
+# training set" look identical in the results JSON.
+SNR_FILTER_STATS: dict[str, int] = {
+    "total_candidates": 0,
+    "rejected_below_margin": 0,
 }
 
 
@@ -293,6 +302,16 @@ def build_pe_ranked_pairs(
             rejected = (high.completion or COMPLETION_FALLBACK).strip()
             if not chosen or not rejected or chosen == rejected:
                 continue
+
+            # D-030: signal magnitude before linguistic polarity. A margin
+            # inside the noise band teaches nothing however contradictory the
+            # two sentences read, and this gate is cheaper than the NLI pass.
+            margin = float(high.prediction_error) - float(low.prediction_error)
+            SNR_FILTER_STATS["total_candidates"] += 1
+            if margin < SNR_MARGIN_FLOOR:
+                SNR_FILTER_STATS["rejected_below_margin"] += 1
+                continue
+
             NLI_FILTER_STATS["total_candidates"] += 1
             if not is_genuine_polarity_pair(chosen, rejected):
                 NLI_FILTER_STATS["rejected"] += 1
