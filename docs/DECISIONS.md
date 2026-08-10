@@ -1205,3 +1205,64 @@ yerine **kimlik** iddia ediyor: CPython kısa string'leri intern ettiği için
 hiçbir şey kanıtlamazdı; tuple intern edilmiyor. Mutasyonla doğrulandı —
 `graph.py`'ye aynı değerli bir kopya geri kondu, test kırıldı.
 `get_backend`'in hâlâ çağıranı yok; silinmedi.
+
+---
+
+## D-024 · 2026-08-10 · U2 uygulandı; planın iki maddesi yanlıştı
+
+**Durum:** D-020'nin uygulama kaydı (`70edeba`). Yeni bir karar değil —
+D-020 kilitliydi; bu kayıt **uygulama sırasında planın yanlış çıkan iki
+maddesini** ve kalan riski tutuyor.
+
+**Ölçülen:** `transformers 5.14.1` → `BitsAndBytesConfig(load_in_4bit=True)`
+varsayılanı `quant_type='fp4'`, `double_quant=False`. Yani alet bugüne
+kadar **fp4, double-quant kapalı** koştu. D-020'nin "bayrak hiç yazılmamıştı"
+tespiti doğrulandı.
+
+### Planın 1. hatası — "mevcut testin değeri güncellenir"
+
+§F U2 satırı, `afbb552`'de yazılan
+`test_tool_identity_quantization_matches_loader`'ın değerinin
+güncelleneceğini söylüyordu. **Yanlış.** O test rapor ile loader'ın
+**tutarlılığını** ölçüyor:
+
+```python
+assert quantization["quant_type"] == str(config.bnb_4bit_quant_type)
+```
+
+İki taraf da aynı `build_load_kwargs()`'tan geldiği için, bayraklar
+silinip fp4 varsayılanı geri gelse bile bu test **geçer**. Mutasyonla
+doğrulandı: bayraklar kaldırıldığında o test yeşil kaldı, yalnızca yeni
+`test_quantization_flags_are_pinned_not_inherited` kırıldı.
+
+**Karar:** eski test doğru şeyi koruyor (iki inşa birbirinden ayrışmasın),
+dokunulmadı. Değeri sabitleyen **ayrı** bir test eklendi. İkisi farklı
+şeyleri bekliyor ve ikisi de gerekli.
+
+### Planın 2. hatası — dur-kontrolü ateşlenemez
+
+§F, dur-kontrol olarak *"`--no-lora --mock-llm` koşumunda JSON
+`quantization.quant_type: "nf4"` yazıyor mu"* diyordu. `tool_identity.
+_quantization` backend `local` değilse
+`{"available": false, "reason": "remote backend — not applicable"}`
+döndürüyor; `--mock-llm` koşumu `install_mock_llm`'in `setdefault`'u
+yüzünden backend'i `groq`'a sabitliyor. Mock JSON'unda `quant_type`
+**hiç yazmıyor** — kontrol hiçbir zaman ateşlenemezdi.
+
+**Yerine:** `describe_quantization()` model **yüklemiyor**, yalnızca
+config kuruyor; GPU'ya dokunmadan birim testinde doğrulanıyor.
+
+### Kalan risk — açıkça kaydediliyor
+
+Birim testi config'in **ne olduğunu** kanıtlıyor, 8B modelin o config'le
+**yüklendiğini** değil. NF4 + double_quant bu repoda ilk kez **U3'te**
+gerçek yükleme görecek. Yükleme başarısız olursa orada çıkar.
+
+**Bunun "yeni run atmamak sorun çıkarır mı" sorusuna cevabı:** hayır,
+çünkü (1) geçerli hiçbir C′ sonucu yok — `e4c026b` ve `f25b0ef`
+öncesi üretilenlerin tümü zaten geçersiz sayılmıştı, yani "yeniden
+koşulacak" bir sonuç yok; (2) U3 zaten NF4 açıkken ölçmek üzere
+tasarlanmış, ilk gerçek koşum o. **Ama bir sonucu var:**
+`dau_runs/vram_spike_results.json`'daki **6386 MiB** ölçümü fp4 /
+double-quant-kapalı konfigürasyonda alınmıştı — U7'nin bellek bütçesi
+için **artık geçerli bir sayı değil**, U3'ün taze ölçümü beklenmeli.
