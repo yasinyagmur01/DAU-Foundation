@@ -433,3 +433,49 @@ def test_optimizer_steps_once_per_accumulation_group(
     assert stats["dpo_optimizer_steps"] == expected_steps
     assert stats["dpo_steps"] == n_pairs  # micro-steps keep their old meaning
     assert stats["dpo_gradient_accumulation_steps"] == accumulation
+
+
+def test_learning_rate_stays_in_the_band_the_decision_rests_on() -> None:
+    """D-029: outside this band DPO stops raising the chosen completion.
+
+    Measured on 9 real pairs (dau_runs/lr_probe_results.json): at 5e-5 the
+    chosen completion's mean log-prob fell -0.1230 while the rejected fell
+    -4.3715, so the entire margin came from suppression. At 1e-6 the chosen
+    rose +0.0846. Pinning the literal alone would not say why a change is
+    wrong, so the band is asserted with the reason attached.
+    """
+
+    from dau.foundation.constraints import (
+        DPO_LEARNING_RATE,
+        DPO_LEARNING_RATE_MAX,
+        DPO_LEARNING_RATE_MIN,
+    )
+
+    assert DPO_LEARNING_RATE_MIN <= DPO_LEARNING_RATE <= DPO_LEARNING_RATE_MAX, (
+        f"DPO_LEARNING_RATE={DPO_LEARNING_RATE:g} is outside the measured band "
+        f"[{DPO_LEARNING_RATE_MIN:g}, {DPO_LEARNING_RATE_MAX:g}]. Above it, "
+        "training suppresses the rejected completion instead of raising the "
+        "chosen one, and the trace inherited by gen2 is a suppression pattern "
+        "rather than a preference (D-029). Changing it needs a new D-record."
+    )
+
+
+def test_tool_identity_reports_the_learning_rate_actually_used() -> None:
+    """A run must not be able to misreport the rate that produced its weights."""
+
+    from dau.diagnostics.tool_identity import BACKEND_LOCAL, build_tool_identity
+    from dau.foundation.constraints import DPO_LEARNING_RATE
+
+    import os
+
+    previous = os.environ.get("DAU_LLM_BACKEND")
+    os.environ["DAU_LLM_BACKEND"] = BACKEND_LOCAL
+    try:
+        identity = build_tool_identity(lora_choice="off", seeds=[2001])
+    finally:
+        if previous is None:
+            os.environ.pop("DAU_LLM_BACKEND", None)
+        else:
+            os.environ["DAU_LLM_BACKEND"] = previous
+
+    assert identity["dpo"]["learning_rate"] == DPO_LEARNING_RATE

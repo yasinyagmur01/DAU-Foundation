@@ -47,7 +47,19 @@ ADAPTER_SWITCH_MAX_MS: int = 1
 # is the same model with adapters disabled, so no second set of base weights
 # is held in memory.
 DPO_BETA: float = 0.10
-DPO_LEARNING_RATE: float = 5e-5
+# D-029 (was 5e-5). Measured on 9 real pairs: at 5e-5 the CHOSEN completion's
+# log-prob went DOWN (-0.12) while the rejected collapsed (-4.37) — the whole
+# margin came from suppression, not preference. At 1e-6 the chosen rises
+# (+0.08) and the rejected falls modestly. An agent trained the first way
+# learns "never say the high-PE thing" rather than "prefer the low-PE thing",
+# and over N generations (D-014) it is the suppression pattern that gets
+# inherited. The value is the literature band's upper end, not a number picked
+# from our own sweep — one seed cannot choose between 1e-6 and 5e-7.
+DPO_LEARNING_RATE: float = 1e-6
+# The band D-029 rests on: below it the update is negligible, above it the
+# unlikelihood push takes over. Not a tuning range to explore freely.
+DPO_LEARNING_RATE_MIN: float = 5e-7
+DPO_LEARNING_RATE_MAX: float = 1e-6
 DPO_EPOCHS: int = 1
 # One pair per step. A batch holds every pair's forward graph alive at once —
 # two sides each — so batch 2 needs four full graphs before backward. The 4-bit
