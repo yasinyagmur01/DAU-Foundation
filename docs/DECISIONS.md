@@ -2333,3 +2333,77 @@ uç noktayı prefix'e döndür · JSON'a yazmayı kaldır. Tam suite
 Bu, D-034/D-035'in ΔPE sayılarını **karşılaştırılamaz** kılar: onlar ilk 10
 olayın ortalamasıydı, bundan sonrakiler 50 olayın. Eski sayılar geçersiz
 değil, **başka bir şeyin** ölçümü.
+
+---
+
+## D-037 · 2026-08-11 · Tekrarlanabilirlik ölçüldü: kaynak eğitim, çözüm **strict determinizm**
+
+**Durum:** ölçüm kaydı. D-035'in açtığı **üçüncü kararın** kanıtı; kalıcı
+bayrak değişikliği **henüz yapılmadı** (Yasin'in onayını bekliyor).
+Ham: `dau_runs/repro_{a,b}_seed2001.json` ·
+`dau_runs/repro_{c,d}_strict_seed2001.json` ·
+`dau_runs/exploratory_train_determinism.json`.
+
+### Kontrollü tasarım
+
+Dört koşum, hepsi seed 2001, N=1, gen1=50, aynı kod, temiz adapter dizini:
+**A, B** = `warn_only=True` (mevcut) · **C, D** = `warn_only=False` (strict).
+
+| | A ↔ B (warn_only) | C ↔ D (strict) |
+|---|---|---|
+| faz-1 | özdeş | özdeş |
+| `null` faz-2 | **0/50** fark | **0/50** fark |
+| `lived` faz-2 | **21/50** fark | **0/50** |
+| `shuffle` faz-2 | **23/50** fark | **0/50** |
+| adapter ağırlıkları | **farklı** | **birebir aynı** |
+| `arm_digest` | farklı | aynı |
+| süre | 20dk25 / 20dk16 | 20dk24 / 20dk30 |
+
+**Strict determinizm sapmayı tamamen kapatıyor, maliyeti ölçülemiyor,
+abort etmiyor.**
+
+### Sapmanın büyüklüğü — asıl mesele
+
+`warn_only` altında aynı kolun koşumdan koşuma ΔPE yayılımı:
+`lived` +0.0445 / +0.0283 / +0.0545 ⇒ **0.026**; `shuffle` ⇒ **0.029**.
+Tek koşumda ölçülen `lived − null` farkı ise +0.015 / −0.001 / +0.025.
+
+**Gürültü etkiden büyük.** Bu haliyle tek koşumluk kol karşılaştırması
+ölçmek istediği şeyi çözemez — ön-kayıtın önündeki asıl engel buydu.
+
+### ⚠ Kendi ara değerlendirmemin düzeltmesi
+
+Sıra şuydu: D-035 kaynağı `TORCH_DETERMINISTIC_WARN_ONLY` diye **tahmin
+etti** → izole probe'lar (8 çift, 47 çift, iki ayrı süreç, adapter
+round-trip, adapter takılı çıkarım — hepsi bit düzeyinde deterministik) →
+bunlara dayanarak *"atıf desteklenmiyor, eğitim elendi"* diye raporladım →
+boru hattı karşılaştırması A ve B'nin **farklı adapter** ürettiğini gösterdi
+⇒ eğitim tam da kaynakmış → C↔D testi D-035'in ilk tahminini **doğruladı**.
+
+Yanlış olan D-035 değil, **ara değerlendirmemdi**. İzole probe temiz
+koşullarda koştuğu için olguyu yeniden üretemiyordu; ben bir *negatif
+sonucu* aklama sayıp raporladım. Ders: bir probe olguyu yeniden
+üretemiyorsa, o probe kanıt değil — yalnızca probe'un yetersizliğidir.
+
+**Aynı hata D-035'in metninde de duruyor** (kayıt append-only): orada
+"`TORCH_DETERMINISTIC_WARN_ONLY=True` muhtemel kaynak" yazıyor ve bu artık
+**doğrulanmış** sayılmalıdır, "muhtemel" değil.
+
+### Neden `null` deterministikti de diğerleri değildi
+
+`null` adapter'sız koşuyor (`lora_B=0` özdeşlik aşısı), yani LoRA yolu
+sayısal olarak devre dışı. `lived`/`shuffle` gerçek ek matmul yapıyor;
+non-deterministik kernel'lerin yarattığı çok küçük ağırlık farkını greedy
+argmax karar değişikliğine çeviriyor ve fark yaşam boyunca birikiyor.
+
+### Öneri (uygulanmadı)
+
+`TORCH_DETERMINISTIC_WARN_ONLY = True → False`. Mevcut yorum bayrağı
+*"unsupported ops must not abort a long run"* diye gerekçelendiriyor; bu
+korku bu şekilde **ölçülerek yanlışlandı** — dört koşumun ikisi strict
+koştu, ikisi de `exit 0`. Kod zaten sampling altında strict'e zorluyordu;
+değişiklik greedy'yi de aynı yere getiriyor.
+
+**Sınırlar:** tek seed, tek makine, tek GPU, tek shape (47 çift, 50 olay).
+Farklı bir şekilde deterministik karşılığı olmayan bir op çıkarsa strict
+mod abort eder — o zaman bu kayıt yeniden açılır.
