@@ -38,6 +38,7 @@ Kalibrasyonsuz ABORT, keyfi bir sabitle koşum öldürmek demektir.
 | I0.4 | **Seed türetmesi doğrulanabilir.** Her `agent_id` için `_seed_from_agent_id` beklenen değeri dönmeli; hash fallback'e düşerse dur. | ABORT | GAP-11 (spesifik) |
 | I0.5 | **Import-time env tutarlı.** `TEMPERATURE` gibi import anında yakalanan değerler mevcut env ile aynı mı. | ABORT | GAP-15 |
 | I0.6 | **Determinizm ayarları aktif.** `CUBLAS_WORKSPACE_CONFIG` · torch deterministic algorithms · cudnn deterministic. | ABORT | replay kaybı |
+| I0.7 | **Hiçbir ajan önceki koşumun adapter'ıyla başlamıyor.** Koşumun `agent_id`'lerinden herhangi birinde kayıtlı adapter varsa dur. `switch_adapter` her yerel kararda diskten yüklüyor ve **`DAU_LORA_ENABLED`'a bağlı değil**, yani `--no-lora` koşumu da kirlenir. Yerel backend dışında **N/A (`None`)**, `True` değil. | ABORT | **D-033** — 08-10 smoke'unda ölçüldü: kollar ayrıştı (`n_unique` 6/7/6), sapma **hipotez lehine** |
 
 Faz 0 saniyeler sürer ve hiçbir GPU maliyeti yoktur. Hepsi ABORT, çünkü
 hepsi ikili (var/yok), kalibrasyon gerektirmiyor.

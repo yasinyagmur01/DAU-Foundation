@@ -23,9 +23,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `314 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-032.** Sıradaki kayıt **D-033** olarak açılır.
-- **Son GAP: GAP-19.** Sıradaki **GAP-20**.
+- **Suite:** `317 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-033.** Sıradaki kayıt **D-034** olarak açılır.
+- **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 
 ## ✅ Faz 2 KAPANDI
 
@@ -63,6 +63,17 @@ Sorun eşik değil **prompt**muş. Eğitim, 51 token'lık ve `system=""` olan
 verisinde **9 çift** · **9 farklı prompt** · 2 benzersiz `rejected`
 (önce 1–3). Ham: `dau_runs/exploratory_pair_design_replay.json`.
 
+## ✅ İlk gerçek koşum yapıldı (D-033) — alet artık uçtan uca koştu
+
+`dau_runs/smoke_d032_local.json` · yerel Llama, N=1, gen1=10 olay · `exit 0`,
+**2dk 47sn**. D-032'nin dur-kontrolü canlıda doğrulandı: `lived` **8 çift**,
+`shuffle` 6, `null` 0 · `[LORA][WARN]` **sıfır** · I5.2 geçti.
+
+⚠ Aynı koşum bir kusur buldu: **adapter'lar koşumlar arası diskte kalıyordu**
+ve `switch_adapter` faz-1 başında yüklüyordu (üstelik `DAU_LORA_ENABLED`'a
+bağlı değil ⇒ `--no-lora` da kirlenir). Kollar bu yüzden ayrıştı. Sapma
+**H1 lehineydi**. → **I0.7** ABORT kapısı eklendi (`782ca33`).
+
 ## ▶ SIRADAKİ İŞ: **pilot**
 
 Hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu. Beş şeyi aynı
@@ -70,13 +81,20 @@ anda kalibre eder: U4'ün `N`'i (D-028) · `SNR_MARGIN_FLOOR` (D-030) · A3 ·
 `MIN_PAIRS` (I1.5) · **GAP-9'un güç hesabı**. Ayrıca I5.1'in FLAG'den
 ABORT'a yükselip yükselemeyeceğini söyler (D-022 madde 2).
 
-⚠ **Pilot öncesi bilinmesi gerekenler:**
-- Alet **on bir kez** değişti ve bu haliyle **bir kez bile uçtan uca
-  koşmadı**. Pilotun ilk işi bu.
-- `POLARITY_COSINE_MIN/MAX` ve `SNR_MARGIN_FLOOR` **kalibre değil** —
-  ikisi de brief'ten geldi, ikisi de bayrağıyla öyle raporlanıyor.
-- 10 olayda **7 benzersiz completion** tavanı duruyor. Uzun yaşam açar
-  (U3: 50 olayda 27), ama olay sayısı pilotun kararı.
+⚠ **Pilot öncesi:**
+1. **`dau_runs/adapters/` temizlenmeli** (ya da taze seed'ler). I0.7 artık
+   unutmaya izin vermiyor ama temizliği **yapmıyor** — 35 dolu dizin var,
+   en eskisi 08-07.
+2. `POLARITY_COSINE_MIN/MAX` ve `SNR_MARGIN_FLOOR` **kalibre değil** —
+   ikisi de brief'ten geldi, ikisi de bayrağıyla öyle raporlanıyor.
+3. 10 olayda **7 benzersiz completion** tavanı duruyor. Uzun yaşam açar
+   (U3: 50 olayda 27), ama olay sayısı pilotun kararı.
+4. **VRAM payı yok:** D-032 eğitim dizisini ~370 token'a çıkardı, 8 GB kartta
+   3 OOM uyarısı alındı (allocator toparladı). 50 olayda daha çok anı
+   çağrılacağı için prompt uzar — bu risk ölçülmedi.
+
+**Süre (ölçülen):** kol başına gen1 39–65sn (10 olay). Doğrusal varsayarsak
+gen1=50'de seed başına ~11–12 dk ⇒ N=3 ≈ 35 dk, N=15 ≈ 3 saat.
 
 **Sonra:** güç hesabı → ön-kayıt.
 
@@ -220,7 +238,7 @@ kaymış.)
 | Her oturum başı | `CLAUDE.md` (otomatik) |
 | Sıradaki iş ne | `docs/EXECUTION_PLAN.md` §D/§F |
 | "Bunu neden böyle kararlaştırdık?" | `docs/DECISIONS.md`, D-numarasıyla |
-| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (I0.1–I5.4, **24 madde**) + `dau/diagnostics/preflight.py` |
+| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (I0.1–I5.4, **25 madde**) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` ⚠ ~20 commit geride |
@@ -321,6 +339,7 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
 | GAP-14 | Consolidation deney yoluna bağlandı — D-022 kararı, **D-031** uygulaması (`987a1bc`) |
 | GAP-15 | `TEMPERATURE` çağrı anında okunuyor (`ab30f9c`) |
 | GAP-16 | Quantization NF4 + double_quant (D-020) — uygulandı `70edeba` |
+| GAP-20 | Koşumlar arası adapter sızıntısı — **D-033**, I0.7 ABORT kapısı (`782ca33`). Açıldığı gün kapandı |
 
 ## Açık — pre-reg'i **bloke edenler**
 

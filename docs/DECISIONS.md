@@ -1957,3 +1957,99 @@ prompt'u · SYSTEM_1'in prompt iddia etmesi · PE-değerli template'e dönüş �
 eksik prompt'un sessizce yutulması · shuffle'ın alan alan yeniden kurulması
 · hep-geçen polarite kapısı · üst sınırın kaldırılması · tanınmayan filtre
 adının varsayılana düşmesi. Tam suite **314 passed, 2 deselected**.
+
+---
+
+## D-033 · 2026-08-10 · İlk gerçek koşum: darboğaz açık, ama **adapter'lar koşumlar arası sızıyor**
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `782ca33`.
+D-032'nin dur-kontrolünü canlı doğrular, **GAP-20**'yi açar ve kapatır.
+
+### Ölçüm — keşifsel, ön-kayıtlı değil
+
+`dau_runs/smoke_d032_local.json`. On bir alet değişikliğinden sonra **ilk
+uçtan uca gerçek koşum**: yerel Llama-3.1-8B, N=1 (seed 2001), gen1=10 olay,
+gen2=5, `--lora`. `exit 0`, toplam **2dk 47sn** (model yüklemesi dahil),
+yaşam içi 162.9sn.
+
+**Sınırlar:** tek seed, 10 olay, tek atış. Süre tahminleri (gen1=50'de seed
+başına ~11–12 dk) doğrusal ölçekleme varsayıyor, ölçülmedi.
+
+### Çalıştığı doğrulanan (D-032'nin canlı dur-kontrolü)
+
+| Ne | Sonuç |
+|---|---|
+| Eğitime giren çift | `lived` **8**, `shuffle` 6, `null` 0 (doğru) — önce 1–2 idi |
+| `[LORA][WARN]` | **0** — canlı koşumda her kararın kayıtlı prompt'u vardı |
+| I5.2 | geçti — polarite kapısı gerçek modelde danışıldı |
+| VRAM | 3 OOM **uyarısı**, allocator toparladı, koşum tamamlandı. D-032'nin ~370 token'lık dizileri 8 GB'a sığıyor ama **payı yok** |
+| Bayraklar | I3.2 (`pi_n_distinct` düşük, kalibre değil) · I5.4 (somatik hiç uygulanmadı — GAP-3) |
+
+`loss≈0.698 (≈ln2)`, `acc=0.375`: lr 1e-6'da politika referanstan çok az
+kımıldıyor — D-029'un kasıtlı sonucu, pilotta bakılacak.
+
+### Bulunan kusur — pilotu bloke ederdi
+
+Üç kolun **faz-1 yaşamları ayrıştı**: `n_unique` 6 / 7 / 6, çift 8 / 0 / 6.
+Shuffle tanımı gereği "lived ile aynı faz-1, sonra takas" olduğundan bu
+sayılar eşit olmalıydı.
+
+**Sebep:** `graph.agent_node` her yerel kararda `switch_adapter` çağırıyor
+ve `switch_adapter`, `adapter_exists(agent_id)` doğruysa **diskten
+yüklüyor**. Adapter dizinleri yalnızca `agent_id` ile anahtarlanıyor, yani
+aynı seed'le yeniden koşmak onları yeniden kullanıyor — **faz-1 önceki
+koşumun eğittiği ağırlıklarla başlıyor.**
+
+⚠ Çağrı **`DAU_LORA_ENABLED`'a bağlı değil** → `--no-lora` koşumu da kirlenir.
+
+**Kanıt:** `dau_runs/adapters` altında **35 dolu dizin**, en eskisi 08-07.
+08-09 pilotu (N=3, seed 2001–2003, `lora_enabled=1`) tam olarak
+`cprime-{lived,shuffle}-{2001,2003}-g1`'i eğitip kaydetmiş; 2003'ünkiler
+**hâlâ 08-09 09:15 tarihli, dokunulmamış**. Bugünkü smoke'ta `lived` ve
+`shuffle` 08-09 ağırlıklarını yükledi; `null` hiç eğitilmediği için dizini
+boştu ve tek temiz kol o oldu.
+
+**Sapmanın yönü kötü:** LIVED koşumdan koşuma eğitim biriktiriyor, NULL hiç
+biriktirmiyor ⇒ sızıntı **H1 lehine**. Bu, §6'daki koşum-içi sızıntının
+(`f25b0ef`) **koşumlar arası ikizi**; `test_no_dead_adapter_root_reference`
+bunu görmüyor.
+
+### Karar: **I0.7 — kirli dizinle koşum başlamaz (ABORT)**
+
+Reddedilen alternatifler:
+
+- **Koşum başında otomatik silme.** En az sürtünme, ama **veri siliyor**;
+  yanlış bir `--seed-start` başka bir koşumun çıktısını götürebilirdi.
+  Önceki koşumun artığını silmek **kapının değil operatörün** kararı.
+- **`agent_id`'ye koşum kimliği eklemek.** Hiçbir şey silinmezdi, ama
+  `AGENT_ID_SEED_PATTERN`'e ve mevcut bütün çıktıların kimliklerine
+  dokunurdu — en geniş değişiklik.
+- **Sadece GAP açıp elle temizlemek.** Koruma olmazdı; aynı tuzağa bir
+  sonraki koşumda düşmek serbest kalırdı.
+
+Yerel backend dışında **`None` (N/A)** döner, `True` değil: `switch_adapter`'ın
+disk yolu yalnızca yerelde çalışır ve **hiç bakmamış bir kontrol, geçmiş
+gibi okunmamalı** (`InvariantResult.passed=None` bunun için var).
+
+### Yan düzeltme: sorgu yazmayı bıraktı
+
+`adapter_exists` → `get_adapter_path` üzerinden gidiyordu, o da `mkdir`
+yapıyor. **Sorulan şeyi yaratan bir sorgu**: 114 dizinin **79'u** bu yan
+etkinin izi. Yeni `adapter_dir()` salt-okunur; yoksa I0.7'nin denetimi
+denetlediği şeyi değiştirirdi.
+
+### Yan düzeltme: multigen `pair_filter` raporlamıyordu
+
+`_pair_filter_report` yalnızca Protocol C′'nin dosyasına giriyordu. Deney
+yolu D-014/D-031 uyarınca **multigen**, yani `prompt_skipped_no_record`,
+polarite red sayıları ve `pairs_passed` **asıl koşumun çıktısında
+görünmüyordu**. D-032'nin eksiğiydi, burada kapandı.
+
+**Kanıt:** gerçek dizine karşı canlı kontrol kirli dört ajanı adlandırıyor.
+3 mutasyon, 3 kırılma — hiç ateşlemeyen kapı · faz-0'a bağlanmamış kapı ·
+yerel-olmayanı `True` sayan kapı. Tam suite **317 passed, 2 deselected**.
+
+### Pilot öncesi kalan
+
+`dau_runs/adapters/` **temizlenmeli** (ya da pilot taze seed'lerle
+koşulmalı) — I0.7 artık unutmaya izin vermiyor ama temizliği yapmıyor.
