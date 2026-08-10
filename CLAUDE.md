@@ -23,7 +23,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `317 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Suite:** `323 passed, 2 deselected`. Çalışma ağacı temiz.
 - **Son D-kaydı: D-035.** Sıradaki kayıt **D-036** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 
