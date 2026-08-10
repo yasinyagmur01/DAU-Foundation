@@ -24,13 +24,15 @@ var".)
   gerçek diverjans var, ertelendi (**D-013**).
 - **Faz:** **Faz 2 — kararların uygulanması.** Kod düzeltme fazı (Adım 1–7)
   ve karar kapısı (D-018..D-022) kapandı.
-- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U5** (mutlak PE / SNR
-  filtresi, D-021/A5). Sıra: `U1 ✅ U2 ✅ U3 ✅ U7 ✅(A2) U4 ✅ → U5 → U6`.
-- **U5 artık fazın kilit taşı.** Bugün üç ayrı madde ona bağlandı: A3
-  (D-027), U4'ün `N` kalibrasyonu (D-028), ve DR brief'inin konusu. Sebep
-  tek: filtre yaşam başına **1–2 çift** geçiriyor (746 adaydan 745'i NLI'de
-  eleniyor + olay başına tek çift tasarımı). Çift darboğazı açılmadan
-  bunların hiçbiri ölçülemez.
+- **SIRADAKİ İŞ:** `docs/EXECUTION_PLAN.md` **§F** → **U6** (consolidation'ı
+  deney yoluna bağla, D-022). Sıra: `U1..U5 ✅ → U6` — Faz 2'nin son adımı.
+- ⚠ **Çift darboğazı hâlâ açık.** U5 marj filtresini ekledi ama asıl daraltan
+  **NLI**: ölçüldü, 85 gerçek çiftte çelişki skoru medyanı **0.0024** ve
+  eşiği 0.60→0.30 indirmek **tek çift bile** kazandırmıyor (dağılım çift
+  tepeli). DR brief'i aracın yapısal olarak yanlış olduğunu söylüyor; kosinüs
+  mesafe aynı çiftlerde %12.9 yerine **%56.5** geçiriyor. `NLI_CONTRADICTION_
+  THRESHOLD` **kilitli karar** → değişimi D-kaydı ister. **A3, U4'ün `N`'i ve
+  `SNR_MARGIN_FLOOR` kalibrasyonu bu darboğaza bağlı.**
 - **Karar bekleyen iki madde** (ikisi de bugünden kaldı):
   1. **Sampling: greedy mi sampled mı** — D-026'da açık bırakıldı. Reçetenin
      gerekçesi çürüdü (greedy 50 olayda `n_unique=27`, kapı 5) ama sampled
@@ -38,7 +40,9 @@ var".)
   2. **A4 (%10 somatik replay)** — D-027 bunu VRAM bütçesinden çıkardı
      (batch=1'de bellek maliyeti yok). Deney tasarımı kararı, ayrıca
      tartışılacak. **A3 U5'ten sonraya ertelendi.**
-- **Bugün bitenler:** U4 (`9718737`, **D-028** — efektif batch 1'di) ·
+- **Bugün bitenler:** U5 (`5ad70a8`, **D-030** — A5 marja çevrildi) ·
+  **D-029** (`10697f1` — lr 5e-5 bastırıyordu, 1e-6) · U4 (`9718737`,
+  **D-028** — efektif batch 1'di) ·
   U2 (`70edeba`, D-024 — alet fp4 koşuyormuş) · U3a
   (`64f953a` model env + alet kimliği) · U3b (`13e3b9e` ölçüm harness) ·
   **U3 ölçüldü → Llama kalıyor** (`9fcfcbe`, **D-026**) · **U7/A2**
@@ -225,6 +229,15 @@ bağlanacak. A5'in eşiği (`0.40`) kilitli **değil**: mekanizma şimdi, değer
 pilottan sonra kalibre edilir.
 
 **Hâlâ açık olanlar:**
+
+### GAP-18: her çiftin `rejected` tarafı aynı metin (D-030)
+`best_by_event` verilen bir chosen için en büyük marjı seçtiğinden, global
+maksimum-PE completion **bütün** çiftlerin reddedilen tarafı oluyor. Ölçüldü:
+9 çiftin dokuzunda da `pe_rejected = 0.8728`. Eğitim seti "bir kötü örnek vs
+diğer her şey". D-029'un −4.37'lik çöküşünü kısmen açıklıyor (aynı metin 9 kez
+itiliyor) ve DR brief'inin **F8** uyarısıyla örtüşüyor (hizalama evresi
+ihlali — tek çifte indirgemek keşif çeşitliliğini öldürür). Eşik değil,
+**eşleştirme tasarımı** sorusu.
 
 ### GAP-17: üretim çeşitliliği açıklanamayan biçimde 3–4 kat arttı (D-026)
 08-09 pilotu 50 olayda `n_unique` 7·4·8 vermiş (bir seed gate'lenmiş).

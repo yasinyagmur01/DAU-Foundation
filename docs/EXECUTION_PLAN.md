@@ -357,7 +357,14 @@ Kısmi tail'in boyutu hesaplanıyor (bugün çalışan **tek** grup o).
 | **Bedava kazanç** | Alet kimliği `gradient_accumulation_steps` ve `effective_batch_size`'ı kendiliğinden doğru raporlar (`tool_identity.py`) — **sabiti oradan da güncellemeyi unutma**, bugün `GRADIENT_ACCUMULATION_STEPS: int = 1` olarak sabitlenmiş durumda |
 | **Dur-kontrol** | I1.3 (grad adımı atıldı) ileride yazılırken bu sayaç kullanılabilir mi |
 
-## U5 — Mutlak PE (SNR) filtresi (D-021/A5)
+## U5 — Mutlak PE (SNR) filtresi (D-021/A5) ✅ `5ad70a8` — kaydı **D-030**
+
+**Bitti** 2026-08-10, ama **planın yazdığı gibi değil.** `SNR_FLOOR=0.40`
+mutlak PE eşiği olarak ölçüldü ve çalışmıyor: `chosen` tanım gereği düşük-PE
+tarafı, ondan ≥0.40 istemek 9 çiftin **en iyi 6'sını** eliyor; `rejected`'a
+uygulanınca hiç ateşlenmiyor. Eşik **marja** taşındı (`SNR_MARGIN_FLOOR`,
+NLI'den önce koşuyor). **0.15 KALİBRE EDİLMEMİŞ** — üç yerde öyle işaretli.
+Ret sayıları JSON'da (`pair_filter`). Yan bulgu → **GAP-18**.
 
 | | |
 |---|---|
