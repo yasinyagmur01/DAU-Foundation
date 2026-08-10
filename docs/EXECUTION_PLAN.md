@@ -198,7 +198,18 @@ Ayrıntılı adım planı: **§F (Faz 2)**. Özet sıra:
 ⚠ **Faz 2 kapandı (2026-08-10).** `CLAUDE.md` "SIRADAKİ İŞ" bu bölüme
 işaret eder. §F artık tarihsel kayıt — U1–U7 hepsi ✅.
 
-### 8.0 — ÇİFT DARBOĞAZI (sıradaki iş, **tek karar**)
+### 8.0 — ÇİFT DARBOĞAZI ✅ `5afc9ee` · `7232a04` · `17bc9bd` — kaydı **D-032**
+
+**Dur-kontrol geçti:** gerçek `build_pe_ranked_pairs`, seed 2001'in gerçek
+completion/PE'leri üzerinde **9 çift** üretiyor (önce 1–3), **9 farklı
+prompt** ile. Sorun eşik değil prompt'muş: eğitim 51 token'lık, `system=""`
+bir prompt'la koşuyordu; çıkarım 246–306 token. Ayrıntı D-032.
+
+⚠ Kapanmayan: 10 olayda 7 benzersiz metin tavanı · `SNR_MARGIN_FLOOR` hâlâ
+kalibre değil ve `best_by_event` dururken kalibre edilemez. İkisi de pilotun
+işi.
+
+<details><summary>Kapanmadan önceki tanım (tarihsel)</summary>
 
 Faz 2 sonunda ortaya çıktı ve pilotu bloke ediyor: eğitim yaşam başına
 **1–2 çift** alıyor, yani kanal 2 (LoRA) fiilen test edilemiyor. Üç bağlı
@@ -220,6 +231,8 @@ IPO'ya geçiş. Üçü farklı büyüklükte değişiklik.
 
 **Dur-kontrol:** değişiklikten sonra gerçek koşumda kaç çift eğitime giriyor?
 1–2'de kalıyorsa darboğaz kapanmamıştır.
+
+</details>
 
 ---
 

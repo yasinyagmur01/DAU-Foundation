@@ -1817,3 +1817,143 @@ deney yoluna bağlandığı için **ilk kez etkisi olacak**. `now_counter`
 olarak `len(parent_final.event_log)` seçildi, çünkü vault'a yazılan
 sayaçlar da faz-yerel; farklı bir değer seçmek uyumsuzluğu büyütürdü.
 Doğru çözüm sayaç uzayının kendisini düzeltmek — ayrı iş.
+
+---
+
+## D-032 · 2026-08-10 · Çift darboğazı: sorun eşik değil, **prompt**
+
+**Durum:** kabul edildi (Yasin, 2026-08-10), uygulandı `5afc9ee` ·
+`7232a04` · `17bc9bd`. `CLAUDE.md` §1'in üç bağlı maddesini (NLI eşiği ·
+GAP-18 · `SNR_MARGIN_FLOOR`) **tek kayıtta** kapatır — plan §D 8.0'ın
+istediği biçimde. GAP-18 küçülür, GAP-2'nin açık yarısı etkilenmez.
+
+### Ölçüm — keşifsel, ön-kayıtlı değil
+
+`dau_runs/exploratory_pair_design_replay.json`. Seed 2001'in **tüm aday
+uzayı** `lr_probe_pairs.json`'daki 9 çiftten geri kuruldu (9 chosen +
+paylaşılan rejected = 10 olay) ve `nli_score_distribution.json`'a `pe_gap`
+üzerinden bağlandı: **41/41 birebir eşleşti**, yani gerçek NLI ve kosinüs
+skorlarıyla o yaşam GPU'suz yeniden koşulabiliyor.
+
+**Sınırlar:** tek seed, 10 olay, greedy, tek atış. Seed 2002'nin
+completion'ları geri kurulamadı, tasarımlar orada tekrarlanmadı.
+
+| Tasarım (SNR floor sonrası) | çift | benzersiz `rejected` |
+|---|---|---|
+| Şimdiki: `best_by_event` + NLI≥0.60 | 3 | 1 |
+| Polarite filtresi yok | 9 | 1 |
+| NLI yerine kosinüs [0.25, 0.80] | 9 | 2 |
+| Ayrık eşleştirme (`rejected` tekil) | **2** | 2 |
+
+### Dört bulgu
+
+**1. Darboğaz NLI değil.** 10 olay yalnızca **7 benzersiz completion**
+üretmiş (1, 2, 3 aynı cümle). Filtre tamamen kaldırılsa bile tavan burada.
+
+**2. GAP-18 ile çift sayısı birbirini yiyor.** `rejected`'ı tekilleştirmek
+9 çifti 2'ye düşürüyor. Dejenerelik **veriye bağlı değil, yapısal**: sabit
+bir `chosen` için en büyük marjlı partner her zaman global maksimum-PE
+completion'dır, yani `best_by_event` **her** yaşamda `uniq_rejected=1`
+verir. Zorla çeşitlendirince ölçüldü: aynı metin (*"I will extract
+resources…"*) bir çiftte `chosen`, başkasında `rejected` oluyor — PE
+`(durum, eylem)`'in fonksiyonu, çift ise yalnızca metnin. Çeşitlilik
+satın alırken **çelişik denetim** satın alınıyor.
+
+**3. `SNR_MARGIN_FLOOR` ateşleniyor ama etkisiz.** 41 adayın 25'ini eliyor
+(%61), ama `best_by_event` çıktısı floor açıkken de kapalıyken de birebir
+aynı — yalnızca argmax'ın zaten atacağı çiftleri atıyor. D-030 "gerçek
+veride ateşlenmiyor" demişti; **yarısı doğru**: ateşleniyor, ama seçiciyle
+gereksiz. Bu seçici dururken kalibre edilemez. Değeri değişmedi.
+
+**4 (en ağır, listede yoktu). DPO prompt'unun içinde yaşam yok.**
+Eğitim prompt'u **51 token**, `system=""` — `PreferencePair`'de `system`
+alanı yoktu, hiçbir yer set etmiyordu. İçeriği:
+`"Lived preference: pe=0.413 decision over pe=0.873"`. Çıkarım prompt'u
+246–306 token: `SYSTEM_PROMPT` + anı bloğu + stratejik beklenti + somatik +
+drift + AgentView JSON. Üstelik prompt modele **cevap anahtarını** veriyor:
+tercih edeceği cümlenin PE'sini söylüyor, ama PE karardan **sonra**
+hesaplanıyor — çıkarımda hiç tetiklenemeyecek bir kısayol.
+
+### Karar: **önce prompt, sonra filtre.** Reddedilen alternatifler
+
+- **KTO'ya geçmek** (brief F9). Üç maddeyi birden buharlaştırırdı, ama
+  kayıp fonksiyonunu, eğitim döngüsünü ve master reference'ı değiştirir —
+  ve **prompt sorunu KTO'da da aynen durur**. Ertelendi, çürütülmedi.
+- **Sadece filtre takası.** Çifti 3→9 yapardı, ama bilimsel değeri
+  açmazdı: model yine hiç görmeyeceği bir prompt altında eğitilirdi.
+- **Yalnızca AgentView'ı saklayıp system'i `SYSTEM_PROMPT` sabitinden
+  yeniden üretmek.** Daha küçük payload, ama sabitten yeniden üretme
+  deseni (§2.8) ve anı/somatik/drift katmanlarını düşürüyor.
+- **Ayrık eşleştirmeyle GAP-18'i doğrudan kapatmak.** Ölçüldü: 9→2 çift.
+
+### Uygulama
+
+**`5afc9ee` — kayıt.** `agent_node` karar olayına, modele giden **iki
+metnin aynısını** yazıyor (backend dalının üstünde bir kez bağlanıyor,
+sonradan yeniden üretilmiyor). SYSTEM_1 (NPC) kararları **bilerek**
+hiçbir prompt anahtarı taşımıyor: LLM hiç koşmadı, o karar politikadan
+bir örnek değil. Bu yol bugün `_run_system1_fallback` üzerinden erişilebilir
+ve NPC metni şimdiye kadar `chosen`/`rejected` olarak eğitime girebiliyordu.
+
+**`7232a04` — kullanım.** Çift prompt'u artık **`chosen` olayının kendi
+prompt'u**; `PREF_LIVED_CONTEXT_TEMPLATE` emekliye ayrıldı. `PreferencePair`
+`system` alanı kazandı — `local_llm._run_dpo_epochs` onu zaten `getattr`
+ile okuyordu, kanca yazıldığından beri ölüydü. Prompt'suz olay `[LORA][WARN]`
+ile atlanıyor ve `_pair_filter_report`'a `prompt_skipped_no_record` olarak
+giriyor (§2.9). `shuffle_preference_pairs` `dataclasses.replace`'e geçti:
+alan alan yeniden kuruyordu, yani `system` eklendiği anda sessizce
+düşürecekti ve shuffled kol lived koldan **farklı koşullamayla** eğitilecekti
+— iki kol zıt değil, kıyaslanamaz olurdu.
+
+**`17bc9bd` — filtre.** Polarite kapısı NLI çelişkisinden **kosinüs
+mesafesine** geçti, bant `[0.25, 0.80]`. `NLI_CONTRADICTION_THRESHOLD`
+**0.60'ta bırakıldı** — ölçüm eşiğin *yanlış* olduğunu değil, *ilgisiz*
+olduğunu söyledi (85 çiftte geçme oranı 0.60'ta %12.9, 0.30'da %12.9;
+dağılım çift tepeli). Karar eşik değil **alet seçimi**; eski eşik
+`POLARITY_FILTER=nli` ile okunabilir ve erişilebilir kalıyor. Alt sınır
+paraphrase'i eliyor (NLI'nin işiydi), üst sınır konudan kayan çiftleri
+eliyor (NLI'de karşılığı yoktu). MiniLM zaten PE sensörü — yeni model yok,
+LLM-as-judge yok. **`POLARITY_COSINE_CALIBRATED = False`**: bant brief'ten
+geldi, kendi seed'imizden seçilmedi (§2.7 — değer ölçümden seçilmez).
+
+`NLI_FILTER_STATS` → `POLARITY_FILTER_STATS`, sonuç anahtarları
+`nli_*` → `polarity_*`, ve `describe_polarity_filter()` hem
+`_pair_filter_report`'a hem I5.2'nin mesajına bağlandı. NLI adını taşıyan
+bir sayaç kosinüs koşarken her sonuç dosyasında yanlış aleti etiketlerdi.
+
+### D-027 düzeltmesi (kayıt append-only olduğu için burada)
+
+D-027'nin gerekçesi — *"kesilen baş chat şablonu + `SYSTEM_PROMPT`"*,
+*"gerçek prompt 246, anıyla 306 token, yani bir anı 256'yı taşırıyordu"* —
+**çıkarım** prompt'unu tarif ediyor. Eğitim dizileri ölçüldü:
+**61–116 token, prompt tarafı 51**. 256'da kesme dalı gerçek eğitim
+verisinde **hiç ateşlenemezdi**. `DPO_MAX_SEQUENCE_TOKENS = 512`
+**değişmiyor** ve D-032 sonrası ilk kez gerçekten gerekli oluyor: gerçek
+prompt 246–306 + completion ~65 ≈ 370. Doğru değer, yanlış gerekçe.
+
+### Dur-kontrol (plan §D 8.0)
+
+*"Değişiklikten sonra gerçek koşumda kaç çift eğitime giriyor? 1–2'de
+kalıyorsa darboğaz kapanmamıştır."* Gerçek `build_pe_ranked_pairs`, seed
+2001'in gerçek completion ve PE'leri üzerinde koşuldu (prompt'lar sentetik
+— o yaşam kayıttan önce; filtreler completion ve PE okuduğu için **sayı
+gerçek**):
+
+> **9 çift** · 9 **farklı** prompt · 2 benzersiz `rejected` ·
+> SNR 41 adayın 25'ini, polarite kalan 16'nın 2'sini eledi.
+
+Önce 1–3'tü. **Darboğaz açıldı.** GAP-18 de niteliksel olarak değişti:
+eğitim seti artık "aynı soru 9 kez" değil, **9 farklı durum, 2 ortak
+negatif** — literatürde standart bir yapı.
+
+### Bunu kapatmayan şey
+
+10 olayda 7 benzersiz metin tavanı duruyor. Uzun yaşam bunu açar (U3: 50
+olayda 27 benzersiz), ama bu pilotun kararı. `SNR_MARGIN_FLOOR` hâlâ
+kalibre değil ve `best_by_event` dururken kalibre edilemez.
+
+**Kanıt:** 8 mutasyon, 8 kırılma — sabitten yeniden üretilen system
+prompt'u · SYSTEM_1'in prompt iddia etmesi · PE-değerli template'e dönüş ·
+eksik prompt'un sessizce yutulması · shuffle'ın alan alan yeniden kurulması
+· hep-geçen polarite kapısı · üst sınırın kaldırılması · tanınmayan filtre
+adının varsayılana düşmesi. Tam suite **314 passed, 2 deselected**.

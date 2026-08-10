@@ -195,3 +195,19 @@ bunu brief'ten daha kesin gösteriyor.
 bıraktığı için eğitime giren sayı bunların çok altında kalır — 20 olayda
 tavan 20 çift. Kosinüs geçişi %56.5 olsa da eğitilen çift sayısı ~20'yi
 aşamaz.
+
+## §F'nin kapanışı — D-032 (2026-08-10)
+
+| # | Nereye gitti |
+|---|---|
+| **F2/F3/F4** | Kabul edildi ama **eşik olarak değil**: NLI 0.60 değeri korunarak alet değiştirildi. Ölçüm brief'in "yanlış araç" iddiasını doğruladı, "0.01–0.20 bandı" sayısını çürüttü |
+| **F5** | **Uygulandı** — kosinüs bandı `[0.25, 0.80]`, `polarity_filter.py`. Bant brief'ten alındı, kendi seed'imizden seçilmedi |
+| **F6/F7** | `best_by_event` marj maksimizasyonu olarak kalıyor. F7'nin uç-değer kaygısı `SNR_MARGIN_FLOOR`'da duruyor ama **etkisiz** ölçüldü (argmax zaten eliyor) |
+| **F8** | GAP-18 küçüldü: prompt olay-özgü olunca ortak negatif dejenerelik olmaktan çıkıyor. Evre ayrımı **hâlâ yok** |
+| **F9/F10 (KTO/IPO)** | **Ertelendi, çürütülmedi.** Prompt sorunu KTO'da da aynen dururdu, o yüzden önce prompt |
+| **F12 (greedy)** | Karar hâlâ açık — ön-kayıtla verilecek |
+
+⚠ **Brief'in görmediği asıl sorunu yerel ölçüm buldu:** DPO prompt'unun
+çıkarım prompt'uyla hiç ilgisi yoktu (51 token vs 246–306, `system=""`).
+Brief bunu hiçbir maddesinde işaret etmiyor. **Ders yine aynı: brief iddia,
+kanıt kodda.**

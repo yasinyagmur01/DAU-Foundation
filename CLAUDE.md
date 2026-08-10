@@ -23,8 +23,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `299 passed, 1 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-031.** Sıradaki kayıt **D-032** olarak açılır.
+- **Suite:** `314 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-032.** Sıradaki kayıt **D-033** olarak açılır.
 - **Son GAP: GAP-19.** Sıradaki **GAP-20**.
 
 ## ✅ Faz 2 KAPANDI
@@ -46,26 +46,39 @@ Kod düzeltme fazı (Adım 1–7), karar kapısı (D-018…D-022) ve uygulama fa
 | U5 | `5ad70a8` | A5 marj eşiğine çevrildi (**D-030**) |
 | U6 | `987a1bc` | consolidation deney yoluna bağlandı (**D-031**), GAP-14 kapandı |
 
-## ▶ SIRADAKİ İŞ: çift darboğazı — **tek karar**, üç bağlı madde
+## ✅ Çift darboğazı KAPANDI (D-032)
 
-Eğitim yaşam başına **1–2 çift** alıyor. Bu, kanal 2'yi (LoRA) fiilen
-test edilemez kılıyor ve aşağıdaki her şey buna bağlı. Üçü **ayrı ayrı
-değil, tek oturumda tek D-kaydıyla** kapatılmalı — çünkü bağlılar:
+Sorun eşik değil **prompt**muş. Eğitim, 51 token'lık ve `system=""` olan
+`"Lived preference: pe=0.413 decision over pe=0.873"` altında koşuyordu;
+çıkarım 246–306 token (`SYSTEM_PROMPT` + anı + somatik + drift + AgentView).
+Üstelik prompt cevap anahtarını veriyordu: PE karardan **sonra** hesaplanır.
 
-| Madde | Ölçülen durum |
+| Commit | Ne yaptı |
 |---|---|
-| **NLI eşiği** | 85 gerçek çiftte çelişki skoru **medyan 0.0024**; eşiği 0.60→0.30 indirmek **tek çift bile** kazandırmıyor (dağılım çift tepeli: kütle sıfırda, azınlık 0.99'da). Kosinüs mesafe aynı çiftlerde %12.9 yerine **%56.5** geçiriyor. Ham: `dau_runs/nli_score_distribution.json` |
-| **GAP-18** | Bütün çiftler **aynı `rejected` metnini** paylaşıyor (`best_by_event` yapısı). NLI'yi düzeltmek tek başına dejenere yapıdan daha çok üretir |
-| **`SNR_MARGIN_FLOOR`** | Kalibre değil, gerçek veride hiç ateşlenmiyor |
+| `5afc9ee` | karar olayı, modele giden prompt'un **aynısını** saklıyor; SYSTEM_1 (NPC) bilerek saklamıyor |
+| `7232a04` | çift prompt'u = `chosen` olayının kendi prompt'u; `PREF_LIVED_CONTEXT_TEMPLATE` emekli; prompt'suz olay `[WARN]`+atla; shuffle `replace`'e geçti |
+| `17bc9bd` | polarite kapısı NLI→**kosinüs** `[0.25, 0.80]`; sayaç/anahtarlar `polarity_*` |
 
-⚠ `NLI_CONTRADICTION_THRESHOLD = 0.60` **kilitli karar** (aşağıda) →
-değiştirmek kendi D-kaydını ister. DR brief'i (`docs/research/2026-08-10_
-low-data-dpo-pair-selection.md` §4) aracın **yapısal olarak yanlış**
-olduğunu savunuyor; mutabakat `RECONCILIATION.md` §F.
+**Dur-kontrol:** gerçek `build_pe_ranked_pairs`, seed 2001'in gerçek
+verisinde **9 çift** · **9 farklı prompt** · 2 benzersiz `rejected`
+(önce 1–3). Ham: `dau_runs/exploratory_pair_design_replay.json`.
 
-**Sonra sırayla:** pilot (hipotez testi değil — kollar ayrışıyor mu) →
-ön-kayıt. Pilot beş şeyi aynı anda kalibre eder: U4'ün `N`'i ·
-`SNR_MARGIN_FLOOR` · A3 · `MIN_PAIRS` · **GAP-9'un güç hesabı**.
+## ▶ SIRADAKİ İŞ: **pilot**
+
+Hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu. Beş şeyi aynı
+anda kalibre eder: U4'ün `N`'i (D-028) · `SNR_MARGIN_FLOOR` (D-030) · A3 ·
+`MIN_PAIRS` (I1.5) · **GAP-9'un güç hesabı**. Ayrıca I5.1'in FLAG'den
+ABORT'a yükselip yükselemeyeceğini söyler (D-022 madde 2).
+
+⚠ **Pilot öncesi bilinmesi gerekenler:**
+- Alet **on bir kez** değişti ve bu haliyle **bir kez bile uçtan uca
+  koşmadı**. Pilotun ilk işi bu.
+- `POLARITY_COSINE_MIN/MAX` ve `SNR_MARGIN_FLOOR` **kalibre değil** —
+  ikisi de brief'ten geldi, ikisi de bayrağıyla öyle raporlanıyor.
+- 10 olayda **7 benzersiz completion** tavanı duruyor. Uzun yaşam açar
+  (U3: 50 olayda 27), ama olay sayısı pilotun kararı.
+
+**Sonra:** güç hesabı → ön-kayıt.
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 
@@ -190,7 +203,7 @@ Pre-reg yazılmadı → alet değişikliği hâlâ meşru, ama her biri D-kaydı
 **Pre-reg kilitlendiği an bu pencere kapanır** ve aynı değişiklik post-hoc
 olur. Bugünün dokuz kararı bu pencerede meşruydu.
 
-⚠ Ama pencere sonsuz değil: alet bugün sekiz kez değişti ve bu haliyle
+⚠ Ama pencere sonsuz değil: alet bugün **on bir kez** değişti ve bu haliyle
 **bir kez bile uçtan uca koşmadı**. Pilot bunun için var.
 
 ## 2.11 Çelişki görürsen sessizce seçme
@@ -275,9 +288,14 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
 - **`DPO_LEARNING_RATE = 1e-6`**, bant `[5e-7, 1e-6]` (**D-029**).
 - **Consolidation faz-2 sonrası, transfer'den önce** (**D-031**) — null
   kolunun `delta_pe`'sini korumak için.
-- ⚠ **NLI contradiction threshold: `0.60`, `cross-encoder/nli-deberta-v3-small`**
-  — kilitli, **ama ölçümle sorgulanıyor.** Bkz. §1 "SIRADAKİ İŞ". Değiştirmek
-  D-kaydı ister; **sessizce dokunma.**
+- **DPO prompt'u = kararın verildiği prompt'un kendisi** (**D-032**).
+  `agent_node` saklar, `build_pe_ranked_pairs` `chosen` olayınınkini oynatır.
+  SYSTEM_1 (NPC) kararları prompt taşımaz ⇒ eğitime **giremez**.
+- **Polarite kapısı: kosinüs mesafe, bant `[0.25, 0.80]`, MiniLM** (**D-032**).
+  `NLI_CONTRADICTION_THRESHOLD = 0.60` **değeri değişmedi** — ölçüm eşiğin
+  yanlış değil **ilgisiz** olduğunu gösterdi (0.60'ta %12.9, 0.30'da %12.9).
+  `POLARITY_FILTER=nli` ile hâlâ erişilebilir. ⚠ Bant **kalibre değil**
+  (`POLARITY_COSINE_CALIBRATED=False`), brief'ten geldi.
 - İstatistik eşikleri: N≥15, K≥5 (`DIVERSITY_MIN_UNIQUE`), n_eff≥12 —
   provenans 08-08~ §5. ⚠ **N≥15 GAP-9 ile çelişiyor**, aşağıya bak.
 - **Çok-nesilli C′ birincil uç noktası = doğum-drift** (D-002). Gen2 PE +
@@ -306,13 +324,20 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
 
 ## Açık — pre-reg'i **bloke edenler**
 
-### GAP-18: her çiftin `rejected` tarafı aynı metin (D-030)
-`best_by_event` verilen bir chosen için en büyük marjı seçtiğinden, global
-maksimum-PE completion **bütün** çiftlerin reddedilen tarafı oluyor. Ölçüldü:
-9 çiftin dokuzunda da `pe_rejected = 0.8728`. Eğitim seti "bir kötü örnek vs
-diğer her şey". D-029'un −4.37'lik çöküşünü kısmen açıklıyor (aynı metin 9 kez
-itiliyor) ve DR brief'inin **F8** uyarısıyla örtüşüyor. Eşik değil,
-**eşleştirme tasarımı** sorusu. → §1 "SIRADAKİ İŞ"in parçası.
+### GAP-18: `rejected` tarafı hâlâ az çeşitli — ama artık dejenere değil (D-032)
+`best_by_event` sabit bir `chosen` için en büyük marjı seçtiğinden, global
+maksimum-PE completion çoğu çiftin reddedilen tarafı oluyor. Bu **yapısal**:
+veriye bağlı değil, her yaşamda olur.
+
+⚠ **D-032 bunu küçülttü ama kapatmadı.** Prompt düzeldiği için eğitim seti
+artık "aynı soru 9 kez" değil, **9 farklı durum, 2 ortak negatif** — ortak
+negatif literatürde standart bir yapı. Ölçüldü: 9 çift, 9 farklı prompt.
+
+⚠ **Doğrudan kapatmaya kalkışma — ölçüldü, ters teper.** `rejected`'ı
+tekilleştiren ayrık eşleştirme 9 çifti **2**'ye düşürüyor; ayrıca aynı metnin
+bir çiftte `chosen` başkasında `rejected` olmasına yol açıyor (PE
+`(durum, eylem)`'in fonksiyonu, çift yalnızca metnin) — yani **çelişik
+denetim**. Kalanı pilotun işi.
 
 ### GAP-9: N=15 güç analizine göre baştan yetersizdi
 `protocol-c-metacognition-eval`: `σ_PE = 0.256`, `d_z ≈ 1.5·d`. Gerekli çift:
@@ -401,7 +426,9 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 | `build_load_kwargs` (D-020 quantization) | `dau/foundation/local_llm.py:122` |
 | `_consolidate_gen1` (D-031) | `dau/diagnostics/run_cprime_multigen.py:687` |
 | `run_lineage` | `dau/diagnostics/run_cprime_multigen.py:721` |
-| `_pair_filter_report` (D-030) | `dau/diagnostics/run_protocol_c_prime.py:727` |
+| `_pair_filter_report` (D-030/D-032) | `dau/diagnostics/run_protocol_c_prime.py:727` |
+| Polarite kapısı (D-032) | `dau/foundation/polarity_filter.py` (NLI `nli_filter.py`'de durmaya devam ediyor) |
+| Karar prompt'unun saklanması (D-032) | `dau/foundation/graph.py`, `agent_node` SYSTEM_2 dalı |
 | `_train_adapter` | `dau/diagnostics/run_protocol_c_prime.py:756` (**`lora_update.py`'de değil**) |
 | `TransferCandidate` | `dau/foundation/generation.py:55` |
 | Gate altyapısı | `dau/diagnostics/preflight.py` (805 satır) + `tool_identity.py` (242) |
@@ -431,8 +458,10 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 | Beş yerde | "pre-reg sıradaki oturumun İLK görevi" — kod önüne geçmiş |
 
 **v2.4.2'ye girecek yeni borçlar:** `preflight.py` + `tool_identity.py` hiç
-geçmiyor · D-023…D-031'in tamamı · U3 ölçüm sonucu · lr değişikliği ·
-GAP-17/18/19.
+geçmiyor · D-023…D-032'nin tamamı · U3 ölçüm sonucu · lr değişikliği ·
+GAP-17/18/19 · **D-032'nin tamamı**: DPO prompt'u artık yaşanan prompt,
+polarite kapısı kosinüs, `PREF_LIVED_CONTEXT_TEMPLATE` emekli, `polarity_*`
+anahtarları. §21'in NLI satırı D-032 ile **iki kez** eskidi.
 
 ---
 
