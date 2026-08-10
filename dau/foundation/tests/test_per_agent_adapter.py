@@ -268,3 +268,64 @@ def test_tool_identity_reports_loaded_weights_not_env(
 
     monkeypatch.setattr(local_llm, "_loaded_model_name", "meta-llama/vram-has-this")
     assert _model_id(BACKEND_LOCAL) == "meta-llama/vram-has-this"
+
+
+def test_dpo_window_holds_a_real_prompt_with_full_memory_recall() -> None:
+    """D-027: the DPO window must fit what inference actually sends.
+
+    _encode_pair_side drops the prompt HEAD on overflow — the chat template
+    header and SYSTEM_PROMPT — while generate_completion never truncates. Any
+    overflow therefore trains on an instruction the agent never decided under.
+
+    The assertion is that no truncation happened, not that the returned
+    sequence is short: the encoder truncates to fit, so its output is within
+    the window by construction and measuring it would prove nothing. It
+    compares the prompt length the encoder kept against the full prompt.
+    """
+
+    pytest.importorskip("transformers")
+    from transformers import AutoTokenizer
+
+    from dau.foundation import graph as graph_mod
+    from dau.foundation.constraints import DPO_MAX_SEQUENCE_TOKENS
+    from dau.foundation.memory_bridge import MAX_RETRIEVED_MEMORIES
+
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(local_llm.LOCAL_MODEL_NAME)
+    except Exception:  # noqa: BLE001 — no cached checkpoint in this environment
+        pytest.skip("base tokenizer not available locally")
+
+    from dau.diagnostics.run_protocol_c_prime import _initial_state
+
+    state = _initial_state("dpo-window-probe", 2001)
+    user = graph_mod.build_agent_view(state).model_dump_json()
+
+    # Worst realistic case: a full memory block plus the drift warning.
+    memory = {"domain": "resource_load", "magnitude": 0.42, "classification": "DEEP"}
+    block = graph_mod._format_memory_context([memory] * MAX_RETRIEVED_MEMORIES)
+    system = (
+        f"{graph_mod.SYSTEM_PROMPT}\n\n{block}\n"
+        + graph_mod.DRIFT_WARNING_TEMPLATE.format(domain="resource_load", bias=0.42)
+    )
+    completion = "I cooperate and share resources carefully with others."
+
+    prompt_text, used_template = local_llm._build_prompt(tokenizer, system, user)
+    full_prompt_tokens = len(
+        tokenizer(prompt_text, add_special_tokens=not used_template)["input_ids"]
+    )
+
+    sequence, kept_prompt_tokens = local_llm._encode_pair_side(
+        tokenizer,
+        system=system,
+        prompt=user,
+        completion=completion,
+    )
+
+    assert kept_prompt_tokens == full_prompt_tokens, (
+        f"the encoder kept {kept_prompt_tokens} of {full_prompt_tokens} prompt "
+        f"tokens: {full_prompt_tokens - kept_prompt_tokens} were cut off the "
+        f"head (SYSTEM_PROMPT) because the sequence needs "
+        f"{len(sequence) + full_prompt_tokens - kept_prompt_tokens} tokens and "
+        f"DPO_MAX_SEQUENCE_TOKENS is {DPO_MAX_SEQUENCE_TOKENS}. Training would "
+        "learn from an instruction inference never truncates (D-027)."
+    )

@@ -53,7 +53,13 @@ DPO_EPOCHS: int = 1
 # two sides each — so batch 2 needs four full graphs before backward. The 4-bit
 # 8B already occupies 7.49 GiB of an 8 GiB card and OOMs there.
 DPO_BATCH_SIZE: int = 1
-DPO_MAX_SEQUENCE_TOKENS: int = 256
+# D-027 (was 256). _encode_pair_side drops the prompt HEAD on overflow, and the
+# head is the chat template header plus SYSTEM_PROMPT — so training learned
+# from a mutilated instruction that generate_completion never truncates. A real
+# prompt is 246 tokens with no recalled memory and 306 with MAX_RETRIEVED_
+# MEMORIES=3, so one memory already overflowed 256. Measured cost of the wider
+# window: +479 MiB training peak (6139.5 -> 6618.6 on a 7807.6 MiB card).
+DPO_MAX_SEQUENCE_TOKENS: int = 512
 DPO_MAX_GRAD_NORM: float = 1.0
 
 # HippoRAG 2 — Personalized PageRank over SQLite domain co-occurrence (CPU)
