@@ -1044,6 +1044,10 @@ def test_multigen_smoke_mock_llm_end_to_end(
     # GAP-13: default zeros read as "no saturation" but mean "never measured".
     # A run whose instrument health is all zeros must not look healthy.
     doc = json.loads(path.read_text(encoding="utf-8"))
+    # D-036: the pairs dict is hand-built, so a field on the dataclass does not
+    # reach the file by itself. Asserting on the object alone let this ship
+    # computed-but-unwritten.
+    assert doc["pairs"][0]["phase2_decision_divergence"] == divergence
     for lineage in doc["pairs"][0]["lineages"]:
         for generation in ("gen1", "gen2"):
             section = lineage[generation]

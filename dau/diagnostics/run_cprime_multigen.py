@@ -1138,6 +1138,12 @@ def write_multigen_results_json(
             "pairs": [
                 {
                     "seed": pair.seed,
+                    # D-036. Hand-built dict, so a field added to
+                    # MultigenPairResult does not reach the file on its own —
+                    # this one was computed, printed and dropped, and the test
+                    # that guarded it asserted on the object rather than the
+                    # JSON, so the suite stayed green.
+                    "phase2_decision_divergence": pair.phase2_decision_divergence,
                     "lineages": [
                         {
                             "gen1_arm": lin.gen1_arm,
