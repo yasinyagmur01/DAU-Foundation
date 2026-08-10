@@ -245,6 +245,10 @@ class MultigenPairResult:
 
     seed: int
     lineages: list[LineageResult]
+    # D-035 step 0, item 3. Whether the adapter changed any phase-2 decision,
+    # counted against the untrained arm. Lives here rather than on a lineage
+    # because it is a comparison BETWEEN the seed's arms.
+    phase2_decision_divergence: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -394,6 +398,50 @@ def _decisions(state: Any) -> list[str]:
         if decision is not None:
             decisions.append(str(decision))
     return decisions
+
+
+DECISION_HASH_CHARS: int = 12
+
+
+def _decision_hashes(state: Any) -> list[str]:
+    """Per-event fingerprints of one life's decisions (D-035).
+
+    Built from _decisions so the fingerprints cover exactly what the arm
+    digest covers — a second reader of the event log could drift from it and
+    then the two would disagree about what "the decisions" were.
+    """
+
+    import hashlib
+
+    return [
+        hashlib.sha256(text.encode("utf-8")).hexdigest()[:DECISION_HASH_CHARS]
+        for text in _decisions(state)
+    ]
+
+
+def _phase2_decision_divergence(gen1_by_arm: dict[str, dict]) -> dict[str, Any]:
+    """How many phase-2 events each trained arm decided differently from NULL.
+
+    NULL is the reference because it is the one arm with no adapter, and
+    phase 1 is identical across arms by construction, so a difference here is
+    the adapter's doing. ``None`` when the traces are not comparable — a
+    length mismatch means an arm ended early, and zipping them would invent
+    agreement that was never observed.
+    """
+
+    report: dict[str, Any] = {"reference_arm": ARM_NULL}
+    ref = list((gen1_by_arm.get(ARM_NULL) or {}).get("phase2_decision_hashes") or [])
+    report["n_phase2_events"] = len(ref)
+    for arm_name, gen1 in gen1_by_arm.items():
+        if arm_name == ARM_NULL:
+            continue
+        hashes = list((gen1 or {}).get("phase2_decision_hashes") or [])
+        report[f"n_differing_{arm_name}"] = (
+            sum(1 for a, b in zip(hashes, ref) if a != b)
+            if ref and len(hashes) == len(ref)
+            else None
+        )
+    return report
 
 
 def _adapter_present(agent_id: str) -> bool:
@@ -647,6 +695,7 @@ def run_gen1_arm_lineage(
             _decisions(state_1) + _decisions(state_2),
             list(pe_before_list) + list(pe_after_list),
         ),
+        phase2_decision_hashes=_decision_hashes(state_2),
         adapter_present=_adapter_present(agent_id),
     )
     return arm_result, state_2, store, tmp
@@ -837,7 +886,23 @@ def run_multigen_pair(
                 pe_window_gen2=pe_window_gen2,
             )
         )
-    return MultigenPairResult(seed=seed, lineages=lineages)
+    divergence = _phase2_decision_divergence(
+        {ln.gen1_arm: ln.gen1 for ln in lineages}
+    )
+    print(
+        f"[MULTIGEN] seed={seed} phase-2 decisions differing from "
+        f"{ARM_NULL}: " + ", ".join(
+            f"{name.removeprefix('n_differing_')}={value}"
+            for name, value in divergence.items()
+            if name.startswith("n_differing_")
+        ) + f" (of {divergence['n_phase2_events']} events)",
+        flush=True,
+    )
+    return MultigenPairResult(
+        seed=seed,
+        lineages=lineages,
+        phase2_decision_divergence=divergence,
+    )
 
 
 def run_cprime_multigen(

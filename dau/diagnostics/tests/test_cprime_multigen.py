@@ -301,6 +301,63 @@ def test_f_agent_inputs_is_the_only_reader(store: MemoryStore) -> None:
         self_model.f_agent_inputs = original
 
 
+def _gen1(arm: str, decisions: list[str]) -> dict[str, Any]:
+    """Minimal gen1 section carrying one arm's phase-2 decision fingerprints."""
+
+    import hashlib
+
+    return {
+        "arm": arm,
+        "phase2_decision_hashes": [
+            hashlib.sha256(d.encode("utf-8")).hexdigest()[
+                : multigen_mod.DECISION_HASH_CHARS
+            ]
+            for d in decisions
+        ],
+    }
+
+
+def test_phase2_divergence_counts_events_the_adapter_changed() -> None:
+    """The digest says two arms differ; this says how many decisions did.
+
+    In the pilot's seed 2001 all three arm digests differed while pe_after
+    was bit-identical (D-034 correction), so "something moved" was all the
+    results file could support. NULL is the reference: it is the only arm
+    without an adapter and phase 1 is identical across arms.
+    """
+
+    divergence = multigen_mod._phase2_decision_divergence(
+        {
+            ARM_NULL: _gen1(ARM_NULL, ["a", "b", "c", "d"]),
+            "lived": _gen1("lived", ["a", "X", "c", "Y"]),
+            "shuffle": _gen1("shuffle", ["a", "b", "c", "d"]),
+        }
+    )
+
+    assert divergence["reference_arm"] == ARM_NULL
+    assert divergence["n_phase2_events"] == 4
+    assert divergence["n_differing_lived"] == 2
+    # An adapter that changed nothing must read as zero, not as missing.
+    assert divergence["n_differing_shuffle"] == 0
+
+
+def test_phase2_divergence_refuses_to_compare_ragged_traces() -> None:
+    """None, not a number: an arm that ended early cannot be zipped.
+
+    zip() would silently truncate to the shorter trace and report agreement
+    over events one arm never lived.
+    """
+
+    divergence = multigen_mod._phase2_decision_divergence(
+        {
+            ARM_NULL: _gen1(ARM_NULL, ["a", "b", "c", "d"]),
+            "lived": _gen1("lived", ["a", "b"]),
+        }
+    )
+
+    assert divergence["n_differing_lived"] is None
+
+
 def _rng_digest() -> str:
     """Fingerprint of every RNG _lock_seeds pins (torch optional)."""
 
@@ -950,6 +1007,20 @@ def test_multigen_smoke_mock_llm_end_to_end(
         assert lin.gen2["gen1_arm"] == lin.gen1_arm
         assert "mean_pe" in lin.gen2
         assert lin.transfer["heir_agent_id"].endswith("-g2")
+        # D-035 item 3 wiring. The unit test for the comparison passed while
+        # the runner never populated these — removing the assignment left the
+        # suite green, which is the empty-guard case CLAUDE.md 2.4 warns about.
+        assert lin.gen1["phase2_decision_hashes"], "phase-2 fingerprints missing"
+        # D-035 item 1: a zero F_agent has to be explainable from the file.
+        assert "f_agent_delta_pool" in lin.transfer
+        assert "f_agent_energy_final" in lin.transfer
+
+    divergence = results[0].phase2_decision_divergence
+    assert divergence["reference_arm"] == ARM_NULL
+    assert divergence["n_phase2_events"] > 0
+    # Mock decisions are canned, so lived cannot differ from null here — but
+    # the key must exist and be a number, not absent.
+    assert divergence["n_differing_lived"] == 0
 
     out = tmp_path / "multigen_smoke.json"
     path = write_multigen_results_json(

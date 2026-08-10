@@ -246,6 +246,16 @@ class ArmResult:
     # judged from the results file after the fact.
     arm_digest: str = ""
     adapter_present: bool = False
+    # D-035 step 0, item 3. Per-event fingerprints of the phase-2 decisions.
+    # The arm digest already proves two arms differ somewhere across both
+    # phases, but it cannot say WHERE or HOW MUCH: in the pilot's seed 2001
+    # all three digests differed while pe_after was bit-identical (D-034
+    # correction). Phase 1 is identical across arms by construction — no arm
+    # has an adapter yet — so the count of phase-2 events where LIVED and NULL
+    # decided differently is the direct measure of whether Channel 2 moves
+    # behaviour at all. Hashes, not texts: the comparison is equality, and
+    # 50 completions per arm would bloat the results file.
+    phase2_decision_hashes: list[str] = field(default_factory=list)
 
 
 @dataclass
