@@ -97,8 +97,18 @@ greedy, `--lora` · **58 dk**, `exit 0`, I0.7 yeşil başladı.
 **Sinyal (N=3, hipotez testi değil):** ΔPE ortalaması lived **+0.080** ·
 null +0.058 · shuffle +0.113. `lived − null` bir seed'de H1 yönünde, birinde
 ters, birinde tam berabere. `lived ≤ shuffle` **3/3** seed'de ama farklar
-küçük. ⚠ **Seed 2001'de eğitim hiçbir şeyi değiştirmedi** — `pe_after` üç
-kolda bit düzeyinde aynı. lr=1e-6 (D-029) etkiyi bastırıyor olabilir.
+küçük.
+
+⚠ **D-034'ün bir cümlesi düzeltiliyor** (kayıt append-only, düzeltme burada;
+D-035'e geçecek). Orada *"seed 2001'de eğitim hiçbir şeyi değiştirmedi"*
+yazıyor. Doğrusu: **uç nokta değişmedi, davranış değişti.** `pe_after` üç
+kolda bit düzeyinde aynı (0.45483523726463315), ama `arm_digest`
+(= `sha256(karar dizisi ++ PE dizisi)`, faz-1+faz-2) üçünde de **farklı**,
+ve faz-1 özdeş (`pe_before` aynı). Demek ki adapter faz-2'de kararları
+ve/veya pencere dışındaki PE'leri değiştirdi; değişmeyen şey **son 10 olayın
+ortalaması**. Bu, lr'nin yanında **`PE_WINDOW_EVENTS=10`'un 50 olayda etkiyi
+kaçırıyor olabileceğini** de şüpheli hale getiriyor. Digest "bir şey değişti"
+diyor ama "ne kadar" demiyor — Adım 0 bunu sayıya çeviriyor.
 
 ## ▶ SIRADAKİ İŞ: pilotun açtığı üç soru
 
