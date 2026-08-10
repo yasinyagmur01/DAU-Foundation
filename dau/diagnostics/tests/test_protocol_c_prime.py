@@ -460,7 +460,20 @@ def test_tool_identity_has_no_undeterminable_field(lora_env) -> None:
     assert identity["seeds"]["start"] == 2001
     assert identity["seeds"]["end"] == 2002
     assert identity["versions"]["torch"]
-    assert identity["dpo"]["effective_batch_size"] == 1
+    # Was a literal 1, which was a fact only while no accumulation existed
+    # (D-021/A1, U4). Bound to the constants instead: the point of this field
+    # is that the report tracks the trainer, and a literal cannot do that.
+    from dau.foundation.constraints import (
+        DPO_BATCH_SIZE,
+        DPO_GRADIENT_ACCUMULATION_STEPS,
+    )
+
+    assert identity["dpo"]["gradient_accumulation_steps"] == (
+        DPO_GRADIENT_ACCUMULATION_STEPS
+    )
+    assert identity["dpo"]["effective_batch_size"] == (
+        DPO_BATCH_SIZE * DPO_GRADIENT_ACCUMULATION_STEPS
+    )
 
 
 def test_tool_identity_quantization_matches_loader(lora_env) -> None:

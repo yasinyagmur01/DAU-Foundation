@@ -21,6 +21,7 @@ from dau.foundation.constraints import (
     ADAPTER_SWITCH_MAX_MS,
     DPO_BATCH_SIZE,
     DPO_BETA,
+    DPO_GRADIENT_ACCUMULATION_STEPS,
     DPO_EPOCHS,
     DPO_LEARNING_RATE,
     DPO_MAX_GRAD_NORM,
@@ -711,9 +712,24 @@ def _run_dpo_epochs(
     total_loss = 0.0
     total_accuracy = 0.0
     step_count = 0
+    optimizer_step_count = 0
+    accumulation = max(1, int(DPO_GRADIENT_ACCUMULATION_STEPS))
+    # Micro-batches per epoch. The last accumulation group is usually short —
+    # with 1-2 surviving pairs it is the ONLY group — so its size is computed
+    # rather than assumed, otherwise the tail would be silently under-weighted
+    # or, worse, never stepped at all.
+    micro_batches = (len(pairs) + DPO_BATCH_SIZE - 1) // DPO_BATCH_SIZE
     try:
         for _ in range(DPO_EPOCHS):
-            for start in range(0, len(pairs), DPO_BATCH_SIZE):
+            optimizer.zero_grad()
+            pending = 0
+            for micro_index, start in enumerate(
+                range(0, len(pairs), DPO_BATCH_SIZE)
+            ):
+                group_index = micro_index // accumulation
+                group_size = min(
+                    accumulation, micro_batches - group_index * accumulation
+                )
                 batch = pairs[start : start + DPO_BATCH_SIZE]
                 encoded = []
                 for pair in batch:
@@ -730,7 +746,6 @@ def _run_dpo_epochs(
 
                 reference = _reference_logprobs(model, encoded, device)
 
-                optimizer.zero_grad()
                 batch_loss = None
                 for (chosen_ids, chosen_len, rejected_ids, rejected_len), (
                     ref_chosen,
@@ -752,11 +767,26 @@ def _run_dpo_epochs(
 
                 if batch_loss is None:
                     continue
-                batch_loss = batch_loss / len(encoded)
-                batch_loss.backward()
-                torch.nn.utils.clip_grad_norm_(trainable, DPO_MAX_GRAD_NORM)
-                optimizer.step()
-                total_loss += float(batch_loss.item()) * len(encoded)
+                # Reported loss keeps its old meaning — mean over pairs. Only
+                # the tensor that reaches backward() carries the accumulation
+                # divisor, so dpo_loss stays comparable across runs.
+                mean_batch_loss = batch_loss / len(encoded)
+                (mean_batch_loss / group_size).backward()
+                total_loss += float(mean_batch_loss.item()) * len(encoded)
+
+                pending += 1
+                if pending == group_size:
+                    torch.nn.utils.clip_grad_norm_(trainable, DPO_MAX_GRAD_NORM)
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    optimizer_step_count += 1
+                    pending = 0
+
+            if pending:  # pragma: no cover — group_size math should prevent it
+                raise RuntimeError(
+                    f"{pending} micro-step(s) were accumulated but never "
+                    "stepped: their gradient would be discarded silently"
+                )
     finally:
         # Checkpointing and use_cache=False make generation far slower, so they
         # must not outlive the train step on this shared singleton.
@@ -774,7 +804,12 @@ def _run_dpo_epochs(
     return {
         "dpo_loss": total_loss / step_count,
         "dpo_accuracy": total_accuracy / step_count,
+        # dpo_steps keeps counting micro-steps (one per pair) so its meaning is
+        # unchanged; the optimizer count is a new field rather than a silent
+        # redefinition of an existing one.
         "dpo_steps": step_count,
+        "dpo_optimizer_steps": optimizer_step_count,
+        "dpo_gradient_accumulation_steps": accumulation,
     }
 
 

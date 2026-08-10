@@ -329,3 +329,107 @@ def test_dpo_window_holds_a_real_prompt_with_full_memory_recall() -> None:
         f"DPO_MAX_SEQUENCE_TOKENS is {DPO_MAX_SEQUENCE_TOKENS}. Training would "
         "learn from an instruction inference never truncates (D-027)."
     )
+
+
+class _CountingOptimizer:
+    """Records optimizer traffic so accumulation can be counted, not assumed."""
+
+    def __init__(self, params, lr: float = 0.0) -> None:
+        self.param_groups = [{"params": list(params), "lr": lr}]
+        self.steps = 0
+        self.zero_grads = 0
+
+    def step(self) -> None:
+        self.steps += 1
+
+    def zero_grad(self, *args, **kwargs) -> None:
+        self.zero_grads += 1
+
+
+def _run_epochs_counting_steps(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    n_pairs: int,
+    accumulation: int,
+) -> tuple[dict, _CountingOptimizer]:
+    """Drive _run_dpo_epochs with every heavy part stubbed but the step logic."""
+
+    torch = pytest.importorskip("torch")
+
+    created: list[_CountingOptimizer] = []
+
+    def _make_optimizer(params, lr=0.0):
+        optimizer = _CountingOptimizer(params, lr)
+        created.append(optimizer)
+        return optimizer
+
+    monkeypatch.setattr(torch.optim, "AdamW", _make_optimizer)
+    monkeypatch.setattr(
+        local_llm, "DPO_GRADIENT_ACCUMULATION_STEPS", accumulation, raising=False
+    )
+    monkeypatch.setattr(local_llm, "_enable_adapter_training", lambda _m: None)
+    monkeypatch.setattr(local_llm, "_enable_gradient_checkpointing", lambda _m: False)
+    monkeypatch.setattr(
+        local_llm, "_encode_pair_side", lambda *_a, **_k: ([1, 2, 3], 2)
+    )
+    monkeypatch.setattr(
+        local_llm,
+        "_reference_logprobs",
+        lambda _model, encoded, _device: [(0.0, 0.0)] * len(encoded),
+    )
+
+    weight = torch.nn.Parameter(torch.zeros(1, requires_grad=True))
+
+    def _logprob(_model, token_ids, _prompt_length, _device):
+        # Depends on the parameter so backward() has a graph to walk.
+        return weight.sum() * float(len(token_ids))
+
+    monkeypatch.setattr(local_llm, "_sequence_logprob", _logprob)
+
+    model = SimpleNamespace(
+        parameters=lambda: iter([weight]),
+        training=False,
+        train=lambda: None,
+        eval=lambda: None,
+        config=None,
+        device=torch.device("cpu"),
+    )
+    pairs = [
+        SimpleNamespace(prompt="p", chosen="c", rejected="r", system="")
+        for _ in range(n_pairs)
+    ]
+
+    stats = local_llm._run_dpo_epochs(model, object(), pairs)
+    return stats, created[0]
+
+
+@pytest.mark.parametrize(
+    ("n_pairs", "accumulation", "expected_steps"),
+    [
+        (8, 4, 2),   # exact multiple
+        (1, 4, 1),   # the case that actually happens today: tail only
+        (6, 4, 2),   # 4 + a short tail of 2 — the tail must still step
+        (3, 1, 3),   # accumulation off reproduces the old one-step-per-pair
+    ],
+)
+def test_optimizer_steps_once_per_accumulation_group(
+    monkeypatch: pytest.MonkeyPatch,
+    n_pairs: int,
+    accumulation: int,
+    expected_steps: int,
+) -> None:
+    """D-021/A1: one optimizer step per N micro-steps, and no lost tail.
+
+    The partial last group is not an edge case here — with 1-2 pairs surviving
+    the filter it is the only group that ever runs, so a tail that never
+    stepped would mean no training at all while the run reported success.
+    """
+
+    stats, optimizer = _run_epochs_counting_steps(
+        monkeypatch, n_pairs=n_pairs, accumulation=accumulation
+    )
+
+    assert optimizer.steps == expected_steps
+    assert stats["dpo_optimizer_steps"] == expected_steps
+    assert stats["dpo_steps"] == n_pairs  # micro-steps keep their old meaning
+    assert stats["dpo_gradient_accumulation_steps"] == accumulation

@@ -53,6 +53,14 @@ DPO_EPOCHS: int = 1
 # two sides each — so batch 2 needs four full graphs before backward. The 4-bit
 # 8B already occupies 7.49 GiB of an 8 GiB card and OOMs there.
 DPO_BATCH_SIZE: int = 1
+# D-021/A1. The micro-batch stays 1 — batch 2 OOMs — but the optimizer steps
+# once per N micro-steps, so the gradient is averaged over N pairs instead of
+# one. What the code had was gradient CHECKPOINTING (a memory technique); this
+# is gradient ACCUMULATION (a gradient technique).
+# UNCALIBRATED: the pair filter currently yields 1-2 pairs per life, where any
+# N degenerates to a single tail flush. The value cannot be calibrated until
+# U5 opens that bottleneck; 4 is a conservative default, not a measured one.
+DPO_GRADIENT_ACCUMULATION_STEPS: int = 4
 # D-027 (was 256). _encode_pair_side drops the prompt HEAD on overflow, and the
 # head is the chat template header plus SYSTEM_PROMPT — so training learned
 # from a mutilated instruction that generate_completion never truncates. A real

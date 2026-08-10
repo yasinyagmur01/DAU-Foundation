@@ -28,6 +28,7 @@ from typing import Any
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
     DPO_BATCH_SIZE,
+    DPO_GRADIENT_ACCUMULATION_STEPS,
     DPO_BETA,
     DPO_EPOCHS,
     DPO_LEARNING_RATE,
@@ -52,10 +53,10 @@ BACKEND_LOCAL: str = "local"
 # importing the runner; asserted equal to ARM_NULL in tests.
 ARM_NULL_NAME: str = "null"
 
-# No accumulation is implemented: local_llm steps the optimizer once per
-# micro-batch, so the effective batch equals DPO_BATCH_SIZE. Recorded as a
-# fact, not as an aspiration (GAP-8/A1 may change it).
-GRADIENT_ACCUMULATION_STEPS: int = 1
+# D-021/A1 implemented (U4): read from constraints rather than restated here,
+# so the block cannot claim an accumulation the trainer does not perform. The
+# previous literal 1 was true only because no accumulation existed.
+GRADIENT_ACCUMULATION_STEPS: int = DPO_GRADIENT_ACCUMULATION_STEPS
 
 VERSION_PACKAGES: tuple[str, ...] = (
     "torch",
