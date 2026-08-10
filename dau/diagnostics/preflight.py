@@ -113,7 +113,9 @@ class Preflight:
     def check(
         self,
         invariant_id: str,
-        predicate: Callable[[], tuple[bool, str]],
+        # bool | None: a predicate may report "not applicable", which record()
+        # keeps distinct from True and enforce() does not treat as a failure.
+        predicate: Callable[[], tuple[bool | None, str]],
         *,
         mode: str,
         calibrated: bool = True,
@@ -777,6 +779,53 @@ def run_phase3(
 # ---------------------------------------------------------------------------
 
 
+def check_no_stale_adapters(agent_ids: list[str]) -> tuple[bool | None, str]:
+    """I0.7 — no agent starts its life on a previous run's trained adapter.
+
+    graph.agent_node calls switch_adapter on every local-backend decision, and
+    switch_adapter loads from disk whenever adapter_exists(agent_id) — which
+    only asks whether adapter_config.json is there. Adapter directories are
+    keyed by agent_id alone, so re-running the same seeds re-uses them:
+    phase 1 then begins on weights an earlier run trained.
+
+    Measured 2026-08-10: dau_runs/adapters held 35 populated directories, some
+    from 08-07, including cprime-lived-2003-g1 from the 08-09 pilot. In that
+    day's smoke the arms' phase-1 lives diverged (n_unique 6/7/6, 8 vs 6
+    pairs) because lived and shuffle loaded 08-09 weights while null — which
+    never trains, so its directory was empty — started from the base policy.
+
+    The bias has a direction: LIVED accumulates training across runs and NULL
+    never does, so the leak favours the hypothesis. This is the across-run twin
+    of the within-run leak closed in f25b0ef.
+
+    ABORT rather than delete: removing a previous run's artefacts is the
+    operator's call, not the gate's.
+
+    Not applicable off the local backend — switch_adapter's disk path is
+    local-only, and None is deliberately distinct from True here.
+    """
+
+    from dau.diagnostics.tool_identity import BACKEND_LOCAL, resolve_backend
+
+    if resolve_backend() != BACKEND_LOCAL:
+        return None, f"backend is not {BACKEND_LOCAL} — adapters are never loaded"
+
+    from dau.foundation.constraints import ADAPTER_BASE_DIR
+    from dau.foundation.local_llm import adapter_exists
+
+    stale = [agent_id for agent_id in agent_ids if adapter_exists(agent_id)]
+    if stale:
+        shown = ", ".join(stale[:5])
+        more = f" (+{len(stale) - 5} more)" if len(stale) > 5 else ""
+        return False, (
+            f"{len(stale)}/{len(agent_ids)} agent(s) already have a saved "
+            f"adapter: {shown}{more} — delete them under "
+            f"{ADAPTER_BASE_DIR}/ or use fresh seeds; this run would start "
+            f"phase 1 on a previous run's weights"
+        )
+    return True, f"{len(agent_ids)} agent(s) start from the base policy"
+
+
 def run_phase0(
     preflight: Preflight,
     *,
@@ -809,4 +858,9 @@ def run_phase0(
         mode=MODE_ABORT,
     )
     preflight.check("I0.6", check_determinism_settings, mode=MODE_ABORT)
+    preflight.check(
+        "I0.7",
+        lambda: check_no_stale_adapters(agent_ids),
+        mode=MODE_ABORT,
+    )
     return preflight

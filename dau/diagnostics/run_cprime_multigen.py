@@ -62,6 +62,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _merge_pe_rows,
     _pad_pe_list,
     _phase1_diversity,
+    _pair_filter_report,
     _precision_audit_from_pe_rows,
     _train_adapter,
     _window_mean,
@@ -1025,6 +1026,11 @@ def write_multigen_results_json(
             # resolver; the env var stays, labelled for what it now gates.
             **describe_polarity_filter(),
             "nli_filter_enabled_env": os.environ.get(NLI_FILTER_ENABLED_ENV, "1"),
+            # D-032/D-033. Multigen is the experiment path (D-014, D-031), but
+            # the pair-filter counts only reached Protocol C′'s results file —
+            # so prompt_skipped_no_record, the polarity rejections and
+            # pairs_passed were invisible in the run that actually matters.
+            "pair_filter": _pair_filter_report(),
             "mock_llm": mock_llm_enabled(),
             "tool_identity": build_tool_identity(
                 lora_choice=lora_choice,

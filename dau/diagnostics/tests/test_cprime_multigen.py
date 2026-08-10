@@ -382,6 +382,79 @@ def test_i0_6_detects_determinism_off(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "CUBLAS_WORKSPACE_CONFIG" in detail
 
 
+def test_i0_7_detects_adapter_left_by_an_earlier_run(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A seed re-used across runs must not start on the old run's weights.
+
+    Measured 2026-08-10: the 08-09 pilot's cprime-lived-2001-g1 adapter was
+    still on disk, so that arm's phase 1 began trained while null — which
+    never writes one — began from base. The arms' lives diverged (n_unique
+    6/7/6).
+    """
+
+    from dau.diagnostics.preflight import check_no_stale_adapters
+    from dau.foundation import local_llm
+
+    monkeypatch.setenv("DAU_LLM_BACKEND", "local")
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    agent_ids = ["cprime-lived-2001-g1", "cprime-null-2001-g1"]
+
+    passed, detail = check_no_stale_adapters(agent_ids)
+    assert passed is True, detail
+
+    leftover = tmp_path / "cprime-lived-2001-g1"
+    leftover.mkdir()
+    (leftover / local_llm.ADAPTER_CONFIG_FILE).write_text("{}")
+
+    passed, detail = check_no_stale_adapters(agent_ids)
+    assert passed is False
+    assert "cprime-lived-2001-g1" in detail
+
+
+def test_i0_7_is_not_applicable_off_the_local_backend(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """None, not True: switch_adapter's disk path is local-only.
+
+    A groq or mock run cannot load a stale adapter, but reporting that as a
+    pass would claim the gate checked something it never looked at.
+    """
+
+    from dau.diagnostics.preflight import check_no_stale_adapters
+    from dau.foundation import local_llm
+
+    monkeypatch.setenv("DAU_LLM_BACKEND", "groq")
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    leftover = tmp_path / "cprime-lived-2001-g1"
+    leftover.mkdir()
+    (leftover / local_llm.ADAPTER_CONFIG_FILE).write_text("{}")
+
+    passed, _ = check_no_stale_adapters(["cprime-lived-2001-g1"])
+    assert passed is None
+
+
+def test_i0_7_runs_in_phase0_under_abort() -> None:
+    """The check has to be wired, not merely defined."""
+
+    from dau.diagnostics.preflight import run_phase0
+
+    gate = Preflight()
+    run_phase0(
+        gate,
+        tool_identity=_identity(),
+        agent_ids=[],
+        seeds=[SEED_UNIT],
+        import_time_bindings=[],
+    )
+    recorded = {r.id: r for r in gate.results}
+
+    assert "I0.7" in recorded
+    assert recorded["I0.7"].mode == MODE_ABORT
+
+
 def test_abort_mode_failure_blocks_the_run() -> None:
     gate = Preflight()
     gate.record("I0.3", False, mode=MODE_ABORT, detail="unset")

@@ -98,19 +98,30 @@ def _resolve_generation_sampling() -> tuple[bool, float]:
     return True, temperature
 
 
+def adapter_dir(agent_id: str) -> Path:
+    """Where this agent's adapter lives. Read-only — does not create it."""
+
+    return Path(ADAPTER_BASE_DIR) / str(agent_id)
+
+
 def get_adapter_path(agent_id: str) -> Path:
     """Return the adapter directory for a given agent. Creates it if needed."""
 
-    path = Path(ADAPTER_BASE_DIR) / str(agent_id)
+    path = adapter_dir(agent_id)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def adapter_exists(agent_id: str) -> bool:
-    """Return True if a saved adapter exists for this agent."""
+    """Return True if a saved adapter exists for this agent.
 
-    path = get_adapter_path(agent_id)
-    return (path / ADAPTER_CONFIG_FILE).exists()
+    Asks through adapter_dir, not get_adapter_path: a query that creates the
+    directory it is asked about leaves a trail of empty ones (79 of the 114
+    under dau_runs/adapters on 2026-08-10 were this side effect) and makes
+    I0.7's read-only audit mutate the thing it inspects.
+    """
+
+    return (adapter_dir(agent_id) / ADAPTER_CONFIG_FILE).exists()
 
 
 def get_loaded_model() -> Any | None:
