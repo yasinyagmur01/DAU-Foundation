@@ -19,6 +19,7 @@ Süreç: D-006. Kaynaklar: `docs/research/*.md`. Tamamlanma: 2026-08-09.
 | `2026-08-05_daerm-trauma-magnitude.md` | ✅ formül kontrolü |
 | `2026-08-04_daerm-allostatic-recovery.md` | ✅ formül kontrolü |
 | `2026~_agent-curriculum-engine.md` | ertelendi — Yasin: DAU sonrası proje |
+| `2026-08-10_low-data-dpo-pair-selection.md` | ✅ tam tur — **bölüm F** |
 
 ---
 
@@ -138,3 +139,59 @@ olarak karşılanmadı.
 | 7 | KW/FFH provenansı | **BULUNAMADI** — 9 brief'te yok; türetilmiş kabul edilmeli |
 | 8 | GAP-5'e provenans (iki denetim bağımsız işaret etmiş) | CLAUDE.md GAP-5 notu |
 | 9 | F1: brief yanıldı, DAU çürüttü | Paper anlatısına girdi |
+
+
+---
+
+# F. Düşük veri rejiminde DPO — `2026-08-10_low-data-dpo-pair-selection.md`
+
+**İşlendi:** 2026-08-10, U5'ten hemen önce. Brief'i isteyen soru: filtre 746
+aday çiftten 745'ini eliyor, tek haneli çiftle DPO ne yapar?
+
+| # | Brief iddiası | DAU'da durum / **yerel ölçüm** | Karar |
+|---|---|---|---|
+| **F1** | `lr = 5e-5` az veride **unlikelihood push** ve **parametre büzülmesi** yaratır; DPO başarıları **5e-7 – 1e-6** kullanıyor (Zephyr-Beta, Tülu 2) | `DPO_LEARNING_RATE = 5e-5` — brief'in bandının **50–100 katı**. Gerekçesi hiçbir D-kaydında yok. **Ölçülmedi** | **açık — en ağır madde** |
+| **F2** | NLI cross-encoder bu görev için **yapısal olarak yanlış araç**; eylem cümleleri "Neutral"a düşer | ✅ **Yerel ölçümle doğrulandı ve güçlendirildi** (aşağıda) | **uyumlu** |
+| **F3** | NLI skorları **0.01–0.20** bandında döner | ❌ **Yanlış.** 85 gerçek aday çiftte medyan **0.0024** — bandın bir mertebe altı. Bandın içinde kalan pay yalnızca **%12.9** | **brief yanılmış** (yönü doğru, sayısı yanlış) |
+| **F4** | Eşik (0.60) yanlış kalibre **değil**, araç yanlış | ✅ **Ölçümle kanıtlandı:** 0.60 → 0.30 eşiği düşürmek geçme oranını **hiç değiştirmiyor** (%12.9 → %12.9). 0.05'e inince ancak %20. Dağılım **çift tepeli**: kütle sıfıra yığılmış, azınlık 0.99'a | **uyumlu — brief'ten daha güçlü** |
+| **F5** | Alternatif: gömme kosinüs mesafesi, `1-cos ≥ 0.35` | ✅ Aynı 85 çiftte kosinüs medyan **0.3575**, 0.35 eşiğinde geçme oranı **%56.5** (NLI'nin %12.9'una karşı, **4.4×**). MiniLM zaten kod tabanında (`semantic_similarity.py`) | **uyumlu**, U5 adayı |
+| **F6** | "Olay başına en güçlü marj" = literatürdeki **Marj Maksimizasyonu**; Deng 2025 en yüksek marjlı %10 ile +3–8 puan | `build_pe_ranked_pairs` `best_by_event` ile tam bunu yapıyor | **uyumlu** — DAU'nun tasarımı literatürle örtüşüyor |
+| **F7** | Tuzak 1: uç değer hassasiyeti — sadece maksimum marj gürültülü outlier'ları içeri alır | A5/U5'in `SNR_FLOOR`'u tam bunu hedefliyor ama **mutlak** eşik, marj değil | **kısmen uyumlu** — U5 tasarımına girdi |
+| **F8** | Tuzak 2: **hizalama evresi ihlali** — erken ajanlarda olay başına tek çifte indirgemek keşif çeşitliliğini öldürür | DAU tüm nesillerde aynı kuralı uyguluyor; evre ayrımı **yok** | **fark edilmemiş kayma** — yeni |
+| **F9** | KTO çift kurmayı gereksiz kılar, O(n²) darboğazını **tamamen** aşar | DAU çiftli DPO. KTO tekil PE etiketiyle çalışır — DAU'nun PE'si zaten sürekli bir skaler | **açık** — ciddi alternatif |
+| **F10** | IPO az veride DPO'dan kararlı (sınırlı kayıp) | DAU vanilla DPO | **açık** |
+| **F11** | SimPO N≤5'te hızla aşırı uyum — **çelişen bulgular** olduğu belirtiliyor | — | brief kendi çelişkisini bildiriyor, not edildi |
+| **F12** | Greedy < T ≤ 0.1 tercih edilmeli; sampling **style bias / reward hacking** riski | Karar **açık** (D-026). Brief greedy'yi destekliyor | **açık karara girdi** |
+| **F13** | Replay **%10–15**; %5 altı yetersiz, %25 üstü adaptasyonu geciktirir | A4 kararı açık (D-027) — brief %10'u destekliyor | **açık karara girdi** |
+| **F14** | M-DPO — `arXiv:2506.08965` (2024) | ⚠ **Kimlik/yıl çelişkili**: `2506` öneki 2025 Haziran'ı gösterir, 2024 makalesi olamaz | **kaynak doğrulanamadı** — kullanılmamalı |
+
+## F2–F5'in yerel ölçümü (`dau_runs/nli_score_distribution.json`)
+
+2 seed × 10 olay, greedy, gerçek Llama-3.1-8B-Instruct çıktıları.
+85 aday çift, 15 benzersiz completion.
+
+| | NLI çelişki | Kosinüs mesafe |
+|---|---|---|
+| min | 0.0001 | 0.0013 |
+| **medyan** | **0.0024** | **0.3575** |
+| max | 0.9976 | 0.7484 |
+
+**Eşiğe göre geçme oranı — asıl bulgu burada:**
+
+| eşik | 0.05 | 0.10 | 0.20 | 0.30 | 0.40 | 0.50 | **0.60** |
+|---|---|---|---|---|---|---|---|
+| NLI | %20.0 | %15.3 | %14.1 | %12.9 | %12.9 | %12.9 | **%12.9** |
+
+**Eşiği 0.60'tan 0.30'a indirmek tek bir çift bile kazandırmıyor.** Dağılım
+çift tepeli: kütlenin çoğu sıfıra yığılmış, küçük bir azınlık 0.99'a. Yani
+bu bir kalibrasyon sorunu **değil** — brief bunu iddia etmişti, ölçüm
+bunu brief'ten daha kesin gösteriyor.
+
+| eşik | 0.15 | 0.25 | **0.35** | 0.50 |
+|---|---|---|---|---|
+| Kosinüs | %95.3 | %84.7 | **%56.5** | %18.8 |
+
+⚠ **Bu oranlar dedup öncesi.** `best_by_event` olay başına tek çift
+bıraktığı için eğitime giren sayı bunların çok altında kalır — 20 olayda
+tavan 20 çift. Kosinüs geçişi %56.5 olsa da eğitilen çift sayısı ~20'yi
+aşamaz.
