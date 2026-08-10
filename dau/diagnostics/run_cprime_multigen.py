@@ -100,6 +100,7 @@ from dau.foundation.graph import (
     get_pe_event_log,
     reset_pe_event_log,
 )
+from dau.foundation.memory_bridge import consolidate_run
 from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
 from dau.foundation.self_model import build_self_model
 from dau.foundation.state import DAUAgentState
@@ -219,6 +220,11 @@ class LineageResult:
     gen1: dict[str, Any]
     transfer: dict[str, Any]
     gen2: dict[str, Any]
+    # D-031: end-of-gen1 sleep. Reported because it changes what the heir
+    # inherits — deletions included — and that reaches the primary endpoint
+    # (birth-drift, D-002). An unreported consolidation would move gen2
+    # numbers with nothing in the results file to attribute them to.
+    consolidation: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -678,6 +684,40 @@ def run_gen2_measure(
     )
 
 
+def _consolidate_gen1(
+    *,
+    agent_id: str,
+    state: DAUAgentState,
+    store: MemoryStore,
+) -> dict[str, Any]:
+    """End-of-gen1 sleep consolidation; returns the lab report (D-031).
+
+    The demo path has always done this at end of run (graph.py:1433); the
+    experiment path streamed the graph directly and never reached it, so on
+    this path forgetting never ran either (GAP-14, D-022). Failure is loud:
+    a silently skipped consolidation would leave the heir inheriting an
+    unconsolidated vault while the results file said otherwise.
+    """
+
+    counter = len(state.event_log)
+    report = consolidate_run(agent_id, counter, store)
+    payload = {
+        "ran": True,
+        "now_counter": counter,
+        "deleted_count": int(report.deleted_count),
+        "strengthened_count": int(report.strengthened_count),
+        "edges_created": int(report.edges_created),
+        "drift_flag_count": int(report.drift_flag_count),
+    }
+    print(
+        f"[CONSOLIDATE] {agent_id}: deleted={payload['deleted_count']} "
+        f"strengthened={payload['strengthened_count']} "
+        f"edges={payload['edges_created']} at counter={counter}",
+        flush=True,
+    )
+    return payload
+
+
 def run_lineage(
     *,
     seed: int,
@@ -697,6 +737,20 @@ def run_lineage(
             arm=arm,
             events_gen1=events_gen1,
         )
+        # D-031 / GAP-14: end-of-gen1 sleep, before the heir is built.
+        #
+        # After phase-2, not between the phases. delta_pe = pe_after -
+        # pe_before is designed to isolate the training step, and the NULL
+        # arm never trains — so a consolidation sitting between the phases
+        # would give the control a non-zero delta_pe made entirely of
+        # forgetting. The control would stop being able to measure the zero
+        # it exists to measure.
+        consolidation = _consolidate_gen1(
+            agent_id=parent_agent_id(arm, seed),
+            state=parent_final,
+            store=store,
+        )
+
         # Transfer BEFORE any gen2 invoke (ordering asserted inside).
         heir, _record, birth = transfer_to_heir(
             parent_state=parent_final,
@@ -720,6 +774,7 @@ def run_lineage(
             gen1=asdict(gen1),
             transfer=asdict(birth),
             gen2=asdict(gen2),
+            consolidation=consolidation,
         )
     finally:
         if store is not None:

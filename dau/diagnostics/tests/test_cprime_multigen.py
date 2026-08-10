@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import random
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -839,3 +840,126 @@ def test_multigen_smoke_mock_llm_end_to_end(
     assert "transfer" in payload
     assert "gen2" in payload
     assert "gen1_arm" in payload
+
+
+# ---------------------------------------------------------------------------
+# D-031 / GAP-14 — consolidation on the experiment path
+# ---------------------------------------------------------------------------
+
+
+def test_consolidation_runs_after_phase2_not_between_phases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The NULL arm's delta_pe must stay a measurement of "no training".
+
+    Consolidation deletes memories, so a pass between phase-1 and phase-2
+    would move pe_after for every arm — including NULL, which never trains.
+    The control would then report a non-zero delta_pe made entirely of
+    forgetting. This asserts the call order, which is what protects it.
+    """
+
+    order: list[str] = []
+
+    monkeypatch.setattr(
+        multigen_mod,
+        "run_gen1_arm_lineage",
+        lambda **kw: (
+            order.append("gen1"),
+            (
+                SimpleNamespace(seed=kw["seed"], arm=kw["arm"]),
+                SimpleNamespace(event_log=[1, 2, 3]),
+                object(),
+                None,
+            ),
+        )[1],
+    )
+    monkeypatch.setattr(
+        multigen_mod,
+        "_consolidate_gen1",
+        lambda **_kw: (order.append("consolidate"), {"ran": True})[1],
+    )
+    monkeypatch.setattr(
+        multigen_mod,
+        "transfer_to_heir",
+        lambda **_kw: (
+            order.append("transfer"),
+            (object(), object(), SimpleNamespace()),
+        )[1],
+    )
+    monkeypatch.setattr(
+        multigen_mod,
+        "run_gen2_measure",
+        lambda **_kw: (order.append("gen2"), SimpleNamespace())[1],
+    )
+    monkeypatch.setattr(multigen_mod, "asdict", lambda obj: {})
+
+    multigen_mod.run_lineage(
+        seed=2001,
+        arm=ARM_UNIT,
+        events_gen1=2,
+        events_gen2=2,
+        k_gen2=1,
+        pe_window_gen2=2,
+    )
+
+    assert order == ["gen1", "consolidate", "transfer", "gen2"], order
+
+
+def test_consolidation_report_reaches_the_lineage_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Deletions change what the heir inherits — the run must record them."""
+
+    from dau.foundation.state import DAUAgentState
+
+    captured = {}
+
+    class _Store:
+        pass
+
+    def _fake_consolidate(agent_id, counter, store):
+        captured["agent_id"] = agent_id
+        captured["counter"] = counter
+        return SimpleNamespace(
+            deleted_count=3,
+            strengthened_count=2,
+            edges_created=5,
+            drift_flag_count=1,
+        )
+
+    monkeypatch.setattr(multigen_mod, "consolidate_run", _fake_consolidate)
+
+    payload = multigen_mod._consolidate_gen1(
+        agent_id="cprime-lived-2001-g1",
+        state=SimpleNamespace(event_log=[0, 1, 2, 3]),
+        store=_Store(),
+    )
+
+    assert payload == {
+        "ran": True,
+        "now_counter": 4,
+        "deleted_count": 3,
+        "strengthened_count": 2,
+        "edges_created": 5,
+        "drift_flag_count": 1,
+    }
+    assert captured["agent_id"] == "cprime-lived-2001-g1"
+    assert captured["counter"] == 4
+
+
+def test_consolidation_failure_is_not_swallowed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A silently skipped sleep would leave the JSON claiming one happened."""
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("store exploded")
+
+    monkeypatch.setattr(multigen_mod, "consolidate_run", _boom)
+
+    with pytest.raises(RuntimeError):
+        multigen_mod._consolidate_gen1(
+            agent_id="a",
+            state=SimpleNamespace(event_log=[0]),
+            store=object(),
+        )
