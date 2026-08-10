@@ -168,9 +168,26 @@ LLM_DO_SAMPLE_TRUTHY: frozenset[str] = frozenset({"1", "true", "TRUE", "yes", "Y
 # left at whatever torch infers from the host. Default is this host's inferred
 # value; override per machine via TORCH_THREADS_ENV.
 TORCH_NUM_THREADS: int = int(os.environ.get(TORCH_THREADS_ENV, "14"))
-# warn_only for greedy: unsupported ops must not abort a long run. Sampling
-# on CUDA needs strict determinism or NULL phase1≢phase2 (measured).
-TORCH_DETERMINISTIC_WARN_ONLY: bool = True
+# D-037 (was True). warn_only existed so an unsupported op could not abort a
+# long greedy run. Measured instead: it let the trained arms drift. Four
+# controlled runs of seed 2001, same code, clean adapters — under warn_only,
+# A and B produced DIFFERENT adapter weights and 21/50 and 23/50 phase-2
+# decisions flipped between runs, while NULL (no adapter, LoRA path
+# numerically inert) stayed bit-exact. Under strict, C and D produced
+# bit-identical adapters, 0/50 flips in every arm, and identical digests.
+#
+# The run-to-run spread on a trained arm was 0.026 in delta_pe while the
+# lived-null difference within a run was 0.015-0.025: the noise was larger
+# than the effect being measured.
+#
+# The abort fear did not materialise — both strict runs exited 0 — and the
+# cost is unmeasurable: 20m24s and 20m30s against 20m25s and 20m16s. Sampling
+# already forced strict; this brings greedy to the same place.
+#
+# LIMIT: measured on one seed, one machine, one shape (47 pairs, 50 events).
+# An op with no deterministic implementation in another shape will abort the
+# run rather than warn — that reopens D-037 rather than being a surprise.
+TORCH_DETERMINISTIC_WARN_ONLY: bool = False
 
 STREAM_NODES_PER_EVENT: int = 5
 # Cycle: social_pre→agent→evaluator→meta_observer→pool_step (5 nodes after

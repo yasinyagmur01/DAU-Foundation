@@ -330,10 +330,20 @@ def check_determinism_settings() -> tuple[bool, str]:
             problems.append("cudnn.deterministic off")
     except Exception:  # noqa: BLE001 — CPU-only builds have no cudnn
         pass
+    # D-037. warn_only used to be reported and tolerated. Measured: under it,
+    # two runs of the same seed and code produced different adapter weights and
+    # flipped 21 of 50 phase-2 decisions, while the untrained arm stayed
+    # bit-exact. A run that merely reports the setting cannot tell afterwards
+    # whether its trained arms were reproducible, so this is now a failure
+    # rather than a note.
+    if bool(torch.is_deterministic_algorithms_warn_only_enabled()):
+        problems.append(
+            "deterministic algorithms in warn_only mode — trained arms drift "
+            "between runs (D-037)"
+        )
     if problems:
         return False, "; ".join(problems)
-    warn_only = bool(torch.is_deterministic_algorithms_warn_only_enabled())
-    return True, f"deterministic algorithms on (warn_only={warn_only})"
+    return True, "deterministic algorithms on (warn_only=False)"
 
 
 # ---------------------------------------------------------------------------

@@ -523,6 +523,31 @@ def test_i0_6_detects_determinism_off(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "CUBLAS_WORKSPACE_CONFIG" in detail
 
 
+def test_i0_6_rejects_warn_only_determinism(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-037. warn_only is a failure now, not a footnote.
+
+    Measured on four controlled runs of seed 2001: under warn_only the two
+    trained arms produced different adapter weights and flipped 21/50 and
+    23/50 phase-2 decisions between runs, while NULL stayed bit-exact. Under
+    strict the same comparison gave 0/50. The flag is checked through torch's
+    own state rather than the constant, so a runner that forgets to lock is
+    caught too.
+    """
+
+    torch = pytest.importorskip("torch")
+
+    _lock_seeds(SEED_UNIT)
+    assert check_determinism_settings()[0] is True
+
+    torch.use_deterministic_algorithms(True, warn_only=True)
+    try:
+        passed, detail = check_determinism_settings()
+        assert passed is False
+        assert "warn_only" in detail
+    finally:
+        _lock_seeds(SEED_UNIT)
+
+
 def test_i0_7_detects_adapter_left_by_an_earlier_run(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
