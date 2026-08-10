@@ -118,10 +118,23 @@ def resolve_backend() -> str:
 
 
 def _model_id(backend: str) -> str:
-    if backend == BACKEND_LOCAL:
-        from dau.foundation.local_llm import LOCAL_MODEL_NAME
+    """Name the weights that produced the numbers, not the current config.
 
-        return str(LOCAL_MODEL_NAME)
+    Once a base model is loaded it is a process-wide singleton, so the
+    checkpoint in VRAM is the authority; DAU_LOCAL_MODEL only says what the
+    next load would pick. Reporting the env value while older weights are
+    still resident is the same class of silent mismatch describe_quantization
+    exists to prevent (D-020).
+    """
+
+    if backend == BACKEND_LOCAL:
+        from dau.foundation.local_llm import (
+            get_loaded_model_name,
+            resolve_local_model_name,
+        )
+
+        loaded = get_loaded_model_name()
+        return str(loaded if loaded is not None else resolve_local_model_name())
     from dau.foundation.graph import MODEL_NAME
 
     return str(MODEL_NAME)

@@ -36,6 +36,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 LOCAL_MODEL_NAME: str = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+# U3/D-019 needs the same harness pointed at two checkpoints. Unset or blank
+# means "not set" and yields LOCAL_MODEL_NAME, matching graph's temperature
+# and backend resolvers (GAP-15, D-023). No value validation: any HF repo id
+# is legal here, and a wrong one fails loudly inside from_pretrained.
+LOCAL_MODEL_ENV: str = "DAU_LOCAL_MODEL"
+MODEL_ALREADY_LOADED_MESSAGE: str = (
+    "Refusing to serve {loaded!r} for a request for {requested!r}. The base "
+    "model is a process-wide singleton, so changing {env} after a load cannot "
+    "swap it — the run would keep generating with the old weights while "
+    "tool_identity reported the new name. Measure one model per process."
+)
 ADAPTER_CONFIG_FILE: str = "adapter_config.json"
 ADAPTER_WEIGHTS_FILE: str = "adapter_model.safetensors"
 ACTIVE_ADAPTER_NAME: str = "default"
@@ -64,6 +75,10 @@ DOUBLE_QUANT_ENABLED: bool = True
 _model: Any | None = None
 _tokenizer: Any | None = None
 _active_agent_id: str | None = None
+# What is actually in VRAM, as opposed to what the env currently asks for.
+# tool_identity reports this when set, so the results file names the weights
+# that produced the numbers rather than the configuration at write time.
+_loaded_model_name: str | None = None
 
 
 def _resolve_generation_sampling() -> tuple[bool, float]:
@@ -182,6 +197,27 @@ def _ensure_peft_model(model: Any) -> Any:
     return get_peft_model(model, config)
 
 
+def resolve_local_model_name() -> str:
+    """Return the checkpoint to load — DAU_LOCAL_MODEL, else LOCAL_MODEL_NAME.
+
+    Unset or blank counts as "not set", the same reading graph applies to
+    DAU_LLM_TEMPERATURE (GAP-15) and DAU_LLM_BACKEND (D-023). Values are not
+    validated against a list: any HF repo id is legal, and a wrong one raises
+    inside from_pretrained rather than falling through to a default.
+    """
+
+    raw = os.environ.get(LOCAL_MODEL_ENV, "").strip()
+    if not raw:
+        return LOCAL_MODEL_NAME
+    return raw
+
+
+def get_loaded_model_name() -> str | None:
+    """Return the checkpoint currently in VRAM, or None before the first load."""
+
+    return _loaded_model_name
+
+
 def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
     """Load frozen base once; attach agent adapter when present on disk.
 
@@ -194,9 +230,18 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
     exists to prevent.
     """
 
-    global _model, _tokenizer, _active_agent_id
+    global _model, _tokenizer, _active_agent_id, _loaded_model_name
 
+    model_name = resolve_local_model_name()
     if _model is not None and _tokenizer is not None:
+        if _loaded_model_name != model_name:
+            raise RuntimeError(
+                MODEL_ALREADY_LOADED_MESSAGE.format(
+                    loaded=_loaded_model_name,
+                    requested=model_name,
+                    env=LOCAL_MODEL_ENV,
+                )
+            )
         switch_adapter(_model, agent_id)
         return _model, _tokenizer
 
@@ -209,13 +254,13 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
             "Install optional local deps or use DAU_LLM_BACKEND=groq."
         ) from exc
 
-    tokenizer = AutoTokenizer.from_pretrained(LOCAL_MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     load_kwargs = build_load_kwargs()
 
-    model = AutoModelForCausalLM.from_pretrained(LOCAL_MODEL_NAME, **load_kwargs)
+    model = AutoModelForCausalLM.from_pretrained(model_name, **load_kwargs)
     model = _ensure_peft_model(model)
     # get_peft_model hands back a model in train mode, and _run_dpo_epochs only
     # restores eval when it found eval. Left alone the singleton generates in
@@ -225,6 +270,7 @@ def load_local_model(agent_id: str = "default") -> tuple[Any, Any]:
     _model = model
     _tokenizer = tokenizer
     _active_agent_id = None
+    _loaded_model_name = model_name
     switch_adapter(model, agent_id)
     return _model, _tokenizer
 
@@ -808,7 +854,8 @@ def run_micro_train_preference_step(
 def reset_local_llm_singletons_for_tests() -> None:
     """Clear process singletons — test isolation only."""
 
-    global _model, _tokenizer, _active_agent_id
+    global _model, _tokenizer, _active_agent_id, _loaded_model_name
     _model = None
     _tokenizer = None
     _active_agent_id = None
+    _loaded_model_name = None

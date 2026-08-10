@@ -198,3 +198,73 @@ def test_quantization_flags_are_pinned_not_inherited() -> None:
     reported = local_llm.describe_quantization()
     assert reported["quant_type"] == "nf4"
     assert reported["double_quant"] is True
+
+
+def test_local_model_name_defaults_when_env_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unset or blank means "not set" — the GAP-15 / D-023 reading."""
+
+    monkeypatch.delenv(local_llm.LOCAL_MODEL_ENV, raising=False)
+    assert local_llm.resolve_local_model_name() == local_llm.LOCAL_MODEL_NAME
+
+    for blank in ("", "   ", "\t"):
+        monkeypatch.setenv(local_llm.LOCAL_MODEL_ENV, blank)
+        assert local_llm.resolve_local_model_name() == local_llm.LOCAL_MODEL_NAME
+
+
+def test_local_model_name_follows_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """U3 points the same harness at a second checkpoint (D-019/D-025)."""
+
+    monkeypatch.setenv(local_llm.LOCAL_MODEL_ENV, "  Qwen/Qwen2.5-7B-Instruct ")
+    assert local_llm.resolve_local_model_name() == "Qwen/Qwen2.5-7B-Instruct"
+
+
+def test_loaded_model_name_is_none_before_any_load() -> None:
+    """Nothing in VRAM yet — the autouse fixture resets the singletons."""
+
+    assert local_llm.get_loaded_model_name() is None
+
+
+def test_switching_model_env_after_load_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The singleton cannot swap weights; serving the old ones silently is worse.
+
+    Without this, a second measurement in the same process would generate
+    with the first model while tool_identity reported the second.
+    """
+
+    monkeypatch.setattr(local_llm, "_model", SimpleNamespace())
+    monkeypatch.setattr(local_llm, "_tokenizer", SimpleNamespace())
+    monkeypatch.setattr(local_llm, "_loaded_model_name", "meta-llama/first")
+    monkeypatch.setenv(local_llm.LOCAL_MODEL_ENV, "Qwen/second")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        local_llm.load_local_model(agent_id="probe-agent")
+
+    message = str(excinfo.value)
+    assert "meta-llama/first" in message
+    assert "Qwen/second" in message
+    assert local_llm.LOCAL_MODEL_ENV in message
+
+
+def test_tool_identity_reports_loaded_weights_not_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """model_id must name what is in VRAM, never what the env now asks for.
+
+    The trap this guards: point DAU_LOCAL_MODEL at a second checkpoint and a
+    report that read the constant (or the env) would label Qwen numbers with
+    a Llama name, or the reverse.
+    """
+
+    from dau.diagnostics.tool_identity import BACKEND_LOCAL, _model_id
+
+    monkeypatch.setenv(local_llm.LOCAL_MODEL_ENV, "Qwen/env-says-this")
+
+    monkeypatch.setattr(local_llm, "_loaded_model_name", None)
+    assert _model_id(BACKEND_LOCAL) == "Qwen/env-says-this"
+
+    monkeypatch.setattr(local_llm, "_loaded_model_name", "meta-llama/vram-has-this")
+    assert _model_id(BACKEND_LOCAL) == "meta-llama/vram-has-this"
