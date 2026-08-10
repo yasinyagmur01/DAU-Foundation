@@ -14,6 +14,7 @@ import pytest
 from dau.diagnostics.run_protocol_c_prime import (
     DIVERSITY_MIN_UNIQUE,
     LLM_TEMPERATURE_ENV,
+    PE_WINDOW_ALL_EVENTS,
     PE_WINDOW_EVENTS,
     RESULTS_PATH,
     TEMPERATURE_DEFAULT,
@@ -27,6 +28,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _temperature,
     _train_adapter,
     _window_mean,
+    describe_pe_window,
     write_results_json,
 )
 from dau.diagnostics.tool_identity import (
@@ -104,10 +106,35 @@ def test_arm_result_delta_pe_computed_correctly() -> None:
     assert result.delta_pe == -0.2
 
 
-def test_window_mean_uses_prefix_only() -> None:
+def test_window_mean_prefix_mode_still_works() -> None:
+    """A positive window keeps the historical prefix behaviour."""
+
     values = [0.1, 0.2, 0.3, 0.9, 0.9]
     assert _window_mean(values, window=3) == pytest.approx(0.2)
-    assert PE_WINDOW_EVENTS == 10
+
+
+def test_window_mean_default_reads_the_whole_phase() -> None:
+    """D-036. The window used to be the first 10 of a 50-event phase.
+
+    Measured in D-035: the adapter changed 21 of seed 2001's 50 phase-2
+    decisions with none in the first ten, and delta_pe came out bit-identical
+    to the untrained arm. Averaging a prefix answers a question about the
+    prefix, not about the intervention.
+    """
+
+    values = [0.1, 0.2, 0.3, 0.9, 0.9]
+    assert PE_WINDOW_EVENTS == PE_WINDOW_ALL_EVENTS
+    assert _window_mean(values) == pytest.approx(sum(values) / len(values))
+    # Deliberately not equal to the old prefix answer.
+    assert _window_mean(values) != pytest.approx(_window_mean(values, window=3))
+
+
+def test_window_report_names_the_mode_not_the_sentinel() -> None:
+    """"pe_window_events: 0" would read as a broken run, not as whole-phase."""
+
+    assert describe_pe_window()["pe_window_mode"] == "all_events"
+    assert describe_pe_window(window=3)["pe_window_mode"] == "prefix"
+    assert describe_pe_window(window=3)["pe_window_events"] == 3
 
 
 def test_diversity_gate_reason_triggers_on_low_unique() -> None:
@@ -263,6 +290,7 @@ def test_write_results_json_structure(
     assert "summary" in payload
     assert payload["protocol"] == "C_PRIME"
     assert payload["pe_window_events"] == PE_WINDOW_EVENTS
+    assert payload["pe_window_mode"] == "all_events"
     assert payload["diversity_min_unique"] == DIVERSITY_MIN_UNIQUE
 
 

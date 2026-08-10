@@ -133,11 +133,24 @@ SMOKE_POOL_ALL_AUDITED: str = "all_audited_arms"
 # median 5 → K=5. Scan pe_gap_max min≈0.666 (not binding under sampling);
 # gap floor equals the preference-pair builder's PE_RANK_MIN_GAP so a life
 # that cannot form any PE-ranked pair is skipped as degenerate.
-# W=10 is the mini-test SAMPLE_LIVED_PE_SEPARATION window with null clean —
-# not chosen from the N=15 outcome (post-hoc W forbidden).
+# (The W=10 provenance note that stood here is superseded by D-036 below.)
 DIVERSITY_MIN_UNIQUE: int = 5
 DIVERSITY_MIN_PE_GAP: float = 1e-6
-PE_WINDOW_EVENTS: int = 10
+# D-036 (was 10). W=10 came from a mini-test whose phases were 10 events long,
+# so the window WAS the phase. Phases grew to EVENTS_PER_ARM=50; the window did
+# not follow, and the endpoint ended up reading the first fifth of each phase.
+# Measured (D-035): the adapter changes 21/43/38 of 50 phase-2 decisions, and
+# delta_pe responds only to how many of those land inside the window — seed
+# 2001 had 21 changed decisions, ZERO in the first ten, first difference at
+# index 16, and its pe_after was bit-identical to null in two separate runs.
+#
+# The whole phase is chosen on principle, not from the data: the intervention
+# affects the whole phase, so the measurement covers the whole phase. It could
+# not have been fitted to an outcome even deliberately — gen1 PE traces were
+# not being saved when this was decided, so no alternative window had ever
+# been scored (CLAUDE.md 2.7).
+PE_WINDOW_ALL_EVENTS: int = 0
+PE_WINDOW_EVENTS: int = PE_WINDOW_ALL_EVENTS
 NAN_DELTA: float = float("nan")
 
 LLM_TEMPERATURE_ENV: str = "DAU_LLM_TEMPERATURE"
@@ -224,8 +237,8 @@ class ArmResult:
 
     seed: int
     arm: str  # "lived" | "null" | "shuffle"
-    pe_before: float  # mean PE over first PE_WINDOW_EVENTS of phase-1
-    pe_after: float  # mean PE over first PE_WINDOW_EVENTS of phase-2
+    pe_before: float  # mean PE over the PE window of phase-1 (D-036: whole phase)
+    pe_after: float  # mean PE over the PE window of phase-2 (D-036: whole phase)
     delta_pe: float  # pe_after - pe_before (NaN when diversity-gated)
     n_events: int
     n_pairs_trained: int  # preference pairs that passed NLI filter
@@ -246,6 +259,13 @@ class ArmResult:
     # judged from the results file after the fact.
     arm_digest: str = ""
     adapter_present: bool = False
+    # D-036. The raw traces the endpoint averages. gen2 already saved its
+    # pe_list; gen1 did not, so when the window question came up there was no
+    # way to check the endpoint against the trace it summarises. Saving them
+    # cannot bias the window choice — that was fixed to the whole phase on
+    # principle while these were still unavailable.
+    pe_before_list: list[float] = field(default_factory=list)
+    pe_after_list: list[float] = field(default_factory=list)
     # D-035 step 0, item 3. Per-event fingerprints of the phase-2 decisions.
     # The arm digest already proves two arms differ somewhere across both
     # phases, but it cannot say WHERE or HOW MUCH: in the pilot's seed 2001
@@ -290,11 +310,33 @@ def _std(values: list[float]) -> float:
 
 
 def _window_mean(pe_list: list[float], window: int = PE_WINDOW_EVENTS) -> float:
-    """Mean over the pre-registered PE window (first ``window`` events)."""
+    """Mean over the pre-registered PE window.
+
+    ``window <= PE_WINDOW_ALL_EVENTS`` means the whole phase (D-036); a
+    positive value keeps the historical prefix behaviour, which the gen2
+    smoke tests still exercise.
+    """
 
     if not pe_list:
         return EMPTY_MEAN
+    if window <= PE_WINDOW_ALL_EVENTS:
+        return _mean(pe_list)
     return _mean(pe_list[:window])
+
+
+def describe_pe_window(window: int = PE_WINDOW_EVENTS) -> dict[str, Any]:
+    """What the endpoint actually averaged over (D-036).
+
+    Read from the same comparison _window_mean uses: a results file that
+    printed the raw constant would say "pe_window_events: 0", which reads as
+    a broken run rather than as the whole phase (CLAUDE.md 2.8).
+    """
+
+    whole = window <= PE_WINDOW_ALL_EVENTS
+    return {
+        "pe_window_events": int(window),
+        "pe_window_mode": "all_events" if whole else "prefix",
+    }
 
 
 def _is_finite_delta(value: float) -> bool:
@@ -914,7 +956,7 @@ def run_arm(
 ) -> ArmResult:
     """Full arm: lock → phase-1 → diversity gate → train/skip → phase-2.
 
-    ΔPE uses the pre-registered ``PE_WINDOW_EVENTS`` prefix of each phase, not
+    ΔPE uses the pre-registered ``PE_WINDOW_EVENTS`` window of each phase, not
     the full life mean (plato dilution guard). Train arms that fail the
     diversity gate return NaN ΔPE and skip train/phase-2. NULL never trains and
     is not diversity-gated — it remains the integrity replay check.
@@ -1301,7 +1343,7 @@ def _compute_stats(results: list[PairResult]) -> dict[str, Any]:
         "diversity_gate": {
             "min_unique": DIVERSITY_MIN_UNIQUE,
             "min_pe_gap": DIVERSITY_MIN_PE_GAP,
-            "pe_window_events": PE_WINDOW_EVENTS,
+            **describe_pe_window(),
         },
         "niche_ranges": {
             "resource_scarcity": list(NICHE_SCARCITY_RANGE),
@@ -1351,7 +1393,7 @@ def write_results_json(
             "n_pairs": N_PAIRS,
             "events_per_arm": EVENTS_PER_ARM,
             "seed_start": SEED_START,
-            "pe_window_events": PE_WINDOW_EVENTS,
+            **describe_pe_window(),
             "diversity_min_unique": DIVERSITY_MIN_UNIQUE,
             "diversity_min_pe_gap": DIVERSITY_MIN_PE_GAP,
             "temperature": _temperature(),
@@ -1416,7 +1458,7 @@ def main(argv: list[str] | None = None) -> None:
 
     print(
         f"Protocol C′ — N={N_PAIRS} seeds, {EVENTS_PER_ARM} events/arm, "
-        f"PE window W={PE_WINDOW_EVENTS}",
+        f"PE window {describe_pe_window()['pe_window_mode']}",
         flush=True,
     )
     print(

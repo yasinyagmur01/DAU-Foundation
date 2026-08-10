@@ -66,6 +66,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _precision_audit_from_pe_rows,
     _train_adapter,
     _window_mean,
+    describe_pe_window,
 )
 from dau.diagnostics.preflight import (
     Preflight,
@@ -696,6 +697,8 @@ def run_gen1_arm_lineage(
             list(pe_before_list) + list(pe_after_list),
         ),
         phase2_decision_hashes=_decision_hashes(state_2),
+        pe_before_list=list(pe_before_list),
+        pe_after_list=list(pe_after_list),
         adapter_present=_adapter_present(agent_id),
     )
     return arm_result, state_2, store, tmp
@@ -1099,8 +1102,10 @@ def write_multigen_results_json(
             "events_gen1": events_gen1,
             "events_gen2": events_gen2,
             "k_gen2": k_gen2,
-            "pe_window_gen2": pe_window_gen2,
-            "pe_window_gen1": PE_WINDOW_EVENTS,
+            # D-036: both windows reported through the resolver, so a
+            # sentinel 0 reads as "all_events" rather than as a broken run.
+            "pe_window_gen2": describe_pe_window(pe_window_gen2),
+            "pe_window_gen1": describe_pe_window(PE_WINDOW_EVENTS),
             "lora_enabled": os.environ.get(LORA_ENABLED_ENV, "0"),
             # D-032: the polarity gate is cosine now, so DAU_NLI_FILTER_ENABLED
             # only means anything under POLARITY_FILTER=nli. Reporting the env

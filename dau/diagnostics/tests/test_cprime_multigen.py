@@ -1011,6 +1011,12 @@ def test_multigen_smoke_mock_llm_end_to_end(
         # the runner never populated these — removing the assignment left the
         # suite green, which is the empty-guard case CLAUDE.md 2.4 warns about.
         assert lin.gen1["phase2_decision_hashes"], "phase-2 fingerprints missing"
+        # D-036: the endpoint must be checkable against the trace it averages.
+        assert lin.gen1["pe_before_list"], "gen1 phase-1 PE trace missing"
+        assert lin.gen1["pe_after_list"], "gen1 phase-2 PE trace missing"
+        assert lin.gen1["pe_before"] == pytest.approx(
+            sum(lin.gen1["pe_before_list"]) / len(lin.gen1["pe_before_list"])
+        ), "pe_before must be the mean of the whole phase, not a prefix"
         # D-035 item 1: a zero F_agent has to be explainable from the file.
         assert "f_agent_delta_pool" in lin.transfer
         assert "f_agent_energy_final" in lin.transfer
