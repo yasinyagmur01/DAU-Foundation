@@ -19,7 +19,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-10 sonu)
+# 1. Şu An Neredeyiz (2026-08-11, gece)
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
@@ -148,14 +148,35 @@ engel buydu ve kalktı.
 
 ## ▶ SIRADAKİ İŞ
 
-1. **Yeni bir N=3 koşum** — artık hem tam-faz penceresi hem strict determinizm
-   açık. D-034/D-035'in ΔPE sayıları **karşılaştırılamaz** (onlar ilk 10
-   olayın ortalamasıydı), yani taban yeniden kurulmalı.
-2. **Güç hesabı** — tekrarlanabilirlik geldiğine göre `d` artık kestirilebilir.
-3. **Ön-kayıt** — 2 ve 4 numaralı kararların sınırları beyan edilerek.
+**1. Yeni N=3 taban koşumu.** Artık hem tam-faz penceresi (D-036) hem strict
+determinizm (D-037) açık. D-034/D-035'in ΔPE sayıları karşılaştırılamaz, yani
+taban sıfırdan kurulmalı. ~1 saat.
 
-⚠ `dau_runs/adapters/` her koşumdan sonra temizlenmeli (I0.7 bloke eder).
-Arşiv: `archive/adapters_*`.
+Önce temizlik — I0.7 aksi halde ABORT eder:
+
+```
+mkdir -p archive/adapters_$(date +%F_%H%M) && \
+  mv dau_runs/adapters archive/adapters_$(date +%F_%H%M)/adapters && \
+  mkdir -p dau_runs/adapters
+```
+
+Sonra:
+
+```
+PYTHONHASHSEED=0 DAU_LLM_BACKEND=local python -u -m dau.diagnostics.run_cprime_multigen \
+  --lora --n-pairs 3 --seed-start 2001 --events-gen1 50 --events-gen2 20 \
+  --k-gen2 3 --results dau_runs/baseline_d037_n3_local.json
+```
+
+Beklenen: `run_quality=clean`, 47/41/38 çift, `prompt_skipped_no_record=0`.
+**Yeni olan:** ΔPE artık 50 olayın tamamı, ve koşum **tekrarlanabilir** —
+istenirse ikinci kez koşup adapter hash'leri karşılaştırılabilir.
+
+**2. Güç hesabı.** Tekrarlanabilirlik geldiğine göre `d` artık gürültüden
+ayrıştırılabilir. GAP-9: N=15 yalnız `d ≥ 0.5` için yeterli.
+
+**3. Ön-kayıt.** 2 ve 4 numaralı kararların (F_agent, eşikler) sınırları
+açıkça beyan edilerek. Kilitlendiği an alet değişikliği penceresi kapanır.
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 
@@ -176,8 +197,9 @@ Arşiv: `archive/adapters_*`.
 1. **Bu dosya** (otomatik yüklenir) → §1'deki "SIRADAKİ İŞ".
 2. **`docs/EXECUTION_PLAN.md` §F** — o adımın tablosu. Faz 2 kapandı, yani
    sıradaki iş artık planın §F'sinde **yok**; §D "Sonrası" bölümüne bak.
-3. **`docs/DECISIONS.md`** — ilgili D-kaydı. Son üçü (D-029/030/031) bugünün
-   en çok bağlam taşıyanları.
+3. **`docs/DECISIONS.md`** — ilgili D-kaydı. **D-035/036/037** en çok bağlam
+   taşıyanlar: sırasıyla ölçüm penceresi bulgusu, penceresinin düzeltilmesi,
+   ve tekrarlanabilirlik.
 4. Koda dokunmadan önce **§2.2**.
 
 ## 2.2 Önce doğrula, sonra dokun
@@ -373,6 +395,13 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
   yanlış değil **ilgisiz** olduğunu gösterdi (0.60'ta %12.9, 0.30'da %12.9).
   `POLARITY_FILTER=nli` ile hâlâ erişilebilir. ⚠ Bant **kalibre değil**
   (`POLARITY_COSINE_CALIBRATED=False`), brief'ten geldi.
+- **Ölçüm penceresi = fazın tamamı** (**D-036**). `PE_WINDOW_ALL_EVENTS = 0`
+  sentinel; `PE_WINDOW_EVENTS = 0`. Eskiden 10'du ve 50 olaylık fazın ilk
+  beşte birini okuyordu. ⚠ D-034/D-035'in ΔPE sayıları bu yüzden
+  **karşılaştırılamaz** — onlar başka bir şeyin ölçümü.
+- **`TORCH_DETERMINISTIC_WARN_ONLY = False`** (**D-037**) ve **I0.6 bunu
+  zorunlu kılıyor** (raporlamıyor, başarısız sayıyor). warn_only altında aynı
+  seed+kod iki koşumda farklı adapter ve 21/50 karar farkı üretiyordu.
 - İstatistik eşikleri: N≥15, K≥5 (`DIVERSITY_MIN_UNIQUE`), n_eff≥12 —
   provenans 08-08~ §5. ⚠ **N≥15 GAP-9 ile çelişiyor**, aşağıya bak.
 - **Çok-nesilli C′ birincil uç noktası = doğum-drift** (D-002). Gen2 PE +
@@ -536,7 +565,7 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 | Beş yerde | "pre-reg sıradaki oturumun İLK görevi" — kod önüne geçmiş |
 
 **v2.4.2'ye girecek yeni borçlar:** `preflight.py` + `tool_identity.py` hiç
-geçmiyor · D-023…D-032'nin tamamı · U3 ölçüm sonucu · lr değişikliği ·
+geçmiyor · D-023…D-037'nin tamamı · U3 ölçüm sonucu · lr değişikliği ·
 GAP-17/18/19 · **D-032'nin tamamı**: DPO prompt'u artık yaşanan prompt,
 polarite kapısı kosinüs, `PREF_LIVED_CONTEXT_TEMPLATE` emekli, `polarity_*`
 anahtarları. §21'in NLI satırı D-032 ile **iki kez** eskidi.

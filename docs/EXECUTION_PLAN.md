@@ -236,10 +236,25 @@ IPO'ya geçiş. Üçü farklı büyüklükte değişiklik.
 
 ---
 
+### 8.1 — Pilot ✅ `D-034` · Adım 0 + ikinci koşum ✅ `D-035`
+
+Pilot koştu (N=3, 58dk), alet çalışıyor ama sinyal kurulmadı. Adım 0
+enstrümantasyonu dört kararı açtı; **ikisi kapandı**: ölçüm penceresi
+(**D-036**, pencere = fazın tamamı) ve eğitim determinizmi (**D-037**,
+strict + I0.6 kapısı). `F_agent` ve iki eşik sınırlarıyla kayıtlı, dokunulmadı.
+
+**Sıradaki:** yeni N=3 **taban** koşumu — D-034/D-035'in ΔPE sayıları
+karşılaştırılamaz (ilk 10 olayın ortalamasıydı). Komut `CLAUDE.md` §1'de.
+
+<details><summary>Pilotun özgün tanımı (tarihsel)</summary>
+
 8. **Pilot** — hipotez testi **değil**: gate geçiyor mu, kollar ayrışıyor mu.
    Beş şeyi aynı anda kalibre eder: U4'ün `N`'i (D-028) · `SNR_MARGIN_FLOOR`
    (D-030) · A3 · `MIN_PAIRS` (I1.5) · GAP-9'un güç hesabı. Ayrıca I5.1'in
    FLAG'den ABORT'a yükselip yükselemeyeceğini söyler (D-022 madde 2)
+
+</details>
+
 9. **Güç hesabı** — pilotun gözlenen `d`'sinden gerçek `N`.
    ⚠ **N=15 varsayılan olarak alınmayacak** (GAP-9: güç analizi N=15'i
    yalnızca `d ≥ 0.5` için geçerli sayıyor; gözlenen `d ≈ 0.04`)
