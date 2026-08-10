@@ -562,6 +562,8 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 | §21 tablosu, `DAU_NLI_FILTER_ENABLED` satırı | "yaşam-PE path'te ranking NLI kullanmaz" — **yanlış**, `lora_update.py` içinde `is_genuine_polarity_pair` çağrılıyor (`18fb01e`) |
 | §2 "Metrik plato dilusyonu" | "greedy plato ~3 unique/10 event, sampling şart" — **D-026 çürüttü**, greedy 50 olayda 27 |
 | §6, §19 ADIM 4 | consolidation'ı "uygulanmış entegrasyon" gösteriyor — **D-022/D-031**: deney yolunda değildi |
+| §-lerde sekiz yer (36, 388, 650, 686, 708, 715, 813, 916) | `W=10`'u **ön-kayıtlı doğru** diye anlatıyor — **D-036 ile geçersiz**, pencere artık fazın tamamı |
+| §21 / empirik tablo | `SAMPLE_N15_UNDERPOWERED` dahil bütün ΔPE sayıları ilk 10 olayın ortalaması — D-036 sonrası sayılarla **karşılaştırılamaz** |
 | Beş yerde | "pre-reg sıradaki oturumun İLK görevi" — kod önüne geçmiş |
 
 **v2.4.2'ye girecek yeni borçlar:** `preflight.py` + `tool_identity.py` hiç

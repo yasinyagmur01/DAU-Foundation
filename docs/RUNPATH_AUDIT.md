@@ -1,5 +1,11 @@
 # Koşum Yolu Denetimi — 2026-08-09
 
+⚠ **Bu denetim 2026-08-09 tarihlidir; iki sabit adı o tarihten sonra değişti.**
+`NLI_FILTER_STATS` → `POLARITY_FILTER_STATS` ve polarite kapısı NLI'dan kosinüse
+geçti (**D-032**); `PREF_LIVED_CONTEXT_TEMPLATE` **emekli edildi** (**D-032**) —
+çift prompt'u artık kararın verildiği prompt'un kendisi. Aşağıdaki tablolar
+eski adları taşıyor; **bulgular geçerli, isimler değil.**
+
 Giriş noktası: `dau/diagnostics/run_cprime_multigen.py::main()`
 
 Kapsam (Görev 0 — çağrı grafiğinden türeyen dosyalar; test dosyaları hariç):
