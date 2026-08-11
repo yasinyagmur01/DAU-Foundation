@@ -23,14 +23,14 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `332 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-045.** Sıradaki kayıt **D-046** olarak açılır.
-- **GAP-2 kapandı** (`d65100d`); açık GAP'ler: 3, 4, 5, 6, 9, 10, 17, 18, 19 —
-  **her birinin tetiği §1'deki GAP TETİK TABLOSU'nda.**
+- **Suite:** `341 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-046.** Sıradaki kayıt **D-047** olarak açılır.
+- **GAP-2 ve GAP-6 kapandı** (`d65100d`, `b66f7fc`); açık GAP'ler:
+  3, 4, 5, 9, 10, 17, 18, 19 — **her birinin tetiği §1'deki GAP TETİK
+  TABLOSU'nda.**
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
-- **Değişmez sayısı: 20** (I1.1 ve I4.1 D-039/D-041 ile eklendi; belgede
-  tanımlı 25'in beşi hâlâ kodda yok — I1.2 testte, I2.3 yapısal, I1.3/1.4/1.5
-  yok).
+- **Değişmez sayısı: 24** (I1.3/I1.3b/I1.4/I1.5 **D-046** ile eklendi).
+  Belgede tanımlı 26'nın ikisi kodda yok — I1.2 testte, I2.3 yapısal.
 - **Ön-kayıt taslağı:** `docs/PREREGISTRATION.md` — **KİLİTLİ DEĞİL**.
   **Beş slot kapandı** (S1 greedy · S3 α=0.05 · S5 1 epoch · S6 replay yok ·
   S7 50/20/3); **S4 ve S2 açık**, ve kilidi onlar tutuyor.
@@ -232,8 +232,8 @@ onaylandı (2026-08-11)**; sıra değiştirmek yeni onay ister.
 | # | İş | Süre | Durum |
 |---|---|---|---|
 | ~~A5~~ | ✅ **D-045** — gen2 de kayıplı, S4 sınırı L10 olarak yazıldı | — | ✅ |
-| **A3** | **Eksik üç kapı:** I1.3 gradyan adımı atıldı · I1.4 çiftler gürültü değil · I1.5 çift sayısı yeterli | ~2 sa | ⬜ |
-| ↳ | **GAP-6 buraya bağlı** — aşağıdaki tetik tablosuna bak | +30 dk | ⬜ |
+| ~~A3~~ | ✅ **D-046** — I1.3 (daraltıldı) · I1.3b (yeni) · I1.4 (spec tautolojiydi, çevrildi) · I1.5 (`MIN_PAIRS` config'den) | — | ✅ |
+| ↳ | ✅ **GAP-6 kapandı** (`b66f7fc`) — temizlik swap'e değil **DPO adımına** kondu | — | ✅ |
 | **A6** | `lived − shuffle` tutarsızlığının **kalan kısmı**. D-044 bir parçasını açıkladı (iptal artefaktı), tamamını değil. ⚠ **D-045 yeni bir iz bıraktı:** `null` varisinin ikinci-yarı PE çöküşü — A6 buradan başlasın. Analiz, GPU yok | ~1 sa | ⬜ |
 | ↳ | **GAP-5 ve GAP-4 buraya bağlı** — tetik tablosu | +1,5 sa | ⬜ |
 | **A7** | **GAP-19 kararı** — faz-1/faz-2 sayaç uzayı. Neyin eğitildiğine dokunuyor, kilitten önce karara bağlanmalı. ⚠ **D-045 ona bir gözlem borçlu**: gen2'nin zamana bağlı iptali GAP-19'un öngördüğü desene benziyor | ~1 sa | ⬜ |
@@ -269,7 +269,6 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 
 | GAP | Tetik | Neden o an optimal | Nasıl çözülür |
 |---|---|---|---|
-| **GAP-6** | **A3 ile birlikte** | Aynı sınıf: alet izolasyonu. A3 kapı yazarken `local_llm.py`'ye zaten girilecek. Ve D-042 bir gün boyunca adapter izolasyon kusuru kovaladı — `empty_cache`/`synchronize` eksikliği aynı ailenin son üyesi | Kod (Claude Code) |
 | **GAP-5** | **A6'dan hemen sonra** | A6 `lived−shuffle`'ın kalanını arıyor. SYSTEM_PROMPT'un `decision_to_outcome` kelimelerini primlemesi tam da o kalanın adayı — **aynı veriye bakarken** sormak ikinci bir tur gerektirmez. Ve kilitten önce bilinmeli: gerçekse davranışsal ölçümün geçerliliğini daraltır | Yerel denetim (ucuz) + DR brief #3'ün kapsamında |
 | **GAP-4** | **A6 ile birlikte** | Kanal kirlenmesi sorusu. A6 zaten kolların nerede ayrıştığına bakıyor; vault↔LoRA senkron kopukluğu **kodda hiç doğrulanmadı** ve read-only denetim aynı oturumda biter | Read-only denetim (Claude Code) |
 | **GAP-19** | **A7 = kendisi** | Neyin eğitildiğine dokunuyor. Kilitten sonra değiştirilirse post-hoc olur | Karar + D-kaydı (Yasin onayı) |
@@ -618,11 +617,13 @@ gerçekten çalışıyor, yani bu risk teorik olmaktan çıktı.
 SYSTEM_PROMPT, `decision_to_outcome`'ın eşlediği kelimelere yönlendiriyor
 olabilir. İki bağımsız denetim aynı maddeyi işaret etti (D-010).
 
-### GAP-6: Magic number kalıntıları + adapter hot-swap CUDA temizliği
-Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
-**Önceliği yükseltilen:** 08-08~ §1 adapter hot-swap'te CUDA senkronizasyonu
-+ gradyan önbellek temizliğini **izolasyon doğruluğu şartı** sayıyor;
-`local_llm.py`'de `empty_cache`/`synchronize` **yok**.
+### ~~GAP-6: adapter hot-swap CUDA temizliği~~ — **KAPANDI** (`b66f7fc`)
+D-046. Temizlik **`switch_adapter`'a değil DPO adımına** kondu: swap her
+yerel kararda koşuyor ve serbest bırakılacak bir şey ayırmıyor. Asıl risk
+brief'in dediği değildi — tek adapter slotu paylaşıldığı için eğitim sonrası
+`.grad` sonraki ajanın tensörlerinde asılı kalıyordu.
+⚠ **Magic number kalıntıları GAP-6'dan ayrıldı, hâlâ açık:** `time.sleep(10)`,
+bare `0.5` (shuffle), default `k: int = 5`. **Cursor'a uygun**, Faz C.
 
 ### GAP-10: Süresi dolmuş ölçüm ertelemeleri
 - **`W_SEM = 0.0`** — ChromaDB vektörü skorlamaya girmiyor. "Baseline

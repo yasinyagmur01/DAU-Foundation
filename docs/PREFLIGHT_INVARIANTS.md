@@ -49,9 +49,10 @@ hepsi ikili (var/yok), kalibrasyon gerektirmiyor.
 |---|---|---|---|
 | I1.1 | **Eğitim gerçekten oldu.** lived/shuffle: `lora_B` abs-sum öncesi ≠ sonrası. null: **değişmemiş olmalı**. | ABORT | `lora_B=0` sahte eğitim; null kontaminasyonu |
 | I1.2 | **Adapter izolasyonu.** Her ajanın dizininde yalnızca kendi adaptörü; başka `agent_id` görülürse dur. | ABORT | adapter sızıntısı (`f25b0ef` öncesi) |
-| I1.3 | **Gradyan adımı atıldı.** `step_count > 0`, loss sonlu, `grad_norm > 0`. | ABORT | boş eğitim döngüsü |
-| I1.4 | **Çiftler gürültü değil.** `PE ≥ SNR_FLOOR` olan çiftlerin oranı ≥ eşik. | FLAG → kalibrasyon sonrası ABORT | GAP-8/A5 |
-| I1.5 | **Çift sayısı yeterli.** `n_pairs ≥ MIN_PAIRS`. | FLAG | sessiz boş eğitim |
+| I1.3 | **Adım gerçekten iş yaptı.** `dpo_optimizer_steps > 0` · loss sonlu · `grad_norm_min > 0`. ⚠ **Kapsam D-046'da daraltıldı:** eski metin (`step_count > 0`) I1.1'i tekrar ediyordu — `lora_B` kımıldadıysa bir adım zaten atılmıştır. Kalan üç kusur bir ağırlık okumasıyla **görülemez**. | ABORT | NaN/inf loss · biriktirip hiç `optimizer.step` çağırmayan döngü · **tam sıfır gradyanla atılan adım** |
+| I1.3b | **Kırpma görünür.** Kaç `optimizer.step`'in `DPO_MAX_GRAD_NORM` tavanına değdiği. ⚠ **D-046'da eklendi, bu belgede yoktu.** Hata değil: her adım kırpılıyorsa adım boyunu tavan belirler ve D-029'un kilitlediği lr koşumu tarif etmez. | FLAG (herhangi bir kırpma etiket alır — `PAD_FRACTION_MAX` katılığı) | D-029'un gerekçesinin sessizce geçersizleşmesi |
+| I1.4 | **Filtre aç bırakmadı.** Aday havuzunun ne kadarı marjın altında elendi; hiç çift kalmadıysa düş. ⚠ **Spec değişti (D-046).** Eski metin *"`PE ≥ SNR_FLOOR` olan çiftlerin oranı"* diyordu ve **D-030 onu tautolojiye çevirdi**: marj testi `build_pe_ranked_pairs`'in içine taşındığından eğitime ulaşan her çift eşiği yapı gereği geçiyor, oran **daima 1.0**. Kırılamayan bekçi yazmak yerine D-030'dan sonra ayakta kalan soru soruldu. | FLAG | eğitim açlığı (ölçülen: 3714/7983 = %46.5 elendi) |
+| I1.5 | **Çift sayısı yeterli.** `n_pairs ≥ MIN_PAIRS`, ve `MIN_PAIRS = DPO_BATCH_SIZE × DPO_GRADIENT_ACCUMULATION_STEPS` — **config'den türetilmiş, gözlemden değil** (§2.7). Sabit yazılmadı: 4 yazılsaydı accumulation değişince "bir tam grup" demeye devam ederdi. | FLAG (`MIN_PAIRS_CALIBRATED=False`) | tek kısa tail grubuyla eğitim; efektif batch'in alet kimliğinin dediği olmaması |
 
 ## Faz 2 — Kol ayrışması (seed başına, üç kol bitince) ← en kritik
 
@@ -114,8 +115,8 @@ GAP-14 kararı verilene kadar I5.1 FLAG kalır. "PPR bağlansın" kararı
 | `SATURATION_MAX` | ~0.05 | v3 smoke ölçümü 0.0025; 20× marj |
 | `PI_N_DISTINCT_MIN` | ~8 | v3 smoke 14 ölçtü |
 | `MIN_TRACE_FRACTION` | 0.5 | zaten var (`run_protocol_c_prime.py:99`) |
-| `MIN_PAIRS` | **kalibre edilmeli** | kaynak yok |
-| `SNR_PAIR_RATIO_MIN` | **kalibre edilmeli** | kaynak yok — pilottan gelmeli |
+| `MIN_PAIRS` | `DPO_BATCH_SIZE × DPO_GRADIENT_ACCUMULATION_STEPS` = 4 | **D-046** — yapısal taban (bir tam accumulation grubu), config'den türetildi. ⚠ Yeterlilik düzeyi **değil**; ABORT'a yükseltmek pilot ister |
+| ~~`SNR_PAIR_RATIO_MIN`~~ | **gereksiz kaldı** | D-030 marj testini çift kurulumuna taşıdı ⇒ oran daima 1.0. I1.4 D-046'da reddetme oranına çevrildi, eşik **uydurulmadı** |
 | `GATED_FRACTION_MAX` | **kalibre edilmeli** | geçen sefer 3/15 = 0.20 |
 
 Kalibrasyonsuz olanlar FLAG kalır; pilot koşumdan sonra ön-kayıtla
