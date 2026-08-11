@@ -277,6 +277,19 @@ varise geçmese de, o olaydan türetilmiş çift ağırlıkları **çoktan
 eğitmiştir**. Hata değil — "iki kanal"ın tanımı — ama D-002'nin *"ikisi de
 yaşamın izidir"* cümlesi bunu taşımıyor.
 
+**L16 — Olay sayacı fazlar arasında sıfırlanıyor (GAP-19); etkisi şu an
+bloke, ama gizli** (D-051). Faz-2 `initial=None` ile başlıyor ⇒
+`EventClock` 0'dan sayıyor ⇒ faz-1 ve faz-2 anıları **aynı sayaç
+uzayını** paylaşıyor. Konsolidasyon `now_counter = 50` (faz-2 uzunluğu)
+kullandığından faz-1'de son kullanılmış bir anı bir faz daha taze görünüyor.
+⇒ **Şu an birincile ulaşamıyor**, iki bağımsız halka kesiyor: `should_forget`
+travmayı hiç silmiyor, ve L1 gereği (`f_agent=0.000`, 9/9) varise **yalnız
+travma** geçiyor (ölçüldü: `n_transfer_candidates=3`, hepsi uyarı).
+⚠ **Gizli bağımlılık:** `F_agent` düzeltilir de sayaç düzeltilmezse GAP-19
+**anında canlanır** — travma-dışı anılar aktarılabilir olur ve tutulmaları
+kırık saatle hesaplanır. **İkisi birlikte düzeltilmeli ya da hiçbiri.**
+Değiştirilmedi: ölçülen etkisi sıfır, maliyeti her koşumun geçersizliği.
+
 **L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
 girmiyor (GAP-10). Anı seçimi şu an semantik değil.
 

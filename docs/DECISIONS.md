@@ -3418,3 +3418,88 @@ türetildi, dokuz kolda doğrulandı) ⇒ N'e bağlı değil. GAP-5 örtüşmesi
 `lived − shuffle`'ın kalan tutarsızlığı **açıklanmadı**; elenen tek şey
 precision ağırlığı. N=3'te küçük bir etkinin etrafındaki gürültüden
 ayırt edilemez — bunu ancak B2'nin N'i söyler.
+
+---
+
+## D-051 · 2026-08-11 · A7/GAP-19: saat gerçekten kırık, ama birincile giden yolu iki dejenerelik kapatıyor
+
+**Durum:** analiz + öneri · **Kod değişikliği:** yalnız raporlama (`060d907`)
+**⚠ GAP-19 kararının kendisi Yasin'in** — burada değiştirilen bir şey yok.
+
+### Mekanizma doğrulandı: sayaç fazlar arasında sıfırlanıyor
+
+`graph.py:869/967` → `clock = EventClock(counter=len(state.event_log))`.
+Faz-2 `initial=None` ile başlıyor ⇒ `event_log` boş ⇒ **saat 0'dan sayıyor**.
+Yani faz-1 de faz-2 de anılarını `last_activated_counter ∈ [1,50]` ile
+yazıyor.
+
+`_consolidate_gen1` ise `counter = len(parent_final.event_log)` = **50**
+kullanıyor (faz-2'nin uzunluğu). Ebbinghaus `t = now_counter −
+last_activated` hesaplıyor ⇒ faz-1'de 48. olayda son kullanılmış bir anı
+`t = 2` görünüyor; **gerçekte üzerinden bir faz + 2 olay geçmiş (t = 52).**
+
+Bu bir ayar sorunu değil, **iki farklı saatin karşılaştırılması** — D-042'nin
+sınıfı (karşıtlığın içinde sistematik terim). 5 Yasak #3 zamanı olay sırasına
+bağlıyor, ama burada olay sırası **resetleniyor**.
+
+### ⚠ Ama etkisi şu an sıfır — ve sebebi iki ayrı dejenerelik
+
+Kırık saatin birincil uç noktaya ulaşabilmesi için, yanlış hesaplanan
+unutmanın **varise geçen şeyi** değiştirmesi gerekir. İki bağımsız halka
+bunu kesiyor:
+
+1. **`should_forget` travmayı hiç silmiyor** (`decay.py:60` — `if
+   is_trauma(record): return False`). Konsolidasyonun silme kararı yalnız
+   travma-dışı anılara uygulanıyor.
+2. **Varise yalnız travma geçiyor.** `select_for_transfer` `f_agent`
+   verildiğinde: `if f_value < FITNESS_LOW_THRESHOLD and trauma → selected`.
+   **L1**: `f_agent = 0.000`, dokuz koşumun dokuzunda ⇒ koşul **daima**
+   sağlanıyor, ve travma-dışı her aday `w_transfer` yoluna düşüyor, o da
+   L1 gereği 0. Ölçülen: `n_transfer_candidates = 3`,
+   `n_inherited_warnings = 3` — **üçü üçü de uyarı**.
+
+⇒ Aktarılan her şey travma; travma unutmadan muaf; kırık saat yalnız
+unutmayı yanlış hesaplıyor. **GAP-19'un birincile giden yolu kapalı.**
+
+### ⇒ Öneri: **şimdi değiştirme**, ama gizli bağımlılığı yaz
+
+Değiştirmenin kazandıracağı bir şey yok (etkisi sıfır), maliyeti bütün
+koşumların geçersiz olması. D-042'yi düzeltmiştik çünkü **ölçülen** bir
+sapma üretiyordu; bu üretmiyor.
+
+⚠ **Ama gizli (latent):** **L1 düzeltilir de sayaç düzeltilmezse GAP-19
+anında canlanır.** `F_agent` çalışır hale gelince travma-dışı anılar
+aktarılabilir olur, ve onların tutulup tutulmayacağı **kırık saatle**
+hesaplanır. İkisi **birlikte** düzeltilmeli ya da hiçbiri.
+
+Bu, bugünün üçüncü "iki kusur birbirini gizliyor" örneği:
+L1 (`F_agent`) ↔ GAP-19 · L13 (precision atıl) ↔ ΔPE duyarlılığı ·
+GAP-4 (senkron yok) ↔ L15 (kanal asimetrisi).
+
+### Yapılan tek kod değişikliği: raporlama
+
+`write_multigen_results_json`'ın `pairs` sözlüğü elle kuruluyor ve
+`consolidation` **hiç yazılmıyordu** — `control_d042` içinde
+`"consolidation"` dizgisi **sıfır kez** geçiyor. Alan hesaplanıyor,
+`[CONSOLIDATE]` diye stdout'a basılıyor, dosyaya girmiyordu.
+
+Üstelik aynı sözlüğün **iki satır yukarısındaki** yorum tam bunu anlatıyor
+(D-036'da `phase2_decision_divergence` aynı şekilde düşmüştü, ve onu koruyan
+test **nesneye** baktığı için suite yeşil kalmıştı). Aynı hata, bir alan
+ötede. Test bu sefer **dosyaya** bakıyor.
+
+Bu, A7 için önkoşuldu: GAP-19 "konsolidasyon neyi siliyor" sorusudur ve
+`deleted_count` görünmüyordu. **B2'de görünecek.**
+
+**Reddedilen alternatifler:**
+- *Sayaç uzayını şimdi birleştirmek* — ölçülen etkisi sıfır, maliyeti her
+  koşumun geçersizliği. Kilit öncesi §2.10'un kuyusu.
+- *GAP-19'u "kapandı" saymak* — mekanizma gerçek ve **gizli**; kapatmak
+  L1 düzeltilince sessizce canlanmasına yol açardı.
+- *L1'i (F_agent) burada düzeltmek* — birlikte düzeltilmeleri gerektiği
+  tespiti tam olarak bunu **tek başına** yapmamayı söylüyor.
+
+**Sınırlar:** Zincirin tamamı **koddan** türetildi ve dokuz kolun transfer
+sayımlarıyla tutarlı (`3/3` uyarı), ama `deleted_count` hiçbir koşumda
+**görülmedi** — alan düşürülmüştü. Yani *"konsolidasyon travma-dışı bir şey
+sildi mi"* sorusu hâlâ ölçülmemiş; B2 cevaplayacak. N=3, tek koşum.

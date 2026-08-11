@@ -24,9 +24,11 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-050.** Sıradaki kayıt **D-051** olarak açılır.
-- **GAP-2, GAP-6 kapandı; GAP-4 ve GAP-5 D-050 ile sınıra çevrildi.**
-  Açık: 3, 9, 10, 17, 18, 19 — tetikleri §1'deki GAP TETİK TABLOSU'nda.
+- **Son D-kaydı: D-051.** Sıradaki kayıt **D-052** olarak açılır.
+- **GAP-2, GAP-6 kapandı; GAP-4/5 → L14/L15, GAP-19 → L16 (D-050/D-051).**
+  Açık: 3, 9, 10, 17, 18 — tetikleri §1'deki GAP TETİK TABLOSU'nda.
+- ⚠ **Gizli bağımlılık (D-051):** `F_agent` (L1) tek başına düzeltilirse
+  GAP-19 canlanır. **İkisi birlikte ya da hiçbiri.**
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 - **Değişmez sayısı: 24** (I1.3/I1.3b/I1.4/I1.5 **D-046** ile eklendi).
   Belgede tanımlı 26'nın ikisi kodda yok — I1.2 testte, I2.3 yapısal.
@@ -34,7 +36,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   **Altı slot kapandı** (S1 greedy · S3 α=0.05 · **S4 SESOI yok, bütçeden
   N — D-047** · S5 1 epoch · S6 replay yok · S7 50/20/3); **yalnız S2 (N)
   açık** ve kilidi o tutuyor. **On beş ilan edilmiş sınır**
-  (L11/L12 D-047 · L13/L14/L15 D-050).
+  (L11/L12 D-047 · L13/L14/L15 D-050 · L16 D-051).
 - **Master reference: v2.4.2** yazıldı (§8).
 - **Üç DR cevabı da geldi ve işlendi** (D-047 §G · D-048 §H · D-049 §I).
   DR kanalı bu ön-kayıt için **kapandı**.
@@ -237,7 +239,7 @@ onaylandı (2026-08-11)**; sıra değiştirmek yeni onay ister.
 | ↳ | ✅ **GAP-6 kapandı** (`b66f7fc`) — temizlik swap'e değil **DPO adımına** kondu | — | ✅ |
 | ~~A6~~ | ✅ **D-050** — precision ağırlığı aday olarak **elendi** (dokuz karşıtlıkta işaret aynı). Yan bulgu: **Precision-PE atıl** (L13) | — | ✅ |
 | ↳ | ✅ **GAP-5 doğrulandı ve nicelendi** → L14 · **GAP-4'ün mekanizması yok**, asimetri → L15 | — | ✅ |
-| **A7** | **GAP-19 kararı** — faz-1/faz-2 sayaç uzayı. Neyin eğitildiğine dokunuyor, kilitten önce karara bağlanmalı. ⚠ **D-045 ona bir gözlem borçlu**: gen2'nin zamana bağlı iptali GAP-19'un öngördüğü desene benziyor | ~1 sa | ⬜ |
+| ~~A7~~ | ✅ **D-051** — saat gerçekten kırık ama birincile giden yol **L1 + travma muafiyeti** ile kapalı ⇒ **değiştirilmedi**, L16 olarak yazıldı. ⚠ **Gizli:** `F_agent` tek başına düzeltilirse canlanır. Yan bulgu: konsolidasyon raporu JSON'a hiç girmiyormuş (`060d907`) | — | ✅ |
 
 **Ertelendi, bilerek:** **A2** (OOD probing) ve **A4** (environment'ı ayrım
 üretir hale getirme). İkisi de değerli, ikisi de bu ön-kaydı **günlerce**
