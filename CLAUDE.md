@@ -19,27 +19,120 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-11, akşam)
+# 1. Şu An Neredeyiz (2026-08-11, gece) — 🔒 **ÖN-KAYIT KİLİTLİ**
 
-- **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
-  gerçek diverjans var, ertelendi (**D-013**).
+- **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı (**D-013**).
 - **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-051.** Sıradaki kayıt **D-052** olarak açılır.
-- **GAP-2, GAP-6 kapandı; GAP-4/5 → L14/L15, GAP-19 → L16 (D-050/D-051).**
-  Açık: 3, 9, 10, 17, 18 — tetikleri §1'deki GAP TETİK TABLOSU'nda.
+- **Son D-kaydı: D-052.** Sıradaki kayıt **D-053** olarak açılır.
+- 🔒 **`docs/PREREGISTRATION.md` KİLİTLİ** · 2026-08-11 · commit `befd72b4ee57`.
+  **Yedi slotun yedisi kapalı. On sekiz ilan edilmiş sınır.**
+  ⚠ **Alet değişikliği penceresi KAPANDI (§2.10).** Kilitten sonra eşik, uç
+  nokta, test veya çift kurma stratejisi değişirse sonuç **post-hoc** olur.
+- **Sıradaki iş: B2 — doğrulayıcı koşum.** Runbook aşağıda, §1'de.
+- **Faz A bitti:** A1/A3/A5/A6/A7/A8 → D-044…D-052.
+- **GAP durumu:** 1,2,6,7,9,11,12,13,14,15,16,20 **kapandı** ·
+  3,4,5,10,19 **ilan edilen sınıra çevrildi** (L17,L15,L14,L8,L16) ·
+  **18** B2'nin `uniq_rejected` sayısını bekliyor · **17** B4'te raporda not.
 - ⚠ **Gizli bağımlılık (D-051):** `F_agent` (L1) tek başına düzeltilirse
-  GAP-19 canlanır. **İkisi birlikte ya da hiçbiri.**
-- **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
-- **Değişmez sayısı: 24** (I1.3/I1.3b/I1.4/I1.5 **D-046** ile eklendi).
-  Belgede tanımlı 26'nın ikisi kodda yok — I1.2 testte, I2.3 yapısal.
-- **Ön-kayıt taslağı:** `docs/PREREGISTRATION.md` — **KİLİTLİ DEĞİL**.
-  **Altı slot kapandı** (S1 greedy · S3 α=0.05 · **S4 SESOI yok, bütçeden
-  N — D-047** · S5 1 epoch · S6 replay yok · S7 50/20/3); **yalnız S2 (N)
-  açık** ve kilidi o tutuyor. **On beş ilan edilmiş sınır**
-  (L11/L12 D-047 · L13/L14/L15 D-050 · L16 D-051).
-- **Master reference: v2.4.2** yazıldı (§8).
-- **Üç DR cevabı da geldi ve işlendi** (D-047 §G · D-048 §H · D-049 §I).
-  DR kanalı bu ön-kayıt için **kapandı**.
+  GAP-19 canlanır. **İkisi birlikte ya da hiçbiri.** Sonraki ön-kayıt.
+- **Değişmez sayısı: 24.** Belgede tanımlı 26'nın ikisi kodda yok
+  (I1.2 testte, I2.3 yapısal).
+- **Üç DR cevabı da işlendi** (D-047 §G · D-048 §H · D-049 §I). Kanal kapandı.
+- **Master reference: v2.4.2** (§8). ⚠ D-045…D-052 orada **yok** — Faz C borcu.
+
+## ▶▶ B2 RUNBOOK — yeni oturum buradan başlar
+
+**Amaç:** ön-kayıtlı doğrulayıcı koşum. N=40, seed **2004–2043**, iki batch.
+**Süre:** batch başına ~6.7 saat (seed başına 19.9 dk ölçüldü, +%5–10 tampon).
+
+### Adım 0 — koşum öncesi kontrol (bir kez, ~5 dk)
+
+```bash
+cd /home/yasin-yagmur01/Desktop/DAU-Foundation
+git log --oneline -1                      # befd72b veya sonrası olmalı
+python -m pytest -q                       # 344 passed beklenir
+df -h . | tail -1                         # >5 GB bos (gereken ~1.1 GB)
+nvidia-smi --query-gpu=memory.used --format=csv,noheader   # ~0 MiB olmali
+ls dau_runs/adapters/ | grep -E "20(0[4-9]|[1-3][0-9]|4[0-3])" && echo "ABORT: I0.7 dusecek" || echo "temiz"
+```
+
+⚠ **Yasin'in elle yapması gerekenler** (sistem ayarı, Claude Code yapmaz):
+
+```bash
+sudo sed -i 's/^#\?HandleLidSwitch=.*/HandleLidSwitch=ignore/;s/^#\?HandleLidSwitchExternalPower=.*/HandleLidSwitchExternalPower=ignore/' /etc/systemd/logind.conf && sudo systemctl restart systemd-logind
+```
+
+Lid ayarı **varsayılan `suspend`** — kapak kapanırsa koşum ölür. Ayrıca:
+GPU'yu kullanan her şey kapalı olsun (tarayıcı dahil, 8188 MiB'de marj dar).
+
+⚠ **`PYTHONHASHSEED=0` şart.** Yoksa **I0.3 ilk saniyede ABORT eder**
+(mock koşumla doğrulandı). `--lora` bayrağı `DAU_LORA_ENABLED`'ı kendi set
+ediyor, backend varsayılanı zaten `local` (D-018) ⇒ başka env gerekmiyor.
+
+### Adım 1 — Batch 1 (seed 2004–2023)
+
+```bash
+PYTHONHASHSEED=0 nohup python -m dau.diagnostics.run_cprime_multigen --lora --n-pairs 20 --seed-start 2004 --events-gen1 50 --events-gen2 20 --k-gen2 3 --results dau_runs/prereg_b2_batch1_2004_2023.json > dau_runs/prereg_b2_batch1.log 2>&1 &
+```
+
+### Adım 2 — Batch 2 (seed 2024–2043), batch 1 **bittikten sonra**
+
+```bash
+cd /home/yasin-yagmur01/Desktop/DAU-Foundation && PYTHONHASHSEED=0 nohup python -m dau.diagnostics.run_cprime_multigen --lora --n-pairs 20 --seed-start 2024 --events-gen1 50 --events-gen2 20 --k-gen2 3 --results dau_runs/prereg_b2_batch2_2024_2043.json > dau_runs/prereg_b2_batch2.log 2>&1 &
+```
+
+İzleme: `tail -f dau_runs/prereg_b2_batch1.log`
+
+### Koşum biterken bakılacaklar
+
+| Ne | Nerede | Beklenen |
+|---|---|---|
+| `run_quality` | JSON kökü | **`clean`** (flagged olursa hangi kapı, D-kaydına) |
+| 24 değişmez | `invariants` | I3.2/I1.3b/I1.4/I1.5 **FLAG olabilir** (kalibre değil), gerisi geçmeli |
+| `tool_identity` | JSON | `PREREGISTRATION.md` §12 ile **birebir** eşleşmeli |
+| `uniq_rejected` | `pair_filter` | **GAP-18'in cevabı** — ilk kez ölçülüyor |
+| `dpo_loss` lived vs shuffle | `pairs[].lineages[].gen1` | **DR #2 H3 testi**: shuffle belirgin yüksek olmalı |
+| `dpo_delta_logp_chosen` | aynı yer | **>0 olmalı** — negatifse bastırma öğrenilmiş (D-049) |
+| `consolidation.deleted_count` | `pairs[].lineages[]` | ilk kez görünür (D-051) |
+
+### ⚠ Çökerse
+
+- **Sadece o batch yeniden koşulur.** Diğer batch'in sonucu geçerli.
+- **Sonuç seçmek için batch atılamaz** (D-052'de önceden ilan edildi).
+- Yeniden koşmadan önce `dau_runs/adapters/`'ta o batch'in seed'lerini sil,
+  yoksa **I0.7 abort eder**.
+- OOM en olası sebep (pilotta bir uyarı vardı, 120 eğitim koşacak).
+  `_train_adapter` yakalar → `trained=False` → **I1.1 ABORT** eder.
+  Sessizce eğitimsiz kol üretmez.
+
+### B2'den sonra
+
+**B3** (~1 sa): ön-kayıtlı analiz — birincil (§3: `a_s` vs `b_s`, eşleştirilmiş
+Wilcoxon, çift yönlü, α=0.05) + altı ikincil, **çoklu karşılaştırma düzeltmesi
+yok**, her ikincilin yanına "iddia edilmiyor" yazılır.
+**B4** (~2 sa): rapor + **on sekiz ilan edilmiş sınır** + null çıkarsa
+**mekanizma null'ı mı alet null'ı mı** ayrımı (§11).
+
+⚠ **B3'te hiçbir istatistik seçilmez** — hepsi ön-kayıtta yazılı. Yeni bir
+test akla gelirse **ikinci ön-kayıta** yazılır, buraya değil.
+
+## ▶ İKİNCİ ÖN-KAYIT — kilitten sonra biriken her şey buraya
+
+Kilit kapandığı için aşağıdakilerin **hiçbiri** bu koşuma giremez.
+
+| İş | Nereden geldi |
+|---|---|
+| **A2 — kanal ayrımı, plasebo anı enjeksiyonu ile** | ⚠ Eski tasarım ("getirimi tamamen kapat") **kusurluydu**: OOD şoku ölçer, parametrik kapasiteyi değil (D-049/I12) |
+| **Çifte ayrışma protokolü** (`ΔE_ağırlık + ΔE_bellek ≈ ΔE_toplam`) | DR #3 / I15 — kanal ayrımı iddiasının literatürdeki çıtası |
+| **`F_agent` + GAP-19 birlikte** | ⚠ **Ayrı ayrı düzeltilirse GAP-19 canlanır** (D-051). L1 ve L16 |
+| **A4 — environment'ı ayrım üretir hale getirme** | Faz A'da bilerek ertelendi |
+| **KTO'ya geçiş** | DR #2 baş tavsiyesi. ⚠ Doğrulanmamış premise dayanıyordu; **B2'nin `uniq_rejected` sayısı** karar verir |
+| **Zaman × kol etkileşimi (LMM/FDA)** — **genel form** | DR #3 / I17. ⚠ "ikinci yarı AUC" **özel formu alınmaz** — o D-045'te gözlediğimiz şey, post-hoc olur |
+| **`W_SEM` 0.0 → 0.3–0.4** · negation sarmalayıcı · asimetrik spillover | GAP-10, üçü de L8'de sınır olarak duruyor |
+| **Precision-PE `VAR_REF`** | L13 — π tavanda takılı, mekanizma atıl |
+| **`SYSTEM_PROMPT` lexicon** | L14 — davranışsal sınıflandırıcıyı besliyor |
+| **Popülasyon / N nesil** | **D-014**: hedef N nesil, gen1→gen2 en kısa çalışabilir biçim |
+| **Magic number kalıntıları** | `time.sleep(10)`, bare `0.5`, `k: int = 5`. **Cursor'a uygun** |
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
 
@@ -253,11 +346,11 @@ enjeksiyonu** geçecek — sonraki ön-kayıt.
 
 | # | İş | Süre | Durum |
 |---|---|---|---|
-| **A8** | **S2 (N) kararı.** DR bütçeden `N=32` diyor (MDE `d_z=0.511` iki yönlü, doğrulandı); GAP-9'un dayandığı brief Protocol C için **N=40–50** diyordu. İkisi uzlaştırılmadan kilit yok. ⚠ `resource` atıl (L11) ⇒ N ne alınırsa alınsın ayrım ikinci alandan gelecek | ~45 dk | ⬜ |
-| **B1** | Pre-reg'i güncelle, `tool_identity` dondur, **kilitle** | ~45 dk | 🔒 A8 |
-| **B2** | **Doğrulayıcı koşum, seed 2004'ten.** ⚠ 2001–2003 yakılmış (D-038) | N×20 dk +7 | 🔒 B1 |
+| ~~A8~~ | ✅ **D-052** — **N=40**, seed 2004–2043, iki batch. MDE `d_z=0.465` (Wilcoxon). **GAP-9 kapandı**: `N=40–50` ΔPE için hesaplanmış, bizim birinciliğimiz için değil | — | ✅ |
+| ~~B1~~ | ✅ **KİLİTLENDİ** `befd72b4ee57` — 7/7 slot, alet kimliği donduruldu (§12), GAP-3→L17 · GAP-10→L8 | — | ✅ |
+| **B2** | **Doğrulayıcı koşum — RUNBOOK §1'de.** seed 2004–2043, iki batch. ⚠ 2001–2003 yakılmış (D-038) | 2×6.7 sa | ⬜ |
 | **B3** | Ön-kayıtlı analiz: birincil + altı ikincil, düzeltmesiz | ~1 sa | 🔒 B2 |
-| **B4** | Rapor + **on altı** ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
+| **B4** | Rapor + **on sekiz** ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
 
 ### Faz C — işler bitince (Yasin: "belge borcu işler bittikten sonra")
 
@@ -276,21 +369,19 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 
 | GAP | Tetik | Neden o an optimal | Nasıl çözülür |
 |---|---|---|---|
-| **GAP-5** | **A6'dan hemen sonra** | A6 `lived−shuffle`'ın kalanını arıyor. SYSTEM_PROMPT'un `decision_to_outcome` kelimelerini primlemesi tam da o kalanın adayı — **aynı veriye bakarken** sormak ikinci bir tur gerektirmez. Ve kilitten önce bilinmeli: gerçekse davranışsal ölçümün geçerliliğini daraltır | Yerel denetim (ucuz) + DR brief #3'ün kapsamında |
-| **GAP-4** | **A6 ile birlikte** | Kanal kirlenmesi sorusu. A6 zaten kolların nerede ayrıştığına bakıyor; vault↔LoRA senkron kopukluğu **kodda hiç doğrulanmadı** ve read-only denetim aynı oturumda biter | Read-only denetim (Claude Code) |
-| **GAP-19** | **A7 = kendisi** | Neyin eğitildiğine dokunuyor. Kilitten sonra değiştirilirse post-hoc olur | Karar + D-kaydı (Yasin onayı) |
-| **GAP-9** | **A8'de** | S4 kapandı (D-047) ama GAP-9 kapanmadı: DR `N=32`, eski brief `N=40–50` diyor. A8 tam olarak bu uzlaşma | A8 kararı + D-kaydı |
-| **GAP-18** | **B2'nin `uniq_rejected` sayısı gelince** | Cevap geldi (D-048) ama **şiddeti hiç ölçülmemiş** çıktı: "2 benzersiz negatif" 10 olaylık replay'den, "47 çift" 50 olaylık koşumdan. Sayaçlar eklendi (`daa5f4b`); karar sayıdan sonra | B2 ölçümü → sonra karar |
-| **GAP-3** | **B1'de (kilit anı)** | Gen2 ikincillerini etkiliyor, ve o ikinciller zaten L10 ile sınırlı. Düzeltmek yerine **ilan edilmiş sınır** olarak yazmak dürüst ve ucuz. ⚠ D-045 onu `null` varisinin ikinci-yarı çöküşü için **mekanizma adayı** olarak da işaretledi | Sınır olarak ilan et |
-| **GAP-10** | **B1'de (kilit anı)** | `W_SEM=0.0` değiştirilirse **taban yine sıfırlanır**. Kilitten önce dokunmak pahalı, kilitten sonra yasak ⇒ bu ön-kayıt için **sınır**, sonraki için iş kalemi | Sınır olarak ilan et |
+| **GAP-18** | **B2'nin `uniq_rejected` sayısı gelince** | Cevap geldi (D-048) ama **şiddeti hiç ölçülmemiş** çıktı: "2 benzersiz negatif" 10 olaylık replay'den, "47 çift" 50 olaylık koşumdan. Sayaçlar eklendi (`daa5f4b`); karar sayıdan sonra. ⚠ Kilit kapandı ⇒ karar **ikinci ön-kayıta** gider, bu koşuma değil | B2 ölçümü → ikinci ön-kayıt |
 | **GAP-17** | **B4'te (rapor)** | Karşılaştırma tabanı delil olarak kullanılamıyor; bisect pahalı ve sonucu bir şeyi değiştirmiyor. Raporda "açıklanmadı" diye geçer | Raporda not |
+
+**Kilitte sınıra çevrilenler** — yeniden açılmaz, `PREREGISTRATION.md` §8'de:
+GAP-3 → **L17** · GAP-4 → **L15** · GAP-5 → **L14** · GAP-10 → **L8** ·
+GAP-19 → **L16**. GAP-9 **kapandı** (D-052).
 
 ---
 
-## ▶ DR BRIEF SIRASI — Yasin gönderecek
+## ▶ DR KANALI — bu ön-kayıt için **kapandı**
 
-Üçü de yazıldı ve `docs/research/` altında hazır. **Sıra bağlayıcı**, ama
-2 ve 3 birbirini beklemez.
+Üçü de gönderildi, cevaplandı ve mutabakata bağlandı. Ayrıntı
+`docs/research/RECONCILIATION.md` **§G, §H, §I**.
 
 | # | Brief | Neyi açar | Dosya |
 |---|---|---|---|
@@ -298,8 +389,15 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 | **2** | **GAP-18 — ortak negatif / az çeşitli `rejected`** | Eğitim seti kalitesi. Kilidi bloke etmiyor | `2026-08-11_GAP18-shared-negatives-in-preference-learning.md` |
 | **3** | **Lamarckçı kapsam + kanal ayrımı** | İddianın genişliği (1–2) ve **bir sonraki ön-kaydın mimarisi** (3–4). GAP-5'in literatür yarısı burada | `2026-08-11_lamarckian-scope-and-channel-separation.md` |
 
-Cevap gelince: her iddia için mutabakat tablosu → `RECONCILIATION.md`.
-⚠ Brief **iddia**, kanıt değil — sicil §9'da, yedi iddiadan dördü çürüdü.
+**Üçünün ortak dersi (kayda değer):** ikisi **bizim verdiğimiz yanlış
+bilgiden** zarar gördü — #1'in `r≥0.85` varsayımı bizim "determinizm"
+tarifimizden türedi, #2'nin bütün teşhisi bizim iki koşumdan birleştirdiğimiz
+"47 çift / 2 benzersiz negatif" sayısından. **Brief kalitesi girdi kalitesiyle
+sınırlı, ve girdiyi biz yazıyoruz.**
+
+⚠ Kaynak kimlikleri: #3 en sağlamı (12 doğrulandı, 1 düştü) · #2 en zayıfı
+(6 düştü — Distinct-N ve Self-BLEU'nun ikisi de "Papineni 2002"ye
+atfedilmişti, o BLEU'dur).
 
 ---
 
@@ -307,7 +405,8 @@ Cevap gelince: her iddia için mutabakat tablosu → `RECONCILIATION.md`.
 
 | İş | Tetik | Not |
 |---|---|---|
-| **`archive/` 2.3 GB, 15 dizin** | **B2'den önce** | Doğrulayıcı koşum N×2 yeni adapter yazacak; disk payı önceden açılmalı. `.gitignore`'da, silinebilir — ama D-042/D-043'ün kanıt adapter'ları hangisi diye bakılmalı |
+| **`archive/` 2.3 GB** | **isteğe bağlı** | ⚠ **Artık bloke etmiyor:** ölçüldü, B2 ~1.1 GB yazacak (40×2 adapter × 14 MB) ve **36 GB boş** var. Temizlik hijyen, zorunluluk değil |
+| **Eski adapter'lar** (`dau_runs/adapters/`, 7 dizin, seed 2001–2003) | **B2'den önce kontrol** | Seed'lerimiz 2004–2043 ⇒ **çakışma yok, I0.7 temiz başlar** (doğrulandı). Silme — D-042/D-043'ün kanıtı |
 | **`dau_runs/` 33 JSON etiketleme** | **Faz C** | Bir kısmı geçersiz (D-036/037/042 öncesi). Silinmemeli, etiketlenmeli |
 | **D-013 — branch main'e taşınmadı** | **B4'ten sonra** | Gerçek diverjans var. Paper aşamasında ele alınır |
 
@@ -323,8 +422,8 @@ Cevap gelince: her iddia için mutabakat tablosu → `RECONCILIATION.md`.
 3. **`docs/DECISIONS.md`** — ilgili D-kaydı. En çok bağlam taşıyanlar:
    **D-036** (ölçüm penceresi) · **D-037** (tekrarlanabilirlik) · **D-042**
    (konum bağımsızlığı) · **D-044** (uç nokta duyarlılığı).
-4. **`docs/PREREGISTRATION.md`** — beş slot kapalı, S4/S2 açık, on ilan
-   edilmiş sınır. Kilitli **değil**.
+4. **`docs/PREREGISTRATION.md`** — 🔒 **KİLİTLİ** (`befd72b4ee57`), 7/7 slot
+   kapalı, **on sekiz ilan edilmiş sınır**, alet kimliği §12'de donduruldu.
 5. Koda dokunmadan önce **§2.2**.
 
 ⚠ `docs/EXECUTION_PLAN.md` **Faz 2'de donmuş** — D-038…D-044 orada yok.
@@ -424,14 +523,20 @@ yasağı** (belirlenemeyen durum `SystemExit`/`ValueError`/`[WARN]` ile
 gürültü çıkarır, varsayılana düşmez) · `constraints.py` eşik **değerleri
 yalnızca D-kaydıyla** değişir.
 
-## 2.10 Ön-kayıt penceresi hâlâ açık
+## 2.10 🔒 Ön-kayıt penceresi **KAPANDI** (2026-08-11, `befd72b4ee57`)
 
-Pre-reg yazılmadı → alet değişikliği hâlâ meşru, ama her biri D-kaydı ister.
-**Pre-reg kilitlendiği an bu pencere kapanır** ve aynı değişiklik post-hoc
-olur. Bugünün dokuz kararı bu pencerede meşruydu.
+Bugün on iki karar (D-039…D-052) bu pencerede meşruydu. **Artık değil.**
 
-⚠ Ama pencere sonsuz değil: alet bugün **on bir kez** değişti ve bu haliyle
-**bir kez bile uçtan uca koşmadı**. Pilot bunun için var.
+**Kilitten sonra yasak:** `constraints.py` eşik değeri · uç nokta · test ·
+çift kurma stratejisi · `SYSTEM_PROMPT` · herhangi bir ön-kayıtlı protokol
+maddesi. Bunlardan biri değişirse sonuç **post-hoc** olur ve ön-kayıt
+geçersizleşir.
+
+**Hâlâ meşru:** saf raporlama/aletleme eklemesi (hesaplamayı değiştirmeyen),
+ve **açık hata düzeltmesi** — ama ikincisi D-kaydı **ve** Yasin onayı ister,
+ve "bu bir hata mı yoksa ayar mı" sorusu sessizce cevaplanmaz (§2.11).
+
+**Aklına gelen her iyileştirme ikinci ön-kayıta gider.** Listesi §1'de.
 
 ## 2.11 Çelişki görürsen sessizce seçme
 
@@ -451,7 +556,7 @@ kaymış.)
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
-| Ön-kayıt: slotlar, uç noktalar, **on ilan edilmiş sınır** | `docs/PREREGISTRATION.md` (kilitli değil) |
+| Ön-kayıt: slotlar, uç noktalar, **on sekiz ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
