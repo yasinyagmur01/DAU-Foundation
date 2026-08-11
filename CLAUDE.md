@@ -24,7 +24,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `341 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-046.** Sıradaki kayıt **D-047** olarak açılır.
+- **Son D-kaydı: D-047.** Sıradaki kayıt **D-048** olarak açılır.
 - **GAP-2 ve GAP-6 kapandı** (`d65100d`, `b66f7fc`); açık GAP'ler:
   3, 4, 5, 9, 10, 17, 18, 19 — **her birinin tetiği §1'deki GAP TETİK
   TABLOSU'nda.**
@@ -32,11 +32,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Değişmez sayısı: 24** (I1.3/I1.3b/I1.4/I1.5 **D-046** ile eklendi).
   Belgede tanımlı 26'nın ikisi kodda yok — I1.2 testte, I2.3 yapısal.
 - **Ön-kayıt taslağı:** `docs/PREREGISTRATION.md` — **KİLİTLİ DEĞİL**.
-  **Beş slot kapandı** (S1 greedy · S3 α=0.05 · S5 1 epoch · S6 replay yok ·
-  S7 50/20/3); **S4 ve S2 açık**, ve kilidi onlar tutuyor.
-  **On ilan edilmiş sınır** (L10 D-045 ile eklendi).
+  **Altı slot kapandı** (S1 greedy · S3 α=0.05 · **S4 SESOI yok, bütçeden
+  N — D-047** · S5 1 epoch · S6 replay yok · S7 50/20/3); **yalnız S2 (N)
+  açık** ve kilidi o tutuyor. **On iki ilan edilmiş sınır** (L11/L12 D-047).
 - **Master reference: v2.4.2** yazıldı (§8).
-- **Üç DR brief'i hazır**, gönderilmedi — sıra §1'de.
+- **DR #1 cevabı geldi ve işlendi** (D-047, RECONCILIATION §G).
+  **#2 ve #3 hâlâ gönderilmedi** — ikisi de kilidi bloke etmiyor.
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
 
@@ -247,7 +248,8 @@ bunlar. → ikinci ön-kayıt / popülasyon çalışması.
 
 | # | İş | Süre | Durum |
 |---|---|---|---|
-| **B1** | S4 → S2 (N) hesapla, pre-reg'i güncelle, `tool_identity` dondur, **kilitle** (D-045) | ~45 dk | 🔒 S4 |
+| **A8** | **S2 (N) kararı.** DR bütçeden `N=32` diyor (MDE `d_z=0.511` iki yönlü, doğrulandı); GAP-9'un dayandığı brief Protocol C için **N=40–50** diyordu. İkisi uzlaştırılmadan kilit yok. ⚠ `resource` atıl (L11) ⇒ N ne alınırsa alınsın ayrım ikinci alandan gelecek | ~45 dk | ⬜ |
+| **B1** | Pre-reg'i güncelle, `tool_identity` dondur, **kilitle** | ~45 dk | 🔒 A8 |
 | **B2** | **Doğrulayıcı koşum, seed 2004'ten.** ⚠ 2001–2003 yakılmış (D-038) | N×20 dk +7 | 🔒 B1 |
 | **B3** | Ön-kayıtlı analiz: birincil + altı ikincil, düzeltmesiz | ~1 sa | 🔒 B2 |
 | **B4** | Rapor + on ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
@@ -272,7 +274,7 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 | **GAP-5** | **A6'dan hemen sonra** | A6 `lived−shuffle`'ın kalanını arıyor. SYSTEM_PROMPT'un `decision_to_outcome` kelimelerini primlemesi tam da o kalanın adayı — **aynı veriye bakarken** sormak ikinci bir tur gerektirmez. Ve kilitten önce bilinmeli: gerçekse davranışsal ölçümün geçerliliğini daraltır | Yerel denetim (ucuz) + DR brief #3'ün kapsamında |
 | **GAP-4** | **A6 ile birlikte** | Kanal kirlenmesi sorusu. A6 zaten kolların nerede ayrıştığına bakıyor; vault↔LoRA senkron kopukluğu **kodda hiç doğrulanmadı** ve read-only denetim aynı oturumda biter | Read-only denetim (Claude Code) |
 | **GAP-19** | **A7 = kendisi** | Neyin eğitildiğine dokunuyor. Kilitten sonra değiştirilirse post-hoc olur | Karar + D-kaydı (Yasin onayı) |
-| **GAP-9** | **S4 cevabı gelince kapanır** | Zaten S4'ün tanımı bu | DR brief #1 |
+| **GAP-9** | **A8'de** | S4 kapandı (D-047) ama GAP-9 kapanmadı: DR `N=32`, eski brief `N=40–50` diyor. A8 tam olarak bu uzlaşma | A8 kararı + D-kaydı |
 | **GAP-18** | **DR brief #2 cevabı gelince** | Kilidi bloke etmiyor; cevap gelmeden kod değişikliği önerilmemeli — iki denemede de ters teptiği ölçüldü | DR brief #2 → sonra karar |
 | **GAP-3** | **B1'de (kilit anı)** | Gen2 ikincillerini etkiliyor, ve o ikinciller zaten L10 ile sınırlı. Düzeltmek yerine **ilan edilmiş sınır** olarak yazmak dürüst ve ucuz. ⚠ D-045 onu `null` varisinin ikinci-yarı çöküşü için **mekanizma adayı** olarak da işaretledi | Sınır olarak ilan et |
 | **GAP-10** | **B1'de (kilit anı)** | `W_SEM=0.0` değiştirilirse **taban yine sıfırlanır**. Kilitten önce dokunmak pahalı, kilitten sonra yasak ⇒ bu ön-kayıt için **sınır**, sonraki için iş kalemi | Sınır olarak ilan et |
