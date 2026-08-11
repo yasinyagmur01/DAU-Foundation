@@ -249,7 +249,7 @@ bunlar. → ikinci ön-kayıt / popülasyon çalışması.
 kapat" OOD şoku ölçer, parametrik kapasiteyi değil. Yerine **plasebo anı
 enjeksiyonu** geçecek — sonraki ön-kayıt.
 
-### Faz B — kilit ve sonrası (S4 gelmeden başlayamaz)
+### Faz B — kilit ve sonrası (**A8 kararı gelmeden başlayamaz**; S4 D-047 ile kapandı)
 
 | # | İş | Süre | Durum |
 |---|---|---|---|
@@ -257,7 +257,7 @@ enjeksiyonu** geçecek — sonraki ön-kayıt.
 | **B1** | Pre-reg'i güncelle, `tool_identity` dondur, **kilitle** | ~45 dk | 🔒 A8 |
 | **B2** | **Doğrulayıcı koşum, seed 2004'ten.** ⚠ 2001–2003 yakılmış (D-038) | N×20 dk +7 | 🔒 B1 |
 | **B3** | Ön-kayıtlı analiz: birincil + altı ikincil, düzeltmesiz | ~1 sa | 🔒 B2 |
-| **B4** | Rapor + on ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
+| **B4** | Rapor + **on altı** ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
 
 ### Faz C — işler bitince (Yasin: "belge borcu işler bittikten sonra")
 
