@@ -1,7 +1,7 @@
 # Çok-Nesilli C′ — Ön-Kayıt (Pre-Registration)
 
-**Durum: TASLAK — KİLİTLİ DEĞİL.** Açık slotlar (§9) doldurulup Yasin
-onayladığında bu satır `KİLİTLİ · <tarih> · <commit>` ile değiştirilir. O andan
+**Durum: TASLAK — KİLİTLİ DEĞİL.** Beş slot kapandı (2026-08-11); **S4 ve
+S2 açık**. Doldurulup Yasin bu satır `KİLİTLİ · <tarih> · <commit>` ile değiştirilir. O andan
 itibaren bu belgedeki hiçbir madde değişmez; değişiklik gerekirse yeni bir
 ön-kayıt açılır ve bu belge süperseded işaretlenir.
 
@@ -188,19 +188,48 @@ girmiyor (GAP-10). Anı seçimi şu an semantik değil.
 
 ---
 
-## 9. Açık slotlar — kilitlemeden önce doldurulacak
+## 9. Slotlar
 
-| # | Slot | Seçenekler / not | Kim |
+Beşi 2026-08-11'de Yasin tarafından karara bağlandı. **İkisi açık** ve
+kilidi onlar tutuyor.
+
+### Kapananlar
+
+| # | Slot | **Karar** | Gerekçe |
 |---|---|---|---|
-| **S1** | **Sampling: greedy mi sampled mı** | D-026'da açık kaldı. Greedy 50 olayda `n_unique=27` (kapı 5) ⇒ reçetenin "greedy plato yapar" gerekçesi çürüdü. Sampled %63 daha çok çift veriyor ama gürültü ekler. **Claude Code'un görüşü: greedy** — GAP-9 altında gürültü azaltmak, çift sayısından değerli. | Yasin |
-| **S2** | **N (seed sayısı)** | Bütçe: kol başına ~7 dk, seed başına ~20 dk. N=10 → ~3.3 sa · N=15 → ~5 sa · N=20 → ~6.7 sa · N=30 → ~10 sa. Wilcoxon çift yönlü α=0.05'te **N≥6 şart** (altında matematiksel olarak reddedemez). Güç tablosu: d_z=0.5 → 32 · 0.8 → 13 · 1.0 → 8. ⚠ Bu tablodan N seçmek için **önce en küçük anlamlı etki** (S4) beyan edilmeli. | Yasin |
-| **S3** | **α ve düzeltme** | Tek birincil test ⇒ düzeltme gereksiz. Öneri: α=0.05 çift yönlü. | Yasin |
-| **S4** | **En küçük anlamlı etki (d_z)** | N'i buradan hesaplarız. **Gözlenen d'den seçilemez** (§2.7, post-hoc tuning). Literatürden veya "bu büyüklükten küçük bir etki bizi ilgilendirmez" beyanıyla gelmeli. | Yasin (DR girdi verebilir) |
-| **S5** | **A3: `DPO_EPOCHS` 1 → 3?** | Ertelenmişti (GAP-8). Kilitlenirse koşum süresi ~3× artar. | Yasin |
-| **S6** | **A4: %10 somatik replay?** | D-027 VRAM bütçesinden çıkardı (batch=1'de maliyeti yok). Deney tasarımı kararı, aksiyoma değiyor. | Yasin |
-| **S7** | **`events_gen1` / `events_gen2` / `k_gen2`** | Şu ana kadar 50 / 20 / 3 koşuldu. Değişirse ΔPE tabanı yine sıfırlanır. Öneri: **değiştirme**. | Yasin |
+| **S1** | Sampling | **greedy** (`do_sample=False`, temperature 0.2) | D-026'nın reçetesi çürüdü — greedy 50 olayda `n_unique=27`, kapı 5, yani plato yok. Sampled %63 daha çok çift verir ama gürültü ekler; GAP-9 altında gürültü azaltmak çiftten değerli. Bu bir darboğaz elemesi, üretim değil |
+| **S3** | α ve düzeltme | **α = 0.05, çift yönlü, düzeltme yok** | Tek birincil test var (§3). İkincillerde de düzeltme yok çünkü iddia edilmiyorlar — her ikincil sonucun yanında bu açıkça yazılır (§4) |
+| **S5** | `DPO_EPOCHS` 1 → 3? | **1'de kalır** | Üç gerekçe: koşum süresi 3× artar (N=15'te 5 saat → 15 saat) · 47 çiftin **2 benzersiz `rejected`**'ı üstünde üç tur, GAP-18 altında ezberleme riski · ve D-029'un yakaladığı bastırma deseni (*"yüksek PE'liyi asla söyleme"*) tam olarak aşırı eğitimin failure mode'u. Sınadığımız şey eğitimi maksimize edip edemediğimiz değil, yaşanmışlığın aktarılıp aktarılmadığı. İlk ön-kayıtlı sonuçtan sonra yeniden açılabilir |
+| **S6** | A4 — %10 somatik replay? | **girmez** | Kanalları karıştırır. Kanal 1 (sembolik kasa) malzemesi Kanal 2'nin eğitim setine girerse *"izi hangi kanal taşıdı"* sorusu cevapsız kalır — ve D-002'nin dört-halkalı nedensel zincir mantığı tam olarak o ayrıma dayanıyor. VRAM maliyeti olmaması (D-027) onu bedava yapıyor ama **ücretsiz olması dahil etmek için gerekçe değil** |
+| **S7** | `events_gen1` / `gen2` / `k_gen2` | **50 / 20 / 3 — değişmez** | Değişirse ΔPE tabanı yine sıfırlanır ve D-043'ün regresyon değeri kaybolur |
 
----
+### Açık — kilidi bunlar tutuyor
+
+| # | Slot | Durum |
+|---|---|---|
+| **S4** | **En küçük anlamlı etki (`d_z`)** | ⏸ Beyan bekliyor. **Gözlenen d_z'den seçilemez** — D-043'te `lived−null` 0.87, `lived−shuffle` 0.39 ölçüldü ve ikisi de n=3'ten geliyor; birini hedef yapmak §2.7'nin yasakladığı post-hoc tuning olur |
+| **S2** | **N (seed sayısı)** | ⏸ S4'ün fonksiyonu |
+
+**Güç tablosu** (eşleştirilmiş Wilcoxon, çift yönlü, α=0.05, güç 0.80):
+
+| d_z | 0.2 | 0.3 | 0.4 | 0.5 | 0.8 | 1.0 | 1.5 |
+|---|---|---|---|---|---|---|---|
+| **gereken N** | 197 | 88 | 50 | 32 | 13 | 8 | 4 |
+
+⚠ **N ≥ 6 matematiksel şart:** altında Wilcoxon çift yönlü α=0.05'te
+reddedemez, etki ne kadar büyük olursa olsun.
+
+Bütçe: seed başına ~20 dk + koşum başına ~7 dk (I4.1 replay).
+N=10 ≈ 3.5 sa · N=15 ≈ 5.1 sa · N=20 ≈ 6.8 sa · N=32 ≈ 10.8 sa.
+
+**S4'ü doldurmanın iki meşru yolu var** — ikisi de post-hoc değil:
+
+1. **Etkiden N'e.** *"Şu büyüklükten küçük bir etki bizi ilgilendirmez"*
+   beyan edilir, N tablodan okunur. Literatür gerekçesi güçlendirir.
+2. **Bütçeden etkiye.** N bütçeden seçilir (ör. *"N=20 karşılayabiliriz"*),
+   ve ön-kayıt **tespit edilebilir en küçük etkiyi ilan eder** (N=20 →
+   d_z ≈ 0.66). Bundan küçük etkiler için *"güçsüzdük"* denir, *"etki yok"*
+   değil. Bu da meşrudur çünkü N veriden değil **bütçeden** geliyor.
 
 ## 10. Sapma politikası
 
