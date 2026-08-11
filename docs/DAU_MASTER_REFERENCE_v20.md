@@ -1,49 +1,78 @@
 # DAU — Master Reference
 
-**Versiyon 2.4.1** · 2026-08-08  
-**Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`  
-*(`.pdf` v2.4.1 ile senkron · `.html` henüz yeniden üretilmedi — md kaynaktır)*  
-*(eski `v10` / Versiyon 1.x belge ailesi süpersede edildi — arşiv olarak kalabilir)*
-
-Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C **paper-locked negative
-finding** · C′ N=15 (eski reçete) **INSTRUMENT_LIMITED_NULL** · mini
-**SAMPLE_LIVED_PE_SEPARATION** (N=1) · C′ N=15 sampling+B →
-**SAMPLE_N15_UNDERPOWERED** (INCONCLUSIVE) · **ADIM 1–6 kodlandı** ·
-ADIM 5 precision **v3 smoke PASS** · bu branch’te **206 test**.
-
-**İddia disiplini:** Layer 5 **kod** ✅ · frozen-weight kapalı döngü
-metacognition **UNSUPPORTED (paper-locked null)** · C′ N=15 eski koşum
-(**INSTRUMENT_LIMITED_NULL** — alet bozukken alınmış; etki iddiası değil) ·
-mini sampling+B: lived ΔPE=−0.180 · null=0.000 · shuffle=−0.149
-(**SAMPLE_LIVED_PE_SEPARATION**; N=1) · N=15 sampling+B final: null=0.000
-(clean) · lived +0.008 · shuffle +0.019 · n_eff=12 · p=0.637 ·
-**SAMPLE_N15_UNDERPOWERED** / harness **INCONCLUSIVE** (N&lt;15 claim yasak;
-“etki yok” değil). Precision smoke v3 ΔPE (lived≈0.107) **etki iddiası
-değil** (§7).
-`DAU_LORA_ENABLED=0` · `DAU_LLM_BACKEND=groq` default · C′ local koşumda
-`DAU_LLM_DO_SAMPLE=1` + `DAU_LLM_TEMPERATURE=0.2`.
-
-**Faz 0 kilit:** Frozen Protocol C null **paper-locked**; full Groq
-Protocol C tekrar yok.
-
-**Plastisite / ADIM durumu (v2.4.1):**
-- Flags: `DAU_LLM_BACKEND=groq|local` (default groq), `DAU_LORA_ENABLED=0`,
-  `DAU_NLI_FILTER_ENABLED=1`, `DAU_LLM_DO_SAMPLE=0` (C′ için `=1`),
-  `DAU_LLM_TEMPERATURE` / `DAU_LLM_SEED` / `DAU_TORCH_THREADS`.
-- VRAM: Llama-3.1-8B 4-bit + MiniLM + QLoRA; DPO `BATCH_SIZE=1` +
-  gradient checkpointing ile **8GB kartta train tamamlanır** (önceki
-  `BATCH_SIZE=2` OOM).
-- ADIM 1–6 kod + unit test; ADIM 6 sampling+B N=15 koşuldu (W=10, K=5).
-- ADIM 1 crisis: `pool_step_node` → `step_pool_with_crisis` production
-  graph’ta doğrulandı (`a1ec2b4`); pool collapse terminasyonu hâlâ açık (§17).
-- **Replay:** sampling açıkken `sha256(DAU_LLM_SEED:prompt)` per-generate
-  tohum + strict CUDA lock → null faz1≡faz2 (mini + N=15 null_arm_clean).
-- ADIM 5 precision: rolling history + `VAR_REF` (v2.4; §7) + **v3 smoke
-  PASS** (davranışsal doğrulama; §7 / §23).
-- Layer 3: `apply_generation` memory vault seed API bağlı (`231c222`).
-- Sıradaki: çok-nesilli C′ pre-registration **henüz yazılmadı** (§23).
+**Versiyon 2.4.2** · 2026-08-11
+**Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
+*(`.pdf` ve `.html` **v2.4.1'de kaldı** — md kaynaktır ve tek güncel olandır)*
 
 ---
+
+## ⚠ v2.4.2 okuma uyarısı — önce bunu oku
+
+Bu belge 2026-08-08'de v2.4.1 olarak yazıldı ve o tarihten sonra alet
+**yirmi kez** değişti. v2.4.2 anlatıyı yeniden yazmıyor; **yanlış olan
+yerleri işaretliyor ve eksik olanı ekliyor.** İşaretsiz her bölüm hâlâ
+v2.4.1 anlatısıdır.
+
+**Otorite sırası:** `CLAUDE.md` (güncel durum) → `docs/DECISIONS.md`
+(**D-001…D-044**, append-only, kanıtlı) → `docs/PREREGISTRATION.md` (taslak)
+→ **bu belge**. Çelişki görürsen bu belge kaybeder.
+
+### Bu belgedeki sayıların hiçbiri bugünkü aletten değil
+
+Üç ayrı kırılma, sırayla:
+
+1. **D-036** — ölçüm penceresi 10 olaydan **fazın tamamına** çıktı. Belgedeki
+   her ΔPE, 50 olaylık fazın **ilk beşte birinin** ortalamasıydı.
+2. **D-037** — `TORCH_DETERMINISTIC_WARN_ONLY=False`. Öncesinde aynı seed +
+   aynı kod iki koşumda **farklı adapter** üretiyordu; koşum-arası gürültü
+   0.026, ölçülen etki 0.015–0.025 ⇒ **gürültü etkiden büyüktü**.
+3. **D-042** — adapter graft'ı süreçteki konumdan bağımsız hale geldi.
+   Öncesinde `lived` daima taze bir graft'tan, `shuffle` daima bir kez
+   eğitilip sıfırlanmış olandan eğitiliyordu ⇒ birincil karşıtlığın içinde
+   **sistematik** bir terim.
+
+⇒ **§18'in empirik tablosu, §10b'nin verdict'i ve başlıktaki bütün ΔPE
+değerleri bugünkü aletle karşılaştırılamaz.** Silinmiyorlar — tarihçe olarak
+duruyorlar — ama etki iddiası olarak okunamazlar.
+
+### Belgeye girmemiş, tamamen eksik olan katman
+
+**Preflight değişmez sistemi** (`dau/diagnostics/preflight.py`) ve **alet
+kimliği** (`tool_identity.py`) bu belgede **hiç geçmiyor**. İkisi de bugün
+projenin en sağlam parçası. Bkz. yeni **§24**.
+
+---
+
+## Bugünkü gerçek durum (2026-08-11)
+
+| Ne | Değer | Kaynak |
+|---|---|---|
+| Backend varsayılanı | **`local`** (groq legacy) | D-018 |
+| Model | `meta-llama/Meta-Llama-3.1-8B-Instruct` — ölçüldü, Qwen kapı altında | D-026 |
+| Quantization | NF4 + `double_quant`, **açıkça yazılı** | D-020/D-024 |
+| Sampling | **greedy** (`do_sample=0`) — ⚠ belge boyunca `=1` yazıyor | D-026 · pre-reg S1 |
+| Ölçüm penceresi | **fazın tamamı** (`PE_WINDOW_EVENTS=0`) — ⚠ belge boyunca `W=10` | **D-036** |
+| Determinizm | strict; aynı seed+kod **bit düzeyinde** aynı | **D-037**, D-038 |
+| DPO | β=0.1 · **lr=1e-6** · epochs=1 · batch=1 · grad_accum=4 · max_seq=512 | D-027/28/29 |
+| DPO prompt'u | **kararın verildiği prompt'un kendisi** | **D-032** |
+| Polarite kapısı | **kosinüs** `[0.25, 0.80]`, MiniLM (NLI değil) | **D-032** |
+| Shuffle kolu | **çiftlerin tamamı ters** (eskiden %50 yazı-tura) | **D-040** |
+| Adapter graft'ı | sabit `LORA_INIT_SEED`, konumdan bağımsız | **D-042** |
+| Değişmez kapıları | **20 kayıtlı** (belgede tanımlı 25'ten) | D-012, D-039, D-041 |
+| Test | **332 passed, 2 deselected** — ⚠ belge boyunca 206 | — |
+| Ön-kayıt | **taslak**, 5 slot kapalı, S4/S2 açık | `PREREGISTRATION.md` |
+
+### Kapanmış iki büyük darboğaz
+
+- **Çift darboğazı (D-032):** eğitim 51 token'lık, `system=""` olan sentetik
+  bir prompt altında koşuyordu; çıkarım 246–306 token. Üstelik prompt cevap
+  anahtarını veriyordu — PE karardan **sonra** hesaplanır. Artık eğitim,
+  kararın gerçekten verildiği prompt'la yapılıyor.
+- **Çeşitlilik tavanı:** 50 olayda `n_unique` 7'den **22–29**'a çıktı, kapı 5
+  (D-026, D-034). §18'in "greedy plato yapar" reçetesi bu ölçümle çürüdü.
+
+---
+
 
 ## 1. Aksiyom
 
@@ -376,6 +405,10 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node
   (temiz çekirdek ~31–35 çift; resmi paired t-test yok; full 40 tekrar yok)
   *[instrument: ADIM 5 fixed-gain π≡1.2, pe_vector-based — PE yolu
   evaluator üzerinden; iddia geçersiz kılınmaz, yalnızca alet etiketi]*
+⚠ **v2.4.2: aşağıdaki üç C′ satırı da D-036/D-037/D-042 öncesi.** Alet
+etiketleri (`fixed-gain π≡1.2`) doğru ama eksik — pencere, determinizm ve
+graft konumu da o tarihte bugünkünden farklıydı.
+
 - **Protocol C′ N=15 (eski reçete, 2026-08-07 gece):** 50 event/arm ·
   `lived −0.008935 · null −0.009007 · shuffle −0.002849 · t=0.019 · p=0.985`
   → harness **INCONCLUSIVE**, belge **`INSTRUMENT_LIMITED_NULL`**
@@ -385,7 +418,8 @@ social_pre_node → agent_node → evaluator_node → meta_observer_node
   `lived −0.180 · null 0.000 · shuffle −0.149` · sıra `lived < shuffle < null`
   · null faz1≡faz2 → **`SAMPLE_LIVED_PE_SEPARATION`** (significance yok)
 - **C′ N=15 sampling+B final (2026-08-07, GPU ~76 dk):** 50 event/arm ·
-  ön-kayıtlı `W=10` · diversity `K=5` (5-seed tarama median) ·
+  ön-kayıtlı `W=10` ⚠ **D-036 ile geçersiz — pencere artık fazın tamamı** ·
+  diversity `K=5` (5-seed tarama median) ·
   `lived +0.0081 · null 0.0000 · shuffle +0.0190` ·
   t=−0.485 · p=0.637 · Wilcoxon p=0.850 · n_eff=12 (gated 3: 2001/2007/2013) ·
   `null_arm_clean=True` → harness **INCONCLUSIVE** · belge
@@ -648,6 +682,8 @@ Empirik artefaktlar (`dau_runs/`):
 - ✅ DPO OOM — `BATCH_SIZE=1` + gradient checkpointing (8GB)
 - ✅ Chat-template DPO / eval mode / adapter izolasyonu (önceki commit’ler)
 - ✅ Diversity gate + ön-kayıtlı W — 5-seed tarama → K=5; W=10 (mini/null)
+  ⚠ **W kısmı D-036 ile geçersiz**: 10-olay penceresi 50 olaylık fazın ilk
+  beşte birini okuyordu ve etkiyi kaçırıyordu. K=5 geçerli.
 - ✅ C′ N=15 sampling+B koşumu — **SAMPLE_N15_UNDERPOWERED** (§10b)
 
 ---
@@ -679,11 +715,17 @@ kirlenmesi (`switch_adapter` early-return + LoRA reset). Düzeltmeler:
 hook kaldırıldı · niş tohumları. **Ölçüldü:** sampling + aynı agent_id ile
 10 event null replay birebir.
 
-#### 2. Metrik plato dilusyonu — **ölçüm reçetesi kilitlendi (v2.3)**
+#### 2. Metrik plato dilusyonu — ⚠ **D-026 ÇÜRÜTTÜ**
+
+> Aşağıdaki reçete *"greedy plato yapar, sampling şart"* diyordu. Ölçüldü:
+> greedy 50 olayda `n_unique` **22–29**, kapı 5 (D-026, D-034). Plato yok.
+> Ön-kayıt S1 **greedy**'de karar kıldı — sampling gürültü ekliyor ve GAP-9
+> altında gürültü azaltmak çiftten değerli. Metin tarihçe olarak duruyor.
 
 Greedy plato (~3 unique completion / 10 event) tercih verisini öldürüyordu.
 `DAU_LLM_DO_SAMPLE=1` (T=0.2) ile unique ≈5. N=15 öncesi: 5-seed tarama →
-`DIVERSITY_MIN_UNIQUE=K=5` (median); `PE_WINDOW_EVENTS=W=10` (mini + null
+`DIVERSITY_MIN_UNIQUE=K=5` (median); ⚠ `PE_WINDOW_EVENTS=W=10` **D-036 ile
+0'a (fazın tamamı) çekildi**; aşağıdaki gerekçe tarihsel — (mini + null
 clean; post-hoc değil). N=15’te 3 seed `n_unique=4` ile gated → n_eff=12.
 
 ### Plastisite günlüğü
@@ -699,6 +741,19 @@ clean; post-hoc değil). N=15’te 3 seed `n_unique=4` ile gated → n_eff=12.
 
 #### Empirik tablo
 
+> ⚠ **v2.4.2: aşağıdaki ΔPE sütunlarının hiçbiri bugünkü aletle
+> karşılaştırılamaz.** Üç kırılma, hepsi bu tablodan sonra: **D-036** (pencere
+> 10 olaydan fazın tamamına — bu satırlar 50 olaylık fazın **ilk beşte
+> birinin** ortalaması) · **D-037** (öncesinde koşum-arası gürültü **0.026**,
+> ölçülen etki 0.015–0.025 ⇒ gürültü etkiden büyüktü) · **D-042** (eğitim
+> kollarının graft'ı süreçteki konuma bağlıydı).
+>
+> Ayrıca **D-044**: ΔPE'nin kendisi ayrımın %80–86'sını atıyor, yani bu
+> sütunlar düşük duyarlıklı bir aletin çıktısı.
+>
+> Tablo **tarihçe olarak** duruyor. Bugünkü sayılar `dau_runs/`'ta ve
+> D-038/D-043'te.
+
 | Deney | N | Backend | Sinyal | ΔPE_lived | ΔPE_null | ΔPE_shuffle | Karar |
 |-------|---|--------|--------|-----------|----------|-------------|-------|
 | Protocol C (Groq) | ~35 temiz | groq | meta ON/OFF | ≈0 | — | — | **paper-locked null** |
@@ -708,6 +763,17 @@ clean; post-hoc değil). N=15’te 3 seed `n_unique=4` ile gated → n_eff=12.
 | C′ N=15 sampling+B | 15 (n_eff=12) | local | yaşam-PE + sample · W=10 · K=5 | **+0.0081** | **0.000** | +0.0190 | **SAMPLE_N15_UNDERPOWERED** |
 
 **(†)** Gradyansız eğitim / adapter sızıntısı düzeltilmeden önce; ileri sürülmez.
+
+**v2.4.2 eki — bugünkü aletle alınan sayılar** (keşifsel, N=3, hipotez testi
+**değil**; seed 2001–2003 yakılmış):
+
+| Koşum | Ne kanıtladı | `lived − null` | `lived − shuffle` |
+|---|---|---|---|
+| `baseline_d037` + `repro_d038` | **tekrarlanabilirlik**: dokuz kol, altı adapter `sha256` özdeş | +0.025 / +0.045 / +0.017 (**3/3**) | +0.029 / +0.037 / −0.039 |
+| `control_d042` (D-043) | D-039…D-042 sonrası **20/20 değişmez**; üç `null` kolu D-038'le byte düzeyinde aynı | +0.004 / +0.018 / +0.072 (**3/3**) | −0.007 / +0.027 / +0.001 |
+
+⚠ N=3'te işaret testinin verebileceği en küçük p **0.25** — hiçbiri anlamlı
+değil ve olamaz. Bu koşumların işi sinyal değil **alet doğrulaması**.
 
 C′ mini sampling+B: 10 event/arm, `DAU_LLM_DO_SAMPLE=1`, `T=0.2`,
 `DAU_LORA_ENABLED=1`, yaşam-PE pairs, GPU ≈ 71 sn / seed (3 kol).
@@ -798,7 +864,7 @@ empirik tablosunda **†** ile işaretli satırlar).
 |--|--|
 | Dosyalar | `semantic_similarity.py`, `constraints.py`, `graph.py`, `state.py` (`pe_history`) |
 | Formül (v2.4+) | `π = clamp(1/(var(pe_history)/VAR_REF+ε), MIN, MAX)`; cold start `π=1.0`; append sırası: π sonra raw (`231c222`) |
-| Sabitler | `WINDOW=10`, `MIN_HISTORY=2`, `VAR_REF=1/12`, `MIN_WEIGHT=0.5`, `MAX_WEIGHT=1.2` |
+| Sabitler | `WINDOW=10` (⚠ bu **precision** history penceresi, ölçüm penceresi değil — D-036 onu değiştirmedi), `MIN_HISTORY=2`, `VAR_REF=1/12`, `MIN_WEIGHT=0.5`, `MAX_WEIGHT=1.2` |
 | Test | `test_precision_pe.py` (rolling-history suite) |
 | Smoke | v1 INCONCLUSIVE (starvation, evt=10) · v3 **PASS** (evt=22, seeds 9201–9203) — §7 |
 | Not | v2.3 ve öncesi = sabit kazanç `π≡1.2` (pe_vector); kilitli C′ sonuçları o aletle (§7, §10b). v3 smoke aleti doğrular; ΔPE lived>shuffle **informal only** (N=3; etki iddiası yok). |
@@ -810,7 +876,7 @@ empirik tablosunda **†** ile işaretli satırlar).
 | Dosyalar | `dau/diagnostics/run_protocol_c_prime.py` (+ tests) |
 | Eski koşum | N=15 · 50 event · greedy · reçete A → **INSTRUMENT_LIMITED_NULL** |
 | Mini (v2.2) | N=1 · 10 event · sample+B → **SAMPLE_LIVED_PE_SEPARATION** |
-| Final (v2.3) | N=15 · 50 event · sample+B · W=10 · K=5 → **SAMPLE_N15_UNDERPOWERED** |
+| Final (v2.3) | N=15 · 50 event · sample+B · W=10 · K=5 → **SAMPLE_N15_UNDERPOWERED** ⚠ **W=10 ve sampling ikisi de artık geçersiz (D-036, S1)** |
 | Harness | lived vs shuffle birincil; null bütünlük; diversity gate; sıfır-varyans; n_eff&lt;N → INCONCLUSIVE |
 
 ### Bağımlılık grafiği
@@ -882,7 +948,7 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 |-----|---------|-------|
 | `DAU_LLM_BACKEND` | `groq` | `groq` \| `local` |
 | `DAU_LORA_ENABLED` | `0` | generation-end train/save |
-| `DAU_NLI_FILTER_ENABLED` | `1` | (yaşam-PE path’te ranking NLI kullanmaz) |
+| `DAU_NLI_FILTER_ENABLED` | `1` | ⚠ **iki kez eskidi.** (a) Parantez **yanlıştı** — `lora_update` içinde `is_genuine_polarity_pair` çağrılıyordu (`18fb01e`). (b) **D-032** kapıyı NLI'dan **kosinüs mesafeye** çevirdi; bant `[0.25, 0.80]`, MiniLM. `POLARITY_FILTER=nli` ile eskisine hâlâ erişilir. `NLI_CONTRADICTION_THRESHOLD=0.60` **değeri değişmedi** — ölçüm eşiğin yanlış değil **ilgisiz** olduğunu gösterdi (0.60'ta %12.9, 0.30'da %12.9) |
 | `DAU_LLM_DO_SAMPLE` | `0` | local sampling; C′ için `1` |
 | `DAU_LLM_TEMPERATURE` | (model) | sampling sıcaklığı (C′: `0.2`) |
 | `DAU_LLM_SEED` | — | faz tohumu (+ prompt hash) |
@@ -896,7 +962,11 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 
 ---
 
+---
+
 ## 22. Versiyon geçmişi
+
+| **2.4.2** | **2026-08-11** | Anlatı yeniden yazılmadı; **yanlışlar işaretlendi, eksik katman eklendi**. Preflight (20 değişmez) ve alet kimliği ilk kez belgede (§24) · karar kaydı sistemi D-001…D-044 (§25) · W=10, greedy platosu, NLI satırı ve sampling reçetesi ⚠ ile geçersiz işaretlendi · §18'in empirik tablosu üç kırılmayla (D-036 pencere, D-037 determinizm, D-042 konum) **karşılaştırılamaz** ilan edildi · GAP-2 kapandı · **332 test**. `.html`/`.pdf` **v2.4.1'de kaldı**. |
 
 | Ver | Tarih | Not |
 |-----|-------|-----|
@@ -919,51 +989,172 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 
 ---
 
-## 23. Sıradaki Oturum İçin Bağlam
+## 23. Sıradaki Oturum İçin Bağlam (v2.4.2)
 
-**Precision fix TAMAMLANDI ve DOĞRULANDI (v3 PASS).** Formül `231c222`;
-resmi smoke: `dau_runs/protocol_c_prime_precision_smoke_v3.json`
-(events=22, N=3, seeds 9201–9203; `n_pe_events=396`, sat=0.0025, π_n=14,
-null_clean, n_gated=0).
+⚠ **Bu bölüm v2.4.1'de *"pre-reg sıradaki oturumun İLK görevi"* diyordu ve
+beş yerde tekrarlıyordu. Kod önüne geçti** — ön-kayıt yazılmadan önce alet
+yirmi kez değişti, ve her değişiklik kendi D-kaydıyla meşruydu (§2.10'un
+penceresi hâlâ açık).
 
-**Sıradaki adım (yeni oturumun İLK görevi):** çok-nesilli Protocol C′
-pre-registration **tasarımı ve yazımı** — **HENÜZ YAZILMADI**.
+### Nerede duruyoruz
 
-Taslak (henüz kilitli değil; yazılacak):
-- 2 nesil: gen1 tam C′ (lived/null/shuffle); gen2 miras + hafif ölçüm fazı
-- Birincil metrik: gen2 ΔPE × gen1 kolu
-- İkincil: doğum-drift + transfer aday sayısı
-- `F_agent` stratifiye kontrol (kapı değil)
-- Tahmini GPU: ~2sa (Varyant B, N=15, 2 nesil)
-- Akış: pre-reg yaz → pilot N=1–3 → tam N=15 → dürüst analiz
+Alet tarafı bitti ve **doğrulandı**: `run_quality=clean`, 20/20 değişmez,
+aynı seed + aynı kod **bit düzeyinde** tekrarlanıyor (dokuz kol, üç koşum).
+Ön-kayıt taslağı `docs/PREREGISTRATION.md`'de, **beş slotu kapalı**
+(S1 greedy · S3 α=0.05 · S5 1 epoch · S6 replay yok · S7 50/20/3).
 
-**Hazır altyapı:** crisis wiring · memory vault seed · rolling precision
-(v3 PASS) · adapter tek kök · NLI unit mock · ölçüm zinciri sağlam.
-Deney tasarımına geçilebilir.
+### Tek düğüm: S4
 
-**Artefakt okuma:**
-- v1/v2: `dau_runs/protocol_c_prime_precision_smoke.json`
-  (`summary.smoke_gates_v1` resmi kilitli usable-only;
-  `smoke_gates_v2` exploratory)
-- v3: `dau_runs/protocol_c_prime_precision_smoke_v3.json`
-- Loglar: `…_v2.log`, `…_v3.log` · heartbeat: `…_heartbeat.json` /
-  `…_v3_heartbeat.json`
+**En küçük anlamlı etki (`d_z`)** beyan edilmeden N hesaplanamaz, N olmadan
+doğrulayıcı koşum başlayamaz.
 
-**Branch:** ahead of origin; tree temiz (bu belge güncellemesi hariç);
-push yok. Collect **206**.
+⚠ **Gözlenen d'den seçilemez** — post-hoc tuning olur (CLAUDE.md §2.7). İki
+meşru yol var: *(a)* etkiyi beyan et, N'i güç tablosundan oku · *(b)* N'i
+**bütçeden** seç ve tespit edilebilir en küçük etkiyi ilan et. İkincisi de
+post-hoc değil, çünkü N veriden değil bütçeden geliyor.
 
-**Yasak okuma:** v3 mean ΔPE (lived≈0.107 · null=0 · shuffle≈0.017) ≠
-“etki doğrulandı”. N=3 informal gözlem; istatistiksel güç yok. Asıl test
-pre-registered çok-nesilli N=15 koşumda.
+| d_z | 0.3 | 0.4 | 0.5 | 0.8 | 1.0 |
+|---|---|---|---|---|---|
+| **gereken N** | 88 | 50 | 32 | 13 | 8 |
+
+⚠ **N ≥ 6 matematiksel şart** — altında Wilcoxon çift yönlü α=0.05'te etki ne
+olursa olsun reddedemez.
+
+### Kilit sonrası
+
+Doğrulayıcı koşum **seed 2004'ten** başlar. ⚠ **2001–2003 yakılmış** (D-038):
+sonuçlarına bakıldı, doğrulayıcı analize giremezler — ama regresyon testi
+olarak kullanılabilirler ve kullanıldılar (D-043).
+
+### Kilitten önce yapılabilecekler (pencere kapanınca biter)
+
+- **A3** — eksik üç kapı: I1.3 (gradyan adımı atıldı), I1.4 (çiftler gürültü
+  değil), I1.5 (çift sayısı yeterli). I1.1 ve I4.1'in ne bulduğuna bakınca
+  düşük öncelikli değil.
+- **A2** — OOD probing: yaşamdan sonra anı getirimini kapat, yalnız
+  ağırlıklara yansıyanı ölç. `DECISIONS.md` bunu *"pre-reg'e alınmalı"* diye
+  kaydetmiş, hiç uygulanmamış. **Kanal 1'i Kanal 2'den ayıran tek temiz yol.**
+- **A4** — environment'ı ayrım üretir hale getirmek. Şu an `E=0.000` ve
+  `survival=1.0` dokuz kolun dokuzunda; kimse kimseden farklı yaşamıyor, ve
+  bu yüzden `F_agent` dejenere. Bir alt-proje; ön-kaydı bekletir.
+
+### İlan edilmiş sınırlar (ön-kayıt §8)
+
+Seçilim katmanı atıl (`F_agent` clamp'te sıfıra eziliyor — birim
+uyuşmazlığı) · popülasyon yok ⇒ aktarım **Lamarckçı**, Darwinci değil · iki
+nesil ⇒ kalıcılık iddia edilemez · polarite bandı ve SNR tabanı kalibre değil
+· GAP-18/19 · `W_SEM=0.0` · **L9: ΔPE uç noktası ayrımın %80–86'sını atıyor**.
 
 ---
 
-**Güncellendi (v2.4.1):** ADIM 5 precision formül + v3 smoke PASS; crisis /
-vault / NLI / adapter oturum kapanışı; §23 handoff. v2.3 C′ N=15 sonucu
-kilitli kalır — alet etiketi “fixed-gain ADIM 5” (§10b). Omurga default’ları
-değişmedi: LoRA kapalı, Groq default, trait yasak.
+## 24. Preflight değişmez sistemi ve alet kimliği (v2.4.2 — yeni)
 
-Bu döküman her önemli katman / empirik dönüm tamamlanınca güncellenir.  
-Versiyon 2.4.1 — ADIM 1–6 kod; precision v2.4 + **v3 smoke PASS**; C′ N=15
-**SAMPLE_N15_UNDERPOWERED** (fixed-gain aleti); Protocol C paper-locked null;
-çok-nesilli pre-reg sırada; **206 test**.
+Bu katman v2.4.1'de **hiç yoktu** ve bugün projenin en sağlam parçası.
+
+### Neden var
+
+`preflight.py`'nin kendi docstring'i tanıyı koyuyor: bu projede **yedi alet
+arızası da sayı üretti** — `lora_B=0` sahte eğitim, adapter sızıntısı, greedy
+platosu, precision doygunluğu, GAP-1 (üç özdeş kol), GAP-11 (rastgele shuffle
+tohumu), GAP-14 (atıl PPR). Hiçbiri çökmedi.
+
+> Hastalık *"hataları kaçırdık"* değil — sistemin, çıktısının bir anlamı olup
+> olmadığından **bağımsız olarak** çıktı üretmesi.
+
+Değişmezler bunu tersine çeviriyor: sonuç yazılmadan önce koşum kendisi
+hakkında bir listeyi kanıtlamak zorunda.
+
+**İki başarısızlık kipi.** `ABORT` → koşum durur, **JSON yazılmaz**; sessiz
+sahte sonuç imkânsız hale gelir. `FLAG` → koşum sürer, sonuç
+`invariants.<id>=false` ve bir `run_quality` damgası taşır — analiz edilebilir
+ama etiketli.
+
+**D-012 kuralı:** eşiği hâlâ kalibre edilmemiş hiçbir değişmez ABORT edemez.
+Uydurma bir sabit üstünden koşum öldürmek, etiketlemekten kötüdür.
+
+### Kayıtlı 20 değişmez
+
+| Faz | Değişmezler |
+|---|---|
+| 0 — koşum başlamadan | I0.1 alet kimliği tam · I0.2 LoRA seçimi açık · I0.3 `PYTHONHASHSEED` · I0.4 `agent_id`→seed türetimi · I0.5 import-anı env · **I0.6 strict determinizm** (D-037) · **I0.7 adapter sızıntısı** (D-033) |
+| 1 — eğitim | **I1.1 eğitim gerçekten oldu** (D-039) |
+| 2 — kollar | I2.1 kollar özdeş değil · I2.2 null eğitilmemiş |
+| 3 — ölçüm sağlığı | I3.1–I3.4 (precision doygunluğu, kapılanma oranı, padding) |
+| 4 — tekrar | **I4.1 replay bit-identik** (D-041) · I4.2 gen2 RNG tekdüze |
+| 5 — bileşen canlılığı | I5.1 PPR aktif · I5.2 · I5.3 anı yazıldı · I5.4 somatik ölçek |
+
+⚠ Belgede tanımlı 25'ten **beşi hâlâ kodda yok**: I1.2 (regresyon testinde),
+I2.3 (yapısal olarak sağlanıyor), **I1.3 / I1.4 / I1.5 (yok)**.
+
+### İki kapı kendini ilk gününde ödedi
+
+- **I1.1** — eğitim kolunun `Σ|lora_B|` değerini adım öncesi/sonrası okur.
+  Diğer her sinyal gradyan adımının **öncesinde** üretiliyor: çift sayıları
+  polarite filtresinden gelir, adapter dosyası döngüden sonra koşulsuz
+  yazılır, `dpo_loss` son ileri geçişin değeridir. `lora_B=0` hatası üçünü de
+  geçmişti; **yalnız ağırlıklar biliyordu.** ⚠ `CLAUDE.md` §6 bu kontrolün
+  "regresyon testinde" olduğunu söylüyordu ve **yanlıştı** — kod tabanında
+  `lora_B`'ye değen tek bir test yoktu (D-038 Bulgu 2).
+- **I4.1** — bir eğitim kolunu ikinci kez koşup `arm_digest` karşılaştırır.
+  **İlk canlı koşumunda ayrışma bildirdi ve koşumu öldürdü — haklıydı.**
+  Kovalanınca D-042'nin konum bağımlılığı bulundu.
+
+### Alet kimliği (`tool_identity.py`)
+
+Her koşum JSON'una kendisini üreten aletin tam kimliğini yazar: backend,
+**yüklenen** model adı, quantization bayrakları, DPO hiperparametreleri, LoRA
+rank/alpha, sampling, polarite bandı, kütüphane sürümleri, `argv`.
+
+**Kural (CLAUDE.md §2.8):** *rapor aleti takip etmeli, aleti tekrar
+etmemeli.* Yeni bir sabit eklerken sor: alet kimliği bunu raporluyor mu, ve
+raporu **sabitten mi okuyor yoksa yeniden mi üretiyor**? Bu sınıf hata bir
+günde dört kez çıktı (U2, U3a, U4, U5).
+
+`describe_quantization` bunun örneği: `build_load_kwargs`'ı geri okur, kendi
+config'ini kurmaz — kuran bir rapor er geç yükleyiciyle çelişir, ki açığa
+çıkarması gereken sessiz uyumsuzluk tam olarak odur.
+
+---
+
+## 25. Karar kaydı sistemi (v2.4.2 — yeni)
+
+v2.4.1'den sonra proje **kanıtlı karar kaydına** geçti: `docs/DECISIONS.md`,
+**append-only**, D-001…D-044. Kilitli her madde bir D-numarasına işaret eder;
+kanıtı olmayan hiçbir madde "kilitli karar" yazılmaz.
+
+**D-kaydı ne zaman şart:** `constraints.py` eşik **değeri** değişiyorsa · bir
+ölçüm yapıldıysa (sonucu ne olursa olsun) · bir alternatif reddedildiyse ·
+ön-kayıtlı protokol değişiyorsa · kilitli bir karar sorgulanıyorsa.
+
+### Bu belgeyi doğrudan geçersizleştiren kayıtlar
+
+| Kayıt | Ne değişti |
+|---|---|
+| **D-018/D-023** | Backend varsayılanı `local`; tanınmayan değer `ValueError` |
+| **D-026** | Model ölçüldü → Llama kalıyor; **greedy platosu çürüdü** |
+| **D-027/28/29** | DPO penceresi 512, gradient accumulation, **lr 5e-5→1e-6** |
+| **D-032** | DPO prompt'u = yaşanan prompt · polarite kapısı **kosinüs** |
+| **D-036** | Ölçüm penceresi = **fazın tamamı** |
+| **D-037** | **Strict determinizm**; I0.6 zorunlu kılıyor |
+| **D-040** | Shuffle **%100 ters** |
+| **D-042** | Adapter graft'ı **konumdan bağımsız** |
+| **D-044** | ΔPE uç noktası ayrımın **%80–86'sını atıyor** |
+
+### D-029 — aksiyoma doğrudan dokunan kayıt
+
+`lr=5e-5` ile eğitilen ajan *"düşük PE'li şeyi tercih et"* değil *"yüksek
+PE'li şeyi asla söyleme"* öğreniyordu. Kanal 2'den aktarılan iz bir tercih
+değil **bastırma deseni** olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının
+ne olduğunu değiştirir. lr literatürden alındı, ölçümden **seçilmedi**.
+
+### D-044 — uç nokta duyarlılığı
+
+Faz-2'de kollar olay bazında 0.065–0.194 ayrışıyor; faz ortalaması bunun
+yalnız **%14–20**'sini görüyor. İptal **simetrik** (fark işaretlerinin
+%44–64'ü pozitif) ⇒ adapter ajanın **neye şaşırdığını** yeniden düzenliyor,
+ortalama şaşkınlık düzeyini kaydırmıyor.
+
+⇒ Birincil uç noktayı (doğum-drift, tek anın vektörü) **etkilemez** ve o
+seçimi destekler. ΔPE ikincilleri null çıkarsa **"ölçemedik"** diye
+raporlanır, "etki yok" diye değil.
+

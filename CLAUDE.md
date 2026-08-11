@@ -606,29 +606,29 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 
 ---
 
-# 8. Master Reference Borcu
+# 8. Master Reference — v2.4.2 yazıldı
 
-`docs/DAU_MASTER_REFERENCE_v20.md` (v2.4.1) koddan **~20 commit geride**.
-**v2.4.2 tek seferde yazılacak** — her adımda güncellemek iki kez yazmak olur.
+`docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** (2026-08-11). Anlatı yeniden
+yazılmadı — **yanlışlar yerinde işaretlendi, eksik katman eklendi.**
 
-**Bilinen yanlışlar (okuyan yanılmasın):**
+**Eklenen:** §24 preflight değişmez sistemi + alet kimliği (v2.4.1'de **hiç
+yoktu**) · §25 karar kaydı sistemi, D-001…D-044 · §23 baştan yazıldı
+(eski hali beş yerde "pre-reg sıradaki oturumun İLK görevi" diyordu).
 
-| Yer | Sorun |
-|---|---|
-| §21 tablosu, `DAU_NLI_FILTER_ENABLED` satırı | "yaşam-PE path'te ranking NLI kullanmaz" — **yanlış**, `lora_update.py` içinde `is_genuine_polarity_pair` çağrılıyor (`18fb01e`) |
-| §2 "Metrik plato dilusyonu" | "greedy plato ~3 unique/10 event, sampling şart" — **D-026 çürüttü**, greedy 50 olayda 27 |
-| §6, §19 ADIM 4 | consolidation'ı "uygulanmış entegrasyon" gösteriyor — **D-022/D-031**: deney yolunda değildi |
-| §-lerde sekiz yer (36, 388, 650, 686, 708, 715, 813, 916) | `W=10`'u **ön-kayıtlı doğru** diye anlatıyor — **D-036 ile geçersiz**, pencere artık fazın tamamı |
-| §21 / empirik tablo | `SAMPLE_N15_UNDERPOWERED` dahil bütün ΔPE sayıları ilk 10 olayın ortalaması — D-036 sonrası sayılarla **karşılaştırılamaz** |
-| Beş yerde | "pre-reg sıradaki oturumun İLK görevi" — kod önüne geçmiş |
+**⚠ ile işaretlenen yanlışlar:** `W=10` beş yerde (D-036) · greedy plato
+reçetesi (D-026 çürüttü) · §21'in NLI satırı (iki kez eskidi: parantez zaten
+yanlıştı, sonra D-032 kapıyı kosinüse çevirdi) · sampling reçetesi (S1 greedy)
+· §18 empirik tablosu ve §10b verdict'i (üç kırılma: D-036 pencere, D-037
+determinizm, D-042 konum; ayrıca D-044 uç nokta duyarlılığı).
 
-**v2.4.2'ye girecek yeni borçlar:** `preflight.py` + `tool_identity.py` hiç
-geçmiyor · D-023…D-037'nin tamamı · U3 ölçüm sonucu · lr değişikliği ·
-GAP-17/18/19 · **D-032'nin tamamı**: DPO prompt'u artık yaşanan prompt,
-polarite kapısı kosinüs, `PREF_LIVED_CONTEXT_TEMPLATE` emekli, `polarity_*`
-anahtarları. §21'in NLI satırı D-032 ile **iki kez** eskidi.
+**§18'e eklenen:** bugünkü aletle alınan sayılar (baseline/repro/control),
+"keşifsel, N=3, hipotez testi değil" etiketiyle.
 
----
+⚠ **`.html` ve `.pdf` v2.4.1'de kaldı** — md tek güncel kaynak.
+
+**Kalan borç:** §6/§19'un consolidation anlatısı (D-022/D-031 ile eskimişti,
+işaretlenmedi) · §12 kod ağacı `preflight.py`/`tool_identity.py`'yi listelemiyor
+· §11/§14'ün test sayıları eski. Hiçbiri okuyanı yanlış yöne sokmuyor.
 
 # 9. Araştırma Kanalı: Gemini Deep Research
 
