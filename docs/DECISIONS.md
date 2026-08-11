@@ -2790,3 +2790,112 @@ bırakılır.
 
 **Sınırlar:** 3 seed · tek koşum · yalnız gen1 faz-2. Gen2'nin `mean_pe`'si
 (S4 ikincili) aynı iptal riskini taşıyor olabilir, **ölçülmedi.**
+
+---
+
+## D-045 · 2026-08-11 · Gen2 `mean_pe` de kayıplı — S4, S3 ile aynı sınırı taşıyor
+
+**Durum:** kabul edildi (ölçüm kaydı) · **Keşifsel, ön-kayıtlı değil**
+
+**Karar (A5):** D-044 kendi sınırlar satırında açık bırakmıştı: *"Gen2'nin
+`mean_pe`'si (S4 ikincili) aynı iptal riskini taşıyor olabilir,
+**ölçülmedi**."* Ölçüldü. Yeniden koşum gerekmedi — `Gen2Result.pe_list`
+20 olayın tamamını saklıyor. **GPU maliyeti sıfır.**
+
+Ham çıktı: `dau_runs/exploratory_gen2_endpoint_sensitivity.json`.
+
+### Önce iki ön koşul, varsayılmadı — ölçüldü
+
+1. **Kollar olay bazında karşılaştırılabilir mi?** `run_gen2_measure`
+   varis koşmadan önce `_lock_seeds(seed)` çağırıyor (GAP-12). Üç kolun
+   `rng_digest`'i **üç seed'de de aynı** ⇒ olay *i* üç kolda aynı durum.
+   Aynı olmasaydı satır anlamsız olurdu; script bunu kontrol edip atlıyor.
+2. **`mean_pe` gerçekten `pe_list`'in ortalaması mı?** Dokuz kolun
+   dokuzunda `|fark| < 1e-12`. Rapor aleti tekrar etmiyor (§2.8).
+
+### Sonuç: evet, aynı sınır geçerli
+
+| çift | **gen2 kept** | gen1 faz-2 kept (D-044) |
+|---|---|---|
+| `lived−null` | **%17.5** | %19.6 |
+| `lived−shuffle` | **%41.6** | %14.2 |
+| `shuffle−null` | **%20.9** | %21.3 |
+| **dokuz satırın ortalaması** | **%26.7** | %18.4 |
+
+`lived−null` iki nesilde neredeyse aynı: **%17.5 / %19.6.** Gen2'nin uç
+noktası da ayrımın çoğunu atıyor ⇒ **S4 null çıkarsa "etki yok" değil
+"ölçemedik" demektir**, S3 ile aynı şekilde.
+
+Gen2'nin toplamda biraz daha fazlasını koruması (%26.7 / %18.4) beklenen
+yönde: ortalamada 20 terim var, 50 değil — iptal edecek daha az yer.
+`lived−shuffle`'ın %41.6'sı **tek başına okunmamalı**: üç seed'in değerleri
+%61.4 · %35.6 · %27.9, yani yayılım ortalamadan büyük, N=3.
+
+### Gen2'nin iptali gen1'inki gibi **değil** — ve bu beklenmiyordu
+
+D-044 gen1'de iptali "simetrik, yapısız" bulmuştu: işaretlerin %44–64'ü
+pozitif, ilk yarı/son yarı arasında tutarlı eğilim yok. Gen2'de yarı-bölme
+çok daha büyük: bağımsız altı karşıtlığın **beşinde** ikinci yarı birinciden
+daha pozitif, kayma **0.056–0.155**. Gen1'de aynı sayı 4/6 ve kayma
+**0.003–0.070** — bir büyüklük mertebesi küçük. (Gen1 rakamı bu oturumda
+yeniden türetildi, D-044'ten devralınmadı.)
+
+**Üç çift bağımsız değil** — `lived−null` = `(lived−shuffle) + (shuffle−null)`
+tam olarak, yani seed başına 3 değil **2** bağımsız karşıtlık var. "9 satırın
+8'i" diye sayılmadı.
+
+Kol bazında ayrıştırınca kaynak görünüyor:
+
+| seed | `lived` kayması | `null` kayması | `shuffle` kayması |
+|---|---|---|---|
+| 2001 | **+0.032** | **−0.254** | −0.099 |
+| 2002 | **+0.059** | **−0.143** | −0.086 |
+| 2003 | −0.089 | −0.098 | −0.019 |
+
+Yani ortak bir zaman eğilimi değil: iki seed'de `null` varisinin PE'si
+yaşamın ikinci yarısında **çöküyor**, `lived`'inki çökmüyor. Üçüncü seed'de
+üçü birlikte düşüyor.
+
+⚠ **Bu bir iddia değil, bir gözlem.** N=3, 2/3 seed, tek koşum. Ama
+mekanizma adayı var ve ikisi de zaten açık GAP: **GAP-19** (faz-1 ve faz-2
+anıları aynı sayaç uzayını paylaşıyor ⇒ Ebbinghaus decay varisin yaşamı
+boyunca farklı işliyor) ve **GAP-3** (varisler boş `delta_log` ile doğuyor).
+→ **A6 ve A7'ye girdi olarak kaydedildi**, burada karara bağlanmadı.
+
+**Ayrım büyümüyor:** `|delta|`'nın son yarı / ilk yarı oranı dokuz satırda
+0.61–1.40 (tek istisna seed 2001 `lived−shuffle` 15.35x, çünkü ilk yarıda
+ayrım zaten 0.011'di). Kollar yaşam boyunca giderek **açılmıyor**; ayrım
+baştan var, sırası değişiyor.
+
+### Yan bulgu: D-042 için bağımsız kanıt
+
+Robustluk için `baseline_d037` ve `repro_d038` de okundu. İkisi gen2
+`pe_list` düzeyinde **birebir aynı** ⇒ D-037'nin determinizm düzeltmesi
+gen2'de de tutuyor (D-038 bunu gen1 digest'inde göstermişti, gen2
+yörüngesinde değil).
+
+Ve seed 2001'de: **`baseline_d037.shuffle`'ın gen2 `pe_list`'i,
+`control_d042.lived`'inkiyle bit düzeyinde aynı.** D-042 öncesi 3. sıradaki
+kol, düzeltme sonrası 1. sıradaki kolun yörüngesini üretiyordu — etiket ile
+muamele birbirinden kopmuştu. D-042 bunu gen1 `arm_digest`'inde ölçmüştü;
+bu, aynı kusurun **gen2 yörüngesinde** bıraktığı iz. Üç seed'de `null`
+kolları her iki dosyada da aynı (D-043 ile tutarlı).
+
+### ⚠ Yine uç nokta değiştirilmedi
+
+Gen2'de de yörünge tabanlı bir ölçü daha büyük etki gösteriyor. D-044'te
+olduğu gibi **alınmadı** — ölçümü görüp istatistik seçmek post-hoc tuning
+olur (§2.7). Sonraki ön-kayıta ve taze veriye bırakıldı.
+
+**Reddedilen alternatifler:**
+- *S4'ü ön-kayıttan çıkarmak* — ikincil zaten iddia etmiyor, ve çıkarmak
+  duyarsızlığı belgelemek yerine gizlerdi.
+- *`null` kolunun çöküşünü şimdi kovalamak* — N=3'lük bir gözlemden kilit
+  öncesi kod değişikliği çıkarmak tam olarak §2.10'un uyardığı kuyu. A6/A7'ye
+  girdi olarak yazıldı.
+- *Gen2 uç noktasını yörünge tabanlısıyla değiştirmek* — post-hoc.
+
+**Sınırlar:** 3 seed · tek koşum (`control_d042_n3_local`, `run_quality=clean`)
+· 20 olay · yalnız `lived/null/shuffle` üçlüsü. Yarı-bölme gözlemi
+**hipotez testi değil**; 2 bağımsız karşıtlık × 3 seed ile hiçbir güç iddiası
+kurulamaz.

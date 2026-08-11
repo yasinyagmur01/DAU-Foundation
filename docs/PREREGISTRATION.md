@@ -90,7 +90,7 @@ anlamlı olsa bile sonuç **null** olarak raporlanır.
 | S1 | Doğum-drift **kategorik** kanalı: varisin bayraklanan alan kümesi | Fisher-Freeman-Halton, kol × profil |
 | S2 | Doğum-drift **sayım** kanalı: `n_transfer_candidates`, `n_inherited_warnings` | Kruskal-Wallis (⚠ §8-L1: bu kanalın atıl olması bekleniyor) |
 | S3 | Faz-1 ΔPE (fazın tamamı, D-036) ⚠ **düşük duyarlıklı, bkz. L9** | eşleştirilmiş Wilcoxon, `lived−shuffle` |
-| S4 | Gen2 ortalama PE ⚠ **aynı iptal riski, ölçülmedi (L9)** | eşleştirilmiş Wilcoxon |
+| S4 | Gen2 ortalama PE ⚠ **düşük duyarlıklı, ölçüldü, bkz. L10** | eşleştirilmiş Wilcoxon |
 | S5 | Gen2 davranışsal: kriz anında `decision_to_extraction`, ilk travmaya kadar geçen olay | McNemar (ikili sonuçlar) |
 | S6 | `f_agent=None` duyarlılık kolu (D-003) | birincil ile aynı test |
 
@@ -190,14 +190,30 @@ olay bazında 0.065–0.194 ayrışıyor, ama faz ortalaması bunun yalnız
 düzenliyor, ortalama şaşkınlık düzeyini kaydırmıyor — ve faz ortalaması buna
 yapı gereği kör. En uç örnek: seed 2003 `lived−shuffle`, ham ayrım 0.094, uç
 nokta 0.00073 (%99.2 iptal).
-⇒ **S3 (ve muhtemelen S4) null çıkarsa bu "etki yok" değil "ölçemedik"
-demektir** ve raporda öyle yazılır (§11).
+⇒ **S3 null çıkarsa bu "etki yok" değil "ölçemedik" demektir** ve raporda
+öyle yazılır (§11). ⚠ Bu madde yazıldığında S4 için "muhtemelen" deniyordu;
+**S4 sonradan ölçüldü, aynı sınır doğrulandı → L10.**
 ⇒ Birincil uç noktayı **etkilemez**: doğum-drift büyüklükleri tek bir anın
 vektörü, olaylar üstünde ortalama alınmıyor. Bu bulgu birinciliği doğum-
 driftte tutma kararını destekliyor.
 ⚠ Yörünge tabanlı bir uç nokta bu veride çok daha büyük etki gösteriyor ama
 **bu ön-kayıta alınmadı** — ölçümü gördükten sonra istatistik seçmek post-hoc
 tuning olur (§2.7). Bir sonraki ön-kayıta ve taze veriye bırakıldı.
+
+**L10 — Gen2 `mean_pe` de kayıplı; S4 null'ı teşhis edilebilir değil**
+(D-045). L9'un açık bıraktığı soru ölçüldü: gen2'nin uç noktası da olay
+düzeyindeki ayrımın çoğunu atıyor. Korunan pay `lived−null` **%17.5**
+(gen1: %19.6), üç çiftin ortalaması %26.7.
+⇒ **S4 null çıkarsa S3 ile aynı şekilde "ölçemedik" diye raporlanır** (§11).
+⚠ İki ek uyarı, sonuç okunurken geçerli:
+- `lived−shuffle`'ın %41.6'sı ortalama; seed değerleri %61.4 · %35.6 · %27.9,
+  yayılım ortalamadan büyük. **N=3, tek koşum.**
+- Gen2'nin iptali gen1'inki gibi **simetrik değil**: bağımsız altı
+  karşıtlığın beşinde yaşamın ikinci yarısı daha pozitif, ve kol bazında
+  bakınca kaynak iki seed'de `null` varisinin ikinci yarıda çöken PE'si
+  (−0.254 / −0.143, `lived` +0.032 / +0.059). Mekanizma adayları **GAP-19**
+  (paylaşılan sayaç uzayı ⇒ Ebbinghaus) ve **GAP-3**. Gözlem, iddia değil;
+  kilit öncesi kod değişikliğine çevrilmedi.
 
 **L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
 girmiyor (GAP-10). Anı seçimi şu an semantik değil.
@@ -266,9 +282,11 @@ Birincil test null çıkarsa rapor şunu ayırt etmek zorundadır:
 Ayırt edilemiyorsa `INSTRUMENT_LIMITED_NULL` etiketiyle raporlanır ve
 hangi halkanın koptuğu bilinmediği **açıkça** yazılır.
 
-⚠ **S3 ve S4 için bu ayrım baştan biliniyor:** L9 gereği ΔPE uç noktası
-ayrımın %80–86'sını atıyor, dolayısıyla o iki ikincilin null'ı **ölçüm
-duyarsızlığı** olarak raporlanır, mekanizma yokluğu olarak değil.
+⚠ **S3 ve S4 için bu ayrım baştan biliniyor:** L9 gereği gen1'in ΔPE uç
+noktası ayrımın %80–86'sını, L10 gereği gen2'nin `mean_pe`'si ayrımın
+%73'ünü atıyor. Dolayısıyla o iki ikincilin null'ı **ölçüm duyarsızlığı**
+olarak raporlanır, mekanizma yokluğu olarak değil. İkisi de **ölçüldü**,
+varsayılmadı.
 
 ---
 
