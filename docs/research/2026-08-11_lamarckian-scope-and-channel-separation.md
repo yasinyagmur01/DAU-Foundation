@@ -81,6 +81,15 @@ yalnız ağırlıklara yansıyanı ölç (*OOD behavioral probing*).
 şaşkınlık düzeyini kaydırmıyor. Faz ortalaması ayrımın %80–86'sını iptal
 ediyor (iptal simetrik, işaretlerin %44–64'ü pozitif).
 
+Aynı ölçüm ikinci nesilde de yapıldı: orada da ayrımın **%73'ü** iptal
+oluyor, ama iptal **simetrik değil** — bağımsız altı karşıtlığın beşinde
+yaşamın ikinci yarısı daha pozitif, ve kaynak eğitim görmemiş kontrol
+kolunun ikinci yarıda çöken tahmin hatası. ⚠ N=3, gözlem düzeyinde.
+
+- Bir müdahalenin etkisi zamanla **yön değiştiriyorsa**, tek sayılı bir uç
+  nokta yerine ne kullanılır? (Fonksiyonel veri analizi, karışık etkiler
+  modelinde zaman × kol etkileşimi, başka bir şey?)
+
 - Bu tipte bir müdahaleyi ölçmek için **yörünge tabanlı** uç noktalar
   literatürde nasıl kuruluyor? (Dizi mesafeleri, değişim noktası, dağılım
   karşılaştırması?)

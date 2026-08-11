@@ -115,8 +115,8 @@ Yanlış tarif edilirse cevap işe yaramaz. Süslemeden:
 
 **İlan edilmiş sınırlar:** popülasyon yok, her ata tam olarak bir varis ⇒
 aktarım **Lamarckçı** · iki nesil · uygunluk skoru dejenere, seçilim katmanı
-atıl · ΔPE ikincilleri ayrımın %80–86'sını iptal ediyor (bu yüzden birincil
-onlar değil).
+atıl · ΔPE ikincilleri ayrımın **%73–86'sını** iptal ediyor — her iki nesilde
+de ayrı ayrı ölçüldü (bu yüzden birincil onlar değil).
 
 ⚠ **Elimizdeki N=3 sayılarını bilerek vermiyorum.** Onlardan eşik türetmek
 post-hoc olur ve brief'i kirletir. Sayı istersen sonra veririm; **eşiği
