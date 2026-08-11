@@ -1263,6 +1263,14 @@ def write_multigen_results_json(
                                 "delta_pe": lin.gen2.get("mean_pe"),
                                 "gen1_arm": lin.gen1_arm,
                             },
+                            # D-051. The same omission the note above
+                            # describes, one field over: LineageResult grew a
+                            # consolidation field whose own comment says an
+                            # unreported consolidation would move gen2 numbers
+                            # with nothing to attribute them to — and it was
+                            # computed, printed to stdout, and dropped here.
+                            # deleted_count is what GAP-19 is a question about.
+                            "consolidation": lin.consolidation,
                         }
                         for lin in pair.lineages
                     ],

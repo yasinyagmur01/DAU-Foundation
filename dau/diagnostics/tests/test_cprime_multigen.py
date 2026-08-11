@@ -1328,6 +1328,18 @@ def test_multigen_smoke_mock_llm_end_to_end(
     # reach the file by itself. Asserting on the object alone let this ship
     # computed-but-unwritten.
     assert doc["pairs"][0]["phase2_decision_divergence"] == divergence
+    # D-051: the same omission, one field over. LineageResult.consolidation
+    # says in its own comment that an unreported consolidation would move gen2
+    # numbers with nothing to attribute them to, and it was being computed,
+    # printed and dropped. Asserted on the FILE, because the object carried it
+    # the whole time — checking the object is what let this ship.
+    for lineage, source in zip(doc["pairs"][0]["lineages"], results[0].lineages):
+        assert "consolidation" in lineage, "consolidation dropped from the file"
+        assert lineage["consolidation"] == source.consolidation
+        if source.consolidation:
+            # deleted_count is the number GAP-19 is a question about.
+            assert "deleted_count" in lineage["consolidation"]
+            assert "now_counter" in lineage["consolidation"]
     for lineage in doc["pairs"][0]["lineages"]:
         for generation in ("gen1", "gen2"):
             section = lineage[generation]
