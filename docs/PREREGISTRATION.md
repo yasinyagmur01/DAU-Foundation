@@ -241,6 +241,42 @@ kirlenmedi. Yine de kayda geçer: L11'in iki bulgusu bu denetimden çıktı, ve
 **uç nokta tanımı bu bilgi alındıktan sonra değiştirilmedi** — değiştirilse
 post-hoc olurdu.
 
+**L13 — Precision-PE işletim noktasında atıl** (D-050). `π = clamp(1/(var/
+VAR_REF + ε), 0.5, 1.2)`, `VAR_REF = 1/12` ⇒ π tavandan ancak `var > 0.0694`
+(SD > 0.263) olunca çıkar. Ölçülen faz-2 varyansı **0.0289 … 0.0473**,
+dokuz kolun dokuzu da altında. Tavana yapışma: gen1 faz-1 **%96**, faz-2'nin
+**son 25 olayı %100**, gen2'nin ikinci yarısı **%100**.
+⇒ **PE pratikte ham anlamsal PE'nin 1.2 katı.** "Sürpriz sert salınırken
+kazancı kıs" mekanizması devreye girmiyor.
+⚠ Kilitli karar *"Precision-PE v2.4, kalibrasyon doğrulandı"* **yanlış
+değil, ilgisiz**: doğrulama bandı bu koşumların varyans aralığını
+kapsamıyor. Değiştirilmedi — kilitli eşiği ölçümü gördükten sonra oynatmak
+post-hoc olurdu. L1 (`F_agent`) ve L11 (`resource`) ile aynı sınıf: üçüncü
+dejenere girdi.
+
+**L14 — Davranışsal sınıflandırıcı `SYSTEM_PROMPT` tarafından besleniyor**
+(D-050, GAP-5 **doğrulandı**). Prompt'un son satırı *"Prefer plain English
+words such as resource, extract, take, social, talk, or cooperate…"* diyor;
+`decision_to_outcome` tam bu kelimelere bakıyor:
+
+| Sınıf | prompt'un andığı | toplam |
+|---|---|---|
+| COOPERATE | `cooperate`, `talk`, `social` | **3 / 4** |
+| DEFECT | `extract`, `take` | 2 / 7 |
+| CONSERVE → COORDINATE | **hiçbiri** | **0 / 6** |
+
+⇒ Davranışsal ölçüm kısmen **prompt'a uyumu** ölçüyor. Doğrudan **S5**'i
+etkiliyor ve `OUTCOME_TO_EXTRACTION` üzerinden havuz dinamiğine iniyor.
+Düzeltilmedi: `SYSTEM_PROMPT` değişirse her koşum geçersiz olur.
+
+**L15 — Kanal 2 unutmaya bağışık, kanal 1 değil** (D-050, GAP-4 denetimi).
+Çiftler `delta_log` + PE olay günlüğünden kuruluyor; Ebbinghaus **kasada**
+çalışıyor ve çift kurucu kasayı **hiç okumuyor** ⇒ GAP-4'ün tarif ettiği
+senkron kopukluğu **yok**. Ama asimetri var: bir anı kasadan unutulup
+varise geçmese de, o olaydan türetilmiş çift ağırlıkları **çoktan
+eğitmiştir**. Hata değil — "iki kanal"ın tanımı — ama D-002'nin *"ikisi de
+yaşamın izidir"* cümlesi bunu taşımıyor.
+
 **L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
 girmiyor (GAP-10). Anı seçimi şu an semantik değil.
 

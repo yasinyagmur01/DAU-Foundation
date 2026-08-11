@@ -3301,3 +3301,120 @@ verilmiş ama **atıf yok** — ad alındı, kaynak alınmadı.
 fonksiyonu veya uç nokta değişmedi. Yeni alanlar canlı koşumda henüz
 çalışmadı — ilk gerçek okuma **B2**. I5'in "Lamarckçı aktarım çeşitliliği
 yok eder" uyarısı **iki nesilde gözlenemez**; not, kanıt değil.
+
+---
+
+## D-050 · 2026-08-11 · A6: precision kanalı atıl, GAP-5 doğrulandı, GAP-4'ün mekanizması yok
+
+**Durum:** kabul edildi (ölçüm + iki denetim) · **Keşifsel, ön-kayıtlı değil**
+**GPU'suz.** Ham: `dau_runs/exploratory_a6_precision_and_channel_audit.json`
+
+### A6'nın sorusu ve cevabı
+
+D-043 `lived − shuffle`'ı tutarsız bulmuştu (−, +, +). D-044 bir parçasını
+açıkladı (uç nokta ayrımın %86'sını iptal ediyor). A6 kalanı arıyordu, ve
+D-045 bir iz bırakmıştı: `null` varisinin ikinci-yarı PE çöküşü.
+
+**Aday eleme:** PE **precision-ağırlıklı**. Eğer ağırlık kollar arasında
+farklı davranıyorsa, tutarsızlık bir **ölçüm artefaktı** olabilirdi.
+Ağırlık bölünüp ham PE'ye bakıldı:
+
+| seed | `lived−shuffle` ağırlıklı | ham | işaret |
+|---|---|---|---|
+| 2001 | −0.00709 | −0.00569 | aynı |
+| 2002 | +0.02700 | +0.02241 | aynı |
+| 2003 | +0.00073 | +0.00061 | aynı |
+
+**Dokuz karşıtlığın dokuzunda işaret aynı.** ⇒ Tutarsızlık precision
+ağırlığından **gelmiyor**. D-045'in `null` varisi çöküşü de ham PE'de
+duruyor (−0.234 / −0.148, `lived` +0.007 / +0.012) ⇒ o da artefakt değil.
+**Bir aday elendi, mekanizma hâlâ açık.**
+
+### ⚠ Ama eleme yapılırken kilitli bir karar sorgulandı: Precision-PE atıl
+
+`π = clamp(1/(var/VAR_REF + ε), 0.5, 1.2)`, `VAR_REF = 1/12`.
+π tavandan **ancak** `var > 0.0694` (SD > 0.263) olunca çıkabilir.
+
+**Ölçülen faz-2 varyansı: 0.0289 … 0.0473** — dokuz kolun dokuzu da eşiğin
+**altında**. Tavana yapışma oranı:
+
+| Nerede | π = 1.2 olan olay payı |
+|---|---|
+| gen1 faz-1 | **%96** (dokuz kolda da) |
+| gen1 faz-2 | %84–96 |
+| gen1 faz-2, **son 25 olay** | **%100** (dokuz kolda da) |
+| gen2, ikinci yarı | **%100** (dokuz kolda da) |
+
+⇒ **Precision-PE, işletim noktasında sabit 1.2 çarpanı.** "Sürpriz sert
+salınırken kazancı kıs" mekanizması, olayların büyük çoğunluğunda hiç
+devreye girmiyor.
+
+⚠ Bu **kilitli bir karara** dokunuyor: *"Precision-PE v2.4 (rolling history
++ VAR_REF=1/12), kalibrasyon doğrulandı."* Kalibrasyon yanlış değil —
+**ilgisiz**: doğrulama bandı bu koşumların ürettiği varyans aralığını
+kapsamıyor. §2.11 gereği sessizce seçilmedi, kayda geçiriliyor.
+
+**Değiştirilmedi.** `VAR_REF`'i şimdi oynatmak (a) kilitli bir eşik değeri,
+(b) ölçümü gördükten sonra ⇒ post-hoc, (c) bütün koşumları geçersiz kılar.
+**İlan edilen sınır** olarak yazılıyor — L1 (`F_agent`) ve L11 (`resource`)
+deseninin üçüncüsü.
+
+### GAP-5 — **doğrulandı ve nicelendi**, "olabilir" değil
+
+`SYSTEM_PROMPT`'un son satırı:
+
+> *"Prefer plain English words such as resource, **extract**, **take**,
+> **social**, **talk**, or **cooperate** when those actions apply."*
+
+`decision_to_outcome` tam bu kelimelere bakıyor:
+
+| Sınıf | Prompt'un **isimle andığı** anahtar | Toplam |
+|---|---|---|
+| COOPERATE | `cooperate`, `talk`, `social` | **3 / 4** |
+| DEFECT | `extract`, `take` | 2 / 7 |
+| CONSERVE → COORDINATE | **hiçbiri** | **0 / 6** |
+
+Prompt, sınıflandırıcının **işbirliği sözlüğünün dörtte üçünü** öneriyor ve
+**korunma sözlüğünden tek kelime anmıyor**. `conserve/rest/wait/observe/
+restrain/spare` yalnız prompt'un önermediği kelimelerden çıkabilir.
+
+⇒ Davranışsal ölçüm kısmen **prompt'a uyumu** ölçüyor, ajanın eğilimini
+değil. Doğrudan **S5**'i (gen2 davranışsal, `decision_to_extraction`)
+etkiliyor, ve `OUTCOME_TO_EXTRACTION` üzerinden havuz dinamiğine ve
+`F_agent`'ın `delta_pool`'una kadar iniyor.
+
+**Düzeltilmedi:** `SYSTEM_PROMPT` değişirse her koşum geçersiz olur.
+**İlan edilen sınır.**
+
+### GAP-4 — tarif edilen mekanizma **yok**
+
+İddia: *"Ebbinghaus ile kasadan silinen anının yarattığı drift LoRA'da
+kalıcı kalabilir"* — bir **senkron kopukluğu**.
+
+Read-only denetim: çiftler `build_lived_trace_examples(agent_state,
+pe_event_log)`'dan geliyor — kaynak `delta_log` **+ PE olay günlüğü**.
+Unutma ise `dau/memory/consolidation.py` ve `retrieval.py`'de, **kasa**
+üzerinde çalışıyor. **Çift kurucu kasayı hiç okumuyor** ⇒ kopacak bir
+senkron bağı yok.
+
+⚠ Ama **gerçek bir asimetri var** ve adı konmalı: bir anı kasadan
+unutulabilir (varis onu miras almaz, getirim yüzeye çıkarmaz) ama o olaydan
+türetilmiş DPO çifti **ağırlıkları çoktan eğitmiştir**. Yani **kanal 2
+Ebbinghaus'a bağışık, kanal 1 değil.** Bu bir hata değil — "iki kanal"ın
+tanımı bu — ama D-002'nin *"ikisi de yaşamın izidir"* cümlesi bu asimetriyi
+taşımıyor. İlan edilen sınır.
+
+**Reddedilen alternatifler:**
+- *`VAR_REF`/`PRECISION_MAX_WEIGHT` ayarlamak* — kilitli eşik, post-hoc,
+  bütün koşumları geçersiz kılar.
+- *`SYSTEM_PROMPT`'tan kelime listesini çıkarmak* — aynı gerekçe, ve
+  D-032'nin ölçtüğü prompt/çıkarım uyumunu bozar.
+- *GAP-4'ü "kapandı" diye yazmak* — mekanizma yok ama asimetri var;
+  ikisini ayırmadan kapatmak bilgi kaybı olurdu.
+
+**Sınırlar:** N=3, tek koşum. π tavan doluluğu **yapısal** (formülden
+türetildi, dokuz kolda doğrulandı) ⇒ N'e bağlı değil. GAP-5 örtüşmesi
+**tamamen statik** (iki sabit listenin karşılaştırması) ⇒ koşumdan bağımsız.
+`lived − shuffle`'ın kalan tutarsızlığı **açıklanmadı**; elenen tek şey
+precision ağırlığı. N=3'te küçük bir etkinin etrafındaki gürültüden
+ayırt edilemez — bunu ancak B2'nin N'i söyler.
