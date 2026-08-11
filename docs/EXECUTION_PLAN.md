@@ -3,8 +3,27 @@
 **Oluşturuldu:** 2026-08-09 · **Faz:** kod düzeltmeleri
 **Önceki faz:** salt-yazı denetimi (D-010, D-011, D-012 ile kapandı)
 
-Bu dosya, kod fazının adım adım yürütülmesi içindir. Her oturum başında
-`CLAUDE.md` "Şu An Neredeyiz" bölümü buraya işaret eder.
+Bu dosya, kod fazının adım adım yürütülmesi içindir.
+
+---
+
+## ⚠ 2026-08-11: BU DOSYA FAZ 2'DE DONDU — kuyruk artık burada değil
+
+Kod fazı (Adım 1–7, U1–U7) kapandı. Ondan sonra alet **yirmi kez** daha
+değişti (**D-023…D-044**) ve bu dosya o değişikliklerin **hiçbirini
+içermiyor**.
+
+> **Sıradaki iş `CLAUDE.md` §1'deki ÇALIŞMA KUYRUĞU'ndan alınır.**
+> Orada ayrıca **GAP TETİK TABLOSU** (hangi GAP hangi adımda gündeme gelir),
+> **DR BRIEF SIRASI** ve **EV İŞLERİ** tetikleri var.
+
+Bu dosya **tarihçe** olarak duruyor: Faz 2'nin adım ayrıntıları, dur-kontrol
+kriterleri ve commit hash'leri hâlâ doğru ve okunabilir. Yeni iş buraya
+**yazılmıyor** — kuyruk tek yerde tutuluyor ki iki liste birbirinden
+ayrışmasın.
+
+Faz C'de (belge borcu) bu dosya ya güncellenecek ya da resmen arşive
+alınacak; karar o zaman verilir.
 
 ---
 
