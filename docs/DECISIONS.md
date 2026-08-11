@@ -2899,3 +2899,120 @@ olur (§2.7). Sonraki ön-kayıta ve taze veriye bırakıldı.
 · 20 olay · yalnız `lived/null/shuffle` üçlüsü. Yarı-bölme gözlemi
 **hipotez testi değil**; 2 bağımsız karşıtlık × 3 seed ile hiçbir güç iddiası
 kurulamaz.
+
+---
+
+## D-046 · 2026-08-11 · A3: üç eksik kapı yazıldı, biri **spec'iyle yazılamadı**; GAP-6 kapandı
+
+**Durum:** kabul edildi · **Onay:** Yasin, üç seçenekli soru, 2026-08-11
+**Commit:** `8bc996b` (kapılar) · `b66f7fc` (GAP-6)
+
+**Karar (A3):** `PREFLIGHT_INVARIANTS.md` 25 değişmez tanımlıyordu, kodda 20
+vardı. Eksik beşin üçü (I1.3/I1.4/I1.5) bu adımın konusuydu. Üçü de yazıldı
+ama **hiçbiri belgedeki haliyle yazılamadı** — ve sebepleri farklı.
+
+### I1.4 — spec'i bir tautoloji, yazılmadı
+
+Belge: *"`PE ≥ SNR_FLOOR` olan çiftlerin oranı ≥ eşik."* O metin, marj
+testinin çift kurulduktan **sonra** uygulandığı zamandan kalma. **D-030
+testi `build_pe_ranked_pairs`'in içine taşıdı** ⇒ eğitime ulaşan her çift
+eşiği yapı gereği geçiyor, oran **daima 1.0**. Spec'e sadık kalınsaydı
+repoya hiçbir koşulda kırılamayan bir bekçi girerdi — §2.4'ün U7/A2'de
+yakaladığı şeyin aynısı.
+
+D-030'dan sonra ayakta kalan ölçülebilir soru: **aday havuzunun ne kadarı
+atıldı.** Ölçülen (`control_d042`): 3714/7983 aday marjın altında elendi
+(**%46.5**), 299 çift hayatta kaldı. Kapı bu oranı **kaydediyor** ve yalnız
+dejenere uçta düşüyor — hiçbir çift kalmadıysa. O okumanın yorumlanması
+kalibrasyon istemiyor, o yüzden eşik **uydurulmadı**. FLAG.
+
+⚠ §2.11 gereği bu sessizce seçilmedi: belge/kod çelişkisi Yasin'e üç
+seçenekle soruldu, "reddetme oranına çevir" onaylandı.
+
+### I1.3 — spec'i I1.1'i tekrar ediyordu, daraltıldı
+
+Belge: *"`step_count > 0`, loss sonlu, `grad_norm > 0`."* Ama I1.1 zaten
+`Σ|lora_B|`'nin kımıldadığını okuyor; kımıldadıysa bir adım atılmıştır.
+Aynen yazılsa ikinci bir boş bekçi olurdu.
+
+Kapsam, **bir ağırlık okumasının göremeyeceği üç kusura** daraltıldı:
+sonlu olmayan loss (ağırlıklar yine değişir — NaN'a), biriktirip hiç
+`optimizer.step` çağırmayan döngü, ve **tam sıfır gradyanla atılan adım**.
+Testi bu üç şeklin **önce I1.1'i geçtiğini** doğruluyor ⇒ örtüşmenin
+olmadığı iddia değil **kanıt**.
+
+⚠ **Sıfır gradyan varsayımsal değildi.** Kapı eklenir eklenmez mevcut DPO
+test harness'ı düştü: `_encode_pair_side` stub'ı `chosen` ile `rejected`
+için **aynı** kodlamayı dönüyordu ⇒ `policy_chosen − policy_rejected` her
+mikro-adımda tam **0**. Yani `test_optimizer_steps_once_per_accumulation_
+steps` D-028'den beri **sıfır gradyanla atılan adımları** sayıp eğitim diye
+raporluyordu. Stub düzeltildi. **Kapı, kendisini doğrulayacak testi
+yazarken bir kusur buldu.**
+
+### I1.3b — yeni, belgede yoktu
+
+`clip_grad_norm_` kırpma öncesi normu zaten hesaplıyor ve **dönüş değerini
+atıyorduk**. Saklamak D-029'un açık bıraktığı bir soruyu cevaplıyor: o karar
+`DPO_LEARNING_RATE`'i literatürden aldı, ama bu gerekçe **adım boyunu
+gradyan belirlediği sürece** geçerli. Her adım kırpılıyorsa boyu tavan
+belirler ve kilitlenen lr koşumu tarif etmez. Kaç adımın tavana değdiği
+raporlanıyor. **FLAG, ve eşik uydurulmadı** — herhangi bir kırpma etiket
+alır, `PAD_FRACTION_MAX`'in katılığı.
+
+### I1.5 — değer config'den türetildi, veriden değil
+
+`MIN_PAIRS`'in kaynağı yoktu. Ölçtüğümüz 47/41/38'den seçmek §2.7'nin
+yasakladığı post-hoc tuning. Türetildi:
+`MIN_PAIRS = DPO_BATCH_SIZE × DPO_GRADIENT_ACCUMULATION_STEPS` — **bir tam
+accumulation grubu**. Sabit yazılmadı: 4 yazılsaydı accumulation değişince
+"bir tam grup" demeye devam ederdi (§2.8). Testi tam olarak bunu kırıyor.
+`MIN_PAIRS_CALIBRATED = False` yanında duruyor, yerleşmiş gibi okunmasın.
+
+### GAP-6 — brief'in yeri yanlıştı
+
+08-08~ §1 CUDA temizliğini **adapter hot-swap'te** izolasyon şartı sayıyor.
+Harfiyen uygulanamazdı: `graph.agent_node` `switch_adapter`'ı **her yerel
+kararda** çağırıyor, `empty_cache` bütün allocator'ı geziyor, ve swap
+serbest bırakılacak bir şey **ayırmıyor** ⇒ faz başına 50+ allocator gezisi,
+karşılığında sıfır. Maliyet, tahsisin yapıldığı yere kondu: DPO adımı.
+
+Altındaki izolasyon kaygısı **gerçek, ama brief'in verdiği sebepten değil.**
+Tasarım gereği **tek** bellek-içi adapter slotu var (ajan başına slot
+kaydetmek peft'e her adapter'ı her ajanın dizinine yazdırır). Yani bir kolun
+eğittiği tensörler, sonraki kolun adapter'ının **yükleneceği** tensörler, ve
+bu kolun `.grad`'ı çıkışta hâlâ onlara asılıydı. Kimse okumuyordu — sonraki
+`_run_dpo_epochs` epoch döngüsünün başında `zero_grad` çağırıyor — ama bu, A
+ajanının izolasyonunu **B'nin çağrı sırasına** emanet eder. Bu projenin iki
+sızıntısı da (`f25b0ef`, D-042) tam olarak o şekildi. `None` yapıldı,
+sıfırlanmadı: tampon da gitsin.
+
+İkinci ve bağımsız sebep: DPO adımı koşumun tepe noktası, D-034 pilotu zaten
+bir OOM uyarısı basmıştı.
+
+Swap'in süre logu **düzeltilmedi, etiketlendi**: host tarafı dispatch
+ölçüyor, GPU tamamlanmasını değil. Doğru yapmak her-karar yolunda
+`synchronize` ister; bir debug satırını keskinleştirmek için pipeline'ı
+durdurmak kötü takas. Ne ölçtüğünü yazmak dürüst olan (§2.8).
+
+**Mutasyon kontrolü — altı mutasyon, altısı da testini kırdı:**
+sıfır gradyan tolere edildi · `MIN_PAIRS` 4'e sabitlenip accumulation 8
+yapıldı · `grad_norm` yine atıldı · I1.4 tautolojiye döndürüldü · grad
+release kaldırıldı · temizlik `switch_adapter`'a bağlandı.
+
+**Reddedilen alternatifler:**
+- *I1.4'ü spec'iyle yazmak* — kırılamayan bekçi.
+- *I1.4'ü hiç yazmayıp belgede işaretlemek* — eğitim açlığını gören kapı
+  kalmazdı; ölçüm o riskin gerçek olduğunu gösteriyor (%46.5 eleme).
+- *`MIN_PAIRS`'i 38'den (en düşük gözlem) seçmek* — post-hoc.
+- *I1.3'ü spec'iyle yazmak* — I1.1'in kopyası.
+- *`empty_cache`'i `switch_adapter`'a koymak* — brief'in dediği, ölçülen
+  maliyeti karşılıksız.
+
+**Sınırlar:** I1.3b, I1.4, I1.5 üçü de **FLAG** ve **kalibre değil**;
+ABORT'a yükseltilmeleri pilot ister (§"Kalibre edilmesi gereken eşikler").
+I1.4'ün oranı tek koşumdan (`control_d042`) okundu, eşik olarak
+**kullanılmadı** — yalnız kapının dejenere ucu sabit. Kapıların hiçbiri
+canlı GPU koşumunda henüz ateşlenmedi; ilk gerçek sınav B2.
+
+**Değişmez sayısı: 20 → 24** (I1.3, I1.3b, I1.4, I1.5). Belgede tanımlı
+25 → 26 (I1.3b yeniydi). Kodda hâlâ yok: I1.2 (testte), I2.3 (yapısal).
