@@ -23,8 +23,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `341 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-047.** Sıradaki kayıt **D-048** olarak açılır.
+- **Suite:** `342 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-048.** Sıradaki kayıt **D-049** olarak açılır.
 - **GAP-2 ve GAP-6 kapandı** (`d65100d`, `b66f7fc`); açık GAP'ler:
   3, 4, 5, 9, 10, 17, 18, 19 — **her birinin tetiği §1'deki GAP TETİK
   TABLOSU'nda.**
@@ -36,8 +36,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   N — D-047** · S5 1 epoch · S6 replay yok · S7 50/20/3); **yalnız S2 (N)
   açık** ve kilidi o tutuyor. **On iki ilan edilmiş sınır** (L11/L12 D-047).
 - **Master reference: v2.4.2** yazıldı (§8).
-- **DR #1 cevabı geldi ve işlendi** (D-047, RECONCILIATION §G).
-  **#2 ve #3 hâlâ gönderilmedi** — ikisi de kilidi bloke etmiyor.
+- **DR #1 ve #2 cevapları geldi ve işlendi** (D-047 §G, D-048 §H).
+  **#3 hâlâ gönderilmedi** — kilidi bloke etmiyor.
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
 
@@ -275,7 +275,7 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 | **GAP-4** | **A6 ile birlikte** | Kanal kirlenmesi sorusu. A6 zaten kolların nerede ayrıştığına bakıyor; vault↔LoRA senkron kopukluğu **kodda hiç doğrulanmadı** ve read-only denetim aynı oturumda biter | Read-only denetim (Claude Code) |
 | **GAP-19** | **A7 = kendisi** | Neyin eğitildiğine dokunuyor. Kilitten sonra değiştirilirse post-hoc olur | Karar + D-kaydı (Yasin onayı) |
 | **GAP-9** | **A8'de** | S4 kapandı (D-047) ama GAP-9 kapanmadı: DR `N=32`, eski brief `N=40–50` diyor. A8 tam olarak bu uzlaşma | A8 kararı + D-kaydı |
-| **GAP-18** | **DR brief #2 cevabı gelince** | Kilidi bloke etmiyor; cevap gelmeden kod değişikliği önerilmemeli — iki denemede de ters teptiği ölçüldü | DR brief #2 → sonra karar |
+| **GAP-18** | **B2'nin `uniq_rejected` sayısı gelince** | Cevap geldi (D-048) ama **şiddeti hiç ölçülmemiş** çıktı: "2 benzersiz negatif" 10 olaylık replay'den, "47 çift" 50 olaylık koşumdan. Sayaçlar eklendi (`daa5f4b`); karar sayıdan sonra | B2 ölçümü → sonra karar |
 | **GAP-3** | **B1'de (kilit anı)** | Gen2 ikincillerini etkiliyor, ve o ikinciller zaten L10 ile sınırlı. Düzeltmek yerine **ilan edilmiş sınır** olarak yazmak dürüst ve ucuz. ⚠ D-045 onu `null` varisinin ikinci-yarı çöküşü için **mekanizma adayı** olarak da işaretledi | Sınır olarak ilan et |
 | **GAP-10** | **B1'de (kilit anı)** | `W_SEM=0.0` değiştirilirse **taban yine sıfırlanır**. Kilitten önce dokunmak pahalı, kilitten sonra yasak ⇒ bu ön-kayıt için **sınır**, sonraki için iş kalemi | Sınır olarak ilan et |
 | **GAP-17** | **B4'te (rapor)** | Karşılaştırma tabanı delil olarak kullanılamıyor; bisect pahalı ve sonucu bir şeyi değiştirmiyor. Raporda "açıklanmadı" diye geçer | Raporda not |

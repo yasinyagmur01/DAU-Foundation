@@ -3109,3 +3109,101 @@ notu buraya bağlı.
 kayıtla doğrulandı) ⇒ N'e bağlı değil. Ama `resource`'un atıllığı **üç
 seed'den** okundu; daha geniş N'de ayrım üretmesi dışlanmadı. S2 (N) **açık
 kalıyor**.
+
+---
+
+## D-048 · 2026-08-11 · DR #2 işlendi: GAP-18'in dayandığı sayı iki ayrı koşumdan birleştirilmiş
+
+**Durum:** kabul edildi · **GPU'suz** · **Commit:** `daa5f4b`
+**Mutabakat:** `docs/research/RECONCILIATION.md` bölüm **H**
+
+### ⚠ Asıl bulgu raporda değil, kendi brief'imizde
+
+`2026-08-11_GAP18-...md` şunu yazıyordu:
+
+> Ölçülen: **47 çiftlik** bir eğitim setinde **47 farklı prompt**, ama yalnız
+> **2 benzersiz `rejected`** metni.
+
+İki sayı **aynı koşumdan gelmiyor**:
+
+| Sayı | Kaynağı |
+|---|---|
+| 47 çift / 47 prompt | `control_d042_n3_local`, seed 2001, **50 olay** |
+| 2 benzersiz `rejected` | `exploratory_pair_design_replay`, seed 2001, **10 olay** — yaşamda **toplam 7 benzersiz completion**, tasarım **9 çift** üretmişti |
+
+**47 çiftte benzersiz negatif sayısı hiç ölçülmedi.** Ve ölçüm noktası
+kaydı: aynı koşumlar `n_unique` **29 · 22 · 27** veriyor — D-034 zaten
+*"7-benzersiz tavanı açıldı"* diye yazmıştı. 29 completion'dan çekilen
+negatif havuzu 7'den çekilenle aynı havuz değil.
+
+Bu §2.8'in klasik kipi: **rapor aleti takip etmedi, iki aletin çıktısını
+birleştirdi.** Ve bu sefer maliyeti dışarı taştı — DR'nin bütün şiddet
+zinciri (*"serbestlik derecesi 2'ye iner ⇒ parameter shrinkage ⇒
+catastrophic collapse"*) o premisin üstünde duruyor. **Rapor yanılmadı,
+yanlış beslendi.**
+
+### Karar: tahmin etme, say
+
+`PAIR_DIVERSITY_STATS` eklendi (`lora_update.py`), çiftlerin kurulduğu yerde
+okunuyor, `pair_filter` raporuna giriyor:
+
+- `uniq_rejected` — DR'nin şiddet iddiasının doğrudan öngördüğü sayı
+- `uniq_chosen`
+- `max_rejected_reuse` — tek bir negatifin kaç çifti domine ettiği
+- `texts_in_both_roles` — DR'nin "çelişik gradyan" uyarısı; ayrık
+  eşleştirmede olmuştu, `best_by_event`'te olup olmadığı **bilinmiyordu**
+
+Sonradan JSON'dan yeniden türetilmiyor: ikinci bir yeniden kurulum, aletle
+ikinci bir anlaşmazlık şansıdır — bu sayının brief'e girme şekli tam olarak
+oydu.
+
+### Raporun alınan kısımları
+
+- **H3 ⭐ Shuffle kolu loss testi.** *"Shuffle belirgin biçimde daha yüksek
+  loss üretmezse model tercih içeriğini değil düzenlileştirmeyi
+  öğrenmiştir."* Bizde shuffle var (D-040) ama **loss karşılaştırması hiç
+  yapılmadı**. D-046 `dpo_loss`'u kol bazında JSON'a yeni koymuştu ⇒ **B2'de
+  ek maliyetsiz gelecek.** Ön-kayıta alınabilir bir yanlışlama testi.
+- **H2 Kolay negatifler ≈0 gradyan üretir** — mekanizma doğru, ve D-046'nın
+  I1.3'ü (`dpo_grad_norm_min`, sıfır gradyan ⇒ ABORT) ile I1.3b'si (kırpma
+  oranı) bunu **zaten görünür kıldı**. İki iş bağımsız çıkmış ama aynı yere
+  bakıyor.
+- **H4/H5 doğrulama:** 40 çiftte 1 epoch doğru (S5), `lr=1e-6` politikayı
+  referans yakınında tutuyor (D-029). İkisi de bizim kararımızı destekliyor.
+
+### Kaynak kimlikleri — dördü sağlam, altısı değil
+
+**Doğrulandı:** Rafailov ve ark. 2023 (DPO) · Ethayarajh ve ark. 2024 ICML
+(KTO) · Meng ve ark. 2024 NeurIPS (SimPO) · Kulesza & Taskar 2012 (DPP).
+
+**Düştü:**
+- **Distinct-N → "Papineni ve ark., 2002"** ❌ Papineni 2002 **BLEU**'dur;
+  Distinct-N **Li ve ark., 2016**.
+- **Self-BLEU → "Papineni ve ark., 2002"** ❌ Self-BLEU **Zhu ve ark., 2018
+  (Texygen)**.
+- **Cal-DPO → "Xu ve ark., 2024"** ⚠ NeurIPS 2024'te **Xiao ve ark.**
+- **`nrDPO` (Applied Sciences 2025) · DualLoop-DPO · ExPO 2025 · DQO 2025 ·
+  Lanchantin ve ark. 2025** ❌ yazar/başlık yok ⇒ kimlik doğrulanamıyor.
+- **"Label Flip Rate > %10 bozar"** ❌ sayısal eşik kaynaksız. Metrik alındı,
+  eşik alınmadı.
+
+§9 sicili: yedi iddiadan dördü çürümüştü, sahte `arXiv:2506.08965` de böyle
+yakalanmıştı. **Bu brief'te de aynı desen var.**
+
+### Reddedilen alternatifler
+
+- ***KTO'ya geçmek (DR'nin baş tavsiyesi)*** — hizalama algoritmasının
+  tamamen değişmesi. Kanal 2'nin mekanizmasını değiştirir, bugüne kadarki
+  her ölçümü geçersiz kılar, ve **doğrulanmamış H1 premisine dayanıyor**.
+  → sonraki ön-kayıt.
+- *Kullanım tavanı (`N≤3`) / marjin bandı / olay başına çok çift* — üçü de
+  eğitim setini değiştirir; DR kendi de uyarıyor ki tavan ikincil
+  negatifleri `SNR_MARGIN_FLOOR=0.15`'in altına düşürebilir. **Önce ölç.**
+- *`best_by_event`'i şimdi değiştirmek* — kilit öncesi, ölçümsüz, §2.10.
+- *Sayıyı JSON'dan sonradan türetmek* — yukarıdaki gerekçe.
+
+**Sınırlar:** Hiçbir eşik ve hiçbir çift kurma stratejisi değişmedi; yalnız
+aletleme eklendi. Yapısal argüman (**`best_by_event` global maks-PE
+completion'ı çoğu çiftin reddedilen tarafı yapar**) ayakta duruyor —
+değişen, **şiddetinin ölçülmemiş olduğunun** kayda geçmesi. Sayaçlar canlı
+koşumda henüz çalışmadı; ilk gerçek okuma **B2**.

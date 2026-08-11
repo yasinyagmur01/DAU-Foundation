@@ -21,6 +21,7 @@ Süreç: D-006. Kaynaklar: `docs/research/*.md`. Tamamlanma: 2026-08-09.
 | `2026~_agent-curriculum-engine.md` | ertelendi — Yasin: DAU sonrası proje |
 | `2026-08-10_low-data-dpo-pair-selection.md` | ✅ tam tur — **bölüm F** |
 | `2026-08-11_S4-minimum-effect-of-interest.md` | ✅ tam tur — **bölüm G** |
+| `2026-08-11_GAP18-shared-negatives-in-preference-learning.md` | ✅ tam tur — **bölüm H** |
 
 ---
 
@@ -295,3 +296,74 @@ birebir metni (G4, G12).
 **Bekleyen:** N'in **değeri**. G13 uzlaşmamış, ve G.2 daha ağır basıyor —
 N, uç noktanın tanımı düzelmeden seçilirse kusurlu bir ölçüme hassasiyet
 satın alınmış olur. **S2 açık kalıyor; S4 kapanıyor.**
+
+
+---
+
+# H. DR brief #2 — GAP-18: ortak negatifler (2026-08-11)
+
+**Cevap geldi. En önemli bulgu raporda değil: brief'in kendisi yanlış bir
+sayı vermiş, ve rapor bütün teşhisini o sayının üstüne kurmuş.**
+
+## H.1 ⚠ Önce bizim hatamız
+
+Brief şöyle diyordu:
+
+> Ölçülen: **47 çiftlik** bir eğitim setinde **47 farklı prompt**, ama yalnız
+> **2 benzersiz `rejected`** metni.
+
+**Bu iki sayı aynı koşumdan gelmiyor.**
+
+| Sayı | Gerçek kaynağı |
+|---|---|
+| **47 çift / 47 prompt** | `control_d042_n3_local`, seed 2001, **50 olay** |
+| **2 benzersiz `rejected`** | `exploratory_pair_design_replay`, seed 2001, **10 olay** — o yaşamda **toplam 7 benzersiz completion** vardı ve tasarım **9 çift** üretmişti |
+
+**47 çiftte benzersiz negatif sayısı hiç ölçülmedi.** Üstelik ölçüm noktası
+o zamandan beri **değişti**: aynı koşumlar `n_unique` **29 · 22 · 27**
+raporluyor (D-034: *"7-benzersiz tavanı açıldı"*). 29 completion'dan çekilen
+negatif havuzu, 7'den çekilenle aynı havuz değildir.
+
+⇒ DR'nin *"47 prompt yalnız 2 ortak negatif paylaşıyor ⇒ gradyan uzayındaki
+serbestlik derecesi 2'ye iner ⇒ parameter shrinkage / catastrophic collapse"*
+zincirinin **ilk halkası bizden geldi ve doğrulanmamış.** Rapor yanılmadı;
+yanlış beslendi (§2.8'in klasik kipi: rapor aleti takip etmedi, iki aletin
+çıktısını birleştirdi).
+
+**Yapılan:** tahmin yerine sayaç. `PAIR_DIVERSITY_STATS` → `uniq_rejected`,
+`uniq_chosen`, `texts_in_both_roles`, `max_rejected_reuse`, çiftlerin
+kurulduğu yerde okunuyor ve `pair_filter` raporuna giriyor (`daa5f4b`).
+**B2 bu soruyu cevaplayacak.**
+
+## H.2 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| H1 | 47 prompt / 2 ortak negatif **ağır yapısal patoloji** | Premis doğrulanmamış — H.1. Yapısal argüman (**`best_by_event` global maks-PE completion'ı çoğu çiftin reddedilen tarafı yapar**) ayakta, ama **şiddeti** ölçülmedi | **premis açık** — B2'de ölçülecek |
+| H2 | **Kolay negatifler** `σ(−z)` uyarınca erken adımlardan sonra ≈0 gradyan üretir | Mekanizma doğru ve bizde **artık görünür**: D-046'nın **I1.3**'ü `dpo_grad_norm_min`'i kaydediyor, tam sıfır gradyanlı adım **ABORT**; **I1.3b** kırpma oranını raporluyor | **uyumlu — zaten aletlendi** |
+| H3 | **Shuffle kolu**, gerçek tercih öğrenildi mi diye bakmanın temel testi: shuffle **belirgin biçimde daha yüksek loss** üretmezse model içerik değil düzenlileştirme öğrenmiştir | ⭐ **En değerli madde.** Bizde shuffle zaten var (D-040, %100 ters) ama **loss karşılaştırması hiç yapılmadı**. D-046 `dpo_loss`'u kol bazında JSON'a yeni koydu ⇒ **B2'de bedava gelecek** | **uyumlu — ön-kayıta alınabilir** |
+| H4 | 40 çiftte **1 epoch** doğru; fazlası kesin ezberleme | `DPO_EPOCHS = 1` (S5 kapalı) | **uyumlu — doğruluyor** |
+| H5 | `lr=1e-6` politikayı `π_ref` yakınında tutar, ani çöküşü engeller | D-029 tam olarak bu gerekçeyle seçmişti | **uyumlu — doğruluyor** |
+| H6 | Kosinüs bandı `[0.25,0.80]` ve SNR tabanı `0.15` **sezgisel**, kalibre edilmeli | Zaten biliyoruz ve **ilan ediyoruz**: `POLARITY_COSINE_CALIBRATED=False`, `SNR_MARGIN_FLOOR_CALIBRATED=False` | **uyumlu — yeni bilgi yok** |
+| H7 | Bağlamsız çift ⇒ aynı metin iki rolde ⇒ **çelişik gradyan** | Bizim gözlemimizle örtüşüyor (ayrık eşleştirme denemesi). ⚠ Ama bu **`best_by_event`'te olmuyor**, ayrık eşleştirmede oluyordu — DR ikisini ayırmıyor. Artık `texts_in_both_roles` ile **ölçülüyor** | **uyumlu ama kapsam karışık** |
+| H8 | **Label Flip Rate > %10 DPO'yu bozar** | Sayısal eşik, **kaynaksız**. Metrik makul, %10 dayanaksız | **kullanılamaz** (eşik); metrik alındı |
+| H9 | Distinct-N → *Papineni et al., 2002* | ❌ **Yanlış atıf.** Papineni 2002 = **BLEU**. Distinct-N = **Li et al., 2016** | **brief yanılmış** |
+| H10 | Self-BLEU → *Papineni et al., 2002* | ❌ **Yanlış atıf.** Self-BLEU = **Zhu et al., 2018 (Texygen)** | **brief yanılmış** |
+| H11 | Cal-DPO → *Xu et al., 2024, NeurIPS* | ⚠ Cal-DPO NeurIPS 2024'te **Xiao et al.** olarak geçiyor. Yazar adı şüpheli | **doğrulanmadı** |
+| H12 | `nrDPO` (*Applied Sciences, 2025*) · `DualLoop-DPO` · `ExPO, 2025` · `DQO, 2025` · `Lanchantin et al., 2025` | ❌ Yazar/başlık yok veya eksik ⇒ **kimlik doğrulanamıyor**. Brief "yazar+yıl+yer" şart koşmuştu; §9 sicilinde sahte `arXiv:2506.08965` bu şekilde yakalanmıştı | **kullanılamaz** |
+| H13 | DPO = *Rafailov et al., 2023* · KTO = *Ethayarajh et al., 2024, ICML* · SimPO = *Meng et al., 2024, NeurIPS* · DPP = *Kulesza & Taskar, 2012* | Dördü de gerçek ve doğru anılmış | **uyumlu** |
+| H14 | **Tavsiye: DPO'yu bırak, KTO'ya geç** | Hizalama algoritmasının **tamamen değişmesi**. Kanal 2'nin mekanizmasını değiştirir, bugüne kadarki her ölçümü geçersiz kılar, ve ön-kayıt kilitlenmek üzere. Ayrıca **H1 premisine dayanıyor** — o doğrulanmadan bu büyüklükte bir değişiklik yapılmaz | **ertelendi** → sonraki ön-kayıt |
+| H15 | DPO kalacaksa: negatif başına kullanım tavanı (`N≤3`), marjin bandı, olay başına çok çift | Üçü de eğitim setini değiştirir. Aynı gerekçe: **önce ölç**. Ayrıca DR kendi de uyarıyor — tavan koyarsa ikincil negatifler `SNR_MARGIN_FLOOR=0.15`'in altında kalabilir | **ertelendi** — B2'nin sayısına bağlı |
+
+## H.3 Ne değişti, ne değişmedi
+
+**Değişen:** yalnız **aletleme** — dört sayaç eklendi (`daa5f4b`). Hiçbir
+eşik, hiçbir çift kurma stratejisi, hiçbir sabit değişmedi.
+
+**Değişmeyen ve bilerek:** `best_by_event`. DR'nin bütün alternatifleri
+(KTO, kullanım tavanı, marjin bandı) **doğrulanmamış bir premise** dayanıyor
+ve hepsi eğitim setini değiştirir ⇒ kilit öncesi yapılırsa §2.10'un kuyusu.
+
+**GAP-18 kapanmadı.** Durumu değişti: *"biliyoruz ama ne yapacağımızı
+bilmiyoruz"*tan *"şiddetini ölçmedik, B2 ölçecek"*e. Karar B2'nin
+`uniq_rejected` sayısından sonra.
