@@ -20,6 +20,7 @@ Süreç: D-006. Kaynaklar: `docs/research/*.md`. Tamamlanma: 2026-08-09.
 | `2026-08-04_daerm-allostatic-recovery.md` | ✅ formül kontrolü |
 | `2026~_agent-curriculum-engine.md` | ertelendi — Yasin: DAU sonrası proje |
 | `2026-08-10_low-data-dpo-pair-selection.md` | ✅ tam tur — **bölüm F** |
+| `2026-08-11_S4-minimum-effect-of-interest.md` | ✅ tam tur — **bölüm G** |
 
 ---
 
@@ -211,3 +212,86 @@ aşamaz.
 çıkarım prompt'uyla hiç ilgisi yoktu (51 token vs 246–306, `system=""`).
 Brief bunu hiçbir maddesinde işaret etmiyor. **Ders yine aynı: brief iddia,
 kanıt kodda.**
+
+
+---
+
+# G. DR brief #1 — S4: en küçük anlamlı etki (2026-08-11)
+
+**Cevap geldi. Yöntem tavsiyesi alınabilir, sayısal savunması alınamaz.**
+
+Kısa hüküm: DR'nin **usul** önerisi (bütçe-kısıtlı N + duyarlılık analizi)
+sağlam, kaynaklı ve S4'ü **çözmüyor — çözülmesi gereken bir soru olmaktan
+çıkarıyor**. Ama önerdiği N'i savunan iki dayanak da yerel doğrulamada
+düştü, ve DR'nin göremediği bir kusur bu kararı şimdilik **erteletiyor**.
+
+## G.1 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| G1 | **Bütçe-kısıtlı örneklem gerekçelendirmesi meşrudur** (Lakens 2022, *Sample Size Justification*, Collabra: Psychology 8(1):33267) — altı meşru yöntemden biri | Kaynak gerçek ve doğru anılmış. Yöntem bizim durumumuza **birebir uyuyor**: birincil uç nokta için literatürde referans etki yok, bu yüzden SESOI uydurmak temelsiz kalırdı | **uyumlu — benimsenir** |
+| G2 | **Duyarlılık güç analizi ilan edilmeli**, MDE raporlanmalı | Bizde hiç yoktu. GAP-9 tam olarak bunun yokluğuydu | **uyumlu — benimsenir** |
+| G3 | `N=32` için MDE: iki yönlü `d_z=0.512`, tek yönlü `0.450` | Yerel exact noncentral-t: **0.5113 / 0.4495**. Üç hane doğru | **uyumlu** |
+| G4 | Bunun türetimi `N ≈ (1.96+0.842)²/d_z²` | O formül `d_z = 0.4953` verir, 0.512'yi **değil**. Sayı doğru, yanında gösterilen formül onu üretmiyor (normal yaklaşım vs exact nct) | **brief tutarsız** — şablon **birebir yapıştırılamaz** |
+| G5 | **`r ≥ 0.85`**, çünkü koşum-arası gürültü sıfır (sha256 özdeş) ⇒ `d_z = 0.512` aslında `d ≈ 0.28`, yani tasarım duyarlı | ❌ **Çıkarım geçersiz, iki kere.** (a) Determinizm *aynı kolu tekrar koşmanın* gürültüsünü sıfırlar; **farklı kolların seed'ler arası korelasyonu** hakkında hiçbir şey söylemez. (b) Daha temel: bizim birinciliğimiz iki kolun eşleştirilmiş ölçümü **değil**, iki mesafenin farkı (`a_s − b_s`, §3) — DR'nin `d_z = d/√(2(1−r))` dönüşümü bu forma **uygulanamaz**. Yakılmış üç seed'de gözlenen `corr(a_s, b_s) = −0.80` (N=3, kendisi anlamsız; ama işaret bile ters) | **brief yanılmış** |
+| G6 | İçsel temsil / drift çalışmalarında literatür **`d_z ≈ 0.85–1.70`** | ❌ **Kaynaksız.** Brief "her iddia yazar + yıl + yer" şart koşmuştu; burada yalnız "ProtoAlign", "Anchor Bias" adları geçiyor, atıf yok. §9 sicilinde aynı kip iki kez çürüdü (Qwen "şiddetle önerilir"; NLI 0.01–0.20 bandı) | **kullanılamaz** — N gerekçesi buna dayandırılmaz |
+| G7 | Small telescopes: Simonsohn (2015), *Psychological Science* 26(5):559–569 | Kaynak gerçek. Ama DR "Simons ve ark. (2014) tarafından yaygınlaştırıldı" diyor — **2014, 2015'i yaygınlaştıramaz**; kronoloji ters | **kısmen yanlış** — yöntem zaten bize uygulanamıyor (doğrudan replikasyon yok), etkisiz |
+| G8 | Meehl (1990) crud factor; alanın dağılımından eşik türetmek **döngüsel** olabilir | Kaynak gerçek (*Psychological Reports* 66:195–244), argüman geçerli ve G6'yı **kendi içinden** çürütüyor: DR yayın yanlılığının medyanı %50–100 şişirdiğini söyleyip aynı raporda kaynaksız `d_z≈1.0+` değerlerini dayanak yapıyor | **uyumlu — ve G6'ya karşı kullanılır** |
+| G9 | Dodge ve ark. (2019), *Show Your Work*, EMNLP; Responsible NLP Checklist hesaplama bütçesi beyanını zorunlu kılıyor | Kaynak gerçek ve iddia doğru | **uyumlu** |
+| G10 | TOST eşdeğerlik çerçevesi | Doğru anlatılmış, ama `H01`/`H02` bloğu **iki kez, ikisi de `H01` etiketiyle** basılmış. Bize uygulanabilir değil: TOST bir SESOI ister, DR'nin kendi tavsiyesi SESOI koymamak | **uyumlu ama uygulanamaz** |
+| G11 | "ΔPE'nin ikincilde iptal yaratması, birincilin **saf parametrik iz** olduğunu **doğrulamaktadır**" (Eleştiri 2 savunması) | ❌ **Non sequitur.** D-044/D-045'in gerçek argümanı: iptal birinciliği **tehdit etmiyor**, çünkü doğum-drift olaylar üstünde ortalanmıyor. "Tehdit etmiyor" ile "doğruluyor" aynı şey değil ve ikincisinin dayanağı yok. Rapora bu haliyle girerse hakem tam buradan girer | **brief yanılmış** — savunma metni kullanılmaz |
+| G12 | Şablon: "her bir seed … **3 koşum** içeren bit-düzeyinde deterministik bir süreç" | Yanlış tarif: seed başına **3 kol** var (lived/null/shuffle), 3 koşum değil; I4.1 replay'i **koşum başına bir kez**, seed başına değil | **brief yanılmış** (bizim tarifimizden türemiş olabilir) — şablon düzeltilmeden kullanılmaz |
+| G13 | Tavsiye: `N=32`, ~10.8 GPU saat | Bütçe aritmetiği doğru (32 × 20 dk = 10.7 sa). ⚠ Ama GAP-9'un dayandığı `protocol-c-metacognition-eval` briefi Protocol C için **N=40–50** öneriyordu; iki sayı **uzlaştırılmadı** | **açık** — G.3'e bak |
+
+## G.2 DR'nin göremediği: birincil uç noktanın kendisinde yapısal kusur
+
+DR'ye deneyin dürüst tarifi verildi ama `birth_drift_magnitudes`'in **çalışma
+zamanındaki şekli** verilmedi — verilemezdi, biz de bakmamıştık. Bakıldı
+(`control_d042`, seed 2001–2003, **D-038 ile zaten yakılmış** ⇒ doğrulayıcı
+koşumun dışında):
+
+**1. "Üç alanlı vektör" pratikte iki alanlı, ve hangi ikisi olduğu kola göre
+değişiyor.**
+
+| seed | lived | null | shuffle |
+|---|---|---|---|
+| 2001 | resource, social | resource, social | resource, social |
+| **2002** | resource, **social** | resource, **uncertainty** | resource, **uncertainty** |
+| 2003 | resource, social | resource, social | resource, social |
+
+`uncertainty` yalnız 2002'de, orada da yalnız iki kolda görünüyor.
+
+**2. `resource` bileşeni atıl.** Dokuz kolun tamamı `3.6404 … 3.7414`
+(yayılım 0.101, düzeyin **%2.7'si**). Seed 2001'de üç kolda **birebir aynı**.
+
+**3. Bu ikisi birleşince birincil, ikincil S1'i taşıyor.** §3 bayraklanmamış
+alanı 0 sayıyor. Seed 2002'de `lived` `social`, `null` `uncertainty`
+bayraklıyor ⇒ L2 mesafesi bir **kategorik uyuşmazlığı** büyüklük farkı gibi
+okuyor: fark vektörü `[0.052, 0.809, −0.786]` — iki büyük terim tamamen
+bayrak uyuşmazlığından. Üç seed'in toplam sinyalinin **%86'sı** bu tek
+seed'den ve bu tek mekanizmadan geliyor.
+
+⇒ **Birincil (büyüklük kanalı) ile S1 (kategorik kanal) bağımsız değil.**
+Ön-kayıt ikisini ayrı uç noktalar diye ilan ediyor.
+
+⚠ **Şeffaflık borcu:** bu hesap yapılırken `a_s − b_s`'in **işareti de
+görüldü** (üç seed'de de aynı yönde). Seed'ler yakılmış olduğu için
+doğrulayıcı analizi kirletmiyor, ama **uç nokta tanımı bundan sonra
+değiştirilirse** bu bilgi altında değiştirilmiş olur. Ön-kayıta
+*"tasarım 2001–2003 pilot seed'lerinde denetlendi, o seed'ler doğrulayıcı
+koşumdan hariç"* diye **yazılmalı**.
+
+## G.3 Ne alınıyor, ne alınmıyor
+
+**Alınan (S4 slotunu kapatan):** SESOI **ilan edilmiyor**. Yerine bütçe-kısıtlı
+N + duyarlılık analizi (G1, G2, G9). Rapor dili DR'nin ayrımını kullanıyor:
+`p > 0.05` ⇒ *"şu MDE'nin altında güçsüzüz, veri o bantta bilgisiz"*, asla
+*"etki yok"*. Bu L9/L10'un ΔPE için zaten yazdığı şeyin birincile taşınması.
+
+**Alınmayan:** `r ≥ 0.85` ve ondan türeyen "aslında `d ≈ 0.28`" savunması
+(G5) · literatür `d_z` bandı (G6) · Eleştiri 2 savunması (G11) · şablonun
+birebir metni (G4, G12).
+
+**Bekleyen:** N'in **değeri**. G13 uzlaşmamış, ve G.2 daha ağır basıyor —
+N, uç noktanın tanımı düzelmeden seçilirse kusurlu bir ölçüme hassasiyet
+satın alınmış olur. **S2 açık kalıyor; S4 kapanıyor.**
