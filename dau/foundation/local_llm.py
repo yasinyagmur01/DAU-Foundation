@@ -26,6 +26,7 @@ from dau.foundation.constraints import (
     DPO_LEARNING_RATE,
     DPO_MAX_GRAD_NORM,
     DPO_MAX_SEQUENCE_TOKENS,
+    LORA_B_ABS_SUM_UNREAD,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
 )
@@ -824,6 +825,42 @@ def _run_dpo_epochs(
     }
 
 
+def lora_b_abs_sum(model: Any) -> float:
+    """Σ|lora_B| over the active adapter — the fingerprint of a real gradient step.
+
+    lora_B is zero by construction at init (the identity graft), so a train
+    step that never fired leaves this at exactly 0.0. That is what makes it
+    the right probe for I1.1: the pre-e4c026b bug looked like a successful run
+    from every other angle — pairs were built, the loop ran, an adapter was
+    written to disk — and only the weights knew nothing had happened.
+
+    Reads the weights rather than trusting the train step's own report, which
+    is the whole point (CLAUDE.md 2.8: the report must follow the tool).
+    """
+
+    try:
+        import torch
+        from peft.tuners.lora import LoraLayer
+    except ImportError:
+        return LORA_B_ABS_SUM_UNREAD
+
+    total = 0.0
+    seen = 0
+    with torch.no_grad():
+        for module in model.modules():
+            if not isinstance(module, LoraLayer):
+                continue
+            lora_b = getattr(module, "lora_B", None)
+            if lora_b is None or ACTIVE_ADAPTER_NAME not in lora_b:
+                continue
+            total += float(lora_b[ACTIVE_ADAPTER_NAME].weight.abs().sum().item())
+            seen += 1
+    # No LoRA layers at all is not "sum zero" — it is "there was nothing to
+    # measure", and reporting 0.0 would let a model with no adapter pass as a
+    # model whose adapter did not move.
+    return total if seen else LORA_B_ABS_SUM_UNREAD
+
+
 def run_micro_train_preference_step(
     pairs: list[Any] | None = None,
     *,
@@ -873,6 +910,10 @@ def run_micro_train_preference_step(
             "pair_count": pair_count,
         }
 
+    # I1.1: read the weights either side of the step. Sampled here rather than
+    # inside _run_dpo_epochs so the reading brackets the whole train call,
+    # including a loop that exits without ever stepping.
+    lora_b_before = lora_b_abs_sum(active)
     try:
         stats = _run_dpo_epochs(active, tokenizer, list(pairs or []))
     except Exception as exc:  # noqa: BLE001 — generation end must not crash
@@ -884,6 +925,7 @@ def run_micro_train_preference_step(
             "agent_id": agent_id,
             "pair_count": pair_count,
         }
+    lora_b_after = lora_b_abs_sum(active)
 
     save_agent_adapter(active, agent_id)
     return {
@@ -893,6 +935,8 @@ def run_micro_train_preference_step(
         "agent_id": agent_id,
         "pair_count": pair_count,
         "adapter_dir": str(get_adapter_path(agent_id)),
+        "lora_b_abs_sum_before": lora_b_before,
+        "lora_b_abs_sum_after": lora_b_after,
         **stats,
     }
 

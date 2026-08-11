@@ -323,9 +323,11 @@ def test_train_adapter_skips_when_lora_disabled(
 ) -> None:
     monkeypatch.setenv("DAU_LORA_ENABLED", "0")
     lived_examples = [{"event_counter": i, "prediction_error": 0.1 * i} for i in range(3)]
-    n_trained, n_rejected = _train_adapter("test-agent", lived_examples)
-    assert n_trained == 0
-    assert n_rejected == 0
+    outcome = _train_adapter("test-agent", lived_examples)
+    assert outcome.n_pairs_trained == 0
+    assert outcome.n_pairs_rejected == 0
+    # Skipped, not "trained and moved nothing" — I1.1 has to tell them apart.
+    assert outcome.lora_b_abs_sum_delta != outcome.lora_b_abs_sum_delta
 
 
 def test_lock_seeds_honours_env_temperature_set_after_import(

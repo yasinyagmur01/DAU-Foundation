@@ -78,6 +78,10 @@ PER_AGENT_LORA_RANK: int = 8
 PER_AGENT_LORA_ALPHA: int = 16
 ADAPTER_BASE_DIR: str = "dau_runs/adapters"
 ADAPTER_SWITCH_MAX_MS: int = 1
+# I1.1 sentinel: Σ|lora_B| was never read (peft/torch absent, or no LoRA layer
+# on the model). Deliberately not 0.0 — that is a real reading, and it means
+# the train step moved no weights, which is the failure I1.1 exists to catch.
+LORA_B_ABS_SUM_UNREAD: float = float("nan")
 
 # ADIM 3 — DPO preference micro-train at generation end. The reference policy
 # is the same model with adapters disabled, so no second set of base weights

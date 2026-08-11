@@ -511,7 +511,11 @@ Temizlik: `time.sleep(10)`, bare `0.5` (shuffle), default `k: int = 5`.
 # 6. Kapatılmış/Geçersiz Sayılan Geçmiş Bulgular
 
 - **Sahte eğitim bug'u** (`e4c026b` öncesi): `lora_B=0`, gradyan adımı hiç
-  atılmıyordu. `lora_B` abs-sum kontrolü regresyon testinde.
+  atılmıyordu. Artık **I0.1 değil, I1.1 kapısı** koruyor: her eğitim kolunun
+  `Σ|lora_B|` değeri adım öncesi/sonrası okunuyor, hareket etmediyse ABORT
+  (**D-039**). ⚠ Bu satır 2026-08-11'e kadar *"abs-sum kontrolü regresyon
+  testinde"* diyordu ve **yanlıştı** — kod tabanında `lora_B`'ye değen tek bir
+  test yoktu (D-038, Bulgu 2).
 - **Adapter izolasyon sızıntısı** (`f25b0ef` öncesi): null kol lived kolun
   eğitimini miras alıyordu. `test_no_dead_adapter_root_reference` koruyor.
 - **Bu iki düzeltme öncesi üretilen tüm C′ sonuçları geçersizdir.**

@@ -29,7 +29,7 @@ import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 from scipy import stats
@@ -42,6 +42,7 @@ from dau.diagnostics.tool_identity import (
 )
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
+    LORA_B_ABS_SUM_UNREAD,
     NLI_CONTRADICTION_THRESHOLD,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
@@ -248,6 +249,19 @@ _CONSTRAINT_SNAPSHOT: dict[str, float | int | str] = {
 }
 
 
+class TrainOutcome(NamedTuple):
+    """What one arm's train step did — counts, and whether the weights moved.
+
+    The third field exists because the first two cannot tell a real train from
+    a fake one: pair counts come from the filter stats, which are populated
+    before DPO is ever called.
+    """
+
+    n_pairs_trained: int
+    n_pairs_rejected: int
+    lora_b_abs_sum_delta: float  # |Σ|lora_B|after − before|; NaN when unread
+
+
 @dataclass
 class ArmResult:
     """One LIVED / NULL / SHUFFLE arm under a locked seed."""
@@ -293,6 +307,10 @@ class ArmResult:
     # behaviour at all. Hashes, not texts: the comparison is equality, and
     # 50 completions per arm would bloat the results file.
     phase2_decision_hashes: list[str] = field(default_factory=list)
+    # I1.1. |Σ|lora_B| after − before| across this arm's train step. Zero on a
+    # train arm means DPO ran and moved nothing; NaN means it was never read.
+    # Recorded, not asserted — the gate judges it from the results file.
+    lora_b_abs_sum_delta: float = LORA_B_ABS_SUM_UNREAD
 
 
 @dataclass
@@ -870,17 +888,35 @@ def _pair_filter_report() -> dict[str, Any]:
     }
 
 
+def _lora_b_delta(result: dict[str, Any]) -> float:
+    """How far Σ|lora_B| moved across the train step, from the step's own reads.
+
+    Absent keys mean an older or mocked train path that never sampled the
+    weights, which is unread — not zero. Conflating the two would let a train
+    path that cannot measure itself pass I1.1 silently.
+    """
+
+    before = result.get("lora_b_abs_sum_before")
+    after = result.get("lora_b_abs_sum_after")
+    if before is None or after is None:
+        return LORA_B_ABS_SUM_UNREAD
+    return abs(float(after) - float(before))
+
+
 def _train_adapter(
     agent_id: str,
     lived_examples: list[Any],
     shuffled: bool = False,
-) -> tuple[int, int]:
+) -> TrainOutcome:
     """Build preference pairs (PE-rank + NLI gate), optional shuffle, train.
 
     Pairs come from ``build_pe_ranked_pairs``: PE-rank first, then
-    ``is_genuine_polarity_pair``. Returns ``(n_pairs_trained, n_pairs_rejected)``
-    from POLARITY_FILTER_STATS deltas (passed is per-event; rejected per-candidate).
-    Guard: ``DAU_LORA_ENABLED=0`` → skip and return ``(0, 0)``.
+    ``is_genuine_polarity_pair``. Counts come from POLARITY_FILTER_STATS deltas
+    (passed is per-event; rejected per-candidate) — which is exactly why the
+    outcome also carries the lora_B delta: the counts are populated by the
+    filter, before DPO is called, so they stay identical whether the gradient
+    step fired or not (I1.1).
+    Guard: ``DAU_LORA_ENABLED=0`` → skip, weights unread.
     """
 
     if os.environ.get(LORA_ENABLED_ENV, "0").strip() not in {
@@ -890,7 +926,7 @@ def _train_adapter(
         "yes",
         "YES",
     }:
-        return EMPTY_COUNT, EMPTY_COUNT
+        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     try:
         from dau.foundation.lora_update import (
@@ -900,7 +936,7 @@ def _train_adapter(
             shuffle_preference_pairs,
         )
     except ImportError:
-        return EMPTY_COUNT, EMPTY_COUNT
+        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     os.environ.setdefault(NLI_FILTER_ENABLED_ENV, "1")
 
@@ -913,7 +949,7 @@ def _train_adapter(
     try:
         pairs = build_pe_ranked_pairs(lived_examples)
     except Exception:  # noqa: BLE001 — graceful fallback if PE/NLI path fails
-        return EMPTY_COUNT, EMPTY_COUNT
+        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     n_pairs_trained = int(POLARITY_FILTER_STATS.get("passed", EMPTY_COUNT)) - before_passed
     n_pairs_rejected = (
@@ -946,7 +982,7 @@ def _train_adapter(
             f"arm continues untrained",
             flush=True,
         )
-        return EMPTY_COUNT, EMPTY_COUNT
+        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     trained = bool(result.get("trained", False))
     if not trained:
@@ -955,7 +991,7 @@ def _train_adapter(
             f"({result.get('reason', 'no reason given')}) — arm is untrained",
             flush=True,
         )
-        return EMPTY_COUNT, EMPTY_COUNT
+        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     print(
         f"[PROTOCOL_C_PRIME] {agent_id}: trained on {len(pairs)} pairs "
@@ -963,7 +999,11 @@ def _train_adapter(
         f"acc={result.get('dpo_accuracy')}",
         flush=True,
     )
-    return max(EMPTY_COUNT, n_pairs_trained), max(EMPTY_COUNT, n_pairs_rejected)
+    return TrainOutcome(
+        max(EMPTY_COUNT, n_pairs_trained),
+        max(EMPTY_COUNT, n_pairs_rejected),
+        _lora_b_delta(result),
+    )
 
 
 def run_arm(
@@ -993,6 +1033,8 @@ def run_arm(
 
     n_pairs_trained = EMPTY_COUNT
     n_pairs_rejected = EMPTY_COUNT
+    # null never trains, so its weights were never read — not "moved by zero".
+    lora_b_abs_sum_delta = LORA_B_ABS_SUM_UNREAD
     if arm in {ARM_LIVED, ARM_SHUFFLE}:
         gate_reason = _diversity_gate_reason(n_unique, pe_gap_max)
         if gate_reason:
@@ -1024,7 +1066,7 @@ def run_arm(
                 n_saturated=n_sat,
                 pi_values=list(pi_vals),
             )
-        n_pairs_trained, n_pairs_rejected = _train_adapter(
+        n_pairs_trained, n_pairs_rejected, lora_b_abs_sum_delta = _train_adapter(
             agent_id,
             lived_examples,
             shuffled=(arm == ARM_SHUFFLE),
@@ -1064,6 +1106,7 @@ def run_arm(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
+        lora_b_abs_sum_delta=lora_b_abs_sum_delta,
     )
 
 

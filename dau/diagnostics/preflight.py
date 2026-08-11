@@ -591,6 +591,67 @@ def check_arms_differ(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
     return True, f"{len(by_seed)} seeds, all arms distinct"
 
 
+def check_training_moved_weights(
+    gen1_sections: list[dict[str, Any]],
+) -> tuple[bool, str]:
+    """I1.1 — a train arm's lora_B actually moved; a null arm's was never read.
+
+    Every other signal a trained arm emits is produced upstream of the gradient
+    step: the pair counts come from the polarity filter, the adapter file is
+    written unconditionally after the loop, and dpo_loss is whatever the last
+    forward pass returned. The pre-e4c026b bug rode through all of them —
+    lora_B stayed at its zero init and nothing in the run said so. This reads
+    the weights themselves, which is the only place that bug was visible.
+
+    A diversity-gated arm skipped training on purpose, so it is exempt: it is
+    identified by gated=True, not by its counts, because a gated arm and a
+    silently-failed one both report zero pairs.
+    """
+
+    from dau.diagnostics.tool_identity import ARM_NULL_NAME
+
+    if not gen1_sections:
+        return False, "no arms to check"
+
+    unmoved: list[str] = []
+    unread: list[str] = []
+    contaminated: list[str] = []
+    checked = 0
+    for section in gen1_sections:
+        arm = str(section.get("arm"))
+        label = f"seed={section.get('seed')}/{arm}"
+        delta = section.get("lora_b_abs_sum_delta")
+        delta = float("nan") if delta is None else float(delta)
+
+        if arm == ARM_NULL_NAME:
+            # Not "must be zero" — null never calls train, so a real reading
+            # here means something trained on the control's weights.
+            if delta == delta:  # NaN is the only value that fails this
+                contaminated.append(f"{label} delta={delta:.6g}")
+            continue
+        if bool(section.get("gated", False)):
+            continue
+
+        checked += 1
+        if delta != delta:
+            unread.append(label)
+        elif delta <= 0.0:
+            unmoved.append(f"{label} delta={delta:.6g}")
+
+    if contaminated:
+        return False, f"null arm reports a train-step weight read: {contaminated}"
+    if unread:
+        return False, (
+            f"{len(unread)} train arm(s) never had lora_B read: {unread} — "
+            f"the run cannot show training happened"
+        )
+    if unmoved:
+        return False, f"train arm(s) whose lora_B did not move: {unmoved}"
+    if not checked:
+        return False, "no ungated train arm to check"
+    return True, f"{checked} train arms moved lora_B; null arms unread"
+
+
 def check_null_untrained(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
     """I2.2 — the null arm has no adapter of its own.
 
@@ -620,12 +681,19 @@ def run_phase2(
     *,
     gen1_sections: list[dict[str, Any]],
 ) -> Preflight:
-    """Record I2.1 and I2.2.
+    """Record I1.1, I2.1 and I2.2.
 
     Mock exception (D-012): under a canned LLM the arms are identical by
     design, so I2.1 drops to FLAG rather than aborting a smoke run.
     """
 
+    preflight.check(
+        "I1.1",
+        lambda: check_training_moved_weights(gen1_sections),
+        # A mocked LLM has no LoRA layers to read, so the delta is unread by
+        # construction and aborting would only punish smoke runs (D-012).
+        mode=MODE_FLAG if preflight.mock else MODE_ABORT,
+    )
     preflight.check(
         "I2.1",
         lambda: check_arms_differ(gen1_sections),

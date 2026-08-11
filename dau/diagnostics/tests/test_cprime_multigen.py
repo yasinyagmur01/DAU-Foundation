@@ -43,6 +43,7 @@ from dau.diagnostics.preflight import (
     check_gated_fraction,
     check_gen2_rng_uniform,
     check_null_untrained,
+    check_training_moved_weights,
     check_import_time_env,
     check_memory_written,
     check_ppr_active,
@@ -759,6 +760,59 @@ def test_i2_2_detects_trained_or_contaminated_null() -> None:
     assert "adapter on disk" in detail
 
     assert check_null_untrained([{"arm": "lived"}])[0] is False
+
+
+def test_i1_1_catches_the_bug_every_other_signal_missed() -> None:
+    """The fake-train shape: pairs built, adapter saved, weights untouched.
+
+    That arm is indistinguishable from a real one on n_pairs_trained and
+    adapter_present, which is exactly why I1.1 reads lora_B instead.
+    """
+
+    def arm(name: str, delta: float, **extra: object) -> dict[str, object]:
+        return {
+            "seed": 2001,
+            "arm": name,
+            "n_pairs_trained": 47 if name != "null" else 0,
+            "adapter_present": name != "null",
+            "lora_b_abs_sum_delta": delta,
+            **extra,
+        }
+
+    unread = float("nan")
+    healthy = [arm("lived", 0.42), arm("null", unread), arm("shuffle", 0.37)]
+    assert check_training_moved_weights(healthy)[0] is True
+
+    # The bug: DPO ran, nothing moved.
+    passed, detail = check_training_moved_weights(
+        [arm("lived", 0.0), arm("null", unread), arm("shuffle", 0.37)]
+    )
+    assert passed is False
+    assert "did not move" in detail
+
+    # A train arm the tool could not measure is not a passing arm.
+    passed, detail = check_training_moved_weights(
+        [arm("lived", unread), arm("null", unread), arm("shuffle", 0.37)]
+    )
+    assert passed is False
+    assert "never had lora_B read" in detail
+
+    # A null that reports a train-step read means something trained on it.
+    passed, detail = check_training_moved_weights(
+        [arm("lived", 0.42), arm("null", 0.0), arm("shuffle", 0.37)]
+    )
+    assert passed is False
+    assert "null arm" in detail
+
+    # Deliberately skipped training is exempt — but only when it says so.
+    gated = [
+        arm("lived", unread, gated=True),
+        arm("null", unread),
+        arm("shuffle", 0.37),
+    ]
+    assert check_training_moved_weights(gated)[0] is True
+
+    assert check_training_moved_weights([])[0] is False
 
 
 def test_arm_null_name_matches_runner() -> None:

@@ -83,6 +83,7 @@ from dau.diagnostics.tool_identity import (
     build_tool_identity,
     resolve_lora_choice,
 )
+from dau.foundation.constraints import LORA_B_ABS_SUM_UNREAD
 from dau.foundation.drift import DriftState
 from dau.foundation.emotional_weight import (
     MARKER_REWARD,
@@ -635,6 +636,9 @@ def run_gen1_arm_lineage(
 
     n_pairs_trained = EMPTY_COUNT
     n_pairs_rejected = EMPTY_COUNT
+    # null never trains, and a diversity-gated arm skips train too — in both
+    # cases the weights were never read, which is not the same as unmoved.
+    lora_b_abs_sum_delta = LORA_B_ABS_SUM_UNREAD
     gated = False
     gate_reason = ""
 
@@ -648,7 +652,11 @@ def run_gen1_arm_lineage(
                 flush=True,
             )
         else:
-            n_pairs_trained, n_pairs_rejected = _train_adapter(
+            (
+                n_pairs_trained,
+                n_pairs_rejected,
+                lora_b_abs_sum_delta,
+            ) = _train_adapter(
                 agent_id,
                 lived_examples,
                 shuffled=(arm == ARM_SHUFFLE),
@@ -700,6 +708,7 @@ def run_gen1_arm_lineage(
         pe_before_list=list(pe_before_list),
         pe_after_list=list(pe_after_list),
         adapter_present=_adapter_present(agent_id),
+        lora_b_abs_sum_delta=lora_b_abs_sum_delta,
     )
     return arm_result, state_2, store, tmp
 
