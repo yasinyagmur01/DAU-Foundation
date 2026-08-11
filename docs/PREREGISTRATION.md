@@ -1,6 +1,6 @@
 # Çok-Nesilli C′ — Ön-Kayıt (Pre-Registration)
 
-**Durum: 🔒 KİLİTLİ · 2026-08-11 · commit `PLACEHOLDER_COMMIT`**
+**Durum: 🔒 KİLİTLİ · 2026-08-11 · commit `befd72b4ee57`**
 
 **Yedi slotun yedisi kapalı.** Bu andan itibaren bu belgedeki hiçbir madde
 değişmez. Değişiklik gerekirse **yeni bir ön-kayıt** açılır ve bu belge
