@@ -3207,3 +3207,97 @@ aletleme eklendi. Yapısal argüman (**`best_by_event` global maks-PE
 completion'ı çoğu çiftin reddedilen tarafı yapar**) ayakta duruyor —
 değişen, **şiddetinin ölçülmemiş olduğunun** kayda geçmesi. Sayaçlar canlı
 koşumda henüz çalışmadı; ilk gerçek okuma **B2**.
+
+---
+
+## D-049 · 2026-08-11 · DR #3 işlendi: tercih mi bastırma mı, artık her koşum söylüyor
+
+**Durum:** kabul edildi · **GPU'suz** · **Commit:** `985df29`
+**Mutabakat:** `docs/research/RECONCILIATION.md` bölüm **I**
+
+### Karar: `Δlogπ(chosen)` ve `Δlogπ(rejected)` ayrı kaydediliyor
+
+Yükselen bir DPO marjı **iki farklı sonuçla** uyumludur: ajan düşük-PE
+cevabı tercih etmeye başlamıştır, ya da yüksek-PE olanı **asla söylememeyi**
+öğrenmiştir. Aksiyomun kanal 2 için iddia ettiği yalnız birincisi, ve
+**marj tek başına ikisini ayıramaz** — ikisi de onu yükseltir.
+
+D-029 bu ayrımı zaten yapmış ve `lr` kararını ona dayandırmıştı:
+
+| lr | `Δlogp_chosen` | `Δlogp_rejected` | okuma |
+|---|---|---|---|
+| 5e-5 | **−0.123** | **−4.371** | seçilen bile düşüyor ⇒ **saf bastırma** |
+| 1e-6 | **+0.085** | −0.143 | **yapıcı tercih** |
+
+⚠ Ama bu **tek seferlik bir probe**ydu (9 çift, 3 optimizer adımı, tek
+seed). Gerçek koşumlar bu iki sayıyı **kaydetmiyordu** ⇒ işletim
+konfigürasyonu bastırmaya doğru kayarsa hiçbir şey söylemezdi. Artık her
+eğitim kolu `dpo_delta_logp_chosen`, `dpo_delta_logp_rejected`,
+`dpo_chosen_went_down` raporluyor. İki terim marjın içinde **zaten vardı**;
+ayrı tutmak bedava.
+
+**Bu brief tavsiye ettiği için yapılmadı** — kendi kararımızın dayanağı
+görünmez olduğu için yapıldı. Brief'in katkısı, bakmamız gereken yeri
+bağımsız olarak işaret etmesi.
+
+### Brief'in isabetli çıktığı iki yer
+
+**1. A2'nin tasarımı kusurluymuş (I12).** *"Yaşantı sonrasında anı getirimini
+tamamen kapat, yalnız ağırlıklara yansıyanı ölç"* diye tarif etmiştik. Brief
+bunun **context starvation / OOD şoku** yarattığını söylüyor: varisin
+performans düşüşü ağırlıkların yetersizliğinden değil, **alışılmadık istem
+yapısından** gelebilir — adapter eğitim boyunca bağlamda hep anı gördü.
+⇒ Ölçtüğümüz şey parametrik kapasite değil, dağılım dışı şok olurdu.
+
+**Alternatifi daha iyi (I13):** *plasebo / karşı-olgusal anı enjeksiyonu* —
+getirim kapatılmaz, gelen anıların **içeriği** nötr metinle değiştirilir.
+İstem yapısı ve uzunluğu korunur ⇒ OOD şoku yok, anlamsal etki izole.
+**A2 sonraki ön-kayıta bu haliyle taşınıyor.**
+
+**2. Kavramsal düzeltme (I3).** *"Ontogenetik uyarlanma"* çerçevemiz
+**kısmen** doğruymuş: ontogenez bireyin yaşamı içindedir, ama kazanımların
+varise geçmesi ondan **sonraki** adımdır. Doğru terim: **"ontogenetik
+kazanımların transjenerasyonel Lamarckçı aktarımı."** B4 raporunda kullanılır.
+
+### ⚠ İki yerde brief'e uyulmadı
+
+**I18 — "ikinci yarı yaşam AUC farkı"nı sonraki birincil yapmak.** *"İkinci
+yarı"* tam olarak D-045'te **gözlediğimiz** şey (bağımsız altı karşıtlığın
+beşi). Onu bir sonraki ön-kaydın birincili yapmak, post-hoc gözlemi ön-kayıta
+taşımaktır — D-044/D-045'in iki kez reddettiği hareket.
+⇒ **Genel form (zaman × kol etkileşimi, `β₃`) ilkeseldir ve alınabilir**
+— *"etki zamanla değişiyorsa zamanı modelle"* argümanı veriye bakmadan
+kurulur. **Özel form ("ikinci yarı") alınmaz.**
+
+**I19 — brief kendi mutabakatını yazmış.** Raporun sonunda *"Mutabakat Metni
+(RECONCILIATION.md)"* diye bir bölüm var ve kararları **alınmış gibi**
+yazıyor (*"birincil uç nokta FDA olarak tescil edilmiştir"*). Mutabakat
+D-006 gereği **bizim** işimiz; bir brief kendi kabulünü ilan edemez.
+**Kullanılmadı.**
+
+### Kaynak kimlikleri — üç brief'in en iyisi
+
+**Doğrulandı:** Lenski LTEE · Tierra (Ray, 1991) · Avida (Ofria ve ark.,
+2004) · Grefenstette (1991) · Ackley & Littman (1992) · Friston FEP ve
+Karanlık Oda (Friston, Thornton & Clark, 2012) · Pathak ve ark. (2017) ·
+Houthooft ve ark. (2016) · Ramsay & Silverman (2005) · Lewis ve ark. (2020) ·
+ROME (Meng ve ark., 2022) · Rafailov ve ark. (2023).
+
+**Düştü:** **Watson (2002) SEAM** — "tek soy hattı üzerinde birikimli
+değişim" diye tarif edilmiş; SEAM simbiyogenetik **modül birleşimi** üzerine
+ve **popülasyon** varsayar. Kullanılmadı.
+**Eksik:** "Probability Collapse / Logit Suppression" olgusunun **adı**
+verilmiş ama **atıf yok** — ad alındı, kaynak alınmadı.
+
+**Reddedilen alternatifler:**
+- *EFE epistemik değeri / merak terimi / entropi alt sınırı eklemek* (I10) —
+  üçü de **amaç fonksiyonuna** dokunuyor, aksiyomun "trait verilmez"
+  yasağına yakın, ve kilit öncesi §2.10'un kuyusu. Sonraki ön-kayıt.
+- *Çifte ayrışma protokolünü şimdi kurmak* (I15) — çıta doğru, ama mevcut
+  tasarım tek yön ölçüyor; yeni bir kol demek.
+- *Activation patching / SAE* (I14) — mevcut aletin çok ötesinde.
+
+**Sınırlar:** Kod değişikliği yalnız **aletleme**; hiçbir eşik, amaç
+fonksiyonu veya uç nokta değişmedi. Yeni alanlar canlı koşumda henüz
+çalışmadı — ilk gerçek okuma **B2**. I5'in "Lamarckçı aktarım çeşitliliği
+yok eder" uyarısı **iki nesilde gözlenemez**; not, kanıt değil.

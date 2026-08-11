@@ -23,8 +23,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `342 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-048.** Sıradaki kayıt **D-049** olarak açılır.
+- **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-049.** Sıradaki kayıt **D-050** olarak açılır.
 - **GAP-2 ve GAP-6 kapandı** (`d65100d`, `b66f7fc`); açık GAP'ler:
   3, 4, 5, 9, 10, 17, 18, 19 — **her birinin tetiği §1'deki GAP TETİK
   TABLOSU'nda.**
@@ -36,8 +36,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   N — D-047** · S5 1 epoch · S6 replay yok · S7 50/20/3); **yalnız S2 (N)
   açık** ve kilidi o tutuyor. **On iki ilan edilmiş sınır** (L11/L12 D-047).
 - **Master reference: v2.4.2** yazıldı (§8).
-- **DR #1 ve #2 cevapları geldi ve işlendi** (D-047 §G, D-048 §H).
-  **#3 hâlâ gönderilmedi** — kilidi bloke etmiyor.
+- **Üç DR cevabı da geldi ve işlendi** (D-047 §G · D-048 §H · D-049 §I).
+  DR kanalı bu ön-kayıt için **kapandı**.
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
 
@@ -243,6 +243,9 @@ onaylandı (2026-08-11)**; sıra değiştirmek yeni onay ister.
 üretir hale getirme). İkisi de değerli, ikisi de bu ön-kaydı **günlerce**
 bekletir. §2.10'un uyardığı "önce şunu da düzeltelim" kuyusu tam olarak
 bunlar. → ikinci ön-kayıt / popülasyon çalışması.
+⚠ **A2'nin tasarımı zaten kusurlu çıktı (D-049/I12):** "getirimi tamamen
+kapat" OOD şoku ölçer, parametrik kapasiteyi değil. Yerine **plasebo anı
+enjeksiyonu** geçecek — sonraki ön-kayıt.
 
 ### Faz B — kilit ve sonrası (S4 gelmeden başlayamaz)
 

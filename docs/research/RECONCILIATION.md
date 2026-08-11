@@ -22,6 +22,7 @@ Süreç: D-006. Kaynaklar: `docs/research/*.md`. Tamamlanma: 2026-08-09.
 | `2026-08-10_low-data-dpo-pair-selection.md` | ✅ tam tur — **bölüm F** |
 | `2026-08-11_S4-minimum-effect-of-interest.md` | ✅ tam tur — **bölüm G** |
 | `2026-08-11_GAP18-shared-negatives-in-preference-learning.md` | ✅ tam tur — **bölüm H** |
+| `2026-08-11_lamarckian-scope-and-channel-separation.md` | ✅ tam tur — **bölüm I** |
 
 ---
 
@@ -367,3 +368,57 @@ ve hepsi eğitim setini değiştirir ⇒ kilit öncesi yapılırsa §2.10'un kuy
 **GAP-18 kapanmadı.** Durumu değişti: *"biliyoruz ama ne yapacağımızı
 bilmiyoruz"*tan *"şiddetini ölçmedik, B2 ölçecek"*e. Karar B2'nin
 `uniq_rejected` sayısından sonra.
+
+
+---
+
+# I. DR brief #3 — Lamarckçı kapsam + kanal ayrımı (2026-08-11)
+
+**Üç brief'in kaynak disiplini en iyisi.** Kimlikler büyük ölçüde doğru,
+kavramsal düzeltmesi isabetli, ve önerdiği teşhislerden birini **zaten
+yapmışız**. Ama sonundaki "Mutabakat Metni" bölümü alınmıyor — orası bizim
+kalemimiz, ve DR kararları **alınmış gibi** yazmış.
+
+## I.1 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| I1 | Düzenek **Darwinci** şekillenme iddiasını destekleyemez: popülasyon yok, diferansiyel üreme yok, seçilim atıl | Zaten böyle ilan ediyoruz (§8-L1 `F_agent` dejenere; "her ata tam olarak bir varis") | **uyumlu — doğruluyor** |
+| I2 | Meşru daraltılmış iddia: *tek soy hattında, öz-ölçülen PE üzerinden öz-hizalama ile, sembolik bellek + parametrik ağırlık üzerinden **Lamarckçı epigenetik aktarım*** | Aksiyomun "iki kanal" formülasyonuyla örtüşüyor; iddia cümlemizi **daraltmak için kullanılabilir** | **uyumlu — benimsenir** |
+| I3 | ⭐ **Kavramsal düzeltme:** *"ontogenetik adaptasyon"* değil, *"ontogenetik kazanımların **transjenerasyonel** Lamarckçı aktarımı"*. Ontogenez bireyin yaşamı içindedir; aktarım ondan sonraki adımdır | Brief'te *"ontogenetik uyarlanma çerçevesi doğru mu"* diye sormuştuk. Cevap: **kısmen**, ve düzeltme yerinde | **uyumlu — benimsenir** |
+| I4 | ALife asgari mimarisi: Lenski LTEE (~10⁸ hücre, >75.000 nesil) · Tierra (Ray, 1991) · Avida (Ofria ve ark., 2004) | Kimlikler doğru. Karşılaştırma bizim ölçeğimizi (N=1, 2 nesil) dürüstçe konumlandırıyor | **uyumlu** |
+| I5 | Lamarckçı operatör literatürü: Grefenstette (1991) · Ackley & Littman (1992). Lamarckçı aktarım yakınsamayı hızlandırır ama **çeşitliliği yok edip erken yakınsama** yaratır | Kimlikler gerçek. ⚠ Bizde çeşitlilik kaybı **iki nesilde gözlenemez**; not olarak değerli, kanıt olarak değil | **uyumlu — sınırlı** |
+| I6 | Watson (2002) **SEAM**: "tek soy hattı üzerinde birikimli değişim" | ⚠ SEAM (Watson & Pollack) **simbiyogenetik modül birleşimi** üzerine ve **popülasyon** varsayar; "tek soy hattı" tarifi yanlış | **brief yanılmış** — kullanılmadı |
+| I7 | FEP (Friston) sürprizi vekil hedef yapmayı destekler; başarısızlık kipleri: **Karanlık Oda**, öngörülebilir yıkım, kendi kalıbını tekrarlama | Kaynak gerçek (Karanlık Oda: Friston, Thornton & Clark, 2012). Bizde **GAP-17'nin tersi** ilginç: çeşitlilik düşmedi, 3-4 kat **arttı** — yani gözlenen kip bu değil | **uyumlu — bizde gözlenmedi** |
+| I8 | ⭐⭐ **Tercihi bastırmadan ayıran ölçüm:** `Δlogπ(y_w)` ile `Δlogπ(y_l)` **ayrı ayrı** izlenmeli. Gerçek tercihte `Δlogπ(y_w) > 0` baskın; bastırmada `Δlogπ(y_w) ≈ 0` iken `Δlogπ(y_l) ≪ 0` | ✅ **Bunu zaten yapmışız.** D-029'un lr probe'u tam bu ayrımı ölçtü: **5e-5**'te chosen **−0.123** / rejected **−4.371** (seçilen bile düşüyor ⇒ saf bastırma); **1e-6**'da chosen **+0.085** / rejected −0.143 (yapıcı tercih). Karar buna dayanmıştı. ⚠ Ama **tek seferlik probe**ydu; gerçek koşumlar kaydetmiyordu → **D-049 ile kalıcı** (`985df29`) | **uyumlu — ve aletlendi** |
+| I9 | Olgunun literatürdeki adı: *Probability Collapse / Logit Suppression / DPO over-optimization* | Ad doğru ve yararlı; ⚠ **spesifik atıf verilmemiş** (yazar/yıl yok) | **kısmen kullanılabilir** — ad alındı, atıf yok |
+| I10 | Karşı-önlemler: EFE epistemik değer · içsel merak (Pathak ve ark., 2017; Houthooft ve ark., 2016) · entropi alt sınırı | Kimlikler gerçek. ⚠ Üçü de **ödül/amaç fonksiyonuna** dokunur ⇒ aksiyomun "trait verilmez" yasağına yakın; sonraki ön-kayıtta **tasarım kararı** olarak ele alınmalı | **ertelendi** |
+| I11 | Getirimi kapatmanın adı: **Component Ablation / zero-shot parametrik probing**; RAG'de Lewis ve ark. (2020) benzer ablasyon kurar | Kimlik gerçek. Bizim **A2**'nin (OOD probing) literatür karşılığı | **uyumlu** |
+| I12 | ⭐ **Getirimi kapatmanın riski: context starvation / OOD şoku.** Düşüş ağırlıkların yetersizliğinden değil, alışılmadık istem yapısından gelebilir | ⚠ **A2'yi olduğu gibi yapsaydık bu tuzağa düşüyorduk.** A2 "getirimi tamamen kapat" diye tarif edilmişti | **brief haklı — A2 yeniden tasarlanacak** |
+| I13 | ⭐ Alternatif: **Plasebo / karşı-olgusal anı enjeksiyonu** — getirim kapatılmaz, gelen anıların **içeriği** nötr metinle değiştirilir. İstem yapısı ve uzunluğu korunur ⇒ OOD şoku yok | Bizim tasarımımızdan **kesinlikle daha iyi**. Sonraki ön-kayıt için A2'nin yerine geçer | **benimsenir → sonraki ön-kayıt** |
+| I14 | Alternatif: **Nedensel aracı analizi / activation patching** (ROME deseni) · **SAE özellik kilitleme** | Kimlikler gerçek (ROME: Meng ve ark., 2022). ⚠ İkisi de bizim mevcut aletimizin çok ötesinde | **not edildi** |
+| I15 | Kanal ayrımı iddiası için **çifte ayrışma** (double dissociation) kanıtı aranır: `ΔE_ağırlık + ΔE_bellek ≈ ΔE_toplam` | Somut ve savunulabilir bir çıta. ⚠ Bizde **hiç kurulmadı** — mevcut tasarım yalnız tek yönü ölçüyor | **açık — sonraki ön-kayıtın şartı** |
+| I16 | Tek sayılı uç nokta zamanla yön değiştiren etkide **maskeleme artefaktı** üretir | D-044/D-045 tam olarak bunu ölçtü (%73–86 iptal). Brief **bizim bulgumuzu** doğruluyor | **uyumlu** |
+| I17 | Yörünge araçları: **FDA** (Ramsay & Silverman, 2005) · **LMM zaman × kol etkileşimi** · DTW · değişim noktası · faz AUC | Kimlikler gerçek. `β₃` (zaman × kol) **ilkesel olarak savunulabilir**: etki zamanla değişiyorsa zamanı modelle | **uyumlu — sonraki ön-kayıt adayı** |
+| I18 | **Tavsiye: sonraki birincil = "ikinci yarı yaşam AUC farkı"** | ⚠ **Tuzak.** *"İkinci yarı"* tam olarak D-045'te **gözlediğimiz** şey (6 karşıtlığın 5'i). Onu bir sonraki birincil yapmak, post-hoc gözlemi ön-kayıta taşımaktır. **Genel form (zaman × kol etkileşimi) ilkeseldir; "ikinci yarı" özel formu değildir** | **kısmen reddedildi** — genel form alınır, özel form alınmaz |
+| I19 | Raporun kapanışı: *"Mutabakat Metni (RECONCILIATION.md) … birincil uç nokta FDA olarak **tescil edilmiştir**"* | ❌ DR kararları **alınmış gibi** yazmış ve bizim mutabakat belgemizin metnini üretmiş. Mutabakat **bizim** işimiz (D-006); bir brief kendi kabulünü ilan edemez | **alınmadı** |
+
+## I.2 Ne değişti
+
+**Kod:** yalnız **I8** → D-049 (`985df29`). `dpo_delta_logp_chosen`,
+`dpo_delta_logp_rejected`, `dpo_chosen_went_down` artık her eğitim kolunda
+kaydediliyor. Bu brief'in tavsiyesi olduğu için değil — **D-029 kararımız
+zaten buna dayanıyordu ve gerçek koşumlarda görünmüyordu.**
+
+**Değişmeyen:** hiçbir eşik, hiçbir amaç fonksiyonu, hiçbir uç nokta.
+I10 (entropi/merak terimi) ve I13/I15 (kanal ayrımı protokolü) **sonraki
+ön-kayıta**; ikisi de bu ön-kaydı günlerce bekletir (§2.10).
+
+## I.3 Sonraki ön-kayıta taşınanlar
+
+| Ne | Kaynak | Neden şimdi değil |
+|---|---|---|
+| **A2 yeniden tasarımı: getirimi kapatma → plasebo anı enjeksiyonu** | I12, I13 | A2 zaten bilerek ertelenmişti; brief tasarımının **kusurlu** olduğunu gösterdi ⇒ ertelemek artık daha da doğru |
+| **Çifte ayrışma protokolü** | I15 | Kanal ayrımı iddiasının çıtası; mevcut tasarım tek yön ölçüyor |
+| **Zaman × kol etkileşimi (LMM/FDA)** — genel form | I17 | ⚠ "ikinci yarı AUC" özel formu **alınmaz** (I18) |
+| **İddia cümlesinin daraltılması + "transjenerasyonel" terimi** | I2, I3 | B4 raporunda kullanılır, kod değişikliği değil |
