@@ -509,8 +509,15 @@ def switch_adapter(model: Any, agent_id: str) -> None:
     if elapsed_ms > float(ADAPTER_SWITCH_MAX_MS) * 50.0:
         # Soft budget note only — first disk load may exceed 1ms; hot path
         # after cache should be metadata-only.
+        #
+        # GAP-6: this is host-side dispatch time, not GPU completion. Making it
+        # true would need a torch.cuda.synchronize() here, and this runs on
+        # every local decision — stalling the pipeline 50+ times a phase to
+        # sharpen a debug log is a bad trade. Labelled instead of measured, so
+        # the number is not read as something it is not (2.8).
         logger.debug(
-            "switch_adapter(%s) took %.2f ms (budget %dms hot-path)",
+            "switch_adapter(%s) took %.2f ms host-side (budget %dms hot-path; "
+            "GPU work may still be in flight)",
             agent_id,
             elapsed_ms,
             ADAPTER_SWITCH_MAX_MS,
@@ -741,6 +748,36 @@ def _enable_adapter_training(model: Any) -> None:
             parameter.requires_grad_(True)
 
 
+def _release_train_memory(trained_parameters: list[Any]) -> None:
+    """Drop the train step's gradients and its cached CUDA blocks (GAP-6).
+
+    Two separate concerns that happen to share a home:
+
+    Isolation — the adapter slot is reused across agents, so a stale .grad on
+    a LoRA tensor is one agent's state sitting on the next agent's weights.
+    Setting it to None rather than zeroing releases the buffer as well.
+
+    Memory — the DPO step is the run's high-water mark (the D-034 pilot
+    already logged one OOM warning), and the blocks it cached stay reserved
+    for an allocator that generation cannot use for its own KV cache.
+
+    Deliberately NOT called from switch_adapter, which graph.agent_node runs
+    on every local decision: empty_cache walks the whole allocator, so paying
+    it 50+ times a phase would buy nothing — the swap allocates nothing to
+    release. The cost belongs where the allocation was made.
+    """
+
+    for parameter in trained_parameters:
+        parameter.grad = None
+    try:
+        import torch
+    except ImportError:  # pragma: no cover — torch absent means no train path
+        return
+    if torch.cuda.is_available():
+        # After the frees above, so the blocks they released are collected too.
+        torch.cuda.empty_cache()
+
+
 def _run_dpo_epochs(
     model: Any,
     tokenizer: Any,
@@ -875,6 +912,13 @@ def _run_dpo_epochs(
             config.use_cache = prior_use_cache
         if not was_training:
             model.eval()
+        # GAP-6. There is ONE in-memory adapter slot (see switch_adapter), so
+        # these same tensors are what the next agent's adapter loads into, and
+        # whatever .grad this arm left is still hanging off them. zero_grad at
+        # the top of the next epoch loop happens to clear it, but that puts one
+        # agent's isolation in the hands of another call's ordering — the exact
+        # shape of the leak f25b0ef and D-042 both turned out to be.
+        _release_train_memory(trainable)
 
     if step_count == 0:
         raise RuntimeError("no DPO steps executed")

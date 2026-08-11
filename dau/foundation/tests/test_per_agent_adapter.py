@@ -488,6 +488,46 @@ def test_grad_norm_is_unread_not_zero_when_no_step_ran(
     assert math.isnan(GRAD_NORM_UNREAD)
 
 
+def test_train_step_leaves_no_gradient_on_the_shared_adapter_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GAP-6: one adapter slot is reused across agents, so .grad must not survive.
+
+    Relying on the next call's zero_grad would make agent A's isolation depend
+    on agent B's ordering — the shape of the f25b0ef and D-042 leaks.
+    """
+
+    torch = pytest.importorskip("torch")
+
+    captured: list[torch.nn.Parameter] = []
+    real_release = local_llm._release_train_memory
+
+    def _spy(parameters):
+        captured.extend(parameters)
+        return real_release(parameters)
+
+    monkeypatch.setattr(local_llm, "_release_train_memory", _spy)
+    _run_epochs_counting_steps(monkeypatch, n_pairs=8, accumulation=4)
+
+    assert captured, "the train step never released its parameters"
+    assert all(p.grad is None for p in captured)
+
+
+def test_release_is_not_wired_into_the_per_decision_swap_path() -> None:
+    """empty_cache walks the allocator; switch_adapter runs on every decision.
+
+    graph.agent_node calls switch_adapter per local decision, and the swap
+    allocates nothing worth reclaiming, so paying that walk 50+ times a phase
+    would be cost without benefit.
+    """
+
+    import inspect
+
+    source = inspect.getsource(local_llm.switch_adapter)
+    assert "_release_train_memory" not in source
+    assert "empty_cache" not in source
+
+
 def test_learning_rate_stays_in_the_band_the_decision_rests_on() -> None:
     """D-029: outside this band DPO stops raising the chosen completion.
 
