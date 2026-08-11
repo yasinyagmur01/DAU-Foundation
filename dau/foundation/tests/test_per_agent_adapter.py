@@ -479,3 +479,68 @@ def test_tool_identity_reports_the_learning_rate_actually_used() -> None:
             os.environ["DAU_LLM_BACKEND"] = previous
 
     assert identity["dpo"]["learning_rate"] == DPO_LEARNING_RATE
+
+
+def test_adapter_reset_neither_draws_nor_reads_the_live_rng() -> None:
+    """D-042: the reset must not depend on, or disturb, the life's stream.
+
+    Both halves are load-bearing. If the reset READS the live stream, lora_A
+    becomes a function of how many arms already ran — measured as a shuffle
+    arm digesting differently at position 1 and position 3, which put a
+    systematic term inside lived-vs-shuffle. If it DRAWS from the stream, the
+    life's sampling lands somewhere different depending on the same history.
+
+    Uses a stand-in LoraLayer so the property is tested without an 8B model.
+    """
+
+    torch = pytest.importorskip("torch")
+    lora = pytest.importorskip("peft.tuners.lora")
+
+    STREAM_SEED = 2001
+
+    from dau.foundation.local_llm import ACTIVE_ADAPTER_NAME, _reset_active_adapter
+
+    class _FakeLayer(lora.LoraLayer):
+        def __init__(self) -> None:
+            self.lora_A = {ACTIVE_ADAPTER_NAME: torch.nn.Linear(4, 2, bias=False)}
+            self.lora_B = {ACTIVE_ADAPTER_NAME: torch.nn.Linear(2, 4, bias=False)}
+            self.lora_embedding_A = {}
+            self.lora_embedding_B = {}
+            self.r = {ACTIVE_ADAPTER_NAME: 2}
+            self.lora_bias = {ACTIVE_ADAPTER_NAME: False}
+
+    class _FakeModel:
+        def __init__(self) -> None:
+            self.layer = _FakeLayer()
+
+        def modules(self):
+            return [self.layer]
+
+    # Built once and outside every measurement window: constructing nn.Linear
+    # draws from the stream itself, which would be mistaken for the reset.
+    model = _FakeModel()
+
+    def reset_after(warmup: int) -> tuple[torch.Tensor, torch.Tensor]:
+        """Reset after consuming `warmup` draws, then read what comes next."""
+
+        torch.manual_seed(STREAM_SEED)
+        for _ in range(warmup):
+            torch.rand(1)
+        _reset_active_adapter(model)
+        lora_a = model.layer.lora_A[ACTIVE_ADAPTER_NAME].weight.detach().clone()
+        return lora_a, torch.rand(3)
+
+    early_a, early_next = reset_after(warmup=0)
+    late_a, late_next = reset_after(warmup=17)
+
+    # Reads nothing: the graft is identical however much ran before it.
+    assert torch.equal(early_a, late_a)
+
+    # Draws nothing: a reset inserted into a stream leaves it where it was.
+    torch.manual_seed(STREAM_SEED)
+    untouched_next = torch.rand(3)
+    assert torch.equal(early_next, untouched_next)
+
+    # And the warmup itself is still visible, so the comparison above is not
+    # passing because the stream is somehow frozen.
+    assert not torch.equal(early_next, late_next)

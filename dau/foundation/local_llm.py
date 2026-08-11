@@ -27,6 +27,7 @@ from dau.foundation.constraints import (
     DPO_MAX_GRAD_NORM,
     DPO_MAX_SEQUENCE_TOKENS,
     LORA_B_ABS_SUM_UNREAD,
+    LORA_INIT_SEED,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
 )
@@ -191,9 +192,17 @@ def describe_quantization() -> dict[str, Any]:
 
 
 def _ensure_peft_model(model: Any) -> Any:
-    """Wrap base model with an empty LoRA config when peft is available."""
+    """Wrap base model with an empty LoRA config when peft is available.
+
+    Built on a forked RNG for the same reason the reset is (D-042).
+    get_peft_model initialises lora_A, and this runs exactly once per process
+    — inside whichever arm happened to load the model first. That arm would
+    otherwise pay an RNG draw none of the others do, which is precisely the
+    position dependence D-042 removes.
+    """
 
     try:
+        import torch
         from peft import LoraConfig, PeftModel, get_peft_model
     except ImportError:
         return model
@@ -207,7 +216,12 @@ def _ensure_peft_model(model: Any) -> Any:
         bias=LORA_BIAS,
         task_type=LORA_TASK_TYPE,
     )
-    return get_peft_model(model, config)
+    devices = [torch.cuda.current_device()] if torch.cuda.is_available() else []
+    with torch.random.fork_rng(devices=devices):
+        torch.manual_seed(LORA_INIT_SEED)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(LORA_INIT_SEED)
+        return get_peft_model(model, config)
 
 
 def resolve_local_model_name() -> str:
@@ -310,28 +324,58 @@ def _reset_active_adapter(model: Any) -> None:
     Agents must not inherit each other's scars: an agent with no adapter on
     disk has to start from the base policy, not from whatever the previously
     trained agent left in the shared singleton.
+
+    D-042 — the reset runs on its own RNG, forked from the live stream:
+
+    ``reset_lora_parameters`` re-initialises lora_A with kaiming_uniform_,
+    which both DRAWS from the torch stream and lands wherever that stream
+    happens to be. Neither is acceptable here. Drawing meant the reset shifted
+    the life's sampling stream by an amount that depended on how many resets
+    had already happened; landing meant lora_A itself became a function of
+    position in the process. Measured: the same shuffle arm digests to
+    598d67bce291 as the first arm of a process and 43930cf5013b as the third,
+    with one training in between. Since lived always runs first and shuffle
+    third, that difference sat inside the experiment's primary contrast as a
+    systematic term — one that repeats identically every run, so it never
+    averages out.
+
+    fork_rng closes both: the draw is taken from a private stream seeded by a
+    constant, and the outer stream is restored untouched. Phase 1 was never
+    affected — lora_B is zero there, so the adapter is an identity transform
+    and lora_A cannot reach the decisions. It is training that turns the
+    starting point into an outcome.
+
+    This supersedes the older symmetry argument in switch_adapter's docstring,
+    which kept the draw but made every arm pay it equally. Equal consumption
+    fixed phase1 vs phase2; it could not fix arm vs arm.
     """
 
     try:
+        import torch
         from peft.tuners.lora import LoraLayer
     except ImportError:
         return
 
+    devices = [torch.cuda.current_device()] if torch.cuda.is_available() else []
     reset_count = 0
-    for module in model.modules():
-        if not isinstance(module, LoraLayer):
-            continue
-        try:
-            module.reset_lora_parameters(ACTIVE_ADAPTER_NAME, init_lora_weights=True)
-            reset_count += 1
-        except Exception:  # noqa: BLE001 — fall back to manual zeroing below
-            import torch
-
-            with torch.no_grad():
-                lora_b = getattr(module, "lora_B", None)
-                if lora_b is not None and ACTIVE_ADAPTER_NAME in lora_b:
-                    lora_b[ACTIVE_ADAPTER_NAME].weight.zero_()
-                    reset_count += 1
+    with torch.random.fork_rng(devices=devices):
+        torch.manual_seed(LORA_INIT_SEED)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(LORA_INIT_SEED)
+        for module in model.modules():
+            if not isinstance(module, LoraLayer):
+                continue
+            try:
+                module.reset_lora_parameters(
+                    ACTIVE_ADAPTER_NAME, init_lora_weights=True
+                )
+                reset_count += 1
+            except Exception:  # noqa: BLE001 — fall back to manual zeroing below
+                with torch.no_grad():
+                    lora_b = getattr(module, "lora_B", None)
+                    if lora_b is not None and ACTIVE_ADAPTER_NAME in lora_b:
+                        lora_b[ACTIVE_ADAPTER_NAME].weight.zero_()
+                        reset_count += 1
     logger.debug("reset %d LoRA layers to fresh init", reset_count)
 
 
@@ -406,11 +450,15 @@ def switch_adapter(model: Any, agent_id: str) -> None:
     Target: complete under ADAPTER_SWITCH_MAX_MS when base is already loaded
     (metadata / weight pointer swap — not a full reload).
 
-    Do not short-circuit on ``_active_agent_id == agent_id``. A no-disk reset
-    draws torch RNG for LoRA-A; skipping it on the second phase of a NULL arm
-    leaves sampling on a different stream, so phase1≢phase2 under
-    DAU_LLM_DO_SAMPLE=1 (measured). Lived phase2 also needs a disk reload after
-    training even when the agent_id did not change.
+    Do not short-circuit on ``_active_agent_id == agent_id``. Lived phase2
+    needs a disk reload after training even when the agent_id did not change,
+    and a NULL arm's second phase must be reset like its first.
+
+    ⚠ This used to read "a no-disk reset draws torch RNG for LoRA-A; skipping
+    it leaves sampling on a different stream". As of D-042 the reset draws
+    nothing — it runs on a forked stream — so calling it is RNG-neutral and
+    the symmetry argument no longer applies. The call is still unconditional,
+    now for the reason above.
     """
 
     global _active_agent_id
