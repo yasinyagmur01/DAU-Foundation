@@ -25,7 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `331 passed, 2 deselected`. Çalışma ağacı temiz.
 - **Son D-kaydı: D-044.** Sıradaki kayıt **D-045** olarak açılır.
-- **GAP-2 kapandı** (`d5f4a4c`); açık GAP'ler: 3, 4, 5, 6, 9, 10, 17, 18, 19.
+- **GAP-2 kapandı** (`d65100d`); açık GAP'ler: 3, 4, 5, 6, 9, 10, 17, 18, 19.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 - **Değişmez sayısı: 20** (I1.1 ve I4.1 D-039/D-041 ile eklendi; belgede
   tanımlı 25'in beşi hâlâ kodda yok — I1.2 testte, I2.3 yapısal, I1.3/1.4/1.5
@@ -524,7 +524,7 @@ pilotu `tool_identity`'den önce ve sampling durumu kayıtlı değil — yani
 **delil olarak kullanılamaz**. Kullanılamayan bir tabana karşı bisect pahalı
 ve sonucu bir şeyi değiştirmiyor. Bugünkü alet doğrudan ve kapsamlı ölçüldü.
 
-### ~~GAP-2: Silent train failure~~ — **KAPANDI** (`d5f4a4c`)
+### ~~GAP-2: Silent train failure~~ — **KAPANDI** (`d65100d`)
 `_train_adapter`'ın beş erken dönüşünün hepsi artık konuşuyor: pair builder
 exception'ı ve `lora_update` import hatası `[WARN]` basıyor, train exception'ı
 ve `trained=False` zaten basıyordu. `DAU_LORA_ENABLED=0` dalı bilerek sessiz —
