@@ -820,6 +820,16 @@ def _run_dpo_epochs(
     grad_norm_min = float("inf")
     grad_norm_total = 0.0
     clipped_step_count = 0
+    # D-049. The two halves of the DPO margin, tracked apart. The margin alone
+    # cannot tell "the agent came to prefer the low-PE answer" from "the agent
+    # learned never to say the high-PE one" — both raise it. D-029's lr probe
+    # measured exactly this and chose 1e-6 on it (chosen +0.085 / rejected
+    # -0.143 at 1e-6, versus chosen -0.123 / rejected -4.371 at 5e-5), but that
+    # was a one-off probe on 9 pairs. Without these, no real run can show which
+    # of the two it did, and the axiom's claim depends on the difference.
+    delta_logp_chosen_total = 0.0
+    delta_logp_rejected_total = 0.0
+    chosen_went_down_count = 0
     accumulation = max(1, int(DPO_GRADIENT_ACCUMULATION_STEPS))
     # Micro-batches per epoch. The last accumulation group is usually short —
     # with 1-2 surviving pairs it is the ONLY group — so its size is computed
@@ -864,6 +874,18 @@ def _run_dpo_epochs(
                     policy_rejected = _sequence_logprob(
                         model, rejected_ids, rejected_len, device
                     )
+                    # Each side's own drift from the reference policy. Both
+                    # terms already exist for the margin below; keeping them
+                    # apart costs nothing and is the only way to separate
+                    # preference from suppression.
+                    delta_chosen = float(policy_chosen.item()) - float(ref_chosen)
+                    delta_rejected = (
+                        float(policy_rejected.item()) - float(ref_rejected)
+                    )
+                    delta_logp_chosen_total += delta_chosen
+                    delta_logp_rejected_total += delta_rejected
+                    if delta_chosen < 0.0:
+                        chosen_went_down_count += 1
                     logits = (policy_chosen - policy_rejected) - (
                         ref_chosen - ref_rejected
                     )
@@ -943,6 +965,11 @@ def _run_dpo_epochs(
             else GRAD_NORM_UNREAD
         ),
         "dpo_clipped_steps": clipped_step_count,
+        # D-049. Suppression reads as chosen ~0 (or negative) with rejected
+        # strongly negative; real preference learning raises chosen.
+        "dpo_delta_logp_chosen": delta_logp_chosen_total / step_count,
+        "dpo_delta_logp_rejected": delta_logp_rejected_total / step_count,
+        "dpo_chosen_went_down": chosen_went_down_count,
     }
 
 

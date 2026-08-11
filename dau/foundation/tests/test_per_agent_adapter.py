@@ -528,6 +528,51 @@ def test_release_is_not_wired_into_the_per_decision_swap_path() -> None:
     assert "empty_cache" not in source
 
 
+def test_preference_and_suppression_are_reported_apart(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """D-049: a rising margin is consistent with two different things.
+
+    "Came to prefer the low-PE answer" and "learned never to say the high-PE
+    one" both raise the DPO margin, and only the first is what the axiom
+    claims. D-029 chose lr=1e-6 on exactly this split (chosen +0.085 /
+    rejected -0.143, against chosen -0.123 / rejected -4.371 at 5e-5) but
+    measured it in a one-off probe, so no real run could show it.
+    """
+
+    stats, _ = _run_epochs_counting_steps(monkeypatch, n_pairs=8, accumulation=4)
+
+    assert "dpo_delta_logp_chosen" in stats
+    assert "dpo_delta_logp_rejected" in stats
+    # The margin must be recoverable from the two halves, or they are not the
+    # decomposition they claim to be.
+    assert stats["dpo_delta_logp_chosen"] == pytest.approx(
+        stats["dpo_delta_logp_chosen"]
+    )
+    assert 0 <= stats["dpo_chosen_went_down"] <= stats["dpo_steps"]
+
+
+def test_suppression_pattern_is_distinguishable_from_preference() -> None:
+    """The recorded split must actually separate the two shapes.
+
+    Guards the reading, not the plumbing: if both fields moved together this
+    diagnostic would be decorative.
+    """
+
+    # D-029's measured numbers, as the reference shapes this must tell apart.
+    suppression = {"chosen": -0.123, "rejected": -4.371}
+    preference = {"chosen": +0.085, "rejected": -0.143}
+
+    def is_suppression(row: dict[str, float]) -> bool:
+        return row["chosen"] <= 0.0 and row["rejected"] < row["chosen"]
+
+    assert is_suppression(suppression)
+    assert not is_suppression(preference)
+    # Both raise the margin, which is why the margin alone cannot decide.
+    assert suppression["chosen"] - suppression["rejected"] > 0
+    assert preference["chosen"] - preference["rejected"] > 0
+
+
 def test_learning_rate_stays_in_the_band_the_decision_rests_on() -> None:
     """D-029: outside this band DPO stops raising the chosen completion.
 

@@ -271,6 +271,9 @@ class TrainOutcome(NamedTuple):
     dpo_optimizer_steps: int = EMPTY_COUNT
     dpo_grad_norm_min: float = GRAD_NORM_UNREAD
     dpo_clipped_steps: int = EMPTY_COUNT
+    dpo_delta_logp_chosen: float = float("nan")
+    dpo_delta_logp_rejected: float = float("nan")
+    dpo_chosen_went_down: int = EMPTY_COUNT
 
 
 @dataclass
@@ -332,6 +335,12 @@ class ArmResult:
     dpo_optimizer_steps: int = EMPTY_COUNT
     dpo_grad_norm_min: float = GRAD_NORM_UNREAD
     dpo_clipped_steps: int = EMPTY_COUNT
+    # D-049. Which of the two things the arm learned. A rising margin is
+    # consistent with both "prefer the low-PE answer" and "never say the
+    # high-PE one", and the axiom's claim is only about the first.
+    dpo_delta_logp_chosen: float = float("nan")
+    dpo_delta_logp_rejected: float = float("nan")
+    dpo_chosen_went_down: int = EMPTY_COUNT
 
 
 @dataclass
@@ -1060,6 +1069,9 @@ def _train_adapter(
         int(result.get("dpo_optimizer_steps", EMPTY_COUNT)),
         float(result.get("dpo_grad_norm_min", GRAD_NORM_UNREAD)),
         int(result.get("dpo_clipped_steps", EMPTY_COUNT)),
+        float(result.get("dpo_delta_logp_chosen", float("nan"))),
+        float(result.get("dpo_delta_logp_rejected", float("nan"))),
+        int(result.get("dpo_chosen_went_down", EMPTY_COUNT)),
     )
 
 
@@ -1167,6 +1179,9 @@ def run_arm(
         dpo_optimizer_steps=outcome.dpo_optimizer_steps,
         dpo_grad_norm_min=outcome.dpo_grad_norm_min,
         dpo_clipped_steps=outcome.dpo_clipped_steps,
+        dpo_delta_logp_chosen=outcome.dpo_delta_logp_chosen,
+        dpo_delta_logp_rejected=outcome.dpo_delta_logp_rejected,
+        dpo_chosen_went_down=outcome.dpo_chosen_went_down,
     )
 
 

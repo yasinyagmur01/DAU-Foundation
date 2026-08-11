@@ -781,6 +781,9 @@ def run_gen1_arm_lineage(
         dpo_optimizer_steps=outcome.dpo_optimizer_steps,
         dpo_grad_norm_min=outcome.dpo_grad_norm_min,
         dpo_clipped_steps=outcome.dpo_clipped_steps,
+        dpo_delta_logp_chosen=outcome.dpo_delta_logp_chosen,
+        dpo_delta_logp_rejected=outcome.dpo_delta_logp_rejected,
+        dpo_chosen_went_down=outcome.dpo_chosen_went_down,
     )
     return arm_result, state_2, store, tmp
 
