@@ -3016,3 +3016,96 @@ canlı GPU koşumunda henüz ateşlenmedi; ilk gerçek sınav B2.
 
 **Değişmez sayısı: 20 → 24** (I1.3, I1.3b, I1.4, I1.5). Belgede tanımlı
 25 → 26 (I1.3b yeniydi). Kodda hâlâ yok: I1.2 (testte), I2.3 (yapısal).
+
+---
+
+## D-047 · 2026-08-11 · DR #1 işlendi: S4 kapandı, ama S1'in bağımsız olmadığı çıktı
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-11) · **GPU'suz**
+**Mutabakat:** `docs/research/RECONCILIATION.md` bölüm **G**
+
+### S4 kapanıyor — cevaplanarak değil, **çözülerek**
+
+DR #1'in asıl katkısı bir `d_z` sayısı vermek değil, S4'ü **cevaplanması
+gereken bir soru olmaktan çıkarmak**: Lakens (2022), *Sample Size
+Justification*, Collabra: Psychology 8(1):33267 — **bütçe-kısıtlı örneklem
+gerekçelendirmesi** altı meşru yöntemden biri. Literatürde birinciliğimizin
+karşılığı olan bir etki yokken SESOI uydurmak, bütçeyi şeffaf ilan edip
+duyarlılık analizi vermekten **daha az** dürüst.
+
+⇒ **SESOI ilan edilmiyor.** Yerine: bütçe beyanı + duyarlılık analizi (MDE)
++ `p > 0.05` durumunda "şu MDE'nin altında güçsüzüz, veri o bantta bilgisiz"
+dili. Bu, L9/L10'un ΔPE ikincilleri için zaten yazdığının birincile
+taşınması.
+
+MDE aritmetiği yerel doğrulandı (exact noncentral-t): DR'nin `N=32` için
+verdiği **0.512 / 0.450**, hesaplanan **0.5113 / 0.4495**. Üç hane doğru.
+
+### DR'nin iki dayanağı düştü
+
+**`r ≥ 0.85` geçersiz, iki ayrı sebeple.** DR "koşum-arası gürültü sıfır
+(sha256 özdeş) ⇒ `r ≥ 0.85` ⇒ `d_z=0.512` aslında `d≈0.28`" diyor.
+(a) Determinizm **aynı kolu tekrar koşmanın** gürültüsünü sıfırlar; farklı
+kolların **seed'ler arası** korelasyonu hakkında hiçbir şey söylemez.
+(b) Daha temel: birinciliğimiz iki kolun eşleştirilmiş ölçümü **değil**, iki
+mesafenin farkı (`a_s − b_s`, §3) ⇒ `d_z = d/√(2(1−r))` dönüşümü bu forma
+**uygulanamaz**. Yakılmış üç seed'de `corr(a_s,b_s) = −0.80` (N=3, kendisi
+anlamsız; işaret bile ters).
+
+**Literatür bandı `d_z ≈ 0.85–1.70` kaynaksız.** Brief "yazar+yıl+yer" şart
+koşmuştu; yalnız "ProtoAlign"/"Anchor Bias" adları geçiyor. Aynı rapor
+yayın yanlılığının medyanı %50–100 şişirdiğini söyleyip bu bandı dayanak
+yapıyor — **kendi içinden çürüyor** (Meehl 1990 argümanıyla).
+
+Ayrıca kullanılmayanlar: Eleştiri 2 savunması (*"iptal, birincilin saf
+parametrik iz olduğunu doğrular"* — non sequitur; D-044'ün gerçek argümanı
+"tehdit etmiyor"du, "doğruluyor" değil) · şablonun birebir metni (0.512'nin
+yanındaki formül 0.4953 verir; "her seed 3 koşum" yanlış, seed başına 3
+**kol** var).
+
+### ⚠ Bir önceki çerçeveleme düzeltiliyor
+
+Oturum içinde önce *"birincil uç noktanın kendisinde yapısal kusur"* dendi.
+**Fazlaydı.** `update_drift` (`drift.py:41`) `flags[domain]=True` ile
+`magnitudes[domain]`'i **birlikte, yalnız travma anında** yazıyor ⇒
+"bayraklanmamış alan = 0" bir kolaylık kabulü **değil, doğru**: o alanda
+travma yoksa birikmiş büyüklük gerçekten sıfırdır. Seed 2002'de bayrak
+uyuşmazlığının büyük L2 mesafesi üretmesi kusur değil — `lived` sosyal,
+`null` belirsizlik alanında yaralanmış, ve bu gerçek bir fark.
+
+### Geriye kalan iki bulgu — ikisi de ilan edilen sınır oldu
+
+**1. S1 bağımsız bir ikincil değil (L11).** Ölçüldü: 11 dosyadaki **69
+transfer kaydının 69'unda** `flags` ile `magnitudes` anahtar kümeleri
+**özdeş**, hiçbir bayrak `False` değil. ⇒ S1 (*"bayraklanan alan kümesi"*)
+= `set(magnitudes.keys())` = birincilin girdi vektörünün **desteği**.
+Korelasyon değil **türetilebilirlik**. Birincil bir bayrak farkı üzerinden
+anlamlı çıkarsa S1 aynı olguyu ikinci kez ölçer, ama §4 onu ayrı uç nokta
+ilan ettiği için raporda **destekleyici kanıt** gibi okunurdu.
+⇒ §11'e yazıldı: S1 birincili desteklemez, **ayrıştırır**.
+
+**2. `resource` atıl (L11).** Dokuz kolun tamamı `3.6404 … 3.7414` (yayılım
+düzeyin %2.7'si), seed 2001'de üç kolda birebir aynı. L1'in `F_agent` için
+yazdığının aynısı. Birinciliğin ayrımı pratikte **ikinci alandan** geliyor.
+
+**3. Şeffaflık borcu ödendi (L12).** Bu denetim yapılırken `a_s − b_s`'in
+**işareti görüldü**. Seed 2001–2003 D-038 ile zaten yakılmıştı ve
+doğrulayıcı koşum 2004'ten başlıyor (§6) ⇒ doğrulayıcı analiz kirlenmedi.
+Ama kayda geçer, ve **uç nokta tanımı bu bilgi alındıktan sonra
+değiştirilmedi** — değiştirilse post-hoc olurdu. L11'in "tanım değişmedi"
+notu buraya bağlı.
+
+**Reddedilen alternatifler:**
+- *DR'nin `N=32`'sini şimdi kilitlemek* — G13 uzlaşmadı: GAP-9'un dayandığı
+  `protocol-c-metacognition-eval` Protocol C için **N=40–50** diyordu.
+  İki sayı karşılaştırılmadan S2 kapanmaz.
+- *Birinciliği bayrak/büyüklük diye ikiye ayırmak* — L12'den sonra post-hoc.
+- *S1'i ön-kayıttan çıkarmak* — bağımlılığı belgelemek yerine gizlerdi;
+  ayrıştırma olarak raporlamak daha bilgilendirici.
+- *`resource`'u uç noktadan atmak* — post-hoc, ve atıllığı ilan etmek
+  (L1 deseni) hem dürüst hem ucuz.
+
+**Sınırlar:** L11'in iki bulgusu **yapısal** (koda bakılarak türetildi, 69
+kayıtla doğrulandı) ⇒ N'e bağlı değil. Ama `resource`'un atıllığı **üç
+seed'den** okundu; daha geniş N'de ayrım üretmesi dışlanmadı. S2 (N) **açık
+kalıyor**.

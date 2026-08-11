@@ -87,7 +87,7 @@ anlamlı olsa bile sonuç **null** olarak raporlanır.
 
 | # | Uç nokta | Test |
 |---|---|---|
-| S1 | Doğum-drift **kategorik** kanalı: varisin bayraklanan alan kümesi | Fisher-Freeman-Halton, kol × profil |
+| S1 | Doğum-drift **kategorik** kanalı: varisin bayraklanan alan kümesi ⚠ **birincilden bağımsız değil, bkz. L11** | Fisher-Freeman-Halton, kol × profil |
 | S2 | Doğum-drift **sayım** kanalı: `n_transfer_candidates`, `n_inherited_warnings` | Kruskal-Wallis (⚠ §8-L1: bu kanalın atıl olması bekleniyor) |
 | S3 | Faz-1 ΔPE (fazın tamamı, D-036) ⚠ **düşük duyarlıklı, bkz. L9** | eşleştirilmiş Wilcoxon, `lived−shuffle` |
 | S4 | Gen2 ortalama PE ⚠ **düşük duyarlıklı, ölçüldü, bkz. L10** | eşleştirilmiş Wilcoxon |
@@ -215,6 +215,32 @@ düzeyindeki ayrımın çoğunu atıyor. Korunan pay `lived−null` **%17.5**
   (paylaşılan sayaç uzayı ⇒ Ebbinghaus) ve **GAP-3**. Gözlem, iddia değil;
   kilit öncesi kod değişikliğine çevrilmedi.
 
+**L11 — S1 birincilden bağımsız bir kanal değil, ve `resource` atıl**
+(D-047). İki ayrı olgu, ikisi de `update_drift`'in yapısından geliyor:
+`flags[domain]=True` ile `magnitudes[domain]` **aynı anda, yalnız travma
+anında** yazılıyor (`drift.py:41`). Ölçüldü: 11 dosyadaki **69 transfer
+kaydının 69'unda** iki sözlüğün anahtar kümesi özdeş, ve hiçbir bayrak
+`False` değil.
+⇒ **S1 = `set(magnitudes.keys())`**, yani birincilin girdi vektörünün
+**desteği**. Korelasyon değil türetilebilirlik. Birincil bir bayrak farkı
+üzerinden anlamlı çıkarsa S1 aynı olguyu ikinci kez ölçer. **S1 bu yüzden
+destekleyici kanıt olarak raporlanmaz**; birincilin ayrıştırması olarak
+raporlanır ve bu §11'de yazılıdır.
+⇒ **`resource` bileşeni ayrım üretmiyor:** dokuz kolun tamamı
+`3.6404 … 3.7414` (yayılım düzeyin **%2.7'si**), ve seed 2001'de üç kolda
+**birebir aynı**. Birincilin ayrımı pratikte ikinci alandan geliyor.
+⚠ Uç nokta tanımı **değiştirilmedi**: "bayraklanmamış alan = 0" kuralı
+mekanizmaya göre **doğru** (travma yoksa birikmiş büyüklük gerçekten sıfır),
+ve tanımı bu noktada değiştirmek aşağıdaki L12 yüzünden post-hoc olurdu.
+
+**L12 — Tasarım pilot seed'lerinde denetlendi, o seed'ler hariç** (D-047).
+Birincil uç nokta 2001–2003 seed'lerinde hesaplandı ve `a_s − b_s`'in
+**işareti görüldü**. Bu seed'ler **D-038 ile zaten yakılmıştı** ve
+doğrulayıcı koşum 2004'ten başlıyor (§6), yani doğrulayıcı analiz
+kirlenmedi. Yine de kayda geçer: L11'in iki bulgusu bu denetimden çıktı, ve
+**uç nokta tanımı bu bilgi alındıktan sonra değiştirilmedi** — değiştirilse
+post-hoc olurdu.
+
 **L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
 girmiyor (GAP-10). Anı seçimi şu an semantik değil.
 
@@ -287,6 +313,12 @@ noktası ayrımın %80–86'sını, L10 gereği gen2'nin `mean_pe`'si ayrımın
 %73'ünü atıyor. Dolayısıyla o iki ikincilin null'ı **ölçüm duyarsızlığı**
 olarak raporlanır, mekanizma yokluğu olarak değil. İkisi de **ölçüldü**,
 varsayılmadı.
+
+⚠ **S1 birincili desteklemez, ayrıştırır** (L11). Birincil anlamlı çıkarsa
+raporda "S1 de anlamlı" cümlesi **ikinci bir kanıt olarak kurulmaz** — S1
+birincilin girdi vektörünün desteğidir. Raporda birincilin ne kadarının
+bayrak kümesi farkından, ne kadarının büyüklük farkından geldiği
+**ayrıştırılarak** verilir.
 
 ---
 
