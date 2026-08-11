@@ -310,12 +310,17 @@ kilidi onlar tutuyor.
 | **S6** | A4 — %10 somatik replay? | **girmez** | Kanalları karıştırır. Kanal 1 (sembolik kasa) malzemesi Kanal 2'nin eğitim setine girerse *"izi hangi kanal taşıdı"* sorusu cevapsız kalır — ve D-002'nin dört-halkalı nedensel zincir mantığı tam olarak o ayrıma dayanıyor. VRAM maliyeti olmaması (D-027) onu bedava yapıyor ama **ücretsiz olması dahil etmek için gerekçe değil** |
 | **S7** | `events_gen1` / `gen2` / `k_gen2` | **50 / 20 / 3 — değişmez** | Değişirse ΔPE tabanı yine sıfırlanır ve D-043'ün regresyon değeri kaybolur |
 
-### Açık — kilidi bunlar tutuyor
+### Açık — kilidi bu tutuyor
 
 | # | Slot | Durum |
 |---|---|---|
-| **S4** | **En küçük anlamlı etki (`d_z`)** | ⏸ Beyan bekliyor. **Gözlenen d_z'den seçilemez** — D-043'te `lived−null` 0.87, `lived−shuffle` 0.39 ölçüldü ve ikisi de n=3'ten geliyor; birini hedef yapmak §2.7'nin yasakladığı post-hoc tuning olur |
-| **S2** | **N (seed sayısı)** | ⏸ S4'ün fonksiyonu |
+| **S2** | **N (seed sayısı)** | ⏸ **Tek açık slot.** Artık S4'ün fonksiyonu değil — S4 kapandığı için N doğrudan **bütçe kararı** (aşağıdaki 2. yol). ⚠ Uzlaşılmamış: DR #1 bütçeden **N=32** (MDE `d_z=0.511`) diyor, GAP-9'un dayandığı `protocol-c-metacognition-eval` Protocol C için **N=40–50** diyordu |
+
+**S4 kapandı** (D-047) — ayrıntısı yukarıda:
+
+| # | Slot | Karar |
+|---|---|---|
+| **S4** | En küçük anlamlı etki (`d_z`) | ✅ **SESOI ilan edilmiyor.** Bütçe-kısıtlı örneklem gerekçelendirmesi (Lakens 2022, *Sample Size Justification*, Collabra 8(1):33267) + ilan edilen duyarlılık analizi. Gerekçe: birinciliğimizin literatürde karşılığı olan bir etki yok ⇒ SESOI uydurmak bütçeyi şeffaf ilan etmekten **daha az** dürüst. `p > 0.05` ⇒ *"şu MDE'nin altında güçsüzüz, veri o bantta bilgisiz"*, asla *"etki yok"* |
 
 **Güç tablosu** (eşleştirilmiş Wilcoxon, çift yönlü, α=0.05, güç 0.80):
 
@@ -329,14 +334,20 @@ reddedemez, etki ne kadar büyük olursa olsun.
 Bütçe: seed başına ~20 dk + koşum başına ~7 dk (I4.1 replay).
 N=10 ≈ 3.5 sa · N=15 ≈ 5.1 sa · N=20 ≈ 6.8 sa · N=32 ≈ 10.8 sa.
 
-**S4'ü doldurmanın iki meşru yolu var** — ikisi de post-hoc değil:
+**S4 bu iki yoldan ikincisiyle dolduruldu** (D-047); birincisi reddedildi:
 
 1. **Etkiden N'e.** *"Şu büyüklükten küçük bir etki bizi ilgilendirmez"*
    beyan edilir, N tablodan okunur. Literatür gerekçesi güçlendirir.
-2. **Bütçeden etkiye.** N bütçeden seçilir (ör. *"N=20 karşılayabiliriz"*),
-   ve ön-kayıt **tespit edilebilir en küçük etkiyi ilan eder** (N=20 →
-   d_z ≈ 0.66). Bundan küçük etkiler için *"güçsüzdük"* denir, *"etki yok"*
-   değil. Bu da meşrudur çünkü N veriden değil **bütçeden** geliyor.
+2. ✅ **Bütçeden etkiye — SEÇİLEN.** N bütçeden seçilir ve ön-kayıt
+   **tespit edilebilir en küçük etkiyi ilan eder**. Bundan küçük etkiler için
+   *"güçsüzdük"* denir, *"etki yok"* değil. Meşru, çünkü N veriden değil
+   **bütçeden** geliyor (Lakens 2022).
+
+⚠ **Yukarıdaki güç tablosu normal yaklaşımdır.** Exact noncentral-t ile
+doğrulanan MDE'ler biraz daha büyük: N=20 → `d_z=0.660` · N=24 → `0.597` ·
+**N=32 → `0.511`** · N=40 → `0.454` · N=50 → `0.404` (tek yönlü sırasıyla
+0.577 · 0.523 · **0.449** · 0.400 · 0.357). **Ön-kayıta exact değer yazılır**,
+tablodaki yaklaşık değer değil.
 
 ## 10. Sapma politikası
 
