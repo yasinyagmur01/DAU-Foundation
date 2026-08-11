@@ -24,7 +24,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `331 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-043.** Sıradaki kayıt **D-044** olarak açılır.
+- **Son D-kaydı: D-044.** Sıradaki kayıt **D-045** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 - **Değişmez sayısı: 20** (I1.1 ve I4.1 D-039/D-041 ile eklendi; belgede
   tanımlı 25'in beşi hâlâ kodda yok — I1.2 testte, I2.3 yapısal, I1.3/1.4/1.5
@@ -56,8 +56,25 @@ otomatik geçti · üç `null` kolu D-038'le **byte düzeyinde aynı**, altı e�
 kolu farklı (D-042'nin yalnız eğitim yolunu değiştirdiğinin kanıtı).
 
 Sinyal (keşifsel, N=3): `lived − null` **3/3 pozitif** (ort. +0.0312) ·
-`lived − shuffle` **hâlâ tutarsız** (−, +, +). ⚠ D-042'yi bulduğumda
-tutarsızlığı onun açıklayabileceğini söylemiştim; **ölçüm desteklemedi.**
+`lived − shuffle` tutarsız (−, +, +). ⚠ D-042'yi bulduğumda tutarsızlığı
+onun açıklayabileceğini söylemiştim; **ölçüm desteklemedi.**
+
+## ✅ A1: ΔPE uç noktası kayıplı çıktı (D-044)
+
+Ham izlerden, **GPU'suz**: faz-2'de kollar olay bazında 0.065–0.194
+ayrışıyor ama faz ortalaması bunun yalnız **%14–20**'sini görüyor. İptal
+simetrik (işaretlerin %44–64'ü pozitif) ⇒ adapter ajanın **neye şaşırdığını**
+yeniden düzenliyor, ortalama şaşkınlık düzeyini kaydırmıyor.
+
+Uç örnek: seed 2003 `lived−shuffle` uç noktası +0.00073 ("fark yok"), ham
+ayrım **0.094** — %99.2 iptal. Yani D-043'teki "tutarsızlık"ın en az bir
+parçası **iptal artefaktı**, küçük etki değil.
+
+⇒ Birinciliği doğum-driftte tutmayı **destekliyor** (o bir anın vektörü,
+ortalama alınmıyor). ΔPE ikincilleri (S3/S4) için `PREREGISTRATION.md` **L9**
+sınırı yazıldı: null çıkarlarsa "ölçemedik" diye raporlanır.
+⚠ Yörünge tabanlı uç nokta bu veride çok daha büyük etki gösteriyor ama
+**alınmadı** — ölçümü görüp istatistik seçmek post-hoc olurdu (§2.7).
 
 ## ✅ Faz 2 KAPANDI
 

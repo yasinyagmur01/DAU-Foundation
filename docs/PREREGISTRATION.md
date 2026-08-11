@@ -89,8 +89,8 @@ anlamlı olsa bile sonuç **null** olarak raporlanır.
 |---|---|---|
 | S1 | Doğum-drift **kategorik** kanalı: varisin bayraklanan alan kümesi | Fisher-Freeman-Halton, kol × profil |
 | S2 | Doğum-drift **sayım** kanalı: `n_transfer_candidates`, `n_inherited_warnings` | Kruskal-Wallis (⚠ §8-L1: bu kanalın atıl olması bekleniyor) |
-| S3 | Faz-1 ΔPE (fazın tamamı, D-036) | eşleştirilmiş Wilcoxon, `lived−shuffle` |
-| S4 | Gen2 ortalama PE | eşleştirilmiş Wilcoxon |
+| S3 | Faz-1 ΔPE (fazın tamamı, D-036) ⚠ **düşük duyarlıklı, bkz. L9** | eşleştirilmiş Wilcoxon, `lived−shuffle` |
+| S4 | Gen2 ortalama PE ⚠ **aynı iptal riski, ölçülmedi (L9)** | eşleştirilmiş Wilcoxon |
 | S5 | Gen2 davranışsal: kriz anında `decision_to_extraction`, ilk travmaya kadar geçen olay | McNemar (ikili sonuçlar) |
 | S6 | `f_agent=None` duyarlılık kolu (D-003) | birincil ile aynı test |
 
@@ -183,6 +183,22 @@ Ebbinghaus unutma kararı bundan etkileniyor.
 `decision_to_outcome`'ın eşlediği kelimelere yönlendiriyor olabilir. İki
 bağımsız denetim aynı maddeyi işaret etti (D-010). Metodolojik, bug değil.
 
+**L9 — ΔPE uç noktası ayrımın %80–86'sını atıyor** (D-044). Faz-2'de kollar
+olay bazında 0.065–0.194 ayrışıyor, ama faz ortalaması bunun yalnız
+%14–20'sini görüyor; kalanı iptal ediyor. İptal simetrik (fark işaretlerinin
+%44–64'ü pozitif), yani adapter ajanın **neye şaşırdığını** yeniden
+düzenliyor, ortalama şaşkınlık düzeyini kaydırmıyor — ve faz ortalaması buna
+yapı gereği kör. En uç örnek: seed 2003 `lived−shuffle`, ham ayrım 0.094, uç
+nokta 0.00073 (%99.2 iptal).
+⇒ **S3 (ve muhtemelen S4) null çıkarsa bu "etki yok" değil "ölçemedik"
+demektir** ve raporda öyle yazılır (§11).
+⇒ Birincil uç noktayı **etkilemez**: doğum-drift büyüklükleri tek bir anın
+vektörü, olaylar üstünde ortalama alınmıyor. Bu bulgu birinciliği doğum-
+driftte tutma kararını destekliyor.
+⚠ Yörünge tabanlı bir uç nokta bu veride çok daha büyük etki gösteriyor ama
+**bu ön-kayıta alınmadı** — ölçümü gördükten sonra istatistik seçmek post-hoc
+tuning olur (§2.7). Bir sonraki ön-kayıta ve taze veriye bırakıldı.
+
 **L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
 girmiyor (GAP-10). Anı seçimi şu an semantik değil.
 
@@ -249,6 +265,10 @@ Birincil test null çıkarsa rapor şunu ayırt etmek zorundadır:
 
 Ayırt edilemiyorsa `INSTRUMENT_LIMITED_NULL` etiketiyle raporlanır ve
 hangi halkanın koptuğu bilinmediği **açıkça** yazılır.
+
+⚠ **S3 ve S4 için bu ayrım baştan biliniyor:** L9 gereği ΔPE uç noktası
+ayrımın %80–86'sını atıyor, dolayısıyla o iki ikincilin null'ı **ölçüm
+duyarsızlığı** olarak raporlanır, mekanizma yokluğu olarak değil.
 
 ---
 

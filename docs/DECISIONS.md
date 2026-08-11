@@ -2698,3 +2698,95 @@ başlar.
 **Reddedilen alternatif:** bu koşumu yeni taban saymak. Değil — alet dört kez
 değişti ve bu koşum onun regresyon testi. Taban, ön-kayıt kilitlendikten
 sonra taze seed'lerle kurulur.
+
+---
+
+## D-044 · 2026-08-11 · ΔPE uç noktası **kayıplı**: ayrımın %80–86'sı ortalamada iptal oluyor
+
+**Durum:** kabul edildi (ölçüm kaydı) · **Keşifsel, ön-kayıtlı değil**
+
+**Karar (A1):** D-043'ün `lived − shuffle` sayıları küçük ve tutarsız
+görünüyordu. İki okuma uyumluydu: etki gerçekten küçük, ya da **uç nokta onu
+ortalamada yok ediyor.** Ayırt etmek için yeniden koşum gerekmedi — koşum her
+kolun 50 olaylık `pe_after_list`'ini ve karar hash'lerini saklıyor
+(D-036'nın getirdiği alan). **GPU maliyeti sıfır.**
+
+Bu soruyu kilitten önce sormanın sebebi D-036: uç nokta 50 olaylık fazın ilk
+beşte birini okuyordu ve kimse fark etmemişti. O da bir uç nokta sorunuydu ve
+geç bulunmuştu.
+
+### Ölçü: iptal oranı
+
+Her seed ve kol çifti için, faz-2'nin olay olay:
+
+```
+raw      = ortalama |pe_A[i] − pe_B[i]|      (kollar olay bazında ne kadar ayrı)
+endpoint = |ortalama (pe_A[i] − pe_B[i])|    (ön-kayıtlı istatistiğin gördüğü)
+kept     = endpoint / raw
+```
+
+| seed | çift | farklı karar | raw | endpoint | **kept** |
+|---|---|---|---|---|---|
+| 2001 | lived−null | 18 | 0.08985 | 0.00368 | **4.1%** |
+| 2001 | lived−shuffle | 20 | 0.06476 | 0.00709 | **10.9%** |
+| 2001 | shuffle−null | 23 | 0.10088 | 0.01076 | 10.7% |
+| 2002 | lived−null | 44 | 0.10366 | 0.01824 | **17.6%** |
+| 2002 | lived−shuffle | 43 | 0.08706 | 0.02700 | **31.0%** |
+| 2002 | shuffle−null | 20 | 0.07295 | 0.00876 | 12.0% |
+| 2003 | lived−null | 39 | 0.19365 | 0.07180 | **37.1%** |
+| 2003 | lived−shuffle | 34 | 0.09392 | 0.00073 | **0.8%** |
+| 2003 | shuffle−null | 41 | 0.17265 | 0.07108 | 41.2% |
+
+**Ortalama korunan pay: `lived−null` %19.6 · `lived−shuffle` %14.2 ·
+`shuffle−null` %21.3.** Yani ayrımın **%80–86'sı ortalamada iptal oluyor.**
+
+En çarpıcısı seed 2003 `lived−shuffle`: uç nokta **+0.00073** diyor, yani
+"neredeyse hiç fark yok". Ham ayrım **0.094** — olay başına ortalama fark,
+`lived−null`'ınkinden bile büyük. **%99.2'si iptal ediyor.**
+
+### İptal simetrik, yapılı değil
+
+Fark işaretlerinin pozitif payı dokuz satırda **%44–64** (rastgeleye yakın),
+ve ilk 25 / son 25 olay ortalamaları arasında tutarlı bir eğilim yok.
+
+⇒ Adapter, ajanın **neye şaşırdığını yeniden düzenliyor**, ortalama şaşkınlık
+düzeyini sistematik olarak kaydırmıyor. Faz ortalaması bu farka **yapı gereği
+kör.**
+
+### Ne anlama geliyor, ne anlama gelmiyor
+
+**Birincil uç noktayı tehdit etmiyor.** §3'ün birinciliği doğum-drift
+büyüklükleri — transfer anında ölçülen bir vektör, olaylar üstünde ortalama
+yok, dolayısıyla bu iptal mekanizması ona uygulanamaz. Bu bulgu birinciliği
+doğum-driftte tutma kararını **destekliyor**.
+
+**Etkilediği: ΔPE, yani §4'ün S3 ikincili.** Ve §11'in "teşhis edilebilir
+null" şartı için kritik: S3 null çıkarsa artık biliyoruz ki bu **düşük
+duyarlıklı bir ölçüm**, "etki yok" kanıtı değil. Bu, ilan edilmiş sınır
+olarak §8'e giriyor (L9).
+
+**D-043'ün bir cümlesi yumuşuyor** (kayıt append-only): orada `lived −
+shuffle`'ın tutarsızlığı "sebebi hâlâ bilinmiyor" diye kaydedilmişti.
+Sebebin en az bir parçası bulundu — uç nokta ayrımın %86'sını atıyor. Seed
+2003'ün "+0.0007"si küçük etki değil, **iptal artefaktı.**
+
+### ⚠ Bu ölçümden yeni bir uç nokta seçilmiyor
+
+`|ortalama mutlak fark|` bu veride çok daha büyük bir etki gösteriyor. **Onu
+uç nokta yapmak tam olarak §2.7'nin yasakladığı post-hoc tuning olurdu** ve
+yapılmadı.
+
+İlkesel bir argüman kurulabilir — aksiyomun iddiası *"ajan farklı şeylere
+şaşırır hale gelir"* ise yörünge tabanlı bir uç nokta daha uygun olur. Ama
+⚠ **bu argümanı bu ölçüm sayesinde düşündüm**, ve bunu saklamak dürüst
+olmazdı. Temiz yol: bu ön-kayıtta S3'ün duyarsızlığı **sınır olarak ilan
+edilir**, yörünge tabanlı uç nokta **bir sonraki ön-kayıta** ve taze veriye
+bırakılır.
+
+**Reddedilen alternatifler:**
+- *Uç noktayı şimdi değiştirmek* — post-hoc, yukarıdaki gerekçe.
+- *Bulguyu görmezden gelmek* — S3 null çıkarsa teşhis edilemez null üretirdi,
+  ki D-002 tam olarak ondan kaçmak için yazılmıştı.
+
+**Sınırlar:** 3 seed · tek koşum · yalnız gen1 faz-2. Gen2'nin `mean_pe`'si
+(S4 ikincili) aynı iptal riskini taşıyor olabilir, **ölçülmedi.**
