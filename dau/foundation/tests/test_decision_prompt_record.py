@@ -250,10 +250,45 @@ def test_shuffled_control_keeps_the_same_conditioning(pair_builder) -> None:
     pairs = pair_builder.build_pe_ranked_pairs(
         [_lived_row(1, LOW_PE, CHOSEN_TEXT), _lived_row(2, HIGH_PE, REJECTED_TEXT)]
     )
-    shuffled = pair_builder.shuffle_preference_pairs(pairs, seed=7)
+    shuffled = pair_builder.shuffle_preference_pairs(pairs)
 
     assert len(shuffled) == 1
     assert shuffled[0].system == pairs[0].system
     assert shuffled[0].prompt == pairs[0].prompt
     assert shuffled[0].chosen == pairs[0].rejected
     assert shuffled[0].rejected == pairs[0].chosen
+
+
+def test_shuffle_inverts_every_pair_not_a_random_half(pair_builder) -> None:
+    """D-040: the control's strength must not be drawn per seed.
+
+    Under the old coin flip the realised net signal on seeds 2001-2003 came
+    out +14.9%, +2.4% and -21.1% of lived — three different controls wearing
+    one name. A control that varies is not a control, so every pair inverts.
+    """
+
+    pairs = pair_builder.build_pe_ranked_pairs(
+        [
+            _lived_row(counter, LOW_PE, CHOSEN_TEXT)
+            for counter in range(1, 40, 2)
+        ]
+        + [
+            _lived_row(counter, HIGH_PE, REJECTED_TEXT)
+            for counter in range(2, 41, 2)
+        ]
+    )
+    assert len(pairs) > 1, "need several pairs for a half-swap to be visible"
+
+    shuffled = pair_builder.shuffle_preference_pairs(pairs)
+
+    assert len(shuffled) == len(pairs)
+    for before, after in zip(pairs, shuffled):
+        assert after.chosen == before.rejected
+        assert after.rejected == before.chosen
+        assert after.pe_chosen == before.pe_rejected
+        assert after.pe_rejected == before.pe_chosen
+
+    # No pair left facing the lived direction — the old rule left roughly half.
+    assert not [
+        after for before, after in zip(pairs, shuffled) if after.chosen == before.chosen
+    ]

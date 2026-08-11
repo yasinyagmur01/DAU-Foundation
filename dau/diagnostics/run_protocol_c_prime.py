@@ -966,10 +966,7 @@ def _train_adapter(
         )
 
     if shuffled and pairs:
-        pairs = shuffle_preference_pairs(
-            pairs,
-            seed=_seed_from_agent_id(agent_id),
-        )
+        pairs = shuffle_preference_pairs(pairs)
 
     # A skipped train step used to be invisible: the arm still reported the NLI
     # pass count as n_pairs_trained, so a run where DPO never fired looked

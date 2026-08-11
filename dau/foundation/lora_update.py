@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import os
-import random
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -424,34 +423,39 @@ def build_pe_ranked_pairs(
 
 def shuffle_preference_pairs(
     pairs: list[PreferencePair],
-    *,
-    seed: int,
 ) -> list[PreferencePair]:
-    """Control: swap chosen/rejected (wrong PE preference direction).
+    """Control: invert the PE preference on EVERY pair (D-040).
 
-    Field-by-field reconstruction is what this used to do, and it silently
-    drops any field added later — the shuffled arm would then train under
-    different conditioning than the lived arm and the comparison would be
-    between two things. ``replace`` swaps only the two sides and carries the
-    rest, prompt and system included (D-032).
+    This arm answers one question — did the agent change because of what its
+    life taught it, or merely because DPO ran on it? So it must hold
+    everything constant except the direction: same prompts, same completions,
+    same pair count, same gradient steps, same token exposure, opposite sign.
+
+    It used to flip each pair on an independent coin, which made the control's
+    strength a per-seed accident. Measured on seeds 2001-2003 the realised net
+    signal came out +14.9%, +2.4% and -21.1% of lived — one seed's control was
+    faintly lived-like, another's was near-null, the third's was anti-lived.
+    Comparing against a target that moves is not a control (D-038, finding 3).
+
+    No seed parameter: there is nothing left to randomise, which also retires
+    GAP-11's failure mode rather than keeping it deterministic.
+
+    ``replace`` swaps only the two sides and carries the rest, prompt and
+    system included — field-by-field reconstruction silently dropped any field
+    added later, and the shuffled arm would then train under different
+    conditioning than lived (D-032).
     """
 
-    def _swap(pair: PreferencePair) -> PreferencePair:
-        return replace(
+    return [
+        replace(
             pair,
             chosen=pair.rejected,
             rejected=pair.chosen,
             pe_chosen=pair.pe_rejected,
             pe_rejected=pair.pe_chosen,
         )
-
-    rng = random.Random(seed)
-    out: list[PreferencePair] = []
-    for pair in pairs:
-        out.append(_swap(pair) if rng.random() < 0.5 else pair)
-    if pairs and out == pairs:
-        out[0] = _swap(pairs[0])
-    return out
+        for pair in pairs
+    ]
 
 
 def run_micro_train_preference_step(
