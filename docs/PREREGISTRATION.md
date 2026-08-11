@@ -400,10 +400,35 @@ bayrak kümesi farkından, ne kadarının büyüklük farkından geldiği
 
 ---
 
-## 12. Alet kimliği (kilitte dondurulacak)
+## 12. Alet kimliği — 🔒 **DONDURULDU** (commit `befd72b4ee57`)
 
-Kilit anında bu bölüm o commit'in `tool_identity` çıktısıyla doldurulur.
-Taslak anındaki hali (commit `4d26b31`):
+Aşağıdaki değerler **kilit anındaki `build_tool_identity()` çıktısıdır**,
+elle yazılmadı. Koşumun kendi `tool_identity` bloğu bunlarla **birebir
+eşleşmelidir**; eşleşmezse koşum bu ön-kaydın koşumu değildir.
+
+**Koşum:** seed **2004–2043**, N=40, iki batch (2004–2023 · 2024–2043) ·
+`--lora` · `events_gen1=50` · `events_gen2=20` · `k_gen2=3` ·
+`pe_window = fazın tamamı` (`PE_WINDOW_EVENTS=0`, D-036).
+
+| Alan | Değer |
+|---|---|
+| backend | `local` |
+| model | `meta-llama/Meta-Llama-3.1-8B-Instruct` |
+| quantization | 4-bit **NF4** + double_quant, compute dtype **fp16**, device_map `auto` |
+| DPO | β=0.1 · **lr=1e-6** · epochs=1 · batch=1 · **grad_accum=4** (etkin 4) · max_seq=512 · max_grad_norm=1.0 |
+| LoRA | rank=8 · alpha=16 · `dau_runs/adapters/{agent_id}/` |
+| sampling | `do_sample=False` · temperature=0.2 · max_new_tokens=64 |
+| polarite | kosinüs · MiniLM · bant `[0.25, 0.80]` · ⚠ **kalibre değil** |
+| SNR marj | `0.15` · ⚠ **kalibre değil** |
+| `MIN_PAIRS` | `4` (= batch × accum, D-046) · ⚠ **kalibre değil** |
+| determinizm | `TORCH_DETERMINISTIC_WARN_ONLY=False` (D-037), I0.6 zorunlu kılıyor |
+| sürümler | python 3.14.6 · torch 2.13.0 · transformers 5.14.1 · peft 0.20.0 · bitsandbytes 0.50.0 · accelerate 1.14.0 · numpy 2.4.5 · scipy 1.18.0 |
+| değişmezler | **24 kapı** kodda (I0.1–I0.7 · I1.1/I1.3/I1.3b/I1.4/I1.5 · I2.1/I2.2 · I3.x · I4.1/I4.2 · I5.x) |
+
+⚠ **`DAU_LORA_ENABLED` env'e güvenilmez** — koşum `--lora` bayrağıyla
+başlatılır ve bayrak env ile tutarsızsa **I0.2 abort eder** (GAP-1).
+
+<details><summary>Taslak anındaki hali (commit `4d26b31`) — tarihsel</summary>
 
 - backend `local` · model `meta-llama/Meta-Llama-3.1-8B-Instruct`
 - quantization NF4 + double_quant, compute dtype fp16
@@ -414,3 +439,5 @@ Taslak anındaki hali (commit `4d26b31`):
 - polarite: kosinüs, MiniLM, bant `[0.25, 0.80]`, kalibre değil
 - python 3.14.6 · torch 2.13.0 · transformers 5.14.1 · peft 0.20.0 ·
   bitsandbytes 0.50.0 · numpy 2.4.5 · scipy 1.18.0
+
+</details>
