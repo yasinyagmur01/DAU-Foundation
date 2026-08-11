@@ -24,7 +24,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `332 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-044.** Sıradaki kayıt **D-045** olarak açılır.
+- **Son D-kaydı: D-045.** Sıradaki kayıt **D-046** olarak açılır.
 - **GAP-2 kapandı** (`d65100d`); açık GAP'ler: 3, 4, 5, 6, 9, 10, 17, 18, 19 —
   **her birinin tetiği §1'deki GAP TETİK TABLOSU'nda.**
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
@@ -34,6 +34,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Ön-kayıt taslağı:** `docs/PREREGISTRATION.md` — **KİLİTLİ DEĞİL**.
   **Beş slot kapandı** (S1 greedy · S3 α=0.05 · S5 1 epoch · S6 replay yok ·
   S7 50/20/3); **S4 ve S2 açık**, ve kilidi onlar tutuyor.
+  **On ilan edilmiş sınır** (L10 D-045 ile eklendi).
 - **Master reference: v2.4.2** yazıldı (§8).
 - **Üç DR brief'i hazır**, gönderilmedi — sıra §1'de.
 
@@ -80,6 +81,26 @@ ortalama alınmıyor). ΔPE ikincilleri (S3/S4) için `PREREGISTRATION.md` **L9*
 sınırı yazıldı: null çıkarlarsa "ölçemedik" diye raporlanır.
 ⚠ Yörünge tabanlı uç nokta bu veride çok daha büyük etki gösteriyor ama
 **alınmadı** — ölçümü görüp istatistik seçmek post-hoc olurdu (§2.7).
+
+## ✅ A5: gen2 uç noktası da kayıplı (D-045)
+
+D-044'ün açık bıraktığı soru kapandı, **GPU'suz**. Korunan pay
+`lived−null` **%17.5** (gen1: %19.6) · üç çiftin ortalaması %26.7 (gen1
+%18.4). ⇒ **S4 null çıkarsa "ölçemedik"**, S3 ile aynı. `PREREGISTRATION.md`
+**L10** yazıldı; §11 artık iki ikincil için de "ölçüldü, varsayılmadı" diyor.
+
+⚠ **Ama gen2'nin iptali gen1'inki gibi simetrik değil.** Bağımsız altı
+karşıtlığın **beşinde** yaşamın ikinci yarısı daha pozitif (kayma
+0.056–0.155; gen1'de 4/6 ve 0.003–0.070 — bir mertebe küçük). Kol bazında
+kaynak: iki seed'de **`null` varisinin PE'si ikinci yarıda çöküyor**
+(−0.254 / −0.143), `lived`'inki çökmüyor (+0.032 / +0.059).
+Adaylar **GAP-19** (paylaşılan sayaç uzayı ⇒ Ebbinghaus) ve **GAP-3**.
+**Gözlem, iddia değil** — N=3, koda dokunulmadı, A6/A7'ye girdi.
+
+Yan bulgu: seed 2001'de `baseline_d037.shuffle`'ın gen2 `pe_list`'i
+`control_d042.lived`'inkiyle **bit düzeyinde aynı** ⇒ D-042'nin konum
+kusuru için gen2 yörüngesinden bağımsız kanıt. Ayrıca `baseline_d037` ile
+`repro_d038` gen2'de de birebir aynı ⇒ D-037 determinizmi gen2'de tutuyor.
 
 ## ✅ Faz 2 KAPANDI
 
@@ -210,12 +231,12 @@ onaylandı (2026-08-11)**; sıra değiştirmek yeni onay ister.
 
 | # | İş | Süre | Durum |
 |---|---|---|---|
-| **A5** | **Gen2 `mean_pe`'de iptal ölçümü.** D-044 gen1'de %80–86 iptal buldu; gen2 (S4 ikincili) **ölçülmedi**. Mevcut JSON'dan, **GPU yok** | 20 dk | ⬜ |
+| ~~A5~~ | ✅ **D-045** — gen2 de kayıplı, S4 sınırı L10 olarak yazıldı | — | ✅ |
 | **A3** | **Eksik üç kapı:** I1.3 gradyan adımı atıldı · I1.4 çiftler gürültü değil · I1.5 çift sayısı yeterli | ~2 sa | ⬜ |
 | ↳ | **GAP-6 buraya bağlı** — aşağıdaki tetik tablosuna bak | +30 dk | ⬜ |
-| **A6** | `lived − shuffle` tutarsızlığının **kalan kısmı**. D-044 bir parçasını açıkladı (iptal artefaktı), tamamını değil. Analiz, GPU yok | ~1 sa | ⬜ |
+| **A6** | `lived − shuffle` tutarsızlığının **kalan kısmı**. D-044 bir parçasını açıkladı (iptal artefaktı), tamamını değil. ⚠ **D-045 yeni bir iz bıraktı:** `null` varisinin ikinci-yarı PE çöküşü — A6 buradan başlasın. Analiz, GPU yok | ~1 sa | ⬜ |
 | ↳ | **GAP-5 ve GAP-4 buraya bağlı** — tetik tablosu | +1,5 sa | ⬜ |
-| **A7** | **GAP-19 kararı** — faz-1/faz-2 sayaç uzayı. Neyin eğitildiğine dokunuyor, kilitten önce karara bağlanmalı | ~1 sa | ⬜ |
+| **A7** | **GAP-19 kararı** — faz-1/faz-2 sayaç uzayı. Neyin eğitildiğine dokunuyor, kilitten önce karara bağlanmalı. ⚠ **D-045 ona bir gözlem borçlu**: gen2'nin zamana bağlı iptali GAP-19'un öngördüğü desene benziyor | ~1 sa | ⬜ |
 
 **Ertelendi, bilerek:** **A2** (OOD probing) ve **A4** (environment'ı ayrım
 üretir hale getirme). İkisi de değerli, ikisi de bu ön-kaydı **günlerce**
@@ -229,7 +250,7 @@ bunlar. → ikinci ön-kayıt / popülasyon çalışması.
 | **B1** | S4 → S2 (N) hesapla, pre-reg'i güncelle, `tool_identity` dondur, **kilitle** (D-045) | ~45 dk | 🔒 S4 |
 | **B2** | **Doğrulayıcı koşum, seed 2004'ten.** ⚠ 2001–2003 yakılmış (D-038) | N×20 dk +7 | 🔒 B1 |
 | **B3** | Ön-kayıtlı analiz: birincil + altı ikincil, düzeltmesiz | ~1 sa | 🔒 B2 |
-| **B4** | Rapor + dokuz ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
+| **B4** | Rapor + on ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
 
 ### Faz C — işler bitince (Yasin: "belge borcu işler bittikten sonra")
 
@@ -254,7 +275,7 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 | **GAP-19** | **A7 = kendisi** | Neyin eğitildiğine dokunuyor. Kilitten sonra değiştirilirse post-hoc olur | Karar + D-kaydı (Yasin onayı) |
 | **GAP-9** | **S4 cevabı gelince kapanır** | Zaten S4'ün tanımı bu | DR brief #1 |
 | **GAP-18** | **DR brief #2 cevabı gelince** | Kilidi bloke etmiyor; cevap gelmeden kod değişikliği önerilmemeli — iki denemede de ters teptiği ölçüldü | DR brief #2 → sonra karar |
-| **GAP-3** | **B1'de (kilit anı)** | Gen2 ikincillerini etkiliyor, ve o ikinciller zaten L9 ile sınırlı. Düzeltmek yerine **ilan edilmiş sınır** olarak yazmak dürüst ve ucuz | Sınır olarak ilan et |
+| **GAP-3** | **B1'de (kilit anı)** | Gen2 ikincillerini etkiliyor, ve o ikinciller zaten L10 ile sınırlı. Düzeltmek yerine **ilan edilmiş sınır** olarak yazmak dürüst ve ucuz. ⚠ D-045 onu `null` varisinin ikinci-yarı çöküşü için **mekanizma adayı** olarak da işaretledi | Sınır olarak ilan et |
 | **GAP-10** | **B1'de (kilit anı)** | `W_SEM=0.0` değiştirilirse **taban yine sıfırlanır**. Kilitten önce dokunmak pahalı, kilitten sonra yasak ⇒ bu ön-kayıt için **sınır**, sonraki için iş kalemi | Sınır olarak ilan et |
 | **GAP-17** | **B4'te (rapor)** | Karşılaştırma tabanı delil olarak kullanılamıyor; bisect pahalı ve sonucu bir şeyi değiştirmiyor. Raporda "açıklanmadı" diye geçer | Raporda not |
 
@@ -296,7 +317,7 @@ Cevap gelince: her iddia için mutabakat tablosu → `RECONCILIATION.md`.
 3. **`docs/DECISIONS.md`** — ilgili D-kaydı. En çok bağlam taşıyanlar:
    **D-036** (ölçüm penceresi) · **D-037** (tekrarlanabilirlik) · **D-042**
    (konum bağımsızlığı) · **D-044** (uç nokta duyarlılığı).
-4. **`docs/PREREGISTRATION.md`** — beş slot kapalı, S4/S2 açık, dokuz ilan
+4. **`docs/PREREGISTRATION.md`** — beş slot kapalı, S4/S2 açık, on ilan
    edilmiş sınır. Kilitli **değil**.
 5. Koda dokunmadan önce **§2.2**.
 
@@ -424,7 +445,7 @@ kaymış.)
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
-| Ön-kayıt: slotlar, uç noktalar, **dokuz ilan edilmiş sınır** | `docs/PREREGISTRATION.md` (kilitli değil) |
+| Ön-kayıt: slotlar, uç noktalar, **on ilan edilmiş sınır** | `docs/PREREGISTRATION.md` (kilitli değil) |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
