@@ -547,3 +547,35 @@ def test_results_json_carries_tool_identity(
 
 def test_results_path_under_dau_runs() -> None:
     assert str(RESULTS_PATH).startswith("dau_runs/")
+
+
+def test_pair_builder_failure_is_announced_not_swallowed(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """GAP-2: a broken pair path must not read like a quiet life.
+
+    Both cases return the same counts — zero trained, zero rejected, weights
+    unread — so the numbers alone cannot tell a failure from a life that
+    simply produced no usable pairs. Only the log can, which is why the log
+    has to exist.
+    """
+
+    monkeypatch.setenv("DAU_LORA_ENABLED", "1")
+
+    from dau.foundation import lora_update
+
+    def _boom(_examples):
+        raise RuntimeError("polarity model unavailable")
+
+    monkeypatch.setattr(lora_update, "build_pe_ranked_pairs", _boom)
+
+    outcome = _train_adapter("cprime-lived-2001-g1", [{"event_counter": 1}])
+
+    assert outcome.n_pairs_trained == 0
+    assert outcome.lora_b_abs_sum_delta != outcome.lora_b_abs_sum_delta
+    captured = capsys.readouterr().out
+    assert "[PROTOCOL_C_PRIME][WARN]" in captured
+    assert "build_pe_ranked_pairs" in captured
+    assert "polarity model unavailable" in captured
+    assert "cprime-lived-2001-g1" in captured

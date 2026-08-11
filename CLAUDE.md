@@ -25,6 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   gerçek diverjans var, ertelendi (**D-013**).
 - **Suite:** `331 passed, 2 deselected`. Çalışma ağacı temiz.
 - **Son D-kaydı: D-044.** Sıradaki kayıt **D-045** olarak açılır.
+- **GAP-2 kapandı** (`d5f4a4c`); açık GAP'ler: 3, 4, 5, 6, 9, 10, 17, 18, 19.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
 - **Değişmez sayısı: 20** (I1.1 ve I4.1 D-039/D-041 ile eklendi; belgede
   tanımlı 25'in beşi hâlâ kodda yok — I1.2 testte, I2.3 yapısal, I1.3/1.4/1.5
@@ -523,12 +524,11 @@ pilotu `tool_identity`'den önce ve sampling durumu kayıtlı değil — yani
 **delil olarak kullanılamaz**. Kullanılamayan bir tabana karşı bisect pahalı
 ve sonucu bir şeyi değiştirmiyor. Bugünkü alet doğrudan ve kapsamlı ölçüldü.
 
-### GAP-2: Silent train failure — kısmen açık
-- **Açık:** `build_pe_ranked_pairs` exception'ı hâlâ sessizce yutuluyor —
-  `run_protocol_c_prime.py` `_train_adapter` içinde bare
-  `except Exception: return (0,0)`, log yok. **Tek satırlık `[WARN]` ekleme;
-  Cursor'a uygun.**
-- **Kapalı:** train exception'ı ve `trained=False` durumu `[WARN]` basıyor.
+### ~~GAP-2: Silent train failure~~ — **KAPANDI** (`d5f4a4c`)
+`_train_adapter`'ın beş erken dönüşünün hepsi artık konuşuyor: pair builder
+exception'ı ve `lora_update` import hatası `[WARN]` basıyor, train exception'ı
+ve `trained=False` zaten basıyordu. `DAU_LORA_ENABLED=0` dalı bilerek sessiz —
+belgelenmiş kapı, hata değil.
 
 ### GAP-3: Gen2 event-1 somatic scale boşluğu
 `apply_inherited_somatic_scale` sadece `delta_log` dolu olunca çalışıyor;
@@ -703,8 +703,6 @@ Code diff'i okur, suite'i koşar, commit eder.
 
 ## Şu an Cursor'a uygun bekleyen işler
 
-1. **GAP-2'nin açık yarısı** — `_train_adapter` içindeki bare
-   `except Exception: return (0,0)`'a `[WARN]` ekle. Karar verilmiş
-   (sessiz fallback yasak), tek satır, davranış değişmiyor.
-2. **Master reference'taki bilinen yanlışlara uyarı işareti** (§8 tablosu) —
+1. **Master reference'taki bilinen yanlışlara uyarı işareti** (§8 tablosu) —
    anlatıyı yeniden yazmadan, sadece "⚠ D-0XX ile geçersiz" notu.
+   ⚠ v2.4.2 tek seferde yazılacaksa bu iş onun içinde erir.

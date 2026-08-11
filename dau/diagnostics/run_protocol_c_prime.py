@@ -935,7 +935,16 @@ def _train_adapter(
             run_micro_train_preference_step,
             shuffle_preference_pairs,
         )
-    except ImportError:
+    except ImportError as exc:
+        # GAP-2. A trained arm that silently became an untrained one is the
+        # exact shape of failure this project has already shipped twice; the
+        # arm still reports zero pairs, which reads the same as a diversity
+        # gate. Say which it was.
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] {agent_id}: lora_update import failed "
+            f"({exc!r}) — arm continues untrained",
+            flush=True,
+        )
         return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     os.environ.setdefault(NLI_FILTER_ENABLED_ENV, "1")
@@ -948,7 +957,17 @@ def _train_adapter(
 
     try:
         pairs = build_pe_ranked_pairs(lived_examples)
-    except Exception:  # noqa: BLE001 — graceful fallback if PE/NLI path fails
+    except Exception as exc:  # noqa: BLE001 — pair building must not abort the run
+        # GAP-2's open half. This swallowed everything the pair builder could
+        # raise and returned the same counts a clean run with no usable pairs
+        # returns, so a broken PE/polarity path was indistinguishable from a
+        # quiet life. The run still continues — one arm's failure should not
+        # cost the other seeds — but it no longer does so silently.
+        print(
+            f"[PROTOCOL_C_PRIME][WARN] {agent_id}: build_pe_ranked_pairs "
+            f"raised {exc!r} — arm continues untrained",
+            flush=True,
+        )
         return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
 
     n_pairs_trained = int(POLARITY_FILTER_STATS.get("passed", EMPTY_COUNT)) - before_passed
