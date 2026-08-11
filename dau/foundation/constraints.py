@@ -82,6 +82,16 @@ ADAPTER_SWITCH_MAX_MS: int = 1
 # on the model). Deliberately not 0.0 — that is a real reading, and it means
 # the train step moved no weights, which is the failure I1.1 exists to catch.
 LORA_B_ABS_SUM_UNREAD: float = float("nan")
+# I1.3 sentinel: no optimizer step ran, so no gradient norm was ever sampled.
+# Same reasoning as above — 0.0 is a real reading and means the optimizer
+# stepped on a zero gradient, which is exactly the no-op I1.3 exists to catch.
+GRAD_NORM_UNREAD: float = float("nan")
+# I1.5. Below one full accumulation group the train step never assembles the
+# batch it was configured for. Derived from DPO_BATCH_SIZE and
+# DPO_GRADIENT_ACCUMULATION_STEPS rather than from any observed pair count —
+# picking it from our own runs would be the post-hoc tuning §2.7 forbids.
+# FLAG only: this is a structural floor, not a calibrated sufficiency level.
+MIN_PAIRS_CALIBRATED: bool = False
 # D-042. The graft every trained arm starts from. A constant, not the run
 # seed: where lora_A begins is instrument state, not part of the experimental
 # manipulation, so every arm in every seed must begin from the same place.
@@ -127,6 +137,10 @@ DPO_GRADIENT_ACCUMULATION_STEPS: int = 4
 # window: +479 MiB training peak (6139.5 -> 6618.6 on a 7807.6 MiB card).
 DPO_MAX_SEQUENCE_TOKENS: int = 512
 DPO_MAX_GRAD_NORM: float = 1.0
+# I1.5 floor: one full accumulation group. Derived here so it cannot drift
+# apart from the two settings it depends on — a hard-coded 4 would keep
+# claiming "one full group" after either constant changed (§2.8).
+MIN_PAIRS: int = DPO_BATCH_SIZE * DPO_GRADIENT_ACCUMULATION_STEPS
 
 # HippoRAG 2 — Personalized PageRank over SQLite domain co-occurrence (CPU)
 PPR_ALPHA = 0.85

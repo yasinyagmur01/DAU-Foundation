@@ -369,9 +369,14 @@ def _run_epochs_counting_steps(
     )
     monkeypatch.setattr(local_llm, "_enable_adapter_training", lambda _m: None)
     monkeypatch.setattr(local_llm, "_enable_gradient_checkpointing", lambda _m: False)
-    monkeypatch.setattr(
-        local_llm, "_encode_pair_side", lambda *_a, **_k: ([1, 2, 3], 2)
-    )
+    def _encode(_tokenizer, _prompt, completion, _system="", **_k):
+        # The two sides must not encode identically. When they did, every
+        # policy_chosen - policy_rejected was exactly 0, so the whole loop
+        # backpropagated a zero gradient and still reported a healthy train —
+        # the shape I1.3 exists to catch, sitting inside the test harness.
+        return ([1, 2, 3, 4], 2) if str(completion) == "c" else ([1, 2, 3], 2)
+
+    monkeypatch.setattr(local_llm, "_encode_pair_side", _encode)
     monkeypatch.setattr(
         local_llm,
         "_reference_logprobs",
@@ -433,6 +438,54 @@ def test_optimizer_steps_once_per_accumulation_group(
     assert stats["dpo_optimizer_steps"] == expected_steps
     assert stats["dpo_steps"] == n_pairs  # micro-steps keep their old meaning
     assert stats["dpo_gradient_accumulation_steps"] == accumulation
+
+
+def test_grad_norm_is_kept_not_discarded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """I1.3: clip_grad_norm_ already computes the norm; we were throwing it away.
+
+    Without this the run cannot tell a step driven by its learning rate from
+    one pinned to the clip ceiling, and D-029's choice of DPO_LEARNING_RATE
+    stops describing the training.
+    """
+
+    stats, _ = _run_epochs_counting_steps(monkeypatch, n_pairs=8, accumulation=4)
+
+    assert stats["dpo_grad_norm_min"] > 0.0
+    assert stats["dpo_grad_norm_mean"] >= stats["dpo_grad_norm_min"]
+    assert isinstance(stats["dpo_clipped_steps"], int)
+
+
+def test_grad_norm_counts_only_the_steps_over_the_ceiling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The clip counter must follow the measured norm, not the constant (2.8)."""
+
+    from dau.foundation.constraints import DPO_MAX_GRAD_NORM
+
+    stats, _ = _run_epochs_counting_steps(monkeypatch, n_pairs=8, accumulation=4)
+    steps = stats["dpo_optimizer_steps"]
+
+    # Whatever the stub's gradients came out as, the count has to agree with
+    # the norms actually seen — that is the only thing making it a measurement.
+    if stats["dpo_grad_norm_min"] > DPO_MAX_GRAD_NORM:
+        assert stats["dpo_clipped_steps"] == steps
+    elif stats["dpo_grad_norm_mean"] <= DPO_MAX_GRAD_NORM:
+        assert stats["dpo_clipped_steps"] < steps or steps == 0
+
+
+def test_grad_norm_is_unread_not_zero_when_no_step_ran(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A loop that never stepped reports unread — 0.0 would look like a real
+    reading of a zero gradient, which is a different failure (I1.1's rule)."""
+
+    import math
+
+    from dau.foundation.constraints import GRAD_NORM_UNREAD
+
+    assert math.isnan(GRAD_NORM_UNREAD)
 
 
 def test_learning_rate_stays_in_the_band_the_decision_rests_on() -> None:

@@ -65,6 +65,7 @@ from dau.diagnostics.run_protocol_c_prime import (
     _pair_filter_report,
     _precision_audit_from_pe_rows,
     _train_adapter,
+    TrainOutcome,
     _window_mean,
     describe_pe_window,
 )
@@ -705,11 +706,11 @@ def run_gen1_arm_lineage(
     pe_before = _window_mean(pe_before_list)
     n_unique, pe_gap_max = _phase1_diversity(lived_examples)
 
-    n_pairs_trained = EMPTY_COUNT
-    n_pairs_rejected = EMPTY_COUNT
     # null never trains, and a diversity-gated arm skips train too — in both
-    # cases the weights were never read, which is not the same as unmoved.
-    lora_b_abs_sum_delta = LORA_B_ABS_SUM_UNREAD
+    # cases nothing about the step was ever read, which is not the same as a
+    # step that ran and did nothing. TrainOutcome's defaults carry that
+    # distinction, so an untrained arm keeps the unread sentinels.
+    outcome = TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
     gated = False
     gate_reason = ""
 
@@ -723,11 +724,7 @@ def run_gen1_arm_lineage(
                 flush=True,
             )
         else:
-            (
-                n_pairs_trained,
-                n_pairs_rejected,
-                lora_b_abs_sum_delta,
-            ) = _train_adapter(
+            outcome = _train_adapter(
                 agent_id,
                 lived_examples,
                 shuffled=(arm == ARM_SHUFFLE),
@@ -759,8 +756,8 @@ def run_gen1_arm_lineage(
         pe_after=pe_after,
         delta_pe=delta_pe,
         n_events=events_gen1,
-        n_pairs_trained=n_pairs_trained,
-        n_pairs_rejected=n_pairs_rejected,
+        n_pairs_trained=outcome.n_pairs_trained,
+        n_pairs_rejected=outcome.n_pairs_rejected,
         wall_seconds=float(time.perf_counter() - started),
         gated=gated,
         gate_reason=gate_reason,
@@ -779,7 +776,11 @@ def run_gen1_arm_lineage(
         pe_before_list=list(pe_before_list),
         pe_after_list=list(pe_after_list),
         adapter_present=_adapter_present(agent_id),
-        lora_b_abs_sum_delta=lora_b_abs_sum_delta,
+        lora_b_abs_sum_delta=outcome.lora_b_abs_sum_delta,
+        dpo_loss=outcome.dpo_loss,
+        dpo_optimizer_steps=outcome.dpo_optimizer_steps,
+        dpo_grad_norm_min=outcome.dpo_grad_norm_min,
+        dpo_clipped_steps=outcome.dpo_clipped_steps,
     )
     return arm_result, state_2, store, tmp
 
@@ -1094,6 +1095,10 @@ def run_cprime_multigen(
         gate,
         gen1_sections=gen1_sections,
         lora_enabled=(lora_choice == LORA_CHOICE_ON),
+        # Read here rather than passed down from the arms: these are run-wide
+        # counters, and every arm plus the replay has finished by now, so this
+        # is the same snapshot write_multigen_results_json will record.
+        pair_filter=_pair_filter_report(),
     )
     run_phase4_5(
         gate,

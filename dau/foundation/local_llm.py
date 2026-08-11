@@ -773,6 +773,16 @@ def _run_dpo_epochs(
     total_accuracy = 0.0
     step_count = 0
     optimizer_step_count = 0
+    # I1.3. clip_grad_norm_ already computes the pre-clip norm and we were
+    # throwing it away. Keeping it answers two questions nothing else can:
+    # whether any gradient reached the optimizer at all (a norm of exactly 0
+    # means the step was a no-op even though the optimizer ran), and how often
+    # the norm exceeded DPO_MAX_GRAD_NORM. The second matters because a run
+    # that clips on every step has an effective step size set by the clip
+    # ceiling, not by the DPO_LEARNING_RATE locked in D-029.
+    grad_norm_min = float("inf")
+    grad_norm_total = 0.0
+    clipped_step_count = 0
     accumulation = max(1, int(DPO_GRADIENT_ACCUMULATION_STEPS))
     # Micro-batches per epoch. The last accumulation group is usually short —
     # with 1-2 surviving pairs it is the ONLY group — so its size is computed
@@ -836,7 +846,14 @@ def _run_dpo_epochs(
 
                 pending += 1
                 if pending == group_size:
-                    torch.nn.utils.clip_grad_norm_(trainable, DPO_MAX_GRAD_NORM)
+                    grad_norm = float(
+                        torch.nn.utils.clip_grad_norm_(trainable, DPO_MAX_GRAD_NORM)
+                    )
+                    # Pre-clip norm, which is what clip_grad_norm_ returns.
+                    grad_norm_min = min(grad_norm_min, grad_norm)
+                    grad_norm_total += grad_norm
+                    if grad_norm > DPO_MAX_GRAD_NORM:
+                        clipped_step_count += 1
                     optimizer.step()
                     optimizer.zero_grad()
                     optimizer_step_count += 1
@@ -870,6 +887,18 @@ def _run_dpo_epochs(
         "dpo_steps": step_count,
         "dpo_optimizer_steps": optimizer_step_count,
         "dpo_gradient_accumulation_steps": accumulation,
+        # I1.3. Reported from what the step actually did, never from the
+        # constants that configured it (§2.8) — a run whose gradients are all
+        # clipped must not read as one whose learning rate was honoured.
+        "dpo_grad_norm_min": (
+            grad_norm_min if optimizer_step_count else GRAD_NORM_UNREAD
+        ),
+        "dpo_grad_norm_mean": (
+            grad_norm_total / optimizer_step_count
+            if optimizer_step_count
+            else GRAD_NORM_UNREAD
+        ),
+        "dpo_clipped_steps": clipped_step_count,
     }
 
 

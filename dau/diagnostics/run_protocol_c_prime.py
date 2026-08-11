@@ -42,7 +42,9 @@ from dau.diagnostics.tool_identity import (
 )
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
+    GRAD_NORM_UNREAD,
     LORA_B_ABS_SUM_UNREAD,
+    MIN_PAIRS,
     NLI_CONTRADICTION_THRESHOLD,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
@@ -255,11 +257,20 @@ class TrainOutcome(NamedTuple):
     The third field exists because the first two cannot tell a real train from
     a fake one: pair counts come from the filter stats, which are populated
     before DPO is ever called.
+
+    The last four are I1.3. lora_b_abs_sum_delta already proves *a* step
+    landed, so these do not repeat it — they carry what a weight reading
+    cannot show: whether the loss stayed finite, whether the optimizer ever
+    ran, and how hard the gradients were pressing against DPO_MAX_GRAD_NORM.
     """
 
     n_pairs_trained: int
     n_pairs_rejected: int
     lora_b_abs_sum_delta: float  # |Σ|lora_B|after − before|; NaN when unread
+    dpo_loss: float = float("nan")  # NaN when unread, as for the weights
+    dpo_optimizer_steps: int = EMPTY_COUNT
+    dpo_grad_norm_min: float = GRAD_NORM_UNREAD
+    dpo_clipped_steps: int = EMPTY_COUNT
 
 
 @dataclass
@@ -311,6 +322,16 @@ class ArmResult:
     # train arm means DPO ran and moved nothing; NaN means it was never read.
     # Recorded, not asserted — the gate judges it from the results file.
     lora_b_abs_sum_delta: float = LORA_B_ABS_SUM_UNREAD
+    # I1.3. What the weight reading above cannot show. dpo_loss catches a step
+    # that ran on a non-finite loss; dpo_optimizer_steps catches a loop that
+    # accumulated but never stepped; dpo_grad_norm_min catches an optimizer
+    # step taken on a zero gradient. dpo_clipped_steps is not a failure — it
+    # is how many steps hit DPO_MAX_GRAD_NORM, which decides whether the
+    # effective step size was set by D-029's learning rate or by the clip.
+    dpo_loss: float = float("nan")
+    dpo_optimizer_steps: int = EMPTY_COUNT
+    dpo_grad_norm_min: float = GRAD_NORM_UNREAD
+    dpo_clipped_steps: int = EMPTY_COUNT
 
 
 @dataclass
@@ -1019,6 +1040,13 @@ def _train_adapter(
         max(EMPTY_COUNT, n_pairs_trained),
         max(EMPTY_COUNT, n_pairs_rejected),
         _lora_b_delta(result),
+        # Absent keys are unread, never zero — same rule as _lora_b_delta.
+        # A train path that cannot report its own gradients must not pass I1.3
+        # by defaulting to values that look healthy.
+        float(result.get("dpo_loss", float("nan"))),
+        int(result.get("dpo_optimizer_steps", EMPTY_COUNT)),
+        float(result.get("dpo_grad_norm_min", GRAD_NORM_UNREAD)),
+        int(result.get("dpo_clipped_steps", EMPTY_COUNT)),
     )
 
 
@@ -1047,10 +1075,9 @@ def run_arm(
     pe_before = _window_mean(pe_before_list)
     n_unique, pe_gap_max = _phase1_diversity(lived_examples)
 
-    n_pairs_trained = EMPTY_COUNT
-    n_pairs_rejected = EMPTY_COUNT
-    # null never trains, so its weights were never read — not "moved by zero".
-    lora_b_abs_sum_delta = LORA_B_ABS_SUM_UNREAD
+    # null never trains, so nothing about a step was read — not "moved by
+    # zero". TrainOutcome's defaults keep the unread sentinels for that case.
+    outcome = TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
     if arm in {ARM_LIVED, ARM_SHUFFLE}:
         gate_reason = _diversity_gate_reason(n_unique, pe_gap_max)
         if gate_reason:
@@ -1069,8 +1096,8 @@ def run_arm(
                 pe_after=NAN_DELTA,
                 delta_pe=NAN_DELTA,
                 n_events=EVENTS_PER_ARM,
-                n_pairs_trained=n_pairs_trained,
-                n_pairs_rejected=n_pairs_rejected,
+                n_pairs_trained=outcome.n_pairs_trained,
+                n_pairs_rejected=outcome.n_pairs_rejected,
                 wall_seconds=float(time.perf_counter() - started),
                 gated=True,
                 gate_reason=gate_reason,
@@ -1082,7 +1109,7 @@ def run_arm(
                 n_saturated=n_sat,
                 pi_values=list(pi_vals),
             )
-        n_pairs_trained, n_pairs_rejected, lora_b_abs_sum_delta = _train_adapter(
+        outcome = _train_adapter(
             agent_id,
             lived_examples,
             shuffled=(arm == ARM_SHUFFLE),
@@ -1110,8 +1137,8 @@ def run_arm(
         pe_after=pe_after,
         delta_pe=delta_pe,
         n_events=EVENTS_PER_ARM,
-        n_pairs_trained=n_pairs_trained,
-        n_pairs_rejected=n_pairs_rejected,
+        n_pairs_trained=outcome.n_pairs_trained,
+        n_pairs_rejected=outcome.n_pairs_rejected,
         wall_seconds=wall_seconds,
         gated=False,
         gate_reason="",
@@ -1122,7 +1149,11 @@ def run_arm(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
-        lora_b_abs_sum_delta=lora_b_abs_sum_delta,
+        lora_b_abs_sum_delta=outcome.lora_b_abs_sum_delta,
+        dpo_loss=outcome.dpo_loss,
+        dpo_optimizer_steps=outcome.dpo_optimizer_steps,
+        dpo_grad_norm_min=outcome.dpo_grad_norm_min,
+        dpo_clipped_steps=outcome.dpo_clipped_steps,
     )
 
 

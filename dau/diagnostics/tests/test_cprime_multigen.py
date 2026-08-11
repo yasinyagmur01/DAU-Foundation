@@ -44,6 +44,10 @@ from dau.diagnostics.preflight import (
     check_gen2_rng_uniform,
     check_null_untrained,
     check_replay_identical,
+    check_gradient_clipping,
+    check_gradient_step_taken,
+    check_pair_count_sufficient,
+    check_pairs_survived_filter,
     check_training_moved_weights,
     check_import_time_env,
     check_memory_written,
@@ -761,6 +765,153 @@ def test_i2_2_detects_trained_or_contaminated_null() -> None:
     assert "adapter on disk" in detail
 
     assert check_null_untrained([{"arm": "lived"}])[0] is False
+
+
+def test_i1_3_catches_what_a_weight_reading_cannot() -> None:
+    """I1.3 only earns its place if it fails where I1.1 passes.
+
+    Each shape below has a healthy lora_b_abs_sum_delta, so I1.1 calls it a
+    real train. If I1.3 accepted them too it would be a duplicate gate.
+    """
+
+    def arm(**over: object) -> dict[str, object]:
+        base = {
+            "seed": 1,
+            "arm": "lived",
+            "lora_b_abs_sum_delta": 7.8,  # I1.1 is happy in every case here
+            "dpo_loss": 0.69,
+            "dpo_optimizer_steps": 12,
+            "dpo_grad_norm_min": 0.4,
+            "dpo_clipped_steps": 0,
+        }
+        base.update(over)
+        return base
+
+    healthy = [arm()]
+    assert check_training_moved_weights(healthy)[0] is True
+    assert check_gradient_step_taken(healthy)[0] is True
+
+    # Accumulated but never stepped: the group flush never fired.
+    passed, detail = check_gradient_step_taken([arm(dpo_optimizer_steps=0)])
+    assert check_training_moved_weights([arm(dpo_optimizer_steps=0)])[0] is True
+    assert passed is False
+    assert "never stepped" in detail
+
+    # Non-finite loss. The weights still move — into NaN.
+    for bad in (float("nan"), float("inf")):
+        passed, detail = check_gradient_step_taken([arm(dpo_loss=bad)])
+        assert passed is False
+        assert "dpo_loss" in detail
+
+    # Optimizer stepped on an exactly-zero gradient.
+    passed, detail = check_gradient_step_taken([arm(dpo_grad_norm_min=0.0)])
+    assert passed is False
+    assert "zero gradient" in detail
+
+    # Field never written: unread, which is not a healthy reading (I1.1 rule).
+    passed, detail = check_gradient_step_taken([arm(dpo_grad_norm_min=None)])
+    assert passed is False
+    assert "never read" in detail
+
+    # null and gated arms are exempt, exactly as in I1.1.
+    assert check_gradient_step_taken([arm(), {"seed": 1, "arm": "null"}])[0] is True
+    assert check_gradient_step_taken([arm(), arm(seed=2, gated=True)])[0] is True
+
+    # --no-lora is not-applicable, never True: a False-y run must not read as
+    # proof that training happened.
+    assert check_gradient_step_taken(healthy, lora_enabled=False)[0] is None
+
+
+def test_i1_3b_reports_clipping_without_failing_the_run() -> None:
+    """Clipping is a labelling matter, not an abort — but it must be visible."""
+
+    clean = [
+        {"seed": 1, "arm": "lived", "dpo_optimizer_steps": 10, "dpo_clipped_steps": 0}
+    ]
+    assert check_gradient_clipping(clean)[0] is True
+
+    clipped = [
+        {"seed": 1, "arm": "lived", "dpo_optimizer_steps": 10, "dpo_clipped_steps": 10}
+    ]
+    passed, detail = check_gradient_clipping(clipped)
+    assert passed is False
+    assert "100.0%" in detail
+    # The point of the message: the locked learning rate is not what set the
+    # step size. If that reasoning is gone, the flag is just a number.
+    assert "DPO_LEARNING_RATE" in detail
+
+    # A single clipped step still counts — PAD_FRACTION_MAX's strictness.
+    one = [
+        {"seed": 1, "arm": "lived", "dpo_optimizer_steps": 10, "dpo_clipped_steps": 1}
+    ]
+    assert check_gradient_clipping(one)[0] is False
+
+    assert check_gradient_clipping([{"seed": 1, "arm": "null"}])[0] is None
+    assert check_gradient_clipping(clipped, lora_enabled=False)[0] is None
+
+
+def test_i1_4_asks_the_question_that_survived_d030() -> None:
+    """The specified ratio is 1.0 by construction, so I1.4 asks a live one.
+
+    D-030 moved the margin test into pair construction. A gate on "share of
+    surviving pairs above the floor" could never fail; this one fails on the
+    degenerate case that the floor can actually produce — nothing survived.
+    """
+
+    healthy = {
+        "available": True,
+        "snr_candidates": 7983,
+        "snr_rejected_below_margin": 3714,
+        "pairs_passed": 299,
+    }
+    passed, detail = check_pairs_survived_filter(healthy)
+    assert passed is True
+    assert "46.5%" in detail
+
+    starved = dict(healthy, snr_rejected_below_margin=7983, pairs_passed=0)
+    passed, detail = check_pairs_survived_filter(starved)
+    assert passed is False
+    assert "nothing to learn from" in detail
+
+    empty = dict(healthy, snr_candidates=0, snr_rejected_below_margin=0, pairs_passed=0)
+    assert check_pairs_survived_filter(empty)[0] is False
+
+    # A filter that did not report is not a pass.
+    assert check_pairs_survived_filter(None)[0] is None
+    assert check_pairs_survived_filter({"available": False})[0] is None
+
+
+def test_i1_5_floor_follows_the_config_it_claims_to_describe() -> None:
+    """MIN_PAIRS must be derived, or it keeps claiming 'one full group'."""
+
+    from dau.foundation.constraints import (
+        DPO_BATCH_SIZE,
+        DPO_GRADIENT_ACCUMULATION_STEPS,
+        MIN_PAIRS,
+        MIN_PAIRS_CALIBRATED,
+    )
+
+    assert MIN_PAIRS == DPO_BATCH_SIZE * DPO_GRADIENT_ACCUMULATION_STEPS
+    # It came from config, not from a pilot. Reported so it cannot read as
+    # settled (2.8) — the same guard SNR_MARGIN_FLOOR_CALIBRATED carries.
+    assert MIN_PAIRS_CALIBRATED is False
+
+    enough = [{"seed": 1, "arm": "lived", "n_pairs_trained": MIN_PAIRS}]
+    assert check_pair_count_sufficient(enough)[0] is True
+
+    short = [{"seed": 1, "arm": "lived", "n_pairs_trained": MIN_PAIRS - 1}]
+    passed, detail = check_pair_count_sufficient(short)
+    assert passed is False
+    assert f"MIN_PAIRS={MIN_PAIRS}" in detail
+
+    # null and gated arms never train, so they cannot be short.
+    assert check_pair_count_sufficient([{"seed": 1, "arm": "null"}])[0] is None
+    assert (
+        check_pair_count_sufficient(
+            [{"seed": 1, "arm": "lived", "gated": True, "n_pairs_trained": 0}]
+        )[0]
+        is None
+    )
 
 
 def test_i1_1_catches_the_bug_every_other_signal_missed() -> None:

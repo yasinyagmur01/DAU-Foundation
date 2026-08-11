@@ -662,6 +662,195 @@ def check_training_moved_weights(
     return True, f"{checked} train arms moved lora_B; null arms unread"
 
 
+def check_gradient_step_taken(
+    gen1_sections: list[dict[str, Any]],
+    *,
+    lora_enabled: bool = True,
+) -> tuple[bool | None, str]:
+    """I1.3 — the optimizer ran, on a finite loss, with a gradient behind it.
+
+    I1.1 already proves a step landed, so this deliberately does not re-ask
+    that. It covers the three ways a step can land and still be worthless,
+    none of which move Σ|lora_B| in a way I1.1 could tell apart from a healthy
+    run: a non-finite loss (the weights change, into NaN), a loop that
+    accumulates gradient but never calls optimizer.step (the run then trains on
+    whatever the previous group left), and an optimizer step taken on an
+    exactly-zero gradient.
+
+    Clipping is NOT failed here — see check_gradient_clipping. A clipped step
+    is a real step; the question it raises is about effective step size, which
+    is a labelling matter, not an abort.
+    """
+
+    from dau.diagnostics.tool_identity import ARM_NULL_NAME
+
+    if not lora_enabled:
+        return None, "LoRA off by choice — no train step to verify"
+    if not gen1_sections:
+        return False, "no arms to check"
+
+    problems: list[str] = []
+    checked = 0
+    for section in gen1_sections:
+        arm = str(section.get("arm"))
+        if arm == ARM_NULL_NAME or bool(section.get("gated", False)):
+            continue
+        checked += 1
+        label = f"seed={section.get('seed')}/{arm}"
+
+        loss = section.get("dpo_loss")
+        loss = float("nan") if loss is None else float(loss)
+        steps = int(section.get("dpo_optimizer_steps", 0) or 0)
+        norm_min = section.get("dpo_grad_norm_min")
+        norm_min = float("nan") if norm_min is None else float(norm_min)
+
+        if steps <= 0:
+            problems.append(f"{label} optimizer never stepped")
+            continue
+        if loss != loss or loss in (float("inf"), float("-inf")):
+            problems.append(f"{label} dpo_loss={loss}")
+        # NaN here means the field was never written by the train path, which
+        # is a reporting failure, not a healthy run — same rule as I1.1.
+        if norm_min != norm_min:
+            problems.append(f"{label} grad norm never read")
+        elif norm_min <= 0.0:
+            problems.append(f"{label} stepped on a zero gradient")
+
+    if problems:
+        return False, f"train step not verifiable: {problems}"
+    if not checked:
+        return False, "no ungated train arm to check"
+    return True, f"{checked} train arms stepped on a finite loss and real gradient"
+
+
+def check_gradient_clipping(
+    gen1_sections: list[dict[str, Any]],
+    *,
+    lora_enabled: bool = True,
+) -> tuple[bool | None, str]:
+    """I1.3b — how much of the training ran against DPO_MAX_GRAD_NORM.
+
+    Not a correctness check. D-029 chose DPO_LEARNING_RATE from the literature
+    to avoid the unlikelihood push that lr=5e-5 produced, and that choice only
+    means what it says while the gradient is what sets the step size. If every
+    step is clipped, the ceiling sets it instead and the locked learning rate
+    describes the run less than the clip does.
+
+    FLAG, and the threshold is the strictest honest reading rather than a
+    guessed one: any clipping at all earns the label, like PAD_FRACTION_MAX.
+    Calibrating it into an ABORT needs a pilot, which is why it is not one.
+    """
+
+    from dau.diagnostics.tool_identity import ARM_NULL_NAME
+
+    if not lora_enabled:
+        return None, "LoRA off by choice — no train step to verify"
+
+    clipped_total = 0
+    step_total = 0
+    per_arm: list[str] = []
+    for section in gen1_sections:
+        arm = str(section.get("arm"))
+        if arm == ARM_NULL_NAME or bool(section.get("gated", False)):
+            continue
+        steps = int(section.get("dpo_optimizer_steps", 0) or 0)
+        clipped = int(section.get("dpo_clipped_steps", 0) or 0)
+        step_total += steps
+        clipped_total += clipped
+        if clipped:
+            per_arm.append(f"seed={section.get('seed')}/{arm} {clipped}/{steps}")
+
+    if step_total == 0:
+        return None, "no optimizer steps to judge"
+    fraction = clipped_total / step_total
+    if clipped_total:
+        return False, (
+            f"{clipped_total}/{step_total} optimizer steps ({fraction:.1%}) hit "
+            f"the grad-norm ceiling: {per_arm} — effective step size is set by "
+            f"the clip, not only by DPO_LEARNING_RATE"
+        )
+    return True, f"no step of {step_total} was clipped"
+
+
+def check_pairs_survived_filter(
+    pair_filter: dict[str, Any] | None,
+) -> tuple[bool | None, str]:
+    """I1.4 — the surviving pairs are not the last scraps of a starving filter.
+
+    ⚠ This is NOT what docs/PREFLIGHT_INVARIANTS.md originally specified. That
+    text asks for "the share of pairs with PE >= SNR_FLOOR", written when the
+    floor was applied after pair construction. D-030 moved the margin test into
+    build_pe_ranked_pairs, so every pair that reaches training already clears
+    it by construction and the specified ratio is 1.0 in all cases — a gate
+    that cannot fail. The measurable question that survives D-030 is the one
+    below: how much of the candidate pool the filter had to throw away.
+
+    FLAG only, and no threshold is invented. The rejection rate is recorded
+    and it fails only in the degenerate case where nothing survived, which is
+    the one reading that needs no calibration to interpret.
+    """
+
+    if not pair_filter or not pair_filter.get("available", False):
+        return None, "pair filter did not report — nothing to judge"
+
+    candidates = int(pair_filter.get("snr_candidates", 0) or 0)
+    rejected = int(pair_filter.get("snr_rejected_below_margin", 0) or 0)
+    passed = int(pair_filter.get("pairs_passed", 0) or 0)
+    if candidates == 0:
+        return False, "filter saw no candidate pairs at all"
+
+    rate = rejected / candidates
+    if passed == 0:
+        return False, (
+            f"every candidate was filtered out ({rejected}/{candidates} below "
+            f"the margin) — training had nothing to learn from"
+        )
+    return True, (
+        f"{rejected}/{candidates} candidates ({rate:.1%}) below the margin, "
+        f"{passed} pairs survived"
+    )
+
+
+def check_pair_count_sufficient(
+    gen1_sections: list[dict[str, Any]],
+) -> tuple[bool | None, str]:
+    """I1.5 — each train arm had at least one full accumulation group.
+
+    MIN_PAIRS is DPO_BATCH_SIZE * DPO_GRADIENT_ACCUMULATION_STEPS, derived
+    from the configuration rather than from any pair count we have observed:
+    choosing it from our own runs would be the post-hoc tuning §2.7 forbids.
+    Below it the arm still trains, but the optimizer only ever sees a short
+    tail group, so the effective batch is not the one tool identity reports.
+
+    FLAG: this is a structural floor, not a calibrated sufficiency level.
+    MIN_PAIRS_CALIBRATED stays False and is reported alongside it, so the
+    number cannot read as more settled than it is (§2.8).
+    """
+
+    from dau.foundation.constraints import MIN_PAIRS
+    from dau.diagnostics.tool_identity import ARM_NULL_NAME
+
+    short: list[str] = []
+    checked = 0
+    for section in gen1_sections:
+        arm = str(section.get("arm"))
+        if arm == ARM_NULL_NAME or bool(section.get("gated", False)):
+            continue
+        checked += 1
+        n_pairs = int(section.get("n_pairs_trained", 0) or 0)
+        if n_pairs < MIN_PAIRS:
+            short.append(f"seed={section.get('seed')}/{arm} n_pairs={n_pairs}")
+
+    if not checked:
+        return None, "no ungated train arm to check"
+    if short:
+        return False, (
+            f"{len(short)} arm(s) under MIN_PAIRS={MIN_PAIRS} "
+            f"(uncalibrated structural floor): {short}"
+        )
+    return True, f"{checked} train arms at or above MIN_PAIRS={MIN_PAIRS}"
+
+
 def check_null_untrained(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
     """I2.2 — the null arm has no adapter of its own.
 
@@ -691,8 +880,9 @@ def run_phase2(
     *,
     gen1_sections: list[dict[str, Any]],
     lora_enabled: bool = True,
+    pair_filter: dict[str, Any] | None = None,
 ) -> Preflight:
-    """Record I1.1, I2.1 and I2.2.
+    """Record I1.1, I1.3, I1.3b, I1.4, I1.5, I2.1 and I2.2.
 
     Mock exception (D-012): under a canned LLM the arms are identical by
     design, so I2.1 drops to FLAG rather than aborting a smoke run.
@@ -706,6 +896,27 @@ def run_phase2(
         # A mocked LLM has no LoRA layers to read, so the delta is unread by
         # construction and aborting would only punish smoke runs (D-012).
         mode=MODE_FLAG if preflight.mock else MODE_ABORT,
+    )
+    preflight.check(
+        "I1.3",
+        lambda: check_gradient_step_taken(gen1_sections, lora_enabled=lora_enabled),
+        # Same mock reasoning as I1.1: a canned LLM runs no optimizer.
+        mode=MODE_FLAG if preflight.mock else MODE_ABORT,
+    )
+    preflight.check(
+        "I1.3b",
+        lambda: check_gradient_clipping(gen1_sections, lora_enabled=lora_enabled),
+        mode=MODE_FLAG,
+    )
+    preflight.check(
+        "I1.4",
+        lambda: check_pairs_survived_filter(pair_filter),
+        mode=MODE_FLAG,
+    )
+    preflight.check(
+        "I1.5",
+        lambda: check_pair_count_sufficient(gen1_sections),
+        mode=MODE_FLAG,
     )
     preflight.check(
         "I2.1",
