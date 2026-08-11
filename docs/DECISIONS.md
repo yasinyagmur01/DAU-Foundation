@@ -2407,3 +2407,213 @@ değişiklik greedy'yi de aynı yere getiriyor.
 **Sınırlar:** tek seed, tek makine, tek GPU, tek shape (47 çift, 50 olay).
 Farklı bir şekilde deterministik karşılığı olmayan bir op çıkarsa strict
 mod abort eder — o zaman bu kayıt yeniden açılır.
+
+---
+
+## D-038 · 2026-08-11 · D-036+D-037 tabanı kuruldu, ve iki koşum **birebir** aynı
+
+**Durum:** kabul edildi (ölçüm kaydı)
+
+**Karar:** D-036 (pencere = fazın tamamı) ve D-037 (strict determinizm)
+açıkken yeni bir N=3 tabanı kuruldu, ardından **aynı komut ikinci kez**
+koşuldu. Taban `dau_runs/baseline_d037_n3_local.json`, tekrar
+`dau_runs/repro_d038_n3_local.json` (ikisi de `.gitignore`'da — ham çıktı
+yalnız yerelde).
+
+```
+PYTHONHASHSEED=0 DAU_LLM_BACKEND=local python -u -m dau.diagnostics.run_cprime_multigen \
+  --lora --n-pairs 3 --seed-start 2001 --events-gen1 50 --events-gen2 20 \
+  --k-gen2 3 --results dau_runs/<ad>.json
+```
+
+Her iki koşumdan **önce** `dau_runs/adapters/` arşive taşındı (I0.7 aksi
+halde ABORT ederdi); arşivler `archive/adapters_2026-08-11_0104/` ve
+`archive/adapters_2026-08-11_0211/`.
+
+### Sonuç 1 — alet doğrulandı
+
+Her iki koşum: `run_quality=clean`, **18 değişmezin 18'i geçti**, `exit 0`,
+62.8 dk / 61.0 dk.
+
+| Kontrol | Beklenen | Çıkan |
+|---|---|---|
+| çift sayısı | 47/41/38 | 47/41/38 |
+| `prompt_skipped_no_record` | 0 | **0 / 300** |
+| `[LORA][WARN]` | 0 | **0** |
+| `adapter_present` | lived/shuffle ✓, null ✗ | öyle |
+| `n_unique` | — | 29/22/27 (faz-1 kollardan bağımsız, D-035 ile aynı) |
+
+Kanal 2 canlı: adapter faz-2 kararlarının **22/45/33**'ünü (lived) ve
+**25/17/38**'ini (shuffle) null'dan farklı verdi.
+
+### Sonuç 2 — tekrarlanabilirlik **tam**
+
+Dokuz kolun dokuzu birebir aynı:
+
+| seed | kol | ΔPE | gen2 PE | `arm_digest` | tekrar aynı mı |
+|---|---|---|---|---|---|
+| 2001 | lived | +0.05454 | 0.3981 | `d0468f926d64` | ✅ |
+| 2001 | null | +0.02962 | 0.3447 | `9f8dccac593d` | ✅ |
+| 2001 | shuffle | +0.02595 | 0.3854 | `94c77dc7a52c` | ✅ |
+| 2002 | lived | +0.00940 | 0.3873 | `194d6135f335` | ✅ |
+| 2002 | null | −0.03518 | 0.3968 | `04a562a2179e` | ✅ |
+| 2002 | shuffle | −0.02793 | 0.4768 | `757112b50420` | ✅ |
+| 2003 | lived | −0.03947 | 0.5026 | `e1b2b642a563` | ✅ |
+| 2003 | null | −0.05656 | 0.4622 | `766b34931ad5` | ✅ |
+| 2003 | shuffle | −0.00012 | 0.5272 | `6351e5ccd077` | ✅ |
+
+**Altı adapter'ın altısı `sha256` düzeyinde özdeş.** `invariants`,
+`pair_filter` (252 çift dahil), `summary` — hepsi aynı.
+
+İki JSON alan alan gezildi: **volatil alanlar dışında tek fark anı
+UUID'leri** (koşum başına yeniden üretilen rastgele tanımlayıcılar). Tek bir
+sayı, hash veya sayım farklı değil.
+
+⚠ **I4.1 uygulanacaksa bu alanlar dışlanmalı.** Naif bir "iki JSON'u
+diff'le" kontrolü determinizm varken bile kırmızı yanardı. Doğru kanca
+`arm_digest` — karar dizisi + PE dizisinin hash'i, dokuz kolda da tuttu.
+
+D-037'nin ölçtüğü koşum-arası gürültü (0.026) artık **tam olarak sıfır**.
+
+### Sonuç 3 — sinyal (keşifsel, N=3, hipotez testi **değil**)
+
+`lived − null` = +0.0249 / +0.0446 / +0.0171 ⇒ **3/3 pozitif**, ortalama
++0.0289, sd 0.0142, eşleştirilmiş t(2)=3.53, **p=0.072**; işaret testi
+3/3 ⇒ p=0.25. Anlamlı değil, ama yön ilk kez tutarlı **ve gürültü sıfır**.
+
+`lived − shuffle` = +0.0286 / +0.0373 / −0.0394 ⇒ **tutarsız** (bkz. Bulgu 3).
+
+⚠ **D-034'ün bir gözlemi çürüdü:** orada `lived ≤ shuffle` 3/3 seed'de
+tutuyordu; tam-faz penceresiyle 2/3 seed'de **ters**. O sıralama 10-olay
+penceresinin artefaktıymış.
+
+---
+
+### Bulgu 1 — `F_agent` dejenere değil, **clamp'te ezilmiş**; birim uyuşmazlığı
+
+Dokuz kolun dokuzunda `f_agent = 0.000` **tam olarak**. Sebep ölçüldü:
+
+`compute_fitness` = `0.4·E + 0.3·(1 − |Δpool|/POOL_MAX) + 0.3·(t_surv/t_gen)`.
+Formülün `[0,1]`'de kalması `Δpool`'un havuzun **net yer değiştirmesi**
+olmasını gerektiriyor. Ama çağıran `agent_delta_pool`
+(`society/environment.py:107`) *"Sum of all extractions by agent_id"* —
+faz boyunca **kümülatif toplam**. Gözlenen 381–394, `POOL_MAX=100`'ün ~3.9
+katı.
+
+```
+E=0.000, |dpool|=381 → pool_term = −2.810 → ham F = −0.543 → clamp[0,1] → 0.0000
+```
+
+Ham F'ler aslında farklı (−0.543 … −0.582); `|Δpool|`'daki %3.3 yayılım
+orada duruyor ama clamp hepsini sıfıra eziyor.
+
+**Sonucu:** `f_agent=0 < FITNESS_LOW_THRESHOLD=0.35` olduğundan
+`select_for_transfer` (`foundation/generation.py:137`) her travma anısını
+ilk daldan koşulsuz geçiriyor, ve travma **olmayan** anılar
+`W = memory_score · f_agent · valence = 0 < 0.6` ile hepsi eleniyor. Yani:
+
+> `select_for_transfer` şu an "hatırlanan travmaları uyarı olarak aktar,
+> başka hiçbir şeyi aktarma"ya indirgenmiş. `memory_score` — ajanın ne
+> öğrendiğinin yaşadığı yer — sıfırla çarpılıyor.
+
+Parmak izi: `n_cand == n_warn` dokuz satırın dokuzunda.
+
+**D-002'nin birincil uç noktasına etkisi:** sayım kanalı
+(`n_transfer_candidates`, `n_inherited_warnings`) üç seed'in üçünde de üç
+kolda **özdeş** (3/3/3 · 1/1/1 · 1/1/1) — sıfır varyans. D-002 bu kanalı
+"tamsayı sayımlar PE'den yüksek güçlü" diye seçmişti; ölçülen gücü sıfır.
+Varyans gösteren tek kanal **büyüklük/bayrak** kanalı (seed 2002'de lived
+`social`, iki kontrol `uncertainty`; seed 2003'te social magnitude 0.023 vs
+0.756/0.639).
+
+⚠ D-035'in ertelenen 2. kararı ("F_agent'a dokunulmadı") bu yüzden yan bir
+konu değil, **pre-reg'i bloke eden şeyin kendisi**. D-035 orada "formül
+düzeltmesi ayrım üretmiyor (fark 0.0008–0.0016)" demişti; şimdi sebebi
+belli: düzeltilse bile `E=0.000` (9/9) ve `t_surv/t_gen=1.0` (9/9) hâlâ
+dejenere, yani üç girdinin **üçü de** bilgi taşımıyor.
+
+**Dokunulmadı.** Düzeltme ayrı bir karar; ve popülasyon gelmeden `F_agent`'ın
+*ne yapması gerektiği* de belirsiz (aşağıya bak).
+
+### Bulgu 2 — belgelenen 25 değişmezin **7'si kodda yok**
+
+`docs/PREFLIGHT_INVARIANTS.md` 25 madde tanımlıyor, `preflight.py` 18'ini
+kaydediyor. Eksik: **I1.1–I1.5, I2.3, I4.1.** Tek tek denetlendi:
+
+| Değişmez | Belgede | Gerçekte |
+|---|---|---|
+| I2.3 shuffle gerçekten karışmış | ABORT | ✅ **yapısal** — `shuffle_preference_pairs` sonundaki `if pairs and out == pairs: out[0] = _swap(pairs[0])` en az bir ters çifti garantiliyor. Belge kapıyı abartıyor, özellik tutuyor |
+| I1.2 adapter izolasyonu | ABORT | ✅ `test_no_dead_adapter_root_reference` |
+| **I1.1 eğitim gerçekten oldu** (`lora_B` abs-sum) | ABORT | ❌ **hiçbir yerde yok** — `lora_B` tüm kod tabanında yalnız `local_llm.py` (sıfırlama) ve `preflight.py` docstring'inde (tarihçe) geçiyor; tek bir test referans vermiyor |
+| **I4.1 replay testi** | ABORT | ❌ yok — bu kaydın ikinci koşumu onu **elle** yaptı |
+| I1.3 / I1.4 / I1.5 | ABORT/FLAG/FLAG | ❌ yok (I1.4'ün girdisi `pair_filter`'da loglanıyor, kapı yok) |
+
+⚠ **`CLAUDE.md` §6'nın "`lora_B` abs-sum kontrolü regresyon testinde"
+cümlesi yanlış.** I1.1, projenin bütün C′ sonuçlarını bir kez geçersiz kılan
+hatanın (`lora_B=0`, gradyan adımı atılmıyor) bekçisi olarak tasarlanmış ve
+uygulanmamış. Şu an "eğitim oldu mu" yalnız dolaylı işaretlerden
+(`n_pairs_trained>0`, `adapter_present`) çıkarılıyor — o hata ikisini de
+geçerdi.
+
+**Düzeltilmedi.** Ayrı karar.
+
+### Bulgu 3 — `shuffle`'ın %50 yazı-turasının **kaydı yok**, ve kolun gücü seed'e göre oynuyor
+
+`shuffle_preference_pairs` her çift için bağımsız yazı-tura atıp %50
+olasılıkla `chosen`↔`rejected` değiştiriyor. Kodun içine `f8aabf3`
+(2026-08-06, Cursor ortak-yazarlı, "Sinyal v2" toplu commit'i) ile girmiş;
+**commit mesajı shuffle'dan hiç bahsetmiyor.** `DECISIONS.md`'de shuffle'a
+değen üç kayıt var (GAP-11 seed determinizmi, D-032 `replace`'e geçiş,
+sonuç raporları) ve hiçbiri bozulmanın **oranını** konu etmiyor.
+
+⇒ D-006'nın taksonomisiyle **"fark edilmemiş kayma"**, "bilinçli sapma" değil.
+
+Gerçekleşen bozulma hesaplandı (`random.Random(seed)`, sevk edilen kural):
+
+| seed | çift | ters çevrilen | net sinyal (birinci mertebeden) |
+|---|---|---|---|
+| 2001 | 47 | 20 (%42.6) | **+%14.9** → shuffle *hafifçe lived gibi* |
+| 2002 | 41 | 20 (%48.8) | **+%2.4** → shuffle *neredeyse null gibi* |
+| 2003 | 38 | 23 (%60.5) | **−%21.1** → shuffle *anti-lived* |
+
+Kontrol kolunun gücü seed'den seed'e **+%15 ile −%21 arasında** salınıyor.
+Hiçbir kapı bunu denetlemiyor (I2.3 yalnız "özdeş değil" diyor). `lived −
+null`'ın 3/3 tutarlı, `lived − shuffle`'ın tutarsız çıkması bununla
+tutarlı: null sabit çapa, shuffle oynak hedef. Ve seed 2003'te — shuffle en
+çok bozulmuşken — `lived − shuffle` **negatif** çıkmış.
+
+**Değiştirilmedi.** Öneri: yazı-tura kalksın, çiftlerin **tamamı** ters
+çevrilsin ⇒ sabit ve tam kuvvetli kontrol. Bedeli: `lived − shuffle`
+tabanı yine sıfırlanır. Ayrı D-kaydı ister.
+
+---
+
+### Kabul edilen mimari sınır (ölçümün değil, tasarımın)
+
+Koşum `transfer_to_heir` ile **tek ata → tek varis** ilerliyor; popülasyon,
+ölen soy, farklı üreme yok. `F_agent` ajanın **üreyip üremeyeceğine** karar
+vermiyor, yalnız hangi anıların kopyalanacağını ağırlıklandırıyor.
+
+⇒ Aktarım mekanizması **Lamarckçı**, Darwinci değil. Kodun içindeki
+*"natural selection over engrams"* ifadesi bir metafor ve mekanizmayı
+karşılamıyor. `F_agent` düzeltilse bile bu değişmez: seçilim için
+çeşitlilik + **farklı hayatta kalma** + kalıtım gerekir, ikincisi yok.
+
+Bu bir hata değil, kapsamdır — ve D-014'ün "hedef N nesil" yönü bu boşluğun
+doğal evi. Kayda geçiyor ki ön-kayıt "yaşam neyin miras kalacağını seçer"
+gibi savunulamaz bir cümle yazmasın.
+
+### Ölçümün sınırları
+
+3 seed · tek makine · tek GPU (RTX 4070 Laptop 8GB) · greedy · gen1=50,
+gen2=20 olay · tek şekil. Tekrarlanabilirlik **bu** shape ve donanımda
+gösterildi. `lived−null`'ın 3/3'ü **hipotez testi değil**; N=3'te işaret
+testinin verebileceği en küçük p 0.25.
+
+⚠ **Seed 2001–2003 bundan sonra yakılmış sayılır.** Sonuçlarına bakıldı ve
+bu kayıttaki bulgular onlardan türetildi; doğrulayıcı bir analize
+giremezler. Ön-kayıtlı koşum **seed 2004'ten** başlamalıdır.
+
+**Reddedilen alternatif:** ikinci koşumu N'i 6'ya çıkarmak için kullanmak.
+Aynı seed'lerin tekrarı **bağımsız gözlem değildir**; N hâlâ 3, yalnızca iki
+kez doğrulanmış.
