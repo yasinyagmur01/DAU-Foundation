@@ -43,6 +43,7 @@ from dau.diagnostics.preflight import (
     check_gated_fraction,
     check_gen2_rng_uniform,
     check_null_untrained,
+    check_replay_identical,
     check_training_moved_weights,
     check_import_time_env,
     check_memory_written,
@@ -813,6 +814,55 @@ def test_i1_1_catches_the_bug_every_other_signal_missed() -> None:
     assert check_training_moved_weights(gated)[0] is True
 
     assert check_training_moved_weights([])[0] is False
+
+    # --no-lora is a run mode, not a fault: not-applicable, never True.
+    assert (
+        check_training_moved_weights(healthy, lora_enabled=False)[0] is None
+    )
+
+
+def test_i4_1_fails_when_the_same_seed_lands_somewhere_else() -> None:
+    """D-037's failure: identical seed and code, two runs, two adapters.
+
+    Every other gate stayed green through it, so this one must not be
+    satisfiable by anything short of an equal digest.
+    """
+
+    same = {
+        "seed": 2001,
+        "arm": "lived",
+        "recorded_digest": "a" * 64,
+        "replay_digest": "a" * 64,
+    }
+    assert check_replay_identical(same)[0] is True
+
+    diverged = dict(same, replay_digest="b" * 64)
+    passed, detail = check_replay_identical(diverged)
+    assert passed is False
+    assert "diverged" in detail
+
+    # A missing digest is not a pass — the replay proved nothing.
+    passed, detail = check_replay_identical(dict(same, recorded_digest=""))
+    assert passed is False
+    assert "digest is missing" in detail
+
+    # Not run is "not applicable", which record() keeps distinct from True.
+    assert check_replay_identical(None)[0] is None
+
+
+def test_replay_agent_id_is_a_fresh_slot_that_still_derives_its_seed() -> None:
+    """It must not collide with the arm it replays, or I0.4 would reject it."""
+
+    from dau.diagnostics.run_cprime_multigen import (
+        REPLAY_OF_ARM,
+        parent_agent_id,
+        replay_agent_id,
+    )
+    from dau.diagnostics.run_protocol_c_prime import _seed_from_agent_id
+
+    replay = replay_agent_id(2001)
+    assert replay != parent_agent_id(REPLAY_OF_ARM, 2001)
+    assert _seed_from_agent_id(replay) == 2001
 
 
 def test_arm_null_name_matches_runner() -> None:

@@ -593,7 +593,9 @@ def check_arms_differ(gen1_sections: list[dict[str, Any]]) -> tuple[bool, str]:
 
 def check_training_moved_weights(
     gen1_sections: list[dict[str, Any]],
-) -> tuple[bool, str]:
+    *,
+    lora_enabled: bool = True,
+) -> tuple[bool | None, str]:
     """I1.1 — a train arm's lora_B actually moved; a null arm's was never read.
 
     Every other signal a trained arm emits is produced upstream of the gradient
@@ -605,11 +607,19 @@ def check_training_moved_weights(
 
     A diversity-gated arm skipped training on purpose, so it is exempt: it is
     identified by gated=True, not by its counts, because a gated arm and a
-    silently-failed one both report zero pairs.
+    silently-failed one both report zero pairs. A whole run with LoRA off is
+    exempt the same way, via lora_enabled — otherwise this gate would abort
+    the deliberate --no-lora arm of the design.
     """
 
     from dau.diagnostics.tool_identity import ARM_NULL_NAME
 
+    if not lora_enabled:
+        # --no-lora is a deliberate run mode, recorded in the results JSON.
+        # There is no train step to verify, so this reports not-applicable
+        # rather than failing — and never True, which would read as proof
+        # that training happened.
+        return None, "LoRA off by choice — no train step to verify"
     if not gen1_sections:
         return False, "no arms to check"
 
@@ -680,6 +690,7 @@ def run_phase2(
     preflight: Preflight,
     *,
     gen1_sections: list[dict[str, Any]],
+    lora_enabled: bool = True,
 ) -> Preflight:
     """Record I1.1, I2.1 and I2.2.
 
@@ -689,7 +700,9 @@ def run_phase2(
 
     preflight.check(
         "I1.1",
-        lambda: check_training_moved_weights(gen1_sections),
+        lambda: check_training_moved_weights(
+            gen1_sections, lora_enabled=lora_enabled
+        ),
         # A mocked LLM has no LoRA layers to read, so the delta is unread by
         # construction and aborting would only punish smoke runs (D-012).
         mode=MODE_FLAG if preflight.mock else MODE_ABORT,
@@ -757,14 +770,54 @@ def check_somatic_scale_applied() -> tuple[bool, str]:
     return True, f"applied {applied}x"
 
 
+def check_replay_identical(replay: dict[str, Any] | None) -> tuple[bool | None, str]:
+    """I4.1 — one arm re-run in-process lands on the same digest.
+
+    This is the only invariant that costs wall time, and it earned it: under
+    TORCH_DETERMINISTIC_WARN_ONLY the same seed and code produced different
+    adapters and a 21/50 phase-2 decision split between two runs, while every
+    other gate stayed green (D-037). Nothing in a single pass can see that —
+    each arm trains once, so there is nothing to compare it against.
+
+    Why the digest and not a file diff: the results JSON also carries per-run
+    memory UUIDs, which differ by construction. Comparing whole payloads would
+    fail on a deterministic run (D-038).
+
+    Deliberately replays a TRAINED arm. The null arm was already deterministic
+    under warn_only — it runs no adapter matmul — so replaying it would have
+    passed straight through the failure this exists to catch.
+    """
+
+    if replay is None:
+        return None, "replay not run"
+    recorded = str(replay.get("recorded_digest", ""))
+    replayed = str(replay.get("replay_digest", ""))
+    label = f"seed={replay.get('seed')}/{replay.get('arm')}"
+    if not recorded or not replayed:
+        return False, f"{label}: a digest is missing, replay proves nothing"
+    if recorded != replayed:
+        return False, (
+            f"{label}: replay diverged — {recorded[:12]} vs {replayed[:12]}. "
+            f"Same seed, same code, different run: the arm contrast is noise"
+        )
+    return True, f"{label}: replay bit-identical ({recorded[:12]})"
+
+
 def run_phase4_5(
     preflight: Preflight,
     *,
     gen2_sections: list[dict[str, Any]],
     life_stats: list[dict[str, Any]],
+    replay: dict[str, Any] | None = None,
 ) -> Preflight:
-    """Record I4.2 (ABORT) and I5.1 / I5.3 / I5.4 (FLAG)."""
+    """Record I4.1 / I4.2 (ABORT) and I5.1 / I5.3 / I5.4 (FLAG)."""
 
+    preflight.check(
+        "I4.1",
+        lambda: check_replay_identical(replay),
+        # A canned LLM replays trivially, so the check would assert nothing.
+        mode=MODE_FLAG if preflight.mock else MODE_ABORT,
+    )
     preflight.check(
         "I4.2",
         lambda: check_gen2_rng_uniform(gen2_sections),

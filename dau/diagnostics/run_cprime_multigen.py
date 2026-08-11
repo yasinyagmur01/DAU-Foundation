@@ -80,6 +80,7 @@ from dau.diagnostics.preflight import (
 )
 from dau.diagnostics.tool_identity import (
     LORA_CHOICE_OFF,
+    LORA_CHOICE_ON,
     build_tool_identity,
     resolve_lora_choice,
 )
@@ -135,6 +136,10 @@ RESULTS_PATH: Path = Path(
 PROTOCOL_ID: str = "C_PRIME_MULTIGEN"
 HEIR_SUFFIX: str = "g2"
 PARENT_SUFFIX: str = "g1"
+# I4.1 replays a TRAINED arm: null was already deterministic under warn_only
+# (no adapter matmul), so replaying it would have sailed past D-037's failure.
+REPLAY_ARM: str = "replay"
+REPLAY_OF_ARM: str = ARM_LIVED
 # A gen1 arm lives twice on the same vault (before and after training), so its
 # PE log holds two lives' worth of events; the heir lives once.
 GEN1_PHASES: int = 2
@@ -497,6 +502,65 @@ def parent_agent_id(arm: str, seed: int) -> str:
     return f"cprime-{arm}-{seed}-{PARENT_SUFFIX}"
 
 
+def _run_replay_arm(
+    results: list[MultigenPairResult],
+    *,
+    events_gen1: int,
+    skip: bool,
+) -> dict[str, Any] | None:
+    """I4.1: re-run the first seed's lived arm and hand back both digests.
+
+    Runs last, after every seed and heir is finished, so nothing downstream
+    can consume the replay's adapter. Costs one arm — ~7 min, which is 12% of
+    an N=3 run and 2% of an N=15 one.
+    """
+
+    if skip or not results:
+        return None
+    seed = int(results[0].seed)
+    agent_id = replay_agent_id(seed)
+    recorded = ""
+    for lineage in results[0].lineages:
+        if str(lineage.gen1.get("arm")) == REPLAY_OF_ARM:
+            recorded = str(lineage.gen1.get("arm_digest", ""))
+            break
+
+    print(
+        f"[MULTIGEN][I4.1] replaying seed={seed} arm={REPLAY_OF_ARM} "
+        f"as {agent_id} …",
+        flush=True,
+    )
+    arm_result, _state, _store, tmp = run_gen1_arm_lineage(
+        seed=seed,
+        arm=REPLAY_OF_ARM,
+        events_gen1=events_gen1,
+        agent_id=agent_id,
+    )
+    tmp.cleanup()
+    replay = {
+        "seed": seed,
+        "arm": REPLAY_OF_ARM,
+        "agent_id": agent_id,
+        "recorded_digest": recorded,
+        "replay_digest": arm_result.arm_digest,
+    }
+    verdict = "identical" if recorded == arm_result.arm_digest else "DIVERGED"
+    print(f"[MULTIGEN][I4.1] {verdict}", flush=True)
+    return replay
+
+
+def replay_agent_id(seed: int) -> str:
+    """I4.1's arm. A separate id so the replay starts with no adapter on disk.
+
+    Re-using the original id would make the replay load the adapter the first
+    pass just wrote, so phase-1 would run adapted where the original ran bare
+    and the digests would differ for a reason that is not non-determinism.
+    Still matches AGENT_ID_SEED_PATTERN, so I0.4 can verify it like any other.
+    """
+
+    return f"cprime-{REPLAY_ARM}-{seed}-{PARENT_SUFFIX}"
+
+
 def heir_agent_id(arm: str, seed: int) -> str:
     return f"cprime-{arm}-{seed}-{HEIR_SUFFIX}"
 
@@ -616,11 +680,18 @@ def run_gen1_arm_lineage(
     seed: int,
     arm: str,
     events_gen1: int,
+    agent_id: str | None = None,
 ) -> tuple[ArmResult, DAUAgentState, MemoryStore, tempfile.TemporaryDirectory[str]]:
-    """Full gen1 arm keeping one MemoryStore across phase-1 and phase-2."""
+    """Full gen1 arm keeping one MemoryStore across phase-1 and phase-2.
+
+    ``agent_id`` is overridable for the I4.1 replay only. It must not reach the
+    prompt — it does not; the id is used for the adapter directory and the
+    checkpoint path, never for AgentView — so a replay under a different id
+    decides identically and its digest is comparable.
+    """
 
     started = time.perf_counter()
-    agent_id = parent_agent_id(arm, seed)
+    agent_id = agent_id or parent_agent_id(arm, seed)
     _lock_seeds(seed)
     store, tmp = _open_lineage_store()
 
@@ -967,7 +1038,11 @@ def run_cprime_multigen(
             for seed in seeds
             for arm in ARM_ORDER
             for fn in (parent_agent_id, heir_agent_id)
-        ],
+        ]
+        # I4.1's arm is a real agent that will exist, so I0.4 verifies its id
+        # derives the right seed like every other — an unparseable replay id
+        # would only surface hours later, at the replay.
+        + [replay_agent_id(seeds[0])],
         seeds=seeds,
         import_time_bindings=import_time_bindings(),
     )
@@ -990,6 +1065,13 @@ def run_cprime_multigen(
                     pe_window_gen2=pe_window_gen2,
                 )
             )
+        # Inside the try so the replay sees the same LLM the run used; a mock
+        # replays trivially, so it is skipped rather than asserted.
+        replay = _run_replay_arm(
+            results,
+            events_gen1=events_gen1,
+            skip=use_mock,
+        )
     finally:
         if previous_builder is not None:
             restore_llm_builder(previous_builder)
@@ -1008,8 +1090,17 @@ def run_cprime_multigen(
         gen1_audit=_precision_audit_totals(gen1_sections),
         gen2_audit=_precision_audit_totals(gen2_sections),
     )
-    run_phase2(gate, gen1_sections=gen1_sections)
-    run_phase4_5(gate, gen2_sections=gen2_sections, life_stats=list(LIFE_STATS))
+    run_phase2(
+        gate,
+        gen1_sections=gen1_sections,
+        lora_enabled=(lora_choice == LORA_CHOICE_ON),
+    )
+    run_phase4_5(
+        gate,
+        gen2_sections=gen2_sections,
+        life_stats=list(LIFE_STATS),
+        replay=replay,
+    )
     # I4.2 is ABORT and can only be judged once the heirs have run: a lineage
     # whose arms entered gen2 from different RNG states has no separable arm
     # contrast, so it must not be written as a result.
