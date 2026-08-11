@@ -3503,3 +3503,88 @@ Bu, A7 için önkoşuldu: GAP-19 "konsolidasyon neyi siliyor" sorusudur ve
 sayımlarıyla tutarlı (`3/3` uyarı), ama `deleted_count` hiçbir koşumda
 **görülmedi** — alan düşürülmüştü. Yani *"konsolidasyon travma-dışı bir şey
 sildi mi"* sorusu hâlâ ölçülmemiş; B2 cevaplayacak. N=3, tek koşum.
+
+---
+
+## D-052 · 2026-08-11 · A8: **N = 40**, iki batch hâlinde. S2 kapandı, GAP-9 kapandı
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-11) · **Slot:** §9-S2
+
+### Karar: `N = 40` seed (2004–2043)
+
+**MDE (Wilcoxon, çift yönlü, α=0.05, güç 0.80): `d_z = 0.465`.**
+Bütçe: **13.3 GPU saat** (ölçülen seed başına 19.9 dk × 40 + 7 dk replay).
+
+| N | GPU | MDE (Wilcoxon) | güç @`d_z=0.50` | güç @`d_z=0.45` |
+|---|---|---|---|---|
+| 32 | 10.6 sa | 0.524 | %76 | %67 |
+| **40** | **13.3 sa** | **0.465** | **%85** | **%77** |
+
+**Gerekçe:** `N` **tek atışlık** — kilitten sonra seed eklemek post-hoc olur
+ve ön-kaydı geçersiz kılar. +2.7 saat, `d_z ≈ 0.45–0.50` bandında **~%10
+puan** yakalama şansı satın alıyor, ve o bant tam olarak "gerçek ama mütevazı
+etki"nin yaşadığı yer. İki seçenek de **tek gecelik** (20:00'de başlarsa
+06:40 vs 09:20) ⇒ marjinal maliyet bir iş günü değil, birkaç sabah saati.
+
+### ⚠ İki düzeltme
+
+**1. MDE'ler Wilcoxon'a göre yeniden hesaplandı.** Daha önce (ve DR #1'de)
+verilen `N=32 → d_z=0.511` **t-testi** sayısı. §3 **eşleştirilmiş Wilcoxon**
+kullanıyor, o da normal veride ~%5 daha fazla N ister (ARE = 3/π).
+Doğrusu **0.524**. `N=40` için t-testi 0.454, **Wilcoxon 0.465** —
+ön-kayıta **Wilcoxon değeri** yazıldı.
+
+**2. GAP-9'un `N=40–50`'si bize ait değildi.** O sayı
+`protocol-c-metacognition-eval`'den ve **Protocol C için**, uç noktası
+**ΔPE** olan bir güç analizi (`σ_PE = 0.256`). Ama **D-002 tam da ΔPE'yi
+bıraktığı için** doğum-drifti birincil yaptı — gerekçesi *"yüksek güçlü uç
+nokta"*ydı. Yani o sayı **kullanmadığımız bir ölçüm için** hesaplanmış ve
+doğrudan taşınmıyor. **İki sayı çelişmiyordu, karşılaştırılabilir bile
+değillerdi.** GAP-9'un gerçek talebi *"N'i gerekçelendirmeden alma"*ydı ve
+o D-047 ile karşılandı. ⇒ **GAP-9 kapandı.**
+
+### Koşum iki batch hâlinde: 2004–2023 · 2024–2043
+
+`write_multigen_results_json` **yalnız en sonda** çağrılıyor; multigen'de
+heartbeat de kısmi yazma da **yok** (Protocol C′'de var). Tek koşumda 39.
+seed'de bir çökme **13 saati** götürür.
+
+Batch'ler **yapı gereği bağımsız**: her seed kendi `_lock_seeds(seed)`'i ile
+başlıyor, koşum bit düzeyinde deterministik (D-037), ve adapter graft'ı
+konumdan bağımsız (D-042). Seed 2024'ün sonucu, 2004–2023'ün aynı süreçte
+koşup koşmadığına bağlı değil. Kod değişikliği **gerekmiyor** —
+`DAU_MULTIGEN_SEED_START` ve `DAU_MULTIGEN_N_PAIRS` env ile ayarlanıyor.
+
+Maliyeti: ikinci bir I4.1 replay (+7 dk) ve `pair_filter` sayaçlarının
+batch başına olması (B3 toplar; I1.4 her batch'i ayrı yargılar).
+Kazancı: çökme maliyeti **13.3 saatten ≤6.7 saate** iniyor.
+
+⚠ **Önceden ilan ediliyor**, koşum görüldükten sonra değil. Bir batch abort
+ederse **o batch** yeniden koşulur; sonuçları seçmek için batch atılamaz.
+
+### OOM davranışı — bilinerek kabul edildi
+
+GPU **8188 MiB**, pilot ~7.5 GiB kullandı ve **bir OOM uyarısı** verdi
+(D-034). 40 seed × 3 kol = **120 eğitim** ⇒ gerçek bir OOM olasılığı ihmal
+edilebilir değil. Çıkarsa `_train_adapter` yakalar, `trained=False` döner,
+ve **I1.1 koşumu ABORT eder** — sessizce eğitimsiz kol üretmez. Doğru
+davranış, ama koşumun durması demek. Batch'leme bunun maliyetini yarıya
+indiriyor.
+
+**Reddedilen alternatifler:**
+- *`N=32`* — 2.7 saat ucuz, ama `d_z≈0.45`'te %10 puan güç kaybı, ve karar
+  geri alınamaz.
+- *`N=50`* — 16.6 saat, MDE 0.414. Kazanç azalıyor (0.465→0.414), maliyet
+  bir geceyi aşıyor, OOM penceresi büyüyor.
+- *Tek 13.3 saatlik koşum* — çökme maliyeti iki katı, karşılığında hiçbir
+  bilimsel kazanç yok.
+- *Koşumu yeniden başlatılabilir (resume) yapmak* — koşum-genelindeki
+  sayaçlar (`PAIR_DIVERSITY_STATS`, `POLARITY_FILTER_STATS`,
+  `SNR_MARGIN_SAMPLES`) seed'ler boyunca birikiyor; kısmi resume onları
+  bozardı. Batch'leme aynı korumayı **kod değiştirmeden** veriyor.
+
+**Sınırlar:** 19.9 dk/seed **`control_d042`'den** ölçüldü; ondan sonra dört
+kapı ve üç sayaç grubu eklendi (hepsi ucuz ama **ölçülmedi**) ⇒ gerçekçi
+tampon **%5–10**. Batch bağımsızlığı D-042'nin konum bağımsızlığına
+dayanıyor; o bozulursa batch'leme de bozulur — ama o durumda tek koşum da
+bozuk olurdu. I4.1 replay her batch'te bunu sınıyor.

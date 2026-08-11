@@ -1,12 +1,17 @@
 # Çok-Nesilli C′ — Ön-Kayıt (Pre-Registration)
 
-**Durum: TASLAK — KİLİTLİ DEĞİL.** Beş slot kapandı (2026-08-11); **S4 ve
-S2 açık**. Doldurulup Yasin bu satır `KİLİTLİ · <tarih> · <commit>` ile değiştirilir. O andan
-itibaren bu belgedeki hiçbir madde değişmez; değişiklik gerekirse yeni bir
-ön-kayıt açılır ve bu belge süperseded işaretlenir.
+**Durum: 🔒 KİLİTLİ · 2026-08-11 · commit `PLACEHOLDER_COMMIT`**
 
-**Kilitlenene kadar:** alet değişikliği hâlâ meşru (CLAUDE.md §2.10), ama her
-biri kendi D-kaydını ister.
+**Yedi slotun yedisi kapalı.** Bu andan itibaren bu belgedeki hiçbir madde
+değişmez. Değişiklik gerekirse **yeni bir ön-kayıt** açılır ve bu belge
+*superseded* işaretlenir.
+
+⚠ **Alet değişikliği penceresi KAPANDI** (CLAUDE.md §2.10). Kilitten sonra
+`constraints.py` eşiği, uç nokta, test veya çift kurma stratejisi değişirse
+sonuç **post-hoc** olur. Kalan bütün iş kalemleri **ikinci ön-kayıta** gider.
+
+**Doğrulayıcı koşum:** seed **2004–2043** (N=40), iki batch (2004–2023,
+2024–2043). Seed 2001–2003 **yakılmış** (D-038) ve bu analize **giremez**.
 
 ---
 
@@ -290,8 +295,23 @@ travma** geçiyor (ölçüldü: `n_transfer_candidates=3`, hepsi uyarı).
 kırık saatle hesaplanır. **İkisi birlikte düzeltilmeli ya da hiçbiri.**
 Değiştirilmedi: ölçülen etkisi sıfır, maliyeti her koşumun geçersizliği.
 
-**L8 — `W_SEM = 0.0`.** ChromaDB vektör benzerliği anı skorlamasına
-girmiyor (GAP-10). Anı seçimi şu an semantik değil.
+**L8 — `W_SEM = 0.0`** (GAP-10). ChromaDB vektör benzerliği anı skorlamasına
+girmiyor ⇒ **anı seçimi şu an semantik değil**, yalnız yakınlık/güç/PPR.
+"Baseline kilitlenince 0.3–0.4 yapılmalı" denmişti; koşul gerçekleşti ama
+dönülmedi, ve şimdi dönmek **tabanı yine sıfırlar**. Bu ön-kayıt için sınır,
+sonraki için iş kalemi. GAP-10'un diğer iki maddesi de aynı durumda:
+**negation sarmalayıcı PE sensöründe yok** (yalnız tercih çiftlerinde), ve
+**spillover skaler** (`CROSS_AXIS_SPILLOVER = 0.20`), brief domain-özgü
+matris öneriyordu.
+
+**L17 — Gen2'nin ilk kararı ata verisini kaçırıyor** (GAP-3).
+`apply_inherited_somatic_scale` yalnız `delta_log` doluyken çalışıyor, ama
+varisler **boş `delta_log` ile doğuyor** ⇒ miras alınan tehdit/kayıp
+ölçeklemesi **gen2 olay 2'den itibaren** ölçülebilir, olay 1'de değil.
+Gate **I5.4** bunu her koşumda raporluyor. Gen2 ikincillerini (S4, S5)
+etkiliyor ve o ikinciller zaten L10 ile sınırlı. ⚠ D-045 bunu `null`
+varisinin ikinci-yarı PE çöküşü için **mekanizma adayı** olarak da
+işaretledi — doğrulanmadı, aday olarak duruyor.
 
 ---
 
@@ -310,17 +330,15 @@ kilidi onlar tutuyor.
 | **S6** | A4 — %10 somatik replay? | **girmez** | Kanalları karıştırır. Kanal 1 (sembolik kasa) malzemesi Kanal 2'nin eğitim setine girerse *"izi hangi kanal taşıdı"* sorusu cevapsız kalır — ve D-002'nin dört-halkalı nedensel zincir mantığı tam olarak o ayrıma dayanıyor. VRAM maliyeti olmaması (D-027) onu bedava yapıyor ama **ücretsiz olması dahil etmek için gerekçe değil** |
 | **S7** | `events_gen1` / `gen2` / `k_gen2` | **50 / 20 / 3 — değişmez** | Değişirse ΔPE tabanı yine sıfırlanır ve D-043'ün regresyon değeri kaybolur |
 
-### Açık — kilidi bu tutuyor
-
-| # | Slot | Durum |
-|---|---|---|
-| **S2** | **N (seed sayısı)** | ⏸ **Tek açık slot.** Artık S4'ün fonksiyonu değil — S4 kapandığı için N doğrudan **bütçe kararı** (aşağıdaki 2. yol). ⚠ Uzlaşılmamış: DR #1 bütçeden **N=32** (MDE `d_z=0.511`) diyor, GAP-9'un dayandığı `protocol-c-metacognition-eval` Protocol C için **N=40–50** diyordu |
-
-**S4 kapandı** (D-047) — ayrıntısı yukarıda:
+### Son iki slot da kapandı
 
 | # | Slot | Karar |
 |---|---|---|
-| **S4** | En küçük anlamlı etki (`d_z`) | ✅ **SESOI ilan edilmiyor.** Bütçe-kısıtlı örneklem gerekçelendirmesi (Lakens 2022, *Sample Size Justification*, Collabra 8(1):33267) + ilan edilen duyarlılık analizi. Gerekçe: birinciliğimizin literatürde karşılığı olan bir etki yok ⇒ SESOI uydurmak bütçeyi şeffaf ilan etmekten **daha az** dürüst. `p > 0.05` ⇒ *"şu MDE'nin altında güçsüzüz, veri o bantta bilgisiz"*, asla *"etki yok"* |
+| **S2** | **N (seed sayısı)** | ✅ **N = 40**, seed 2004–2043, **iki batch** (2004–2023 · 2024–2043) — **D-052**. MDE (Wilcoxon, çift yönlü, α=0.05, güç 0.80) = **`d_z = 0.465`**. Bütçe 13.3 GPU saat. Batch'leme çökme maliyetini yarıya indiriyor ve **önceden ilan edildi**; batch'ler yapı gereği bağımsız (seed başına RNG kilidi + D-037 determinizm + D-042 konum bağımsızlığı). ⚠ Bir batch abort ederse **o batch** yeniden koşulur; sonuç seçmek için batch atılamaz |
+
+| # | Slot | Karar |
+|---|---|---|
+| **S4** | En küçük anlamlı etki (`d_z`) | ✅ **SESOI ilan edilmiyor** (D-047). Bütçe-kısıtlı örneklem gerekçelendirmesi (Lakens 2022, *Sample Size Justification*, Collabra 8(1):33267) + ilan edilen duyarlılık analizi. Gerekçe: birinciliğimizin literatürde karşılığı olan bir etki yok ⇒ SESOI uydurmak bütçeyi şeffaf ilan etmekten **daha az** dürüst. `p > 0.05` ⇒ *"şu MDE'nin altında güçsüzüz, veri o bantta bilgisiz"*, asla *"etki yok"* |
 
 **Güç tablosu** (eşleştirilmiş Wilcoxon, çift yönlü, α=0.05, güç 0.80):
 
