@@ -103,6 +103,21 @@ SNR_FILTER_STATS: dict[str, int] = {
 # here; percentiles are computed at report time, not stored per-run.
 SNR_MARGIN_SAMPLES: list[float] = []
 
+# GAP-18 / D-048. The number this whole GAP rests on was never measured at the
+# operating point: "2 unique rejected" came from a 10-event replay whose life
+# had only 7 unique completions, while the runs that matter produce 22-29 and
+# 38-47 pairs. Counting instead of arguing — uniq_rejected is what DR #2's
+# diagnosis (a negative space of size 2 collapsing the gradient subspace)
+# actually predicts, and texts_in_both_roles is the label-flip the same brief
+# warns destabilises training. Sizes, not texts: completions are long and the
+# results file must not become a transcript.
+PAIR_DIVERSITY_STATS: dict[str, int] = {
+    "uniq_rejected": 0,
+    "uniq_chosen": 0,
+    "texts_in_both_roles": 0,
+    "max_rejected_reuse": 0,
+}
+
 # D-032. An event whose decision carries no recorded prompt cannot be trained
 # on: System 1 (NPC) decisions never ran the policy, and a life recorded before
 # agent_node stored the prompt has nothing to condition on. Both are skipped,
@@ -418,7 +433,31 @@ def build_pe_ranked_pairs(
             if previous is None or gap > (previous.pe_rejected - previous.pe_chosen):
                 best_by_event[pair.event_counter] = pair
     POLARITY_FILTER_STATS["passed"] += len(best_by_event)
+    _record_pair_diversity(list(best_by_event.values()))
     return list(best_by_event.values())
+
+
+def _record_pair_diversity(pairs: list[PreferencePair]) -> None:
+    """GAP-18 counters, read off the pairs the trainer actually receives.
+
+    Taken here rather than recomputed later from the results file, because a
+    second reconstruction is a second chance to disagree with the tool — the
+    error that put "47 pairs, 2 unique rejected" into a research brief when the
+    two numbers came from different runs (CLAUDE.md 2.8).
+    """
+
+    if not pairs:
+        return
+    rejected = [p.rejected for p in pairs]
+    chosen = [p.chosen for p in pairs]
+    uniq_rejected, uniq_chosen = set(rejected), set(chosen)
+    PAIR_DIVERSITY_STATS["uniq_rejected"] += len(uniq_rejected)
+    PAIR_DIVERSITY_STATS["uniq_chosen"] += len(uniq_chosen)
+    PAIR_DIVERSITY_STATS["texts_in_both_roles"] += len(uniq_rejected & uniq_chosen)
+    PAIR_DIVERSITY_STATS["max_rejected_reuse"] = max(
+        PAIR_DIVERSITY_STATS["max_rejected_reuse"],
+        max(rejected.count(text) for text in uniq_rejected),
+    )
 
 
 def shuffle_preference_pairs(

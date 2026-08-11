@@ -292,3 +292,57 @@ def test_shuffle_inverts_every_pair_not_a_random_half(pair_builder) -> None:
     assert not [
         after for before, after in zip(pairs, shuffled) if after.chosen == before.chosen
     ]
+
+
+def test_pair_diversity_counts_what_gap18_argues_about() -> None:
+    """GAP-18's severity is a number nobody had measured at the operating point.
+
+    The brief that went out said "47 pairs, 2 unique rejected", but 47 came
+    from a 50-event run and 2 from a 10-event replay whose life held 7 unique
+    completions in total. These counters exist so the next run reports it
+    instead of a third document repeating the splice.
+    """
+
+    from dau.foundation.lora_update import (
+        PAIR_DIVERSITY_STATS,
+        PreferencePair,
+        _record_pair_diversity,
+    )
+
+    def reset() -> None:
+        for key in PAIR_DIVERSITY_STATS:
+            PAIR_DIVERSITY_STATS[key] = 0
+
+    def pair(prompt: str, chosen: str, rejected: str) -> PreferencePair:
+        return PreferencePair(
+            prompt=prompt,
+            chosen=chosen,
+            rejected=rejected,
+            pe_chosen=0.1,
+            pe_rejected=0.9,
+        )
+
+    reset()
+    # The shape GAP-18 describes: many prompts, one negative reused throughout.
+    _record_pair_diversity(
+        [pair(f"p{i}", f"c{i}", "SHARED NEGATIVE") for i in range(9)]
+    )
+    assert PAIR_DIVERSITY_STATS["uniq_rejected"] == 1
+    assert PAIR_DIVERSITY_STATS["uniq_chosen"] == 9
+    assert PAIR_DIVERSITY_STATS["max_rejected_reuse"] == 9
+    # No text plays both roles here, so the label-flip counter stays clean.
+    assert PAIR_DIVERSITY_STATS["texts_in_both_roles"] == 0
+
+    reset()
+    # The other failure DR #2 names: the same text chosen once and rejected
+    # elsewhere, which is the conflicting-gradient case.
+    _record_pair_diversity([pair("p1", "A", "B"), pair("p2", "B", "C")])
+    assert PAIR_DIVERSITY_STATS["texts_in_both_roles"] == 1
+    assert PAIR_DIVERSITY_STATS["max_rejected_reuse"] == 1
+
+    reset()
+    # A healthy set must not read as pathological: every negative distinct.
+    _record_pair_diversity([pair(f"p{i}", f"c{i}", f"r{i}") for i in range(9)])
+    assert PAIR_DIVERSITY_STATS["uniq_rejected"] == 9
+    assert PAIR_DIVERSITY_STATS["max_rejected_reuse"] == 1
+    reset()

@@ -870,6 +870,7 @@ def _pair_filter_report() -> dict[str, Any]:
 
     try:
         from dau.foundation.lora_update import (
+            PAIR_DIVERSITY_STATS,
             POLARITY_FILTER_STATS,
             PROMPT_FILTER_STATS,
             SNR_FILTER_STATS,
@@ -902,6 +903,18 @@ def _pair_filter_report() -> dict[str, Any]:
         "polarity_candidates": int(POLARITY_FILTER_STATS.get("total_candidates", 0)),
         "polarity_rejected": int(POLARITY_FILTER_STATS.get("rejected", 0)),
         "pairs_passed": int(POLARITY_FILTER_STATS.get("passed", 0)),
+        # GAP-18 / D-048. The GAP's severity has only ever been measured on a
+        # 10-event replay (7 unique completions in the whole life); the runs
+        # that matter reach 22-29. Recorded so the next run answers it instead
+        # of another brief restating the old number.
+        "uniq_rejected": int(PAIR_DIVERSITY_STATS.get("uniq_rejected", 0)),
+        "uniq_chosen": int(PAIR_DIVERSITY_STATS.get("uniq_chosen", 0)),
+        "texts_in_both_roles": int(
+            PAIR_DIVERSITY_STATS.get("texts_in_both_roles", 0)
+        ),
+        "max_rejected_reuse": int(
+            PAIR_DIVERSITY_STATS.get("max_rejected_reuse", 0)
+        ),
         # D-035. Both thresholds ship UNCALIBRATED; these are what a
         # calibration would have to be read off.
         "snr_margin_distribution": _distribution(SNR_MARGIN_SAMPLES),
