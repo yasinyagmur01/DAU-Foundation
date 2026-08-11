@@ -2617,3 +2617,84 @@ giremezler. Ön-kayıtlı koşum **seed 2004'ten** başlamalıdır.
 **Reddedilen alternatif:** ikinci koşumu N'i 6'ya çıkarmak için kullanmak.
 Aynı seed'lerin tekrarı **bağımsız gözlem değildir**; N hâlâ 3, yalnızca iki
 kez doğrulanmış.
+
+---
+
+## D-043 · 2026-08-11 · D-039…D-042 sonrası kontrol koşumu: **20/20**, ve bir hipotezim çürüdü
+
+**Durum:** kabul edildi (ölçüm kaydı)
+
+**Karar:** Dört alet değişikliğinden (D-039 I1.1, D-040 shuffle, D-041 I4.1,
+D-042 konum bağımsızlığı) sonra aynı şekil yeniden koşuldu:
+`dau_runs/control_d042_n3_local.json`, N=3, seed 2001–2003, gen1=50, gen2=20,
+`--lora`, greedy. **`run_quality=clean`, 20 değişmezin 20'si geçti.**
+
+Yakılmış seed'lerin doğru kullanımı: 2001–2003 doğrulayıcı analize giremez
+ama regresyon testi olarak birebir bunun içindir.
+
+### Sonuç 1 — D-042 yalnız dokunması gereken yere dokundu
+
+| seed | kol | ΔPE | digest | D-038 ile | `lora_B` Δ |
+|---|---|---|---|---|---|
+| 2001 | lived | +0.03329 | `14995989b4e4` | farklı | 7.845 |
+| 2001 | **null** | +0.02962 | `9f8dccac593d` | **AYNI** | — |
+| 2001 | shuffle | +0.04038 | `b898592bfe44` | farklı | 7.886 |
+| 2002 | lived | −0.01693 | `83299de1f106` | farklı | 7.805 |
+| 2002 | **null** | −0.03518 | `04a562a2179e` | **AYNI** | — |
+| 2002 | shuffle | −0.04394 | `b2ae6175fc6d` | farklı | 7.789 |
+| 2003 | lived | +0.01525 | `c4acb8b03bd9` | farklı | 6.907 |
+| 2003 | **null** | −0.05656 | `766b34931ad5` | **AYNI** | — |
+| 2003 | shuffle | +0.01452 | `01ca5a8f7e10` | farklı | 6.913 |
+
+**Üç null kolunun üçü de byte düzeyinde D-038'deki gibi; altı eğitim kolunun
+altısı da farklı.** Tahmin edilen desenin tamı: null hiç eğitmediği için
+`lora_B=0` kalıyor, dolayısıyla `lora_A`'nın nereden geldiği ona ulaşamıyor.
+
+Ayrıca iki bağımsız ölçüm üst üste bindi: D-042'nin doğrulama sondası
+seed 2001 için `14995989b4e4` (lived) ve `b898592bfe44` (shuffle) vermişti;
+tam koşum ikisini de birebir üretti.
+
+### Sonuç 2 — iki yeni kapı çalışıyor
+
+- **I4.1:** `replay bit-identical (14995989b4e4)`. İlk kez otomatik geçti.
+  Bir önceki koşumda ayrışma bildirip koşumu öldürmüştü ve **haklıydı** —
+  D-042 o ayrışmanın sebebiydi.
+- **I1.1:** `6 train arms moved lora_B; null arms unread`. Eğitim kollarının
+  `Σ|lora_B|` deltası 6.9–7.9; null kolları okunmamış (doğru semantik).
+- `prompt_skipped_no_record = 0`, çift sayıları 47/41/38 korundu.
+
+⚠ `pairs_passed=299`, D-038'de 252'ydi. Fark tam olarak I4.1 replay kolunun
+47 çifti (252+47). Sayaç koşum-global; filtrede değişiklik yok. Bir sonraki
+okuyan bunu filtre değişikliği sanmasın.
+
+### Sonuç 3 — sinyal, ve **çürüyen hipotez**
+
+| Karşılaştırma | 2001 | 2002 | 2003 | ortalama | sd | gözlenen d_z |
+|---|---|---|---|---|---|---|
+| `lived − null` | +0.0037 | +0.0182 | +0.0718 | **+0.0312** | 0.0359 | +0.87 |
+| `lived − shuffle` | −0.0071 | +0.0270 | +0.0007 | +0.0069 | 0.0179 | +0.39 |
+
+`lived − null` **3/3 pozitif** — D-038'deki yönle aynı, düzeltilmiş aletle.
+
+⚠ **`lived − shuffle` hâlâ tutarsız.** D-042'yi bulduğumda *"bu, `lived −
+shuffle`'ın tutarsızlığını açıklıyor olabilir; null hiç eğitmediği için o
+karşılaştırma bağışık"* demiştim. **Ölçüm bu hipotezi desteklemedi.** Konum
+confound'u gerçekti ve düzeltilmesi kendi başına doğruydu, ama tutarsızlığın
+sebebi o değildi. Sebep hâlâ bilinmiyor.
+
+Gözlenen d_z'ler **hedef değildir** ve N seçmek için kullanılamaz (§2.7);
+n=3'te d_z'nin belirsizliği devasa. Bağlam olarak kayda geçiyorlar.
+
+### Ölçümün sınırları
+
+3 seed · tek makine · tek GPU · greedy · gen1=50 / gen2=20 · tek şekil.
+N=3'te işaret testinin verebileceği en küçük p = 0.25, yani **hiçbir sonuç
+anlamlı değil ve olamaz**. Bu koşumun işi sinyal değil **alet doğrulaması**;
+o işi yaptı.
+
+⚠ Seed 2001–2003 yakılmış durumda (D-038). Ön-kayıtlı koşum **2004'ten**
+başlar.
+
+**Reddedilen alternatif:** bu koşumu yeni taban saymak. Değil — alet dört kez
+değişti ve bu koşum onun regresyon testi. Taban, ön-kayıt kilitlendikten
+sonra taze seed'lerle kurulur.

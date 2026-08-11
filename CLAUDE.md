@@ -19,13 +19,45 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-11, gece)
+# 1. Şu An Neredeyiz (2026-08-11, öğle)
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı —
   gerçek diverjans var, ertelendi (**D-013**).
-- **Suite:** `326 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-037.** Sıradaki kayıt **D-038** olarak açılır.
+- **Suite:** `331 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-043.** Sıradaki kayıt **D-044** olarak açılır.
 - **Son GAP: GAP-20** (D-033 ile açıldı ve kapandı). Sıradaki **GAP-21**.
+- **Değişmez sayısı: 20** (I1.1 ve I4.1 D-039/D-041 ile eklendi; belgede
+  tanımlı 25'in beşi hâlâ kodda yok — I1.2 testte, I2.3 yapısal, I1.3/1.4/1.5
+  yok).
+- **Ön-kayıt taslağı:** `docs/PREREGISTRATION.md` — **KİLİTLİ DEĞİL**, §9'da
+  yedi slot açık. Kilit taşı **S4** (en küçük anlamlı etki); N onu bekliyor.
+
+## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
+
+| Kayıt | Commit | Ne |
+|---|---|---|
+| **D-039** | `b82bdf9` | **I1.1 kapısı** — `Σ\|lora_B\|` eğitim öncesi/sonrası. Belgede vardı, kodda yoktu; `CLAUDE.md` §6 "regresyon testinde" diyordu ve **yanlıştı** |
+| **D-040** | `0c61b0e` | **Shuffle %100 ters.** %50 yazı-turanın kaydı yoktu (`f8aabf3`, Cursor toplu commit'i). Gerçekleşen bozulma seed'e göre +%15 … −%21 salınıyordu |
+| **D-041** | `3b16bba` | **I4.1 replay kapısı** — bir kolu ikinci kez koşup `arm_digest` karşılaştırıyor. Maliyet ~7 dk/koşum |
+| **D-042** | `e89404a` | **Adapter graft'ı artık konumdan bağımsız** — `fork_rng` + sabit `LORA_INIT_SEED`. I4.1'in ilk canlı koşumda yakaladığı kusur |
+
+**D-042 küçük değildi:** `lived` daima 1. sırada taze graft'tan, `shuffle`
+daima 3. sırada bir kez eğitilip sıfırlanmış olandan eğitiliyordu ⇒ birincil
+karşıtlığın içinde her koşumda aynı yönde çalışan **sistematik** bir terim.
+Ölçüldü: aynı shuffle kolu konum 1'de `598d67bce291`, konum 3'te
+`43930cf5013b`. Düzeltmeden sonra beş kolluk sonda ile doğrulandı.
+
+⚠ **D-034…D-038'in bütün digest'leri ve `lived − shuffle` sayıları geçersiz.**
+
+## ✅ Kontrol koşumu 20/20 (D-043)
+
+`dau_runs/control_d042_n3_local.json` · `run_quality=clean` · I4.1 ilk kez
+otomatik geçti · üç `null` kolu D-038'le **byte düzeyinde aynı**, altı eğitim
+kolu farklı (D-042'nin yalnız eğitim yolunu değiştirdiğinin kanıtı).
+
+Sinyal (keşifsel, N=3): `lived − null` **3/3 pozitif** (ort. +0.0312) ·
+`lived − shuffle` **hâlâ tutarsız** (−, +, +). ⚠ D-042'yi bulduğumda
+tutarsızlığı onun açıklayabileceğini söylemiştim; **ölçüm desteklemedi.**
 
 ## ✅ Faz 2 KAPANDI
 
@@ -148,35 +180,38 @@ engel buydu ve kalktı.
 
 ## ▶ SIRADAKİ İŞ
 
-**1. Yeni N=3 taban koşumu.** Artık hem tam-faz penceresi (D-036) hem strict
-determinizm (D-037) açık. D-034/D-035'in ΔPE sayıları karşılaştırılamaz, yani
-taban sıfırdan kurulmalı. ~1 saat.
+Alet tarafı bitti. **Tek düğüm Yasin'de: `PREREGISTRATION.md` §9'un yedi
+slotu**, ve kilit taşı **S4**.
 
-Önce temizlik — I0.7 aksi halde ABORT eder:
+**1. S4 — en küçük anlamlı etki (`d_z`).** N bunun fonksiyonu, ve
+⚠ **gözlenen d'den seçilemez** (§2.7, post-hoc tuning). *"Bu büyüklükten
+küçük bir etki bizi ilgilendirmez"* diye **beyan** edilir ya da literatürden
+gerekçelendirilir. Tablo (eşleştirilmiş, çift yönlü, α=0.05, güç 0.80):
+
+| d_z | 0.3 | 0.4 | 0.5 | 0.8 | 1.0 |
+|---|---|---|---|---|---|
+| **gereken N** | 88 | 50 | 32 | 13 | 8 |
+
+Bütçe: seed başına ~20 dk + koşum başına 7 dk I4.1 replay.
+⚠ Wilcoxon çift yönlü α=0.05'te **N≥6 matematiksel şart**.
+
+**2. Kalan altı slot** (S1 sampling · S2 N · S3 α · S5 A3 · S6 A4 · S7 olay
+sayıları). Claude Code'un görüşleri taslakta yazılı.
+
+**3. Pre-reg'i kilitle** (D-044) — `tool_identity` dondurulur, §8'in sekiz
+ilan edilmiş sınırı metne girer, `PREREGISTRATION.md` commit edilir.
+
+**4. Doğrulayıcı koşum, seed 2004'ten.** ⚠ 2001–2003 **yakılmış** (D-038):
+sonuçlarına bakıldı, doğrulayıcı analize giremezler. Regresyon testi olarak
+kullanılabilirler ve kullanıldılar (D-043).
+
+Koşum öncesi temizlik — I0.7 aksi halde ABORT eder:
 
 ```
-mkdir -p archive/adapters_$(date +%F_%H%M) && \
-  mv dau_runs/adapters archive/adapters_$(date +%F_%H%M)/adapters && \
+STAMP=$(date +%F_%H%M) && mkdir -p archive/adapters_$STAMP && \
+  mv dau_runs/adapters archive/adapters_$STAMP/adapters && \
   mkdir -p dau_runs/adapters
 ```
-
-Sonra:
-
-```
-PYTHONHASHSEED=0 DAU_LLM_BACKEND=local python -u -m dau.diagnostics.run_cprime_multigen \
-  --lora --n-pairs 3 --seed-start 2001 --events-gen1 50 --events-gen2 20 \
-  --k-gen2 3 --results dau_runs/baseline_d037_n3_local.json
-```
-
-Beklenen: `run_quality=clean`, 47/41/38 çift, `prompt_skipped_no_record=0`.
-**Yeni olan:** ΔPE artık 50 olayın tamamı, ve koşum **tekrarlanabilir** —
-istenirse ikinci kez koşup adapter hash'leri karşılaştırılabilir.
-
-**2. Güç hesabı.** Tekrarlanabilirlik geldiğine göre `d` artık gürültüden
-ayrıştırılabilir. GAP-9: N=15 yalnız `d ≥ 0.5` için yeterli.
-
-**3. Ön-kayıt.** 2 ve 4 numaralı kararların (F_agent, eşikler) sınırları
-açıkça beyan edilerek. Kilitlendiği an alet değişikliği penceresi kapanır.
 
 ## Karar bekleyen (ön-kayıtla birlikte verilecek)
 
