@@ -3828,3 +3828,99 @@ uyarısı üretti (çökme yok).
 **Reddedilen alternatif:** dosyayı alıp eksik üç fonksiyonu yazmak. Yazılacak
 şey aracın kendisi olurdu, sarmalayıcı değil; ve kilit sonrası dönemde
 ölçüm aracı yazmak ikinci ön-kaydın işi.
+
+---
+
+## D-056 · 2026-08-12 · Birincil uç noktanın çözünürlüğü ölçüldü: %99'u sabit, 11/40 seed'de yapısal olarak kör
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** — B2 verisinin
+**post-hoc** teşhisi. **B2'nin raporlanan sonucunu değiştirmez** (birincil
+null, §11 alet null'ı, D-053); ikinci ön-kaydın tasarımı içindir.
+**GPU kullanılmadı**, koda dokunulmadı.
+
+### Soru
+
+B2'de `a_s − b_s` 40 çiftin **11'inde tam sıfır** çıktı. Sebep tesadüf mü,
+yoksa uç noktanın yapısı mı?
+
+### Bulgu 1 — uç nokta vektörünün **%99'u sabit bir terim**
+
+| Alan | Kaç kolda bayraklı (120) | Yayılım / ortalama | Farklı değer |
+|---|---|---|---|
+| **`resource`** | **120 (%100)** | **%1.9** | **12** |
+| `social` | 51 (%43) | %54.1 | 50 |
+| `uncertainty` | 16 (%13) | %16.0 | 13 |
+
+`‖m‖` ortalaması **3.8073**, `resource` bileşeni **3.7735**
+⇒ **vektörün ~%99'u** her kolda bulunan, neredeyse sabit bir terim.
+
+Ve o terim kollar arasında ayrım **üretmiyor**: `resource` tek bayrakken
+kollar arası fark **40 seed'in 38'inde tam sıfır**.
+
+⇒ Ayrımın tamamı `social` ve `uncertainty`'den geliyor, ve o ikisi
+kolların yalnız **%43** ve **%13**'ünde bayraklanıyor.
+
+### Bulgu 2 — 11 beraberlik tesadüf değil, **yapısal**
+
+11 seed'in hepsinde `lived` ve `shuffle` **birebir aynı vektörü** üretti.
+İki desen var:
+
+- **6 seed** (2005, 2017, 2025, 2031, 2039, 2042): üç kol da aynı bayrak
+  kümesi, aynı büyüklük ⇒ `a = b = 0`. **Uç nokta tamamen kör.**
+- **5 seed** (2013, 2014, 2022, 2032, 2043): `lived` ve `shuffle` yalnız
+  `resource`, `null` ek olarak `social`/`uncertainty` bayraklı ⇒ iki mesafe
+  de **aynı şeyi** ölçüyor, `a = b` **tanım gereği**.
+
+⇒ Bu 11 seed'de **mükemmel eğitilmiş bir adapter bile** birincil uç noktada
+görünemezdi. Bu bir güç sorunu değil, **ölçülemezlik**.
+
+### Bulgu 3 — travma seyrek: **33/120 kolda hiç yok**
+
+`consolidation.drift_flag_count`: ortalama **1.38** (50 olaylık yaşamda),
+min 0, max 7, ve **120 kolun 33'ünde sıfır**. Doğum-drift yalnız travma
+anında yazıldığından (L11, `drift.py:41`), uç nokta **yaşam başına ~1.4
+olaya** dayanıyor.
+
+### Bulgu 4 — kalan 29 seed'de duyarsızlık **yok**, ama işaret rastgele
+
+| | |
+|---|---|
+| `\|a − b\|` (sıfır olmayan 29) | ort. **0.4440** · medyan 0.5173 · max 1.0586 |
+| İşaret | **+15 / −14** |
+
+⇒ Uç nokta çözünürlüğü olduğunda **büyük** hareket ediyor (ortalama 0.44,
+sabit terimin %12'si), ama **yönü kolla ilgisiz** — yazı-tura.
+
+**Bu, null'ın okunuşunu değiştiriyor:** *"küçük etkiyi göremedik"* değil,
+*"29 seed'de büyük hareket var ve hangi eğitimi aldığı yönü belirlemiyor."*
+
+### Ne anlama geliyor
+
+D-002'nin dört halkalı nedensel zinciri şunu gerektiriyor: adapter'ın
+öğrendiği → ajanın davranışı → hangi alanda travma → varisin doğum-drifti.
+**Birinci halka çalışıyor** (kanal 2 kararların %52'sini değiştiriyor,
+D-053). **Son halka ölçülüyor.** Aradaki bağlantı — *"adapter hangi alanda
+travma yaşanacağını etkiliyor mu"* — bu veride **kurulamıyor**.
+
+İki ayrı yetersizlik, ikisi de aletin değil **evrenin** özelliği:
+
+1. `resource` travması herkeste, hep, aynı büyüklükte oluyor — havuz krizi
+   (`POOL_CRISIS_THRESHOLD = 0.30`) bütün ajanları aynı anda vuruyor.
+2. `social` ve `uncertainty` travması **çok seyrek** — ayrım üretecek
+   olaylar yaşam başına ~1.4 kez oluyor, üçte birinde hiç olmuyor.
+
+⇒ **A4 (environment'ı ayrım üretir hale getirme) artık gerekçelendirilmiş
+bir zorunluluk.** L1 (`F_agent=0.000`), L11 (`resource` yayılımı %2.7) ve bu
+kayıt aynı olguyu üç ayrı yerden gösteriyor: **ajanlar birbirinden farklı
+hayat yaşamıyor.** Aksiyom *"yaşam verirsin, trait oradan çıkar"* diyor;
+evren şu an **ayırt edici yaşam vermiyor**.
+
+### Sınırlar
+
+Post-hoc teşhis; hipotez testi değil, ön-kayıta girmedi. Uç noktanın
+%99'unun sabit olması **tek başına** null'ı açıklamaz — 29 seed'de
+çözünürlük vardı ve orada da yön çıkmadı. Yani bu kayıt *"uç noktayı
+düzeltirsek etki çıkar"* **demiyor**; *"bu uç noktayla 11/40 seed'de hiçbir
+şey çıkamazdı, kalanında da bağlantı halkası kurulamadı"* diyor.
+Uç nokta tanımı **değiştirilmedi** — ölçümü görüp uç nokta seçmek post-hoc
+olur (§2.7); değişecekse ikinci ön-kayıta ve **taze veriye** yazılır.
