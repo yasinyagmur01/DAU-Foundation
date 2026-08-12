@@ -1,0 +1,25 @@
+# Yerel 4-bit çıkarım + nesil-sonu QLoRA için ek bağımlılıklar.
+# Yalnız DAU_LLM_BACKEND=local ve Protocol C′ / multigen koşumları için gerekir.
+#
+# ⚠ Aşağıdaki sürümler TAHMİN DEĞİL: ön-kayıtlı doğrulayıcı koşumun (B2,
+# seed 2004–2043, N=40) `tool_identity.versions` bloğundan alındı.
+# Kaynak: dau_runs/prereg_b2_batch1_2004_2023.json
+#
+# Koşumu yeniden üretmek isteyen biri bu sürümleri kullanmalı. Alet kimliği
+# yüklenen sürümü her koşumda raporluyor (D-023 deseni), yani bu dosya ile
+# gerçek koşum arasındaki bir sapma JSON'da görünür — sessizce geçmez.
+
+# --- B2'nin koştuğu tam sürümler ---
+# python 3.14.6
+torch==2.13.0
+transformers==5.14.1
+peft==0.20.0
+bitsandbytes==0.50.0
+accelerate==1.14.0
+numpy==2.4.5
+scipy==1.18.0
+
+# --- Polarite kapısı (D-032: kosinüs; NLI POLARITY_FILTER=nli ile erişilebilir) ---
+# MiniLM ve cross-encoder/nli-deberta-v3-small tokenizer'ları için
+sentencepiece>=0.2.0
+protobuf>=4.0.0
