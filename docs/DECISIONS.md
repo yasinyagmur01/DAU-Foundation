@@ -3588,3 +3588,133 @@ kapı ve üç sayaç grubu eklendi (hepsi ucuz ama **ölçülmedi**) ⇒ gerçek
 tampon **%5–10**. Batch bağımsızlığı D-042'nin konum bağımsızlığına
 dayanıyor; o bozulursa batch'leme de bozulur — ama o durumda tek koşum da
 bozuk olurdu. I4.1 replay her batch'te bunu sınıyor.
+
+---
+
+## D-053 · 2026-08-12 · B2 koştu, §5 geçerlilik kapısı düştü: sapma ilan edilerek doğrulayıcı sayılır
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-12) · **Etkilenen:** `PREREGISTRATION.md` §5
+
+### Ne oldu
+
+B2 doğrulayıcı koşumu iki batch hâlinde tamamlandı — seed 2004–2043, N=40,
+`exit 0`, çökme yok.
+
+| | batch 1 (2004–2023) | batch 2 (2024–2043) |
+|---|---|---|
+| dosya | `dau_runs/prereg_b2_batch1_2004_2023.json` | `dau_runs/prereg_b2_batch2_2024_2043.json` |
+| süre | ~6.4 sa | ~6.7 sa |
+| `run_quality` | **flagged** | **flagged** |
+| geçen kapı | 23 / 24 | 23 / 24 |
+| bayrak kaldıran | **I1.3b** | **I1.3b** |
+| `prompt_skipped_no_record` | **2** / 2050 | 0 / 2050 |
+| `[LORA][WARN]` | **2** | 0 |
+
+§5'in **adıyla saydığı 18 kapının hepsi** (I0.1–I0.7, I2.1–I2.2, I3.1–I3.4,
+I4.2, I5.1–I5.4) iki batch'te de geçti. `adapter_present` 240/240 doğru
+(`lived`/`shuffle`=True, `null`=False). `tool_identity` ön-kayıt §12 ile
+**birebir** eşleşti — backend, model, NF4+double_quant, DPO ayarları, LoRA,
+sampling ve sekiz kütüphane sürümü dahil.
+
+### Karar
+
+**Sapma ilan edilir, koşum doğrulayıcı sayılır.** Rapor (B4) sapmayı en
+üstte, bu kayda atıfla duyurur.
+
+### Gerekçe — üç ayrı olgu
+
+**1. `run_quality = clean` şartı §5'in kendi listesiyle çelişiyor.**
+Bayrak kaldıran tek kapı `I1.3b` ve o, §5'in "geçmeli" diye saydığı 18
+kapının **içinde değil**. Listede olmayan bir kapının bayrağı koşumu
+düşürebiliyorsa, 18'i tek tek saymanın anlamı kalmaz. `CLAUDE.md`'nin B2
+runbook'u koşumdan **önce** *"I3.2/I1.3b/I1.4/I1.5 FLAG olabilir (kalibre
+değil), gerisi geçmeli"* diye yazmıştı — yani bu bayrak öngörülmüş ve
+öldürücü sayılmamıştı. İki belge çelişiyordu; §2.11 gereği sessizce
+seçilmedi, Yasin'e taşındı.
+
+**2. `prompt_skipped_no_record = 0` yeniden koşumla sağlanamaz.**
+D-037'den beri aynı seed + aynı kod **bit düzeyinde** aynı sonucu veriyor.
+Batch 1 yeniden koşulsa seed 2012 yine aynı SYSTEM_1 kararını üretir ve
+sayaç yine 2 olur. Kriter ihlal edildiğinde **kurtarılamaz**: ancak aleti
+değiştirerek (kilit sonrası yasak, §2.10) veya seed setini değiştirerek
+(§6 yasak) sağlanabilirdi. Şiddeti **2 / 2050 karar (%0.1)**; pilotta
+0/300 çıktığı için 0'ın ulaşılabilir olduğu varsayılmıştı — ölçüm bunu
+çürüttü. **Bu bir taslak hatasıdır**, koşumun kusuru değil.
+
+**3. `dau_runs/adapters/` hiçbir zaman boş değildi.** §5 "koşum öncesi boş"
+diyor; batch 1 başlarken 2001–2003'ün 7 adapter'ı, batch 2 başlarken batch
+1'inkiler duruyordu. Biz bunu "kendi seed'lerimizle çakışma yok" diye
+okuduk ve I0.7 de öyle denetliyor (ve geçti), ama metnin harfi "boş" diyor.
+Eksiksiz olsun diye kayda geçiyor.
+
+### İhlallerin hiçbiri birincil karşıtlığa yönlü terim eklemiyor
+
+Sapmayı kabul edilebilir kılan şey bu, ve **ölçülmüştür**:
+
+| İhlal | Simetri kanıtı |
+|---|---|
+| I1.3b (kırpma) | `lived` 10.8/10.8 adım · `shuffle` 10.8/10.8 · `grad_norm_min` 2.959 vs 2.984 |
+| atlanan 2 karar | ikisi de seed 2012'de, **biri `lived` biri `shuffle`** kolunda (log satır 6084 ve 6578); `null` kolu uyarı vermedi |
+
+Yani `a_s − b_s` farkına tek yönde çalışan bir terim yok.
+
+### I1.3b'nin şiddeti — kayda değer, ayrı bulgu
+
+`DPO_MAX_GRAD_NORM = 1.0`; **kırpılan adım / toplam adım = %100** (iki
+eğitim kolunda da). `dpo_grad_norm_min ≈ 2.96` — koşumun **en küçük**
+gradyanı bile tavanın ~3 katı. Doygunluk marjinal değil.
+
+⇒ Adım boyunu artık gradyan değil **tavan** belirliyor, dolayısıyla D-029'un
+literatürden kilitlediği `lr = 1e-6` koşumu tarif etmiyor. D-046 I1.3b'yi
+tam olarak bunun için eklemişti ve kapı **işini yaptı**.
+
+Yanında duran ikinci ölçüm: `dpo_loss` = **0.6919** (lived) / **0.6940**
+(shuffle) — ikisi de **ln 2 = 0.6931**'e yapışık, yani eğitimden sonra
+tercih marjı ≈ 0. DR #2'nin H3'ü *"shuffle belirgin yüksek olmalı"*
+diyordu; **gerçekleşmedi** (fark 0.002).
+
+⚠ Buna karşılık `dpo_delta_logp_chosen` = **+0.064**, 20 seed'in **18'inde
+pozitif** ⇒ D-049'un korktuğu **bastırma deseni gerçekleşmedi**; öğrenmenin
+yönü doğru, büyüklüğü yok. (`shuffle`'da da +0.025, 15/20 ⇒ bu bulgu
+eğitim yordamının sağlığı hakkında, `lived`'e özgü değil.)
+
+**Kilit kapalı olduğu için `DPO_MAX_GRAD_NORM`'a dokunulmadı** (§2.10).
+İkinci ön-kayıta girer.
+
+### GAP-18 ilk kez ölçüldü
+
+| | batch 1 | batch 2 |
+|---|---|---|
+| `pairs_passed` | 1707 | 1741 |
+| `uniq_chosen` | 1025 | 971 |
+| **`uniq_rejected`** | **100** | **94** |
+| `max_rejected_reuse` | 47 | 45 |
+| `texts_in_both_roles` | 28 | 51 |
+
+⇒ GAP-18'in tetiği ateşledi. **KTO'ya geçiş kararı artık brief'in
+varsayımıyla değil bu sayılarla verilir** — ve kilit kapalı olduğu için
+**ikinci ön-kayıta** gider, bu koşuma değil.
+
+### Reddedilen alternatifler
+
+- **Tümüyle post-hoc raporlamak** (§10'un harfi). En savunulabilir duruş,
+  ama kilidin bütün amacı olan doğrulayıcı statü kaybedilir ve 13 GPU saati
+  keşifsel veriye döner. İhlaller kollara simetrik olduğu için bu bedel
+  karşılıksız kalırdı.
+- **Her şeyi atıp baştan koşmak** (§5'in harfi). ⚠ §5'i düzeltmeden
+  yeniden koşmak determinizm gereği **aynı sonucu** verir ⇒ bu yol zorunlu
+  olarak §5'in yeniden yazılmasını içerir. 13.3 GPU saat karşılığında hiçbir
+  bilimsel kazanç yok.
+- **İlan etmemek.** Kanıt zaten gönderilecek dosyaların içinde:
+  `PREREGISTRATION.md` git'te `befd72b4ee57` ile kilitli, JSON'ların kökünde
+  `"run_quality": "flagged"` yazıyor. Gizliliğin faydasını vermez, yalnız
+  yakalanmanın bedelini bırakır.
+
+### Sınırlar
+
+Bu kayıt **birincil sonuca bakılmadan** yazıldı — geçerlilik kararı sonuç
+görülmeden verilsin diye analiz kasıtlı olarak ertelendi. `I1.3b`'nin etki
+büyüklüğü üzerindeki payı **nicelenmedi**: %100 kırpmanın etkiyi ne kadar
+küçülttüğü bilinmiyor, yalnız simetrik olduğu biliniyor. Bu, B4'ün
+mekanizma-null / alet-null ayrımında **alet tarafına** yazılacak kanıttır,
+ama tek başına "etki vardı da kırpma yuttu" demeye yetmez.
