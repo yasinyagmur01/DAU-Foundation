@@ -3800,3 +3800,31 @@ karar ve Yasin'in onayını ister.
 `run_vram_spike.py` alınmadı: şu an ihtiyaç yok ve etiketten her an
 çıkarılabilir. Alınmadığı için bu branch'te **VRAM ölçüm aracı yok**, yalnız
 geçmiş ölçüm çıktıları var.
+
+---
+
+## D-055 · 2026-08-12 · `run_vram_spike.py` geri alınmadı: sarmaladığı API yok
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-12) · **Düzelttiği:** D-054 §Sınırlar
+
+D-054 *"`run_vram_spike.py` alınmadı; etiketten her an çıkarılabilir"* diyordu.
+**Ölçüldü, ve o cümle yanıltıcıydı** — dosya çıkarılabilir ama **çalışmaz.**
+
+34 satırlık ince bir sarmalayıcı ve `local_llm`'den üç isim çağırıyor:
+`STATUS_GO` · `run_vram_spike` · `write_vram_spike_report`. **Üçü de bu
+branch'in `local_llm.py`'sinde yok** (`hasattr` ile denetlendi). main'in
+`test_local_llm.py`'siyle aynı sınıf: erken LAYER-5 API'sine yazılmış,
+o API 18 commit boyunca değişmiş.
+
+⇒ **Geri alınmadı.** Bu branch'te **VRAM ölçüm aracı yok**; yalnız geçmiş
+ölçüm çıktıları var (`vram_train_peak_nf4.json`, `vram_spike_results.json`,
+`protocol_c_prime_multigen_pilot_n3_local_vram.csv`).
+
+**İkinci ön-kayıt için sonuç:** VRAM sınırı yeniden ölçülecekse araç
+**yeniden yazılır**, etiketten geri alınmaz. Bu, B2'nin OOM marjı göz önüne
+alınınca gerçek bir ihtiyaç olabilir — koşum 8188 MiB'de 49 allocator
+uyarısı üretti (çökme yok).
+
+**Reddedilen alternatif:** dosyayı alıp eksik üç fonksiyonu yazmak. Yazılacak
+şey aracın kendisi olurdu, sarmalayıcı değil; ve kilit sonrası dönemde
+ölçüm aracı yazmak ikinci ön-kaydın işi.
