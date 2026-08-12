@@ -19,20 +19,29 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-11, gece) — 🔒 **ÖN-KAYIT KİLİTLİ**
+# 1. Şu An Neredeyiz (2026-08-12) — ✅ **B FAZI BİTTİ, SONUÇ NULL**
 
 - **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı (**D-013**).
 - **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-052.** Sıradaki kayıt **D-053** olarak açılır.
-- 🔒 **`docs/PREREGISTRATION.md` KİLİTLİ** · 2026-08-11 · commit `befd72b4ee57`.
-  **Yedi slotun yedisi kapalı. On sekiz ilan edilmiş sınır.**
-  ⚠ **Alet değişikliği penceresi KAPANDI (§2.10).** Kilitten sonra eşik, uç
-  nokta, test veya çift kurma stratejisi değişirse sonuç **post-hoc** olur.
-- **Sıradaki iş: B2 — doğrulayıcı koşum.** Runbook aşağıda, §1'de.
+- **Son D-kaydı: D-053.** Sıradaki kayıt **D-054** olarak açılır.
+- ✅ **B2/B3/B4 tamamlandı.** Rapor: **`docs/B2_RESULTS.md`**.
+  **Birincil null:** `a_s` vs `b_s`, N=40, eşleştirilmiş Wilcoxon,
+  **p = 0.9914**, `d_z = −0.000`. Üç kol birbirine **eşit uzaklıkta**
+  (`‖lived−null‖` 0.3812 · `‖shuffle−null‖` 0.3814 · `‖lived−shuffle‖` 0.3852).
+- ⚠ **§11 sınıfı: ALET NULL'I** — §5 geçerlilik kapısından üç kriter düştü
+  (**D-053**), ve §11 "§5'ten biri düşerse alet null'ı" diyor. Mekanizma
+  hakkında hüküm **verilemez**. "Etki yok" da denemez (§9-S4/D-047):
+  doğru ifade *"`d_z ≥ 0.465` yok, altı için veri bilgisiz"*.
+- 🔒 **`docs/PREREGISTRATION.md` KİLİTLİ** · commit `befd72b4ee57`.
+  **Yedi slotun yedisi kapalı. On yedi ilan edilmiş sınır** (⚠ bu dosya
+  daha önce beş yerde "on sekiz" diyordu — **yanlıştı**, L1–L17 var).
+  Raporda dört yeni sınır eklendi: **L18** kırpma doygunluğu · **L19** §5
+  düştü · **L20** S5/S6 koşulmadı · **L21** batch başına sayaçlar.
 - **Faz A bitti:** A1/A3/A5/A6/A7/A8 → D-044…D-052.
 - **GAP durumu:** 1,2,6,7,9,11,12,13,14,15,16,20 **kapandı** ·
   3,4,5,10,19 **ilan edilen sınıra çevrildi** (L17,L15,L14,L8,L16) ·
-  **18** B2'nin `uniq_rejected` sayısını bekliyor · **17** B4'te raporda not.
+  **18 ölçüldü** (`uniq_rejected` 100/94 — KTO kararı ikinci ön-kayıta) ·
+  **17** raporda not edildi.
 - ⚠ **Gizli bağımlılık (D-051):** `F_agent` (L1) tek başına düzeltilirse
   GAP-19 canlanır. **İkisi birlikte ya da hiçbiri.** Sonraki ön-kayıt.
 - **Değişmez sayısı: 24.** Belgede tanımlı 26'nın ikisi kodda yok
@@ -40,81 +49,33 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Üç DR cevabı da işlendi** (D-047 §G · D-048 §H · D-049 §I). Kanal kapandı.
 - **Master reference: v2.4.2** (§8). ⚠ D-045…D-052 orada **yok** — Faz C borcu.
 
-## ▶▶ B2 RUNBOOK — yeni oturum buradan başlar
+## ✅ B2/B3/B4 BİTTİ — sonuç `docs/B2_RESULTS.md`'de
 
-**Amaç:** ön-kayıtlı doğrulayıcı koşum. N=40, seed **2004–2043**, iki batch.
-**Süre:** batch başına ~6.7 saat (seed başına 19.9 dk ölçüldü, +%5–10 tampon).
+**Koşum:** seed 2004–2043, N=40, iki batch, `--lora` · toplam ~13.1 saat ·
+çökme yok · `tool_identity` ön-kayıt §12 ile **birebir**.
 
-### Adım 0 — koşum öncesi kontrol (bir kez, ~5 dk)
+| Ne | Sonuç |
+|---|---|
+| **Birincil** (§3) | `a_s − b_s` ort. **−0.0002** · W=217.0 · **p = 0.9914** · `d_z = −0.000` ⇒ **H0 reddedilemedi** |
+| Çözünürlük | `‖lived−shuffle‖` **0.3852** ≈ `‖lived−null‖` 0.3812 ≈ `‖shuffle−null‖` 0.3814 ⇒ üç kol **eşit uzaklıkta** |
+| **§11 sınıfı** | **ALET NULL'I** — §5'ten üç kriter düştü (D-053) |
+| S1 (FFH) | p = 0.877 · S2 (KW) p = 0.726 · **S3** p = 0.070 (+, yön H1'le uyumlu) · **S4** p = 0.035 (**ters yönde**) |
+| S5 / S6 | **KOŞULMADI** — S5'in verisi JSON'da yok, S6'nın kolu üretilmedi (L20) |
+| `run_quality` | **flagged** (iki batch), 23/24 kapı, bayrak `I1.3b` |
+| Kırpma | **%100**, `grad_norm_min ≈ 2.96` vs tavan 1.0 ⇒ **L18** |
+| `dpo_loss` | 0.6919 / 0.6940 — **ln 2 = 0.6931**, tercih marjı ≈ 0 |
+| `delta_logp_chosen` | **+0.064, 18/20 pozitif** ⇒ bastırma **değil**, D-049'un failure mode'u tekrarlanmadı |
+| GAP-18 | `uniq_rejected` **100 / 94** · `uniq_chosen` 1025 / 971 · `max_rejected_reuse` 47 / 45 |
 
-```bash
-cd /home/yasin-yagmur01/Desktop/DAU-Foundation
-git log --oneline -1                      # befd72b veya sonrası olmalı
-python -m pytest -q                       # 344 passed beklenir
-df -h . | tail -1                         # >5 GB bos (gereken ~1.1 GB)
-nvidia-smi --query-gpu=memory.used --format=csv,noheader   # ~0 MiB olmali
-ls dau_runs/adapters/ | grep -E "20(0[4-9]|[1-3][0-9]|4[0-3])" && echo "ABORT: I0.7 dusecek" || echo "temiz"
-```
+⚠ **İddia edilemeyecekler** (rapor §7): *"aktarılmıyor"* (D-047 yasakladı) ·
+*"mekanizma yanlış"* (alet null'ı) · *"adapter davranışı değiştiriyor demek
+ki bir şey aktarılıyor"* (**`shuffle` de aynı ölçüde değiştiriyor**: 26.6 vs
+26.1 / 50) · *"S4 anlamlı, en azından sinyal var"* (ters işaret, medyan 0,
+§4 önceden bağladı).
 
-⚠ **Yasin'in elle yapması gerekenler** (sistem ayarı, Claude Code yapmaz):
-
-```bash
-sudo sed -i 's/^#\?HandleLidSwitch=.*/HandleLidSwitch=ignore/;s/^#\?HandleLidSwitchExternalPower=.*/HandleLidSwitchExternalPower=ignore/' /etc/systemd/logind.conf && sudo systemctl restart systemd-logind
-```
-
-Lid ayarı **varsayılan `suspend`** — kapak kapanırsa koşum ölür. Ayrıca:
-GPU'yu kullanan her şey kapalı olsun (tarayıcı dahil, 8188 MiB'de marj dar).
-
-⚠ **`PYTHONHASHSEED=0` şart.** Yoksa **I0.3 ilk saniyede ABORT eder**
-(mock koşumla doğrulandı). `--lora` bayrağı `DAU_LORA_ENABLED`'ı kendi set
-ediyor, backend varsayılanı zaten `local` (D-018) ⇒ başka env gerekmiyor.
-
-### Adım 1 — Batch 1 (seed 2004–2023)
-
-```bash
-PYTHONHASHSEED=0 nohup python -m dau.diagnostics.run_cprime_multigen --lora --n-pairs 20 --seed-start 2004 --events-gen1 50 --events-gen2 20 --k-gen2 3 --results dau_runs/prereg_b2_batch1_2004_2023.json > dau_runs/prereg_b2_batch1.log 2>&1 &
-```
-
-### Adım 2 — Batch 2 (seed 2024–2043), batch 1 **bittikten sonra**
-
-```bash
-cd /home/yasin-yagmur01/Desktop/DAU-Foundation && PYTHONHASHSEED=0 nohup python -m dau.diagnostics.run_cprime_multigen --lora --n-pairs 20 --seed-start 2024 --events-gen1 50 --events-gen2 20 --k-gen2 3 --results dau_runs/prereg_b2_batch2_2024_2043.json > dau_runs/prereg_b2_batch2.log 2>&1 &
-```
-
-İzleme: `tail -f dau_runs/prereg_b2_batch1.log`
-
-### Koşum biterken bakılacaklar
-
-| Ne | Nerede | Beklenen |
-|---|---|---|
-| `run_quality` | JSON kökü | **`clean`** (flagged olursa hangi kapı, D-kaydına) |
-| 24 değişmez | `invariants` | I3.2/I1.3b/I1.4/I1.5 **FLAG olabilir** (kalibre değil), gerisi geçmeli |
-| `tool_identity` | JSON | `PREREGISTRATION.md` §12 ile **birebir** eşleşmeli |
-| `uniq_rejected` | `pair_filter` | **GAP-18'in cevabı** — ilk kez ölçülüyor |
-| `dpo_loss` lived vs shuffle | `pairs[].lineages[].gen1` | **DR #2 H3 testi**: shuffle belirgin yüksek olmalı |
-| `dpo_delta_logp_chosen` | aynı yer | **>0 olmalı** — negatifse bastırma öğrenilmiş (D-049) |
-| `consolidation.deleted_count` | `pairs[].lineages[]` | ilk kez görünür (D-051) |
-
-### ⚠ Çökerse
-
-- **Sadece o batch yeniden koşulur.** Diğer batch'in sonucu geçerli.
-- **Sonuç seçmek için batch atılamaz** (D-052'de önceden ilan edildi).
-- Yeniden koşmadan önce `dau_runs/adapters/`'ta o batch'in seed'lerini sil,
-  yoksa **I0.7 abort eder**.
-- OOM en olası sebep (pilotta bir uyarı vardı, 120 eğitim koşacak).
-  `_train_adapter` yakalar → `trained=False` → **I1.1 ABORT** eder.
-  Sessizce eğitimsiz kol üretmez.
-
-### B2'den sonra
-
-**B3** (~1 sa): ön-kayıtlı analiz — birincil (§3: `a_s` vs `b_s`, eşleştirilmiş
-Wilcoxon, çift yönlü, α=0.05) + altı ikincil, **çoklu karşılaştırma düzeltmesi
-yok**, her ikincilin yanına "iddia edilmiyor" yazılır.
-**B4** (~2 sa): rapor + **on sekiz ilan edilmiş sınır** + null çıkarsa
-**mekanizma null'ı mı alet null'ı mı** ayrımı (§11).
-
-⚠ **B3'te hiçbir istatistik seçilmez** — hepsi ön-kayıtta yazılı. Yeni bir
-test akla gelirse **ikinci ön-kayıta** yazılır, buraya değil.
+**Bu null'ın değeri:** neden göremediğimizi **ölçtük**. Kırpma doygunluğu ve
+`dpo_loss ≈ ln 2`, bir sonraki koşumun neyi düzelteceğini tahminle değil
+sayıyla söylüyor.
 
 ## ▶ İKİNCİ ÖN-KAYIT — kilitten sonra biriken her şey buraya
 
@@ -348,9 +309,11 @@ enjeksiyonu** geçecek — sonraki ön-kayıt.
 |---|---|---|---|
 | ~~A8~~ | ✅ **D-052** — **N=40**, seed 2004–2043, iki batch. MDE `d_z=0.465` (Wilcoxon). **GAP-9 kapandı**: `N=40–50` ΔPE için hesaplanmış, bizim birinciliğimiz için değil | — | ✅ |
 | ~~B1~~ | ✅ **KİLİTLENDİ** `befd72b4ee57` — 7/7 slot, alet kimliği donduruldu (§12), GAP-3→L17 · GAP-10→L8 | — | ✅ |
-| **B2** | **Doğrulayıcı koşum — RUNBOOK §1'de.** seed 2004–2043, iki batch. ⚠ 2001–2003 yakılmış (D-038) | 2×6.7 sa | ⬜ |
-| **B3** | Ön-kayıtlı analiz: birincil + altı ikincil, düzeltmesiz | ~1 sa | 🔒 B2 |
-| **B4** | Rapor + **on sekiz** ilan edilmiş sınır + null ise mekanizma/alet ayrımı | ~2 sa | 🔒 B3 |
+| ~~B2~~ | ✅ **Koşuldu** — seed 2004–2043, ~13.1 sa, çökme yok. ⚠ `run_quality=flagged` iki batch'te de (bayrak `I1.3b`) | — | ✅ |
+| ~~B3~~ | ✅ **Analiz koşuldu** — birincil **p = 0.9914** (null). S5/S6 **koşulamadı**, verisi/kolu yok. Çıktı `dau_runs/b3_prereg_analysis.json` | — | ✅ |
+| ~~B4~~ | ✅ **`docs/B2_RESULTS.md`** — on yedi sınır + dört yeni (L18–L21) + **§11 sınıfı: alet null'ı** (D-053) | — | ✅ |
+
+⇒ **Sıradaki iş: Faz C** (belge borcu). Ondan sonra **ikinci ön-kayıt**.
 
 ### Faz C — işler bitince (Yasin: "belge borcu işler bittikten sonra")
 
@@ -369,8 +332,8 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 
 | GAP | Tetik | Neden o an optimal | Nasıl çözülür |
 |---|---|---|---|
-| **GAP-18** | **B2'nin `uniq_rejected` sayısı gelince** | Cevap geldi (D-048) ama **şiddeti hiç ölçülmemiş** çıktı: "2 benzersiz negatif" 10 olaylık replay'den, "47 çift" 50 olaylık koşumdan. Sayaçlar eklendi (`daa5f4b`); karar sayıdan sonra. ⚠ Kilit kapandı ⇒ karar **ikinci ön-kayıta** gider, bu koşuma değil | B2 ölçümü → ikinci ön-kayıt |
-| **GAP-17** | **B4'te (rapor)** | Karşılaştırma tabanı delil olarak kullanılamıyor; bisect pahalı ve sonucu bir şeyi değiştirmiyor. Raporda "açıklanmadı" diye geçer | Raporda not |
+| ~~GAP-18~~ | ✅ **ÖLÇÜLDÜ (B2)** — `uniq_rejected` **100 / 94** · `uniq_chosen` 1025 / 971 · `max_rejected_reuse` **47 / 45** · `texts_in_both_roles` 28 / 51, 1707+1741 çift üzerinde. Şiddet artık sayıyla biliniyor: reddedilen taraf 10 kat daha az çeşitli. ⚠ **KTO kararı ikinci ön-kayıta** — kilit kapalı | ikinci ön-kayıt |
+| ~~GAP-17~~ | ✅ **RAPORDA NOT EDİLDİ** — `docs/B2_RESULTS.md` §6, "açıklanmadı" olarak. Bisect yapılmadı; 08-09 tabanı `tool_identity` öncesi olduğu için delil değeri yok | kapandı (not olarak) |
 
 **Kilitte sınıra çevrilenler** — yeniden açılmaz, `PREREGISTRATION.md` §8'de:
 GAP-3 → **L17** · GAP-4 → **L15** · GAP-5 → **L14** · GAP-10 → **L8** ·
@@ -406,9 +369,9 @@ atfedilmişti, o BLEU'dur).
 | İş | Tetik | Not |
 |---|---|---|
 | **`archive/` 2.3 GB** | **isteğe bağlı** | ⚠ **Artık bloke etmiyor:** ölçüldü, B2 ~1.1 GB yazacak (40×2 adapter × 14 MB) ve **36 GB boş** var. Temizlik hijyen, zorunluluk değil |
-| **Eski adapter'lar** (`dau_runs/adapters/`, 7 dizin, seed 2001–2003) | **B2'den önce kontrol** | Seed'lerimiz 2004–2043 ⇒ **çakışma yok, I0.7 temiz başlar** (doğrulandı). Silme — D-042/D-043'ün kanıtı |
-| **`dau_runs/` 33 JSON etiketleme** | **Faz C** | Bir kısmı geçersiz (D-036/037/042 öncesi). Silinmemeli, etiketlenmeli |
-| **D-013 — branch main'e taşınmadı** | **B4'ten sonra** | Gerçek diverjans var. Paper aşamasında ele alınır |
+| **Adapter'lar** (`dau_runs/adapters/`, artık **87 dizin** ~1.2 GB) | **isteğe bağlı** | 2001–2003 D-042/D-043'ün kanıtı; **2004–2043 B2'nin kanıtı** ⇒ ikisi de silinmemeli. ⚠ Bir sonraki koşum başka seed'lerden başlamalı, yoksa I0.7 abort eder |
+| **`dau_runs/` JSON etiketleme** | **Faz C** | Bir kısmı geçersiz (D-036/037/042 öncesi). Silinmemeli, etiketlenmeli. B2'nin üç dosyası **geçerli ve nihai** |
+| **D-013 — branch main'e taşınmadı** | ⏰ **TETİKLENDİ (B4 bitti)** | Gerçek diverjans var. Faz C'den sonra, ikinci ön-kayıttan önce ele alınmalı |
 
 # 2. Yeni Oturum Protokolü (bağlayıcı)
 
@@ -423,7 +386,8 @@ atfedilmişti, o BLEU'dur).
    **D-036** (ölçüm penceresi) · **D-037** (tekrarlanabilirlik) · **D-042**
    (konum bağımsızlığı) · **D-044** (uç nokta duyarlılığı).
 4. **`docs/PREREGISTRATION.md`** — 🔒 **KİLİTLİ** (`befd72b4ee57`), 7/7 slot
-   kapalı, **on sekiz ilan edilmiş sınır**, alet kimliği §12'de donduruldu.
+   kapalı, **on yedi ilan edilmiş sınır** (L1–L17), alet kimliği §12'de
+   donduruldu. Rapor dört sınır daha ekledi: **L18–L21** (`docs/B2_RESULTS.md`).
 5. Koda dokunmadan önce **§2.2**.
 
 ⚠ `docs/EXECUTION_PLAN.md` **Faz 2'de donmuş** — D-038…D-044 orada yok.
@@ -556,7 +520,8 @@ kaymış.)
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
-| Ön-kayıt: slotlar, uç noktalar, **on sekiz ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
+| Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
+| **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
