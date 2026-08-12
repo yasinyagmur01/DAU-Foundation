@@ -3718,3 +3718,85 @@ büyüklüğü üzerindeki payı **nicelenmedi**: %100 kırpmanın etkiyi ne kad
 küçülttüğü bilinmiyor, yalnız simetrik olduğu biliniyor. Bu, B4'ün
 mekanizma-null / alet-null ayrımında **alet tarafına** yazılacak kanıttır,
 ama tek başına "etki vardı da kırpma yuttu" demeye yetmez.
+
+---
+
+## D-054 · 2026-08-12 · D-013 kapandı: branch main'e taşındı, main ata olarak birleştirildi
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-12) · **Kapattığı:** D-013
+
+### Diverjansın gerçek boyutu
+
+| | |
+|---|---|
+| Ayrım noktası | `ece09b1` (v1.4 milestone) |
+| Branch → main | **150 commit önde** |
+| main → branch | **10 commit önde** |
+
+main'in 10 commit'i erken **LAYER-5 LoRA** çalışması. Bu branch aynı alanı
+baştan geliştirip geçti: `local_llm.py`'de **18 vs 6** commit,
+`lora_update.py`'de **13 vs 3**, `run_protocol_c_prime.py`'de **28 vs 3**.
+
+### Ölçüm: main'in benzersiz dosyaları aşılmış mı?
+
+main'de olup bu branch'te **hiç olmayan** (silinmemiş — hiç girmemiş) altı
+dosya vardı. İkisi test ve ikisi de bu branch'in koduna karşı **koşuldu**:
+
+| Dosya | Ölçüm |
+|---|---|
+| `tests/test_local_llm.py` | ❌ **import edemiyor** — `MICRO_TRAIN_COMPLETION`, `MICRO_TRAIN_PROMPT`, `STATUS_GO`, `STATUS_NOGO` artık yok |
+| `tests/test_lora_update.py` | ⚠ **5 geçti, 3 düştü** |
+| `run_vram_spike.py` | bizde VRAM aracı yok; ölçümler var (`vram_train_peak_nf4.json`) |
+| `DAU_MASTER_REFERENCE_v15.md` · `v16.md` | v2.4.3 tarafından aşıldı |
+| `requirements-lora.txt` | ⚠ **gerçek boşluk** — aşağıda |
+
+**Düşen üç testin hangileri olduğu belirleyici:**
+`test_build_pe_ranked_pairs_orders_by_injected_pe` (**D-032** çift kurma
+prompt'unu değiştirdi), `test_shuffle_preference_pairs_swaps_direction`
+(**D-040** shuffle'ı %50 yazı-turadan **%100 tersine** çevirdi),
+`test_lora_update_writes_traces_when_enabled_without_gpu`.
+
+⇒ **main'in testleri kayıp kapsam değil, aşılmış kararları kodlayan eski
+testler.** O testlerin *geçmesi* bu branch için **regresyon** olurdu.
+Suite'e alınsalardı 344'ü kırarlardı.
+
+### Karar: etiketle → `-s ours` birleştir → main'i ilerlet
+
+1. **`archive/main-pre-c116`** etiketi (annotated) eski main'e çakıldı
+   (`43efef6`). Doğrulandı: v16 master ref'i ve eski `requirements-lora.txt`
+   etiketten hâlâ okunabiliyor. **Hiçbir commit kaybolmadı.**
+2. Branch'te **`git merge -s ours main`** (`7909100`) — main'in commit'leri
+   **ata** oldu, içerikleri alınmadı. Tarih tek ve doğrusal okunuyor.
+3. **`requirements-lora.txt`** ayrı commit'le eklendi (`12a2270`) —
+   main'inki gibi `>=` gevşek aralıklarla **değil**, B2'nin
+   `tool_identity.versions` bloğundan okunan **tam** sürümlerle:
+   torch 2.13.0 · transformers 5.14.1 · peft 0.20.0 · bitsandbytes 0.50.0 ·
+   accelerate 1.14.0 · numpy 2.4.5 · scipy 1.18.0.
+   **Gerekçe:** alet kimliği bu sürümleri her koşumda raporluyor ama hiçbir
+   dosya pinlemiyordu; ön-kayıtlı koşumu yeniden üretmek isteyen biri
+   sürümleri **tahmin etmek** zorunda kalırdı. Tekrarlanabilirlik iddiası
+   gevşek aralıkla kurulamaz.
+4. **`git branch -f main HEAD`** — fast-forward, zorlama gerekmedi.
+
+Suite her adımda **344 passed**.
+
+### Reddedilen alternatifler
+
+- **Gerçek merge, çatışmaları elle çözmek.** ~18 dosyada çatışma çıkardı ve
+  ölçüme göre **her çatışmada bizim taraf kazanacaktı** (18 vs 6 commit).
+  Sonuç aynı, maliyeti saatler, yan etkisi iki eski testin suite'e girip
+  onu kırması.
+- **Dokunmamak, paper aşamasına bırakmak.** Tetik zaten ateşlemişti ve
+  diverjans her commit'te büyüyor; 150-10 iken çözmek sonra çözmekten ucuz.
+- **main'i zorla taşımak (etiketsiz).** 10 commit yalnız reflog'da kalırdı;
+  reflog budanabilir. Etiket kalıcı.
+- **main'in iki testini de almak.** Ölçüldü: biri import edemiyor, diğeri
+  aşılmış kararları sınıyor.
+
+### Sınırlar
+
+`origin`'e **push edilmedi** — uzak `main` hâlâ `43efef6`'da. Push ayrı bir
+karar ve Yasin'in onayını ister.
+`run_vram_spike.py` alınmadı: şu an ihtiyaç yok ve etiketten her an
+çıkarılabilir. Alınmadığı için bu branch'te **VRAM ölçüm aracı yok**, yalnız
+geçmiş ölçüm çıktıları var.

@@ -21,9 +21,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 # 1. Şu An Neredeyiz (2026-08-12) — ✅ **B FAZI BİTTİ, SONUÇ NULL**
 
-- **Branch:** `cursor/per-agent-qlora-adapter-c116`. main'e taşınmadı (**D-013**).
+- **Branch:** `cursor/per-agent-qlora-adapter-c116` = **`main`** (D-013 kapandı, **D-054**).
+  Eski main `archive/main-pre-c116` etiketinde. ⚠ `origin`'e **push edilmedi**.
 - **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-053.** Sıradaki kayıt **D-054** olarak açılır.
+- **Son D-kaydı: D-054.** Sıradaki kayıt **D-055** olarak açılır.
 - ✅ **B2/B3/B4 tamamlandı.** Rapor: **`docs/B2_RESULTS.md`**.
   **Birincil null:** `a_s` vs `b_s`, N=40, eşleştirilmiş Wilcoxon,
   **p = 0.9914**, `d_z = −0.000`. Üç kol birbirine **eşit uzaklıkta**
@@ -379,7 +380,7 @@ atfedilmişti, o BLEU'dur).
 | **`archive/` 2.3 GB** | **isteğe bağlı** | ⚠ **Artık bloke etmiyor:** ölçüldü, B2 ~1.1 GB yazacak (40×2 adapter × 14 MB) ve **36 GB boş** var. Temizlik hijyen, zorunluluk değil |
 | **Adapter'lar** (`dau_runs/adapters/`, artık **87 dizin** ~1.2 GB) | **isteğe bağlı** | 2001–2003 D-042/D-043'ün kanıtı; **2004–2043 B2'nin kanıtı** ⇒ ikisi de silinmemeli. ⚠ Bir sonraki koşum başka seed'lerden başlamalı, yoksa I0.7 abort eder |
 | **`dau_runs/` JSON etiketleme** | **Faz C** | Bir kısmı geçersiz (D-036/037/042 öncesi). Silinmemeli, etiketlenmeli. B2'nin üç dosyası **geçerli ve nihai** |
-| **D-013 — branch main'e taşınmadı** | ⏰ **TETİKLENDİ (B4 bitti)** | Gerçek diverjans var. Faz C'den sonra, ikinci ön-kayıttan önce ele alınmalı |
+| ~~D-013 — branch main'e taşınmadı~~ | ✅ **KAPANDI (D-054)** | main = branch. Eski main `archive/main-pre-c116` etiketinde, hiçbir commit kaybolmadı. ⚠ **push edilmedi** — ayrı karar |
 
 # 2. Yeni Oturum Protokolü (bağlayıcı)
 
