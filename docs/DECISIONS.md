@@ -3924,3 +3924,73 @@ düzeltirsek etki çıkar"* **demiyor**; *"bu uç noktayla 11/40 seed'de hiçbir
 şey çıkamazdı, kalanında da bağlantı halkası kurulamadı"* diyor.
 Uç nokta tanımı **değiştirilmedi** — ölçümü görüp uç nokta seçmek post-hoc
 olur (§2.7); değişecekse ikinci ön-kayıta ve **taze veriye** yazılır.
+
+---
+
+## D-057 · 2026-08-12 · Eğitim girdileri diske yazılıyor: sweep artık yaşamları yeniden koşmuyor
+
+**Durum:** kabul edildi · **Onay:** Yasin (2026-08-12) · **Uygulama:** `82e09d6`
+
+### Sorun
+
+B2 **13.1 GPU saat** harcadı ve tek bir konfigürasyonun sorusunu cevapladı.
+Sonraki soru — hangi `lr`, hangi kırpma tavanı, hangi çift kurma stratejisi —
+her seferinde **bir tam koşum daha** isteyecekti.
+
+Ama pahalı olan kısım eğitim değil **yaşamak**: kol başına **~11 optimizer
+adımı**, saniyeler. Yaşamlar hiçbir yere yazılmıyordu.
+
+### Karar
+
+`dau/diagnostics/training_artifacts.py` iki şeyi yazıyor:
+
+| Ne | Neden |
+|---|---|
+| `lived_examples` — aday havuzu, **çift kurmadan önce** | Farklı bir çift kurma stratejisi (KTO, GAP-18'in ayrık eşleştirmesi) ürünü değil **havuzu** gerektiriyor |
+| `pairs` — eğitime giden çiftler | DPO ayarlarını sabit bir sete karşı taramak için |
+
+Env: **`DAU_DUMP_TRAINING_ARTIFACTS`**, varsayılan **kapalı**.
+Çıktı: `dau_runs/training_artifacts/{agent_id}.json`.
+
+### İki tasarım kısıtı
+
+**1. Alet takip ediliyor, tekrar edilmiyor (§2.8).** Dump, eğitime
+**gerçekten verilen** nesneleri seri hale getiriyor — SNR ve polarite
+kapılarından sonra, shuffle ters çevriminden sonra. Yeniden kurma yapsaydı
+koşumla ancak ikisi ayrışana kadar uyuşurdu, ve ayrıştığı an önemli olan an.
+
+**2. Varsayılan kapalı, yan etkisiz.** Dosya yazmak koşumun hesabını
+değiştirmemeli. **Kancanın yeri `shuffle_preference_pairs`'den sonra**:
+önceki çiftleri yazmak replay'e **kontrol kolunun adı altında lived yönünü**
+verirdi — D-040'ın bitirdiği karışıklığın aynısı.
+
+Tanınmayan bayrak değeri **`ValueError`** (D-023 deseni): yanlış yazılmış bir
+bayrak sessizce dump'ı kapatırsa, bedeli GPU saatleri harcandıktan **sonra**
+fark edilir.
+
+### Mutasyon kontrolü — dördü de kırdı
+
+| Mutasyon | Düşen test |
+|---|---|
+| `pairs_digest` sırayı yok saysın (`sorted`) | 1 |
+| Tanınmayan bayrak sessizce `False` dönsün | 2 |
+| Dump listeyi yerinde sıralasın (yan etki) | 4 |
+| `lived_examples` yazılmasın | 4 |
+
+⇒ Testler bu kusurları **gerçekten** yakalıyor. Suite **344 → 351**.
+
+### Ne açıyor
+
+| Soru | Eskiden | Şimdi |
+|---|---|---|
+| `lr` × kırpma taraması | tam koşum / ayar | model yükleme + 11 adım |
+| KTO vs DPO (GAP-18) | tam koşum | havuzdan offline |
+| Filtre eşikleri (SNR, polarite) | tam koşum | offline |
+
+### Sınırlar
+
+Dump **yalnız `_train_adapter` yolunu** kapsıyor; `null` kolu eğitmediği için
+artefakt üretmiyor (doğru davranış, ama korpusta null yok). Yazılan dosyalar
+`dau_runs/` altında ve **git'te takip edilmiyor** — korpus makineye özgü,
+ama D-037 determinizmi sayesinde `prereg/b2-code` etiketinden yeniden
+üretilebilir. Replay sürücüsü **bu kayda dahil değil**, ayrı iş.
