@@ -516,7 +516,7 @@ kaymış.)
 | Her oturum başı | `CLAUDE.md` (otomatik) |
 | Sıradaki iş ne | `docs/EXECUTION_PLAN.md` §D/§F |
 | "Bunu neden böyle kararlaştırdık?" | `docs/DECISIONS.md`, D-numarasıyla |
-| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (25 madde tanımlı, **20'si kodda**) + `dau/diagnostics/preflight.py` |
+| Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (**26 madde tanımlı, 24'ü kodda** — I1.2 testte, I2.3 yapısal) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
