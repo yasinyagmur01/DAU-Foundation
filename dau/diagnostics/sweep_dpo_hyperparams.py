@@ -40,6 +40,11 @@ from dau.diagnostics.training_artifacts import (
 
 EXPLORATORY_NOTE: str = "exploratory, not pre-registered"
 RESULTS_PATH: Path = Path("dau_runs/sweep_dpo_hyperparams.json")
+# Rows are appended here as they finish. The sweep takes hours and the machine
+# it runs on gets shut down; writing only at the end meant a laptop closing at
+# hour three threw away hour three. On restart the finished cells are read back
+# and skipped, so the sweep resumes instead of restarting.
+PROGRESS_PATH: Path = Path("dau_runs/sweep_dpo_hyperparams.jsonl")
 
 # The band D-029 locked sits at the bottom of this grid; B2 showed it too
 # weak. Upper end stops below 5e-5, which D-029 measured producing suppression
@@ -55,6 +60,43 @@ MAX_GRAD_NORMS: tuple[float, ...] = (1.0, 3.0, 10.0)
 # loads from disk when an adapter exists and would silently start a config from
 # someone else's trained weights.
 SWEEP_AGENT_PREFIX: str = "sweep-ephemeral-"
+
+
+def cell_key(learning_rate: float, max_grad_norm: float, agent_id: str) -> str:
+    """Identity of one sweep cell — what resume matches on."""
+
+    return f"{learning_rate!r}|{max_grad_norm!r}|{agent_id}"
+
+
+def load_completed_cells(path: Path = PROGRESS_PATH) -> dict[str, dict[str, Any]]:
+    """Read finished cells back so a resumed sweep skips them.
+
+    A truncated final line is dropped rather than raising: the common way this
+    file ends is a process killed mid-write, and refusing to start because the
+    last row is half-written would defeat the point of having it.
+    """
+
+    if not path.exists():
+        return {}
+    done: dict[str, dict[str, Any]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        done[cell_key(row["learning_rate"], row["max_grad_norm"], row["agent_id"])] = row
+    return done
+
+
+def _append_row(row: dict[str, Any], path: Path = PROGRESS_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def _corpus_agent_ids(base_dir: str | Path = ARTIFACTS_BASE_DIR) -> list[str]:
@@ -121,14 +163,25 @@ def main() -> int:
         )
 
     agent_ids = _corpus_agent_ids()
-    print(f"corpus: {len(agent_ids)} arm(s)")
+    completed = load_completed_cells()
+    total = len(LEARNING_RATES) * len(MAX_GRAD_NORMS) * len(agent_ids)
+    print(
+        f"corpus: {len(agent_ids)} arm(s) · grid {total} cell(s) · "
+        f"{len(completed)} already done, resuming"
+    )
 
-    model, tokenizer = local_llm.load_local_model()
-    rows: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = list(completed.values())
+    # The model is only worth loading if there is anything left to run — a
+    # resumed sweep that is already complete should cost nothing.
+    model = tokenizer = None
 
     for lr in LEARNING_RATES:
         for clip in MAX_GRAD_NORMS:
             for agent_id in agent_ids:
+                if cell_key(lr, clip, agent_id) in completed:
+                    continue
+                if model is None:
+                    model, tokenizer = local_llm.load_local_model()
                 payload = load_training_artifacts(agent_id)
                 pairs = _rehydrate(payload["pairs"])
                 if not pairs:
@@ -151,6 +204,9 @@ def main() -> int:
                     **stats,
                 }
                 rows.append(row)
+                # Written before the print, so a kill between the two loses a
+                # log line rather than an hour of GPU.
+                _append_row(row)
                 print(
                     f"  lr={lr:<8g} clip={clip:<5g} {agent_id:28s} "
                     f"loss={row.get('dpo_loss', float('nan')):.4f} "

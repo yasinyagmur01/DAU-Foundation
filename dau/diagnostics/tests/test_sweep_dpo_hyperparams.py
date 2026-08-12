@@ -116,6 +116,30 @@ def test_constants_restored_even_when_training_raises(
     assert local_llm.DPO_MAX_GRAD_NORM == original_clip
 
 
+def test_resume_reads_finished_cells_and_survives_a_truncated_line(tmp_path) -> None:
+    # The sweep runs for hours on a machine that gets shut down. The file it
+    # resumes from is written incrementally, so the normal way it ends is a
+    # process killed mid-write — refusing to start on a half-written last line
+    # would throw away the very progress the file exists to protect.
+    import json
+
+    from dau.diagnostics.sweep_dpo_hyperparams import cell_key, load_completed_cells
+
+    path = tmp_path / "progress.jsonl"
+    path.write_text(
+        json.dumps({"learning_rate": 1e-6, "max_grad_norm": 1.0, "agent_id": "a"})
+        + "\n"
+        + json.dumps({"learning_rate": 5e-6, "max_grad_norm": 3.0, "agent_id": "b"})
+        + "\n"
+        + '{"learning_rate": 1e-05, "max_gr',  # killed mid-write
+        encoding="utf-8",
+    )
+
+    done = load_completed_cells(path)
+
+    assert set(done) == {cell_key(1e-6, 1.0, "a"), cell_key(5e-6, 3.0, "b")}
+
+
 def test_rehydrate_round_trips_a_dumped_pair() -> None:
     from dataclasses import asdict
 
