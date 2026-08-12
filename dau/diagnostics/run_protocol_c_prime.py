@@ -40,6 +40,7 @@ from dau.diagnostics.tool_identity import (
     build_tool_identity,
     resolve_lora_choice,
 )
+from dau.diagnostics.training_artifacts import dump_training_artifacts
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
     GRAD_NORM_UNREAD,
@@ -1029,6 +1030,20 @@ def _train_adapter(
 
     if shuffled and pairs:
         pairs = shuffle_preference_pairs(pairs)
+
+    # Persist what training is about to consume, so a sweep can replay it
+    # without re-living the events (D-057). Placed after the shuffle inversion
+    # because that is what the arm trains on; dumping the pre-inversion pairs
+    # would hand a replay the lived direction under the control's name.
+    # Off by default and side-effect free — the arm_digest is identical either
+    # way, which test_dump_does_not_change_training_inputs holds.
+    dump_training_artifacts(
+        agent_id=agent_id,
+        arm=ARM_SHUFFLE if shuffled else ARM_LIVED,
+        lived_examples=lived_examples,
+        pairs=pairs,
+        shuffled=shuffled,
+    )
 
     # A skipped train step used to be invisible: the arm still reported the NLI
     # pass count as n_pairs_trained, so a run where DPO never fired looked
