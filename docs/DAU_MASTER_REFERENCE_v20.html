@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DAU Master Reference v2.0</title>
+  <title>DAU Master Reference v2.4.3</title>
   <style>
     html {
       color: #1a1a1a;
@@ -170,44 +170,287 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">DAU Master Reference v2.0</h1>
+<h1 class="title">DAU Master Reference v2.4.3</h1>
 </header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#dau-master-reference" id="toc-dau-master-reference">DAU —
+Master Reference</a>
+<ul>
+<li><a href="#v2.4.3-doğrulayici-koşum-yapildi-sonuç-null"
+id="toc-v2.4.3-doğrulayici-koşum-yapildi-sonuç-null">🔔 v2.4.3 —
+DOĞRULAYICI KOŞUM YAPILDI, SONUÇ NULL</a></li>
+<li><a href="#v2.4.2-okuma-uyarısı-önce-bunu-oku"
+id="toc-v2.4.2-okuma-uyarısı-önce-bunu-oku">⚠ v2.4.2 okuma uyarısı —
+önce bunu oku</a></li>
+<li><a href="#bugünkü-gerçek-durum-2026-08-11"
+id="toc-bugünkü-gerçek-durum-2026-08-11">Bugünkü gerçek durum
+(2026-08-11)</a></li>
+<li><a href="#aksiyom" id="toc-aksiyom">1. Aksiyom</a></li>
+<li><a href="#evren-modeli" id="toc-evren-modeli">2. Evren
+modeli</a></li>
+<li><a href="#zaman-ve-free-energy" id="toc-zaman-ve-free-energy">3.
+Zaman ve Free Energy</a></li>
+<li><a href="#duygu-ve-drift-layer-2-tamam"
+id="toc-duygu-ve-drift-layer-2-tamam">4. Duygu ve drift (Layer 2 —
+tamam)</a></li>
+<li><a href="#delta-eşikleri" id="toc-delta-eşikleri">5. Delta
+eşikleri</a></li>
+<li><a href="#hafıza-formülleri-layer-1-adim-4"
+id="toc-hafıza-formülleri-layer-1-adim-4">6. Hafıza formülleri (Layer 1
++ ADIM 4)</a></li>
+<li><a href="#layer-1.5-prediction-error-tamam"
+id="toc-layer-1.5-prediction-error-tamam">7. Layer 1.5 — Prediction
+Error (tamam)</a></li>
+<li><a href="#layer-2-emotionalweight-drift-tamam"
+id="toc-layer-2-emotionalweight-drift-tamam">8. Layer 2 —
+EmotionalWeight + Drift (tamam)</a></li>
+<li><a href="#layer-3-nesil-konsolidasyonu-drift-healing-tamam"
+id="toc-layer-3-nesil-konsolidasyonu-drift-healing-tamam">9. Layer 3 —
+Nesil Konsolidasyonu + Drift Healing (tamam)</a></li>
+<li><a href="#layer-4-society-tamam-adim-1"
+id="toc-layer-4-society-tamam-adim-1">10. Layer 4 — Society (tamam +
+ADIM 1)</a></li>
+<li><a href="#b.-layer-5-metacognition-kod-tamam-empirik-unsupported"
+id="toc-b.-layer-5-metacognition-kod-tamam-empirik-unsupported">10b.
+Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</a></li>
+<li><a href="#mimari-durum-v2.3" id="toc-mimari-durum-v2.3">11. Mimari
+durum (v2.3)</a></li>
+<li><a href="#kod-ağacı-v2.4.3" id="toc-kod-ağacı-v2.4.3">12. Kod ağacı
+(v2.4.3)</a></li>
+<li><a href="#graph-yaşam-döngüsü" id="toc-graph-yaşam-döngüsü">13.
+Graph yaşam döngüsü</a></li>
+<li><a href="#test-durumu-bu-branch" id="toc-test-durumu-bu-branch">14.
+Test durumu (bu branch)</a></li>
+<li><a href="#amads-govsim-karşılaştırma"
+id="toc-amads-govsim-karşılaştırma">15. AMADS / GovSim
+karşılaştırma</a></li>
+<li><a href="#beş-evrensel-kısıt" id="toc-beş-evrensel-kısıt">16. Beş
+evrensel kısıt</a></li>
+<li><a href="#açık-sorular-güncel" id="toc-açık-sorular-güncel">17. Açık
+sorular (güncel)</a></li>
+<li><a href="#bilinen-sınırlar-plastisite-günlüğü"
+id="toc-bilinen-sınırlar-plastisite-günlüğü">18. Bilinen Sınırlar +
+Plastisite günlüğü</a></li>
+<li><a href="#adim-uygulama-kaydı-v2.4.1-bu-branch"
+id="toc-adim-uygulama-kaydı-v2.4.1-bu-branch">19. ADIM uygulama kaydı
+(v2.4.1 — bu branch)</a></li>
+<li><a href="#yol-haritası-anti-roadmap-v2.3"
+id="toc-yol-haritası-anti-roadmap-v2.3">20. Yol haritası + Anti-roadmap
+(v2.3)</a></li>
+<li><a href="#ortam-bayrakları-referans"
+id="toc-ortam-bayrakları-referans">21. Ortam bayrakları
+(referans)</a></li>
+<li><a href="#versiyon-geçmişi" id="toc-versiyon-geçmişi">22. Versiyon
+geçmişi</a></li>
+<li><a href="#nerede-duruyoruz-v2.4.3-baştan-yazıldı"
+id="toc-nerede-duruyoruz-v2.4.3-baştan-yazıldı">23. Nerede Duruyoruz
+(v2.4.3 — baştan yazıldı)</a></li>
+<li><a href="#preflight-değişmez-sistemi-ve-alet-kimliği-v2.4.2-yeni"
+id="toc-preflight-değişmez-sistemi-ve-alet-kimliği-v2.4.2-yeni">24.
+Preflight değişmez sistemi ve alet kimliği (v2.4.2 — yeni)</a></li>
+<li><a href="#karar-kaydı-sistemi-v2.4.2-yeni"
+id="toc-karar-kaydı-sistemi-v2.4.2-yeni">25. Karar kaydı sistemi (v2.4.2
+— yeni)</a></li>
+</ul></li>
+</ul>
+</nav>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 2.0</strong> · 2026-08-07<br />
-<strong>Dosya:</strong>
-<code>docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}</code><br />
-<em>(eski <code>v10</code> / Versiyon 1.x belge ailesi süpersede edildi
-— arşiv olarak kalabilir)</em></p>
-<p>Layer 0–5 kod ✅ · MiniLM PE · DAERM · Protocol C
-<strong>paper-locked negative finding</strong> · Protocol C′ mini
-<strong>WEAK_LORA</strong> · C′ v2 smoke
-<strong>SMOKE_SEPARATION</strong> (N=1) · <strong>ADIM 1–4
-kodlandı</strong> (crisis trauma · NLI filter · per-agent QLoRA ·
-HippoRAG PPR) · <strong>ADIM 5–6 henüz yok</strong> · bu branch’te
-<strong>159 test collect</strong>.</p>
-<p><strong>İddia disiplini:</strong> Layer 5 <strong>kod</strong> ✅ ·
-frozen-weight kapalı döngü metacognition <strong>UNSUPPORTED
-(paper-locked null)</strong> · yaşantı-LoRA mini
-<strong>WEAK_LORA_HYPOTHESIS</strong> (appendix) · C′ v2 1-seed smoke:
-lived ΔPE &lt; null/shuffle (<strong>SMOKE_SEPARATION</strong>;
-significance yok). <code>DAU_LORA_ENABLED=0</code> ·
-<code>DAU_LLM_BACKEND=groq</code> default.</p>
-<p><strong>Faz 0 kilit:</strong> Frozen Protocol C null
-<strong>paper-locked</strong>; full Groq Protocol C tekrar yok.</p>
-<p><strong>Plastisite / ADIM durumu (v2.0):</strong> - Flags:
-<code>DAU_LLM_BACKEND=groq|local</code> (default groq),
-<code>DAU_LORA_ENABLED=0</code>, <code>DAU_NLI_FILTER_ENABLED=1</code>
-(default; <code>=0</code> ile kapatılır). - VRAM spike
-<strong>GO</strong>: Llama-3.1-8B 4-bit + MiniLM(CPU) + QLoRA
-micro-train; peak ≈ <strong>6.4 GiB</strong> (RTX 4070 Laptop 8GB). -
-ADIM 1 (somatic crisis) · ADIM 2 (NLI polarity) · ADIM 3 (per-agent
-adapter) · ADIM 4 (PPR memory) — <strong>kod + unit test</strong> bu
-branch’te. - ADIM 5 (precision-weighted PE) · ADIM 6 (Protocol C′ N≥15)
-— <strong>planlı, kodlanmadı</strong>. - Bilinen gap:
-<code>apply_crisis_trauma</code> / <code>step_pool_with_crisis</code>
-API hazır; production <code>graph.py</code> henüz otomatik çağırmıyor.
-<code>maybe_lora_update_after_life</code> generation-end helper; graph
-consolidate path’e henüz kablolanmadı.</p>
+<p><strong>Versiyon 2.4.3</strong> · 2026-08-12 <strong>Dosya:</strong>
+<code>docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}</code>
+<em>(<code>.md</code> kaynaktır. <code>.html</code> ve <code>.pdf</code>
+<strong>v2.4.3’te yeniden üretildi</strong> — pandoc; PDF’te emoji’ler
+metin karşılığına çevrildi (<code>✅</code> → <code>[OK]</code> vb.)
+çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF’in
+görüntüsü md’den farklıdır.)</em></p>
+<hr />
+<h2 id="v2.4.3-doğrulayici-koşum-yapildi-sonuç-null">🔔 v2.4.3 —
+DOĞRULAYICI KOŞUM YAPILDI, SONUÇ NULL</h2>
+<p><strong>Bu belgenin bütün anlatısı, henüz sonucu olmayan bir projeye
+aitti. Artık sonuç var.</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Koşum</td>
+<td>seed <strong>2004–2043</strong>, N=40, iki batch, ~13.1 saat</td>
+</tr>
+<tr>
+<td>Birincil (ön-kayıt §3)</td>
+<td><code>a_s − b_s</code>, eşleştirilmiş Wilcoxon, <strong>p =
+0.9914</strong>, <code>d_z = −0.000</code></td>
+</tr>
+<tr>
+<td>Karar</td>
+<td><strong>H0 reddedilemedi</strong></td>
+</tr>
+<tr>
+<td>§11 sınıfı</td>
+<td><strong>ALET NULL’I</strong> — §5 geçerlilik kapısından üç kriter
+düştü (<strong>D-053</strong>)</td>
+</tr>
+<tr>
+<td>Rapor</td>
+<td><strong><code>docs/B2_RESULTS.md</code></strong> — sonucun ne olduğu
+<em>ve ne olmadığı</em> orada</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>“Etki yok” denemez</strong> (§9-S4/D-047, koşum görülmeden
+bağlandı). Doğru ifade: <em>“<code>d_z ≥ 0.465</code> büyüklüğünde etki
+yok; altındaki için veri bilgisiz.”</em> ⚠ <strong>Mekanizma hakkında
+hüküm verilemez</strong> — sonuç alet null’ı sınıfında.</p>
+<p>Ayrıntı §23’te (yeniden yazıldı) ve §25’te (D-045…D-053).</p>
+<hr />
+<h2 id="v2.4.2-okuma-uyarısı-önce-bunu-oku">⚠ v2.4.2 okuma uyarısı —
+önce bunu oku</h2>
+<p>Bu belge 2026-08-08’de v2.4.1 olarak yazıldı ve o tarihten sonra alet
+<strong>yirmi kez</strong> değişti. v2.4.2 anlatıyı yeniden yazmıyor;
+<strong>yanlış olan yerleri işaretliyor ve eksik olanı ekliyor.</strong>
+İşaretsiz her bölüm hâlâ v2.4.1 anlatısıdır.</p>
+<p><strong>Otorite sırası:</strong> <code>CLAUDE.md</code> (güncel
+durum) → <code>docs/DECISIONS.md</code> (<strong>D-001…D-053</strong>,
+append-only, kanıtlı) → <code>docs/PREREGISTRATION.md</code> (🔒
+<strong>KİLİTLİ</strong>, <code>befd72b4ee57</code>) →
+<strong><code>docs/B2_RESULTS.md</code></strong> (sonuç) → <strong>bu
+belge</strong>. Çelişki görürsen bu belge kaybeder.</p>
+<h3 id="bu-belgedeki-sayıların-hiçbiri-bugünkü-aletten-değil">Bu
+belgedeki sayıların hiçbiri bugünkü aletten değil</h3>
+<p>Üç ayrı kırılma, sırayla:</p>
+<ol type="1">
+<li><strong>D-036</strong> — ölçüm penceresi 10 olaydan <strong>fazın
+tamamına</strong> çıktı. Belgedeki her ΔPE, 50 olaylık fazın <strong>ilk
+beşte birinin</strong> ortalamasıydı.</li>
+<li><strong>D-037</strong> —
+<code>TORCH_DETERMINISTIC_WARN_ONLY=False</code>. Öncesinde aynı seed +
+aynı kod iki koşumda <strong>farklı adapter</strong> üretiyordu;
+koşum-arası gürültü 0.026, ölçülen etki 0.015–0.025 ⇒ <strong>gürültü
+etkiden büyüktü</strong>.</li>
+<li><strong>D-042</strong> — adapter graft’ı süreçteki konumdan bağımsız
+hale geldi. Öncesinde <code>lived</code> daima taze bir graft’tan,
+<code>shuffle</code> daima bir kez eğitilip sıfırlanmış olandan
+eğitiliyordu ⇒ birincil karşıtlığın içinde <strong>sistematik</strong>
+bir terim.</li>
+</ol>
+<p>⇒ <strong>§18’in empirik tablosu, §10b’nin verdict’i ve başlıktaki
+bütün ΔPE değerleri bugünkü aletle karşılaştırılamaz.</strong>
+Silinmiyorlar — tarihçe olarak duruyorlar — ama etki iddiası olarak
+okunamazlar.</p>
+<h3 id="belgeye-girmemiş-tamamen-eksik-olan-katman">Belgeye girmemiş,
+tamamen eksik olan katman</h3>
+<p><strong>Preflight değişmez sistemi</strong>
+(<code>dau/diagnostics/preflight.py</code>) ve <strong>alet
+kimliği</strong> (<code>tool_identity.py</code>) bu belgede <strong>hiç
+geçmiyor</strong>. İkisi de bugün projenin en sağlam parçası. Bkz. yeni
+<strong>§24</strong>.</p>
+<hr />
+<h2 id="bugünkü-gerçek-durum-2026-08-11">Bugünkü gerçek durum
+(2026-08-11)</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Ne</th>
+<th>Değer</th>
+<th>Kaynak</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend varsayılanı</td>
+<td><strong><code>local</code></strong> (groq legacy)</td>
+<td>D-018</td>
+</tr>
+<tr>
+<td>Model</td>
+<td><code>meta-llama/Meta-Llama-3.1-8B-Instruct</code> — ölçüldü, Qwen
+kapı altında</td>
+<td>D-026</td>
+</tr>
+<tr>
+<td>Quantization</td>
+<td>NF4 + <code>double_quant</code>, <strong>açıkça yazılı</strong></td>
+<td>D-020/D-024</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td><strong>greedy</strong> (<code>do_sample=0</code>) — ⚠ belge boyunca
+<code>=1</code> yazıyor</td>
+<td>D-026 · pre-reg S1</td>
+</tr>
+<tr>
+<td>Ölçüm penceresi</td>
+<td><strong>fazın tamamı</strong> (<code>PE_WINDOW_EVENTS=0</code>) — ⚠
+belge boyunca <code>W=10</code></td>
+<td><strong>D-036</strong></td>
+</tr>
+<tr>
+<td>Determinizm</td>
+<td>strict; aynı seed+kod <strong>bit düzeyinde</strong> aynı</td>
+<td><strong>D-037</strong>, D-038</td>
+</tr>
+<tr>
+<td>DPO</td>
+<td>β=0.1 · <strong>lr=1e-6</strong> · epochs=1 · batch=1 · grad_accum=4
+· max_seq=512</td>
+<td>D-027/28/29</td>
+</tr>
+<tr>
+<td>DPO prompt’u</td>
+<td><strong>kararın verildiği prompt’un kendisi</strong></td>
+<td><strong>D-032</strong></td>
+</tr>
+<tr>
+<td>Polarite kapısı</td>
+<td><strong>kosinüs</strong> <code>[0.25, 0.80]</code>, MiniLM (NLI
+değil)</td>
+<td><strong>D-032</strong></td>
+</tr>
+<tr>
+<td>Shuffle kolu</td>
+<td><strong>çiftlerin tamamı ters</strong> (eskiden %50 yazı-tura)</td>
+<td><strong>D-040</strong></td>
+</tr>
+<tr>
+<td>Adapter graft’ı</td>
+<td>sabit <code>LORA_INIT_SEED</code>, konumdan bağımsız</td>
+<td><strong>D-042</strong></td>
+</tr>
+<tr>
+<td>Değişmez kapıları</td>
+<td><strong>20 kayıtlı</strong> (belgede tanımlı 25’ten)</td>
+<td>D-012, D-039, D-041</td>
+</tr>
+<tr>
+<td>Test</td>
+<td><strong>332 passed, 2 deselected</strong> — ⚠ belge boyunca 206</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Ön-kayıt</td>
+<td><strong>taslak</strong>, 5 slot kapalı, S4/S2 açık</td>
+<td><code>PREREGISTRATION.md</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="kapanmış-iki-büyük-darboğaz">Kapanmış iki büyük darboğaz</h3>
+<ul>
+<li><strong>Çift darboğazı (D-032):</strong> eğitim 51 token’lık,
+<code>system=""</code> olan sentetik bir prompt altında koşuyordu;
+çıkarım 246–306 token. Üstelik prompt cevap anahtarını veriyordu — PE
+karardan <strong>sonra</strong> hesaplanır. Artık eğitim, kararın
+gerçekten verildiği prompt’la yapılıyor.</li>
+<li><strong>Çeşitlilik tavanı:</strong> 50 olayda <code>n_unique</code>
+7’den <strong>22–29</strong>’a çıktı, kapı 5 (D-026, D-034). §18’in
+“greedy plato yapar” reçetesi bu ölçümle çürüdü.</li>
+</ul>
 <hr />
 <h2 id="aksiyom">1. Aksiyom</h2>
 <p>DAU, yapay zeka agent’larının dışarıdan tanımlanmış trait’lerle
@@ -349,6 +592,102 @@ L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)</code></pre>
 <p>Sabitler: <code>ALLOSTATIC_SETPOINT_MAX=0.75</code>,
 <code>CROSS_AXIS_SPILLOVER=0.20</code>,
 <code>METABOLIC_FLOOR=0.05</code>.</p>
+<h3 id="adim-5-precision-weighted-pe-kodlandı-v2.4-adaptif">ADIM 5 —
+Precision-weighted PE (kodlandı; v2.4 adaptif)</h3>
+<p><code>semantic_similarity.compute_precision_weight</code> /
+<code>apply_precision_weighting</code> +
+<code>DAUAgentState.pe_history</code> (graph <code>evaluator_node</code>
+yazar).</p>
+<h4 id="v2.3-ve-öncesi-formül-sabit-kazanç-tarihsel">v2.3 ve öncesi
+formül — sabit kazanç, tarihsel</h4>
+<p>Bu formülle alınan tüm empirik sonuçlar (C′ N=15 vb.)
+<strong>sabit-kazanç aleti</strong> ile ölçülmüştür — iddialar kilitli
+kalır; alet etiketi §10b’de.</p>
+<pre><code>variance = var(pe_vector.values())        # tek event, history yok
+π        = 1 / (variance + PRECISION_EPSILON)
+π_clamp  = min(π, PRECISION_MAX_WEIGHT)   # = 1.2 her girdi için
+PE_w     = min(raw_pe · π_clamp, 1.0)</code></pre>
+<p>PE ∈ [0,1] ⇒ örnek var ≤ 0.5 ⇒ π ≥ 2.0 ⇒ tavan <strong>her
+zaman</strong> bağlayıcı; fiili davranış <code>π ≡ 1.2</code>. Tavan
+3.0→1.2 (541c02c): ölçülen raw PE <strong>0.2875–0.8102</strong>; 3×
+kazanç 10 event’in <strong>7’sini</strong> tam <code>1.0</code>’a
+doyuruyordu. 1.2 tavanı 0.81 tepesini 0.97’de tutar. Eski regresyon:
+<code>test_clamp_binds_for_every_pe_vector_in_unit_interval</code>
+(silindi, v2.4).</p>
+<h4 id="v2.4-rolling-history-var_ref-ölçekleme">v2.4+ — rolling history
++ VAR_REF ölçekleme</h4>
+<pre><code># π, pe_history&#39;ye raw_pe EKLENMEDEN önce hesaplanır; sonra unweighted
+# raw_pe append edilir (kendi çıktısını beslemez).
+variance = sample_var(pe_history)         # son W raw PE skaler
+π_raw    = 1 / (variance / VAR_REF + ε)
+π        = clamp(π_raw, MIN_WEIGHT, MAX_WEIGHT)
+PE_w     = min(raw_pe · π, 1.0)</code></pre>
+<pre><code>PRECISION_EPSILON         = 1e-6
+PRECISION_HISTORY_WINDOW  = 10
+PRECISION_MIN_HISTORY     = 2      # cold start → π = 1.0
+PRECISION_VAR_REF         = 1/12   # Uniform[0,1] pop. variance
+PRECISION_MIN_WEIGHT      = 0.5
+PRECISION_MAX_WEIGHT      = 1.2    # doygunluk bütçesi korunur</code></pre>
+<p>Cold start (<code>len(pe_history) &lt; MIN_HISTORY</code>): nötr
+<code>π = 1.0</code>. Sakin (düşük var) → π → MAX; kriz/yüksek var → π →
+MIN (dampen). Sınır notu: tipik sakin pencerelerde π hâlâ 1.2’ye yakın
+doyabilir; gerçek dampen çoğunlukla yüksek-varyans rejimde. Regresyon:
+<code>tests/test_precision_pe.py</code> (rolling-history suite).</p>
+<h4 id="precision-smoke-doğrulama-v2.4.1">Precision smoke doğrulama
+(v2.4.1)</h4>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 24%" />
+<col style="width: 24%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Koşum</th>
+<th>Param</th>
+<th>Sonuç</th>
+<th>Artefakt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1 (ön-kayıtlı usable-only)</td>
+<td>events=10, N=3, seeds 9101–9103</td>
+<td><strong>INCONCLUSIVE</strong> — instrument starvation
+(<code>n_pe_events=0</code>; diversity gate lived+shuffle 3/3)</td>
+<td><code>dau_runs/protocol_c_prime_precision_smoke.json</code> (+
+<code>_v2.log</code>)</td>
+</tr>
+<tr>
+<td>v2 (exploratory all-audit)</td>
+<td>aynı seed/events</td>
+<td>teşhis; pair-gate bağımsız; confirmatory değil (<code>2528e79</code>
+dual gates)</td>
+<td>aynı JSON <code>smoke_gates_v2</code></td>
+</tr>
+<tr>
+<td><strong>v3 (resmi smoke)</strong></td>
+<td>events=22, N=3, seeds 9201–9203</td>
+<td><strong>PASS</strong> — <code>n_pe_events=396</code>,
+<code>saturation_rate=0.0025</code>, <code>pi_n_distinct=14</code> (bant
+~0.76–1.2), <code>null_arm_clean=true</code>,
+<code>n_gated=0</code></td>
+<td><code>dau_runs/protocol_c_prime_precision_smoke_v3.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>v3 ile precision fix <strong>davranışsal olarak doğrulandı</strong>
+(alet sağlıklı: doygunluk düşük, π çeşitli, null temiz). Formül commit:
+<code>231c222</code>.</p>
+<blockquote>
+<p><strong>Informal gözlem (etki iddiası DEĞİL):</strong> v3 mean ΔPE
+lived≈0.107 · null=0.0 · shuffle≈0.017 — lived kolu belirgin yüksek. Bu
+<strong>N=3 smoke ölçümü</strong>; istatistiksel güç
+<strong>YOK</strong>; hipotez testi değil. Asıl test çok-nesilli N=15
+pre-registered koşumda yapılacak. Bu satır gelecekte <strong>“etki
+doğrulandı”</strong> diye okunamaz.</p>
+</blockquote>
 <hr />
 <h2 id="layer-2-emotionalweight-drift-tamam">8. Layer 2 —
 EmotionalWeight + Drift (tamam)</h2>
@@ -379,6 +718,80 @@ cautionary)</li>
 <code>DRIFT_TRANSFER_MIN=1.5</code>, <code>HEAL_THRESHOLD=0.6</code>,
 <code>HEAL_RATE=0.3</code></li>
 </ul>
+<h3 id="v2.4.3-konsolidasyon-deney-yolunda-nereye-bağlı-d-022d-031">⚠
+v2.4.3: konsolidasyon deney yolunda <strong>nereye</strong> bağlı
+(D-022/D-031)</h3>
+<p>Yukarısı konsolidasyonun <strong>ne yaptığını</strong> anlatıyor;
+v2.4.1’de eksik olan, deney yolunda <strong>ne zaman</strong>
+koştuğuydu. GAP-14 bunu <em>“hiç kimse çağırmıyor”</em> diye açmıştı ve
+<strong>belge yanılmıştı</strong> — demo yolu çağırıyordu, deney yolu
+çağırmıyordu.</p>
+<p><strong>Karar (D-031, uygulama <code>987a1bc</code>): faz-2’den
+sonra, <code>transfer_to_heir</code>’den hemen önce.</strong> Reddedilen
+alternatifler: <em>faz-1 sonrası</em> ve <em>her iki faz
+sonrası</em>.</p>
+<p><strong>Gerekçe — <code>null</code> kolunu korumak.</strong> Gen1 iki
+yaşam sürüyor (faz-1 → eğitim → faz-2) ve
+<code>delta_pe = pe_after − pe_before</code> aradaki <strong>tek
+müdahaleyi</strong> (eğitimi) yalıtmak için var. <code>null</code> iki
+fazı da eğitimsiz koşuyor ⇒ <code>delta_pe ≈ 0</code> olmalı, kontrolün
+varlık sebebi bu. <code>run_consolidation</code>
+<strong>siliyor</strong> (Ebbinghaus). Fazların <strong>arasına</strong>
+girerse faz-2 farklı bir kasa görür ve <code>null</code>’ın
+<code>delta_pe</code>’si <strong>saf unutma etkisi</strong> olur —
+kontrol, ölçmesi gereken sıfırı ölçemez hale gelir. Faz-2 seçeneği bunu
+yapmıyor.</p>
+<h3 id="ilk-ölçüm-b2-n40-120-kol">İlk ölçüm (B2, N=40, 120 kol)</h3>
+<p>Konsolidasyon raporu JSON’a <strong>hiç girmiyordu</strong>;
+<code>060d907</code> ile bağlandı (D-051’in yan bulgusu). İlk kez
+görünen sayılar:</p>
+<table>
+<thead>
+<tr>
+<th>Kol</th>
+<th><code>deleted_count</code> ort.</th>
+<th>aralık</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lived</code></td>
+<td>25.25</td>
+<td>10 – 57</td>
+</tr>
+<tr>
+<td><code>null</code></td>
+<td>24.52</td>
+<td>8 – 56</td>
+</tr>
+<tr>
+<td><code>shuffle</code></td>
+<td>24.93</td>
+<td>10 – 63</td>
+</tr>
+<tr>
+<td><strong>toplam</strong></td>
+<td><strong>24.90</strong></td>
+<td>8 – 63</td>
+</tr>
+</tbody>
+</table>
+<p>Rapor ayrıca <code>strengthened_count</code>,
+<code>edges_created</code>, <code>drift_flag_count</code> ve
+<code>now_counter</code> taşıyor. Kollar arası fark yok — beklenen,
+çünkü konsolidasyon adapter’dan bağımsız çalışıyor.</p>
+<p>⚠ <strong>İki ilan edilmiş sınır buraya bağlı:</strong> -
+<strong>L15</strong> — Ebbinghaus <strong>kasada</strong> çalışıyor,
+çift kurucu kasayı <strong>hiç okumuyor</strong> ⇒ kanal 2 unutmaya
+<strong>bağışık</strong>, kanal 1 değil. Bir anı unutulup varise geçmese
+bile, ondan türetilmiş çift ağırlıkları <strong>çoktan
+eğitmiştir</strong>. Hata değil, “iki kanal”ın tanımı — ama D-002’nin
+<em>“ikisi de yaşamın izidir”</em> cümlesi bunu taşımıyor. -
+<strong>L16</strong> — <code>now_counter = 50</code> (faz-2 uzunluğu)
+kullanılıyor ve faz-2 <code>EventClock</code>’u sıfırdan sayıyor ⇒ faz-1
+anıları bir faz daha taze görünüyor (GAP-19). Etkisi şu an
+<strong>bloke</strong> ama <strong>gizli</strong>: <code>F_agent</code>
+tek başına düzeltilirse canlanır (D-051).</p>
 <hr />
 <h2 id="layer-4-society-tamam-adim-1">10. Layer 4 — Society (tamam +
 ADIM 1)</h2>
@@ -399,9 +812,11 @@ step_pool_with_crisis(env, extractions, drift_states) -&gt; (env, drift_states)<
 <p><code>pool_ratio &lt; 0.30</code> → sentetik <code>DeltaRecord</code>
 + <code>update_drift</code> (mevcut imza). Eşik ve üstü: no-op. Unit
 testler: <code>dau/society/tests/test_environment.py</code> (crisis 5
-test). <strong>Gap:</strong> <code>graph.py</code> henüz her adımda
-otomatik çağırmıyor — pilot / harness /
-<code>step_pool_with_crisis</code> üzerinden.</p>
+test). <strong>Kablolama:</strong> <code>graph.py</code>
+<code>pool_step_node</code> → <code>step_pool_with_crisis</code>
+(meta_observer sonrası). Extraction:
+<code>dau/society/extraction.py</code>
+(<code>decision_to_extraction</code>).</p>
 <h3 id="sosyal-yük-lod-fitness">Sosyal yük / LOD / Fitness</h3>
 <pre><code>social_load = 0.5·cooperation_stress + 0.5·coordination_friction
 T_cognitive = 0.35·(δ/0.7) + 0.25·max_drift + 0.20·coord_friction + 0.20·(1-pool_ratio)
@@ -410,20 +825,67 @@ F_agent = 0.4·(E/E_max) + 0.3·(1-|ΔP|/P_max) + 0.3·(t_surv/T_gen)</code></pr
 eşiği ile hizalı).</p>
 <h3 id="graph-wiring">Graph wiring</h3>
 <pre><code>social_pre_node → agent_node → evaluator_node → meta_observer_node
-  → (social_pre | END)</code></pre>
+  → pool_step_node → (social_pre | END)</code></pre>
 <hr />
 <h2 id="b.-layer-5-metacognition-kod-tamam-empirik-unsupported">10b.
 Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</h2>
 <h3 id="empirik-verdict-kilitli">Empirik verdict (kilitli)</h3>
 <ul>
-<li>Meta A/B: deterministic seed replay → tüm farklar 0 →
-<strong>STOCHASTIC_NOISE_CONFIRMED</strong></li>
-<li>Closed-loop metacognition <strong>UNSUPPORTED
-(paper-locked)</strong></li>
-<li>Protocol C (Groq frozen): ΔPE≈0 gürültü → <strong>paper-locked
+<li><p>Meta A/B: deterministic seed replay → tüm farklar 0 →
+<strong>STOCHASTIC_NOISE_CONFIRMED</strong></p></li>
+<li><p>Closed-loop metacognition <strong>UNSUPPORTED
+(paper-locked)</strong></p></li>
+<li><p>Protocol C (Groq frozen): ΔPE≈0 gürültü → <strong>paper-locked
 negative finding</strong> (temiz çekirdek ~31–35 çift; resmi paired
-t-test yok; full 40 tekrar yok)</li>
+t-test yok; full 40 tekrar yok) <em>[instrument: ADIM 5 fixed-gain
+π≡1.2, pe_vector-based — PE yolu evaluator üzerinden; iddia geçersiz
+kılınmaz, yalnızca alet etiketi]</em> ⚠ <strong>v2.4.2: aşağıdaki üç C′
+satırı da D-036/D-037/D-042 öncesi.</strong> Alet etiketleri
+(<code>fixed-gain π≡1.2</code>) doğru ama eksik — pencere, determinizm
+ve graft konumu da o tarihte bugünkünden farklıydı.</p></li>
+<li><p><strong>Protocol C′ N=15 (eski reçete, 2026-08-07 gece):</strong>
+50 event/arm ·
+<code>lived −0.008935 · null −0.009007 · shuffle −0.002849 · t=0.019 · p=0.985</code>
+→ harness <strong>INCONCLUSIVE</strong>, belge
+<strong><code>INSTRUMENT_LIMITED_NULL</code></strong> <em>[instrument:
+ADIM 5 fixed-gain π≡1.2, pe_vector-based]</em> (artefakt:
+<code>dau_runs/protocol_c_prime_results.json</code>)</p></li>
+<li><p><strong>C′ düzeltme sonrası mini-test (N=1, seed=9101, 10 event,
+sampling + yaşam-PE):</strong>
+<code>lived −0.180 · null 0.000 · shuffle −0.149</code> · sıra
+<code>lived &lt; shuffle &lt; null</code> · null faz1≡faz2 →
+<strong><code>SAMPLE_LIVED_PE_SEPARATION</code></strong> (significance
+yok)</p></li>
+<li><p><strong>C′ N=15 sampling+B final (2026-08-07, GPU ~76
+dk):</strong> 50 event/arm · ön-kayıtlı <code>W=10</code> ⚠
+<strong>D-036 ile geçersiz — pencere artık fazın tamamı</strong> ·
+diversity <code>K=5</code> (5-seed tarama median) ·
+<code>lived +0.0081 · null 0.0000 · shuffle +0.0190</code> · t=−0.485 ·
+p=0.637 · Wilcoxon p=0.850 · n_eff=12 (gated 3: 2001/2007/2013) ·
+<code>null_arm_clean=True</code> → harness <strong>INCONCLUSIVE</strong>
+· belge <strong><code>SAMPLE_N15_UNDERPOWERED</code></strong>
+<em>[instrument: ADIM 5 fixed-gain π≡1.2, pe_vector-based]</em>
+(artefakt: <code>dau_runs/protocol_c_prime_results.json</code>; eski
+greedy sonuçlar
+<code>dau_runs/archive_cprime_instrument_limited_*</code>)</p></li>
 </ul>
+<p><strong><code>INSTRUMENT_LIMITED_NULL</code> ne demek:</strong>
+“yaşantı-LoRA’nın etkisi yok” <strong>değil</strong>; <strong>“o
+koşumdaki ölçüm aletiyle bir etki görülemez”</strong>. Dayanak o
+koşumda: (1) gizli <code>maybe_lora_update_after_life</code> null’u da
+eğitiyordu; (2) greedy + tohum trajektoriyi değiştirmiyordu (N=15≈N=1
+kopya); (3) plato tercih verisini öldürüyordu; (4) tasarımcı
+<code>PREF_EXPECTED</code> trait-adjacent’tı. Eski C′ null’ı Protocol C
+null’ı ile <strong>aynı statüde sunulmamalıdır</strong>.</p>
+<p><strong><code>SAMPLE_LIVED_PE_SEPARATION</code> ne demek:</strong>
+düzeltme zinciri + <code>DAU_LLM_DO_SAMPLE=1</code> + yaşam-PE tercih
+ile tek seed’de H1 yönü görüldü; N=1 — istatistik iddiası yok.</p>
+<p><strong><code>SAMPLE_N15_UNDERPOWERED</code> ne demek:</strong> alet
+bütünlüğü tutuldu (<code>null ΔPE=0</code>); mean lived &lt; mean
+shuffle (+0.008 &lt; +0.019) ama <strong>ikisi de ≥0</strong> (mini’deki
+−0.180 çoğalmadı); p n.s.; diversity gate 3 seed düşürdü → n_eff=12 &lt;
+15 → <strong>N&lt;15 istatistik iddiası yok</strong>. “Etki yok” diye
+sunulmaz; underpowered + zayıf/gürültülü yön.</p>
 <h3 id="aktüatörler-deterministik-python-llm-okumaz">Aktüatörler
 (deterministik Python, LLM okumaz)</h3>
 <ol type="1">
@@ -437,7 +899,7 @@ at</li>
 sorgu</li>
 </ol>
 <hr />
-<h2 id="mimari-durum-v2.0">11. Mimari durum (v2.0)</h2>
+<h2 id="mimari-durum-v2.3">11. Mimari durum (v2.3)</h2>
 <table style="width:100%;">
 <colgroup>
 <col style="width: 38%" />
@@ -484,24 +946,30 @@ sorgu</li>
 </tr>
 <tr>
 <td>Layer 5 Metacognition</td>
-<td>✅ kod / ❌ empirik</td>
-<td>Protocol C <strong>paper-locked null</strong> · C′
-<strong>WEAK</strong> + <strong>SMOKE_SEPARATION</strong></td>
+<td>✅ kod / ❌ empirik (frozen)</td>
+<td>Protocol C <strong>paper-locked null</strong></td>
 </tr>
 <tr>
 <td>Plastisite (ADIM 2–3)</td>
 <td>✅ kod / ⚠ default off</td>
-<td>NLI filter · per-agent QLoRA · <code>DAU_LORA_ENABLED=0</code></td>
+<td>Yaşam-PE tercih · QLoRA+DPO · sampling opt-in</td>
 </tr>
 <tr>
-<td>ADIM 5–6</td>
-<td>❌</td>
-<td>Precision-weighted PE · Protocol C′ N≥15 — planlı</td>
+<td>ADIM 5 Precision PE</td>
+<td>✅ kod / v2.4 rolling+VAR_REF</td>
+<td>Adaptif band açık; sakin≈MAX (§7)</td>
+</tr>
+<tr>
+<td>ADIM 6 C′</td>
+<td>✅ kod + N=15 sampling+B</td>
+<td>Eski <code>INSTRUMENT_LIMITED_NULL</code>; mini
+<strong>SAMPLE_LIVED_PE_SEPARATION</strong>; N=15
+<strong>SAMPLE_N15_UNDERPOWERED</strong></td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="kod-ağacı-v2.0">12. Kod ağacı (v2.0)</h2>
+<h2 id="kod-ağacı-v2.4.3">12. Kod ağacı (v2.4.3)</h2>
 <pre><code>dau/foundation/
  ├── state.py              — DAUAgentState (+ drift, social, lod, env, self_model)
  ├── delta.py              — compute_delta / classify / is_trauma (peak-weighted)
@@ -511,20 +979,23 @@ sorgu</li>
  ├── lod.py                — T_cognitive, NPC heuristics
  ├── self_model.py         — SelfModel / build_self_model
  ├── meta_observer.py      — dört aktüatör + meta_observer_node
- ├── semantic_similarity.py — MiniLM PE sensor
- ├── constraints.py        — pressures + DAERM + NLI + LoRA + PPR constants
+ ├── semantic_similarity.py — MiniLM PE sensor + precision weighting (ADIM 5)
+ ├── constraints.py        — pressures + DAERM + NLI + LoRA + PPR + DPO
+ │                          + PRECISION constants
  ├── time_model.py         — EventClock
  ├── graph.py              — social_pre → agent → evaluator → meta_observer
  │                          (+ DAU_LLM_BACKEND; local → switch_adapter)
  ├── llm_backend.py        — complete() Protocol; GroqBackend; LocalBackend
- ├── local_llm.py          — 4-bit load; per-agent adapter path/switch/save;
- │                          run_micro_train_preference_step
- ├── lora_update.py        — LivedTrace / PreferencePair; build_pe_ranked_pairs
- │                          (+ optional NLI gate); generation-end hook
+ ├── local_llm.py          — 4-bit load; per-agent adapter; DPO (batch=1 +
+ │                          checkpointing); opt-in sampling
+ │                          (`DAU_LLM_DO_SAMPLE` + prompt-keyed seed)
+ ├── lora_update.py        — LivedTrace / PreferencePair; **yaşam-PE ranking**
+ │                          (tasarımcı PREF_EXPECTED kaldırıldı)
  ├── nli_filter.py         — contradiction_score / is_genuine_polarity_pair
  ├── memory_bridge.py      — graph ↔ memory
  ├── generation.py         — consolidate / apply_generation
- └── tests/                — foundation + NLI + per-agent adapter + …
+ └── tests/                — foundation + NLI + per-agent adapter
+                           + test_precision_pe + …
 
 dau/memory/
  ├── store.py / decay.py / retrieval.py / consolidation.py
@@ -541,17 +1012,25 @@ dau/society/
 
 dau/diagnostics/
  ├── run_protocol_c.py     — frozen Meta ON/OFF (paper-locked)
- ├── long_run.py / pe_histogram.py / actuator_audit.py
- └── (C′ harness: main’de / bu branch’te artefaktlar diskte)
+ ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
+ ├── preflight.py          — 1208 satır; değişmez kapıları (I0.1–I5.4);
+ │                          ABORT/FLAG modları
+ ├── tool_identity.py      — 242 satır; koşumun alet kimliği; yüklenen
+ │                          ağırlığı ve ayarları raporlar
+ └── long_run.py / pe_histogram.py / actuator_audit.py
 
 docs/
- └── DAU_MASTER_REFERENCE_v20.{md,html,pdf}  — operasyonel kaynak (v2.0)
+ └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.4.1**)
+ └── DAU_MASTER_REFERENCE_v20.pdf           — türev (md ile senkron)
+ └── DAU_MASTER_REFERENCE_v20.html          — türev (stale; md kaynaktır)
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)</code></pre>
-<p><strong>Adapter kökleri (dikkat):</strong> - Runtime Punica path:
+<p><strong>Adapter kökleri:</strong> - Runtime tek kök:
 <code>dau_runs/adapters/{agent_id}/</code>
-(<code>ADAPTER_BASE_DIR</code>) — tek runtime kök.
-Eski <code>ADAPTER_ROOT_DIR</code> / <code>dau_lora_adapters</code>
-koddan kaldırıldı; legacy disk arşivi ayrı karar.</p>
+(<code>ADAPTER_BASE_DIR</code>) - Dead constant
+<code>ADAPTER_ROOT_DIR</code> / <code>dau_lora_adapters</code>
+kaldırıldı (<code>c9bdbaf</code>); disk →
+<code>archive/dau_lora_adapters_cprime_legacy/</code> (veri kaybı
+yok)</p>
 <hr />
 <h2 id="graph-yaşam-döngüsü">13. Graph yaşam döngüsü</h2>
 <pre><code>social_pre_node:
@@ -578,6 +1057,10 @@ Llama-3.1-8B + peft · LangSmith</p>
 <hr />
 <h2 id="test-durumu-bu-branch">14. Test durumu (bu branch)</h2>
 <table>
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 45%" />
+</colgroup>
 <thead>
 <tr>
 <th>Alan</th>
@@ -614,17 +1097,37 @@ Llama-3.1-8B + peft · LangSmith</p>
 <td><code>test_ppr_retrieval.py</code></td>
 </tr>
 <tr>
-<td><strong>Collect (v2.0 branch)</strong></td>
-<td><strong>159</strong></td>
+<td>Precision PE (ADIM 5)</td>
+<td><code>test_precision_pe.py</code> (rolling-history suite)</td>
+</tr>
+<tr>
+<td><strong>Collect (v2.4.3 branch)</strong></td>
+<td><strong>344 passed, 2 deselected</strong></td>
 </tr>
 </tbody>
 </table>
-<p><em>(Master v1.4’teki “137” ve main v1.6’daki “162+” sayıları farklı
-ağaç kesitleri; bu belge <strong>bu branch collect=159</strong> ile
-kilitlenir.)</em></p>
+<p><em>(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” /
+v2.4.1’deki “206” sayıları önceki kesitler; bu belge <strong>bu branch
+collect=344</strong> ile kilitlenir.)</em></p>
+<p><strong>NLI flake ÇÖZÜLDÜ (<code>3d760e8</code>):</strong> unit path
+mock HF; gerçek model <code>@pytest.mark.integration</code> (günlük
+suite dışı). Kök neden: HF Hub canlı çağrı + ağ kesintisi
+(<code>RemoteProtocolError</code>).</p>
 <p>Empirik artefaktlar (<code>dau_runs/</code>): -
 <code>protocol_c_run.log</code> — provisional/paper-locked null izi -
-<code>protocol_c_prime_v2_smoke_results.json</code> — SMOKE_SEPARATION -
+<code>archive_cprime_instrument_limited_*</code> — eski greedy N=15
+(<code>INSTRUMENT_LIMITED_NULL</code>) -
+<code>protocol_c_prime_results.json</code> — C′ N=15 sampling+B final
+(<code>SAMPLE_N15_UNDERPOWERED</code>) -
+<code>protocol_c_prime_sample_n15.log</code> — final koşum logu -
+<code>cprime_diversity_prereg_scan.json</code> — K/W ön-kayıt taraması
+(5×10 evt) - Mini sampling+B:
+<code>/tmp/cprime_full_arm/dau_runs/protocol_c_prime_sample_pilot.json</code>
+(<code>SAMPLE_LIVED_PE_SEPARATION</code>) -
+<code>protocol_c_prime_precision_smoke.json</code> — precision smoke
+v1/v2 (<code>smoke_gates_v1</code> locked; <code>smoke_gates_v2</code>
+exploratory) - <code>protocol_c_prime_precision_smoke_v3.json</code> —
+precision smoke <strong>v3 PASS</strong> -
 <code>vram_spike_results.json</code> — GO (~6386 MiB) -
 <code>overnight_audit_results.json</code></p>
 <hr />
@@ -714,29 +1217,87 @@ finding</strong></li>
 sinyal v1)</li>
 <li>✅ C′ v2 smoke N=1: <strong>SMOKE_SEPARATION</strong> (significance
 yok; N=15 otomatik değil)</li>
+<li>✅ C′ N=15 uçtan uca <strong>çalıştırıldı</strong> — sonuç
+<code>INSTRUMENT_LIMITED_NULL</code>; kapanan soru “harness çalışıyor
+mu”, kapanmayan soru “etki var mı” (§10b)</li>
 <li>✅ Trait injection yasağı — Gemini raporu ile yeniden
 doğrulandı</li>
 <li>✅ MiniLM tek başına polarity için yetersiz → NLI filter (ADIM 2)
 kodlandı</li>
 <li>✅ Serbest kanalda restraint emergence yaptırımsız çıkmaz → crisis
 API (ADIM 1)</li>
+<li>✅ Crisis wiring production (<code>a1ec2b4</code>) —
+<code>pool_step_node</code> + extraction / <code>long_run</code>
+çift-step düzeltmesi</li>
+<li>✅ Adapter kök temizliği (<code>c9bdbaf</code>) →
+<code>archive/dau_lora_adapters_cprime_legacy/</code></li>
+<li>✅ NLI flake (<code>3d760e8</code>) — unit mock +
+<code>@pytest.mark.integration</code></li>
+<li>✅ Memory vault no-op (<code>231c222</code>) —
+<code>MemoryStore.seed_inherited_record</code> /
+<code>apply_generation</code> yazar; EW <code>inherited_warning</code> /
+<code>somatic_scale</code> tüketir</li>
+<li>✅ <strong>ADIM 5 precision — formül</strong> (<code>231c222</code>)
+rolling history + <code>VAR_REF</code> (§7)</li>
+<li>✅ <strong>ADIM 5 precision — smoke doğrulaması (v2.4.1):</strong>
+<ul>
+<li>v1 (events=10, N=3, seeds 9101–9103): <strong>INCONCLUSIVE</strong>
+(instrument starvation; diversity gate lived+shuffle 3/3 eledi;
+<code>n_pe_events=0</code>)</li>
+<li>v2 (exploratory all-audit, aynı seed/events): teşhis; confirmatory
+değil</li>
+<li><strong>v3 (events=22, N=3, seeds 9201–9203): RESMİ PASS</strong> —
+<code>n_pe_events=396</code>, <code>saturation_rate=0.0025</code>,
+<code>pi_n_distinct=14</code> (bant ~0.76–1.2),
+<code>null_arm_clean=true</code>, <code>n_gated=0</code>. Precision fix
+davranışsal doğrulandı.</li>
+</ul></li>
 </ul>
 <h3 id="hâlâ-açık">Hâlâ açık</h3>
 <ul>
-<li><code>apply_crisis_trauma</code> /
-<code>maybe_lora_update_after_life</code> → production graph kablolama
-tamamlanacak mı?</li>
-<li>Energy floor / γ=0 erken kapanma; homeostatic recovery
-seçenekleri</li>
-<li>Meta <code>trigger_drift_healing</code> eşik kalibrasyonu (uzun
-koşuda triggered=0)</li>
-<li>Spontaneous convention: format sync ≠ restraint sync (dürüst
-sınır)</li>
-<li>ADIM 5 precision-weighted PE ↔︎ DAERM γ/μ çakışma haritası</li>
-<li>ADIM 6 Protocol C′ N≥15 + OOD Behavioral Probing harness</li>
-<li><code>W_SEM=0</code> — embedding skorlamaya alınacak mı?</li>
-<li>Legacy disk <code>dau_lora_adapters/</code> arşiv/taşıma kararı
-(kod kökü tekilleşti)</li>
+<li><strong>C′ etki sorusu</strong> — N=15 sampling+B aleti temiz ama
+n_eff=12 + n.s. → H1 desteklenmedi; mini −0.180 N≥15’e taşınmadı. Yeni
+ön-kayıt olmadan K/W oynatılamaz (post-hoc yasak)</li>
+<li><del><strong>ADIM 5 precision</strong> formül + smoke
+doğrulaması</del> → <strong>ÇÖZÜLDÜ</strong> (v2.4 formül + v3 PASS;
+§7)</li>
+<li><strong>Çok-nesilli Protocol C′ pre-registration henüz
+yazılmadı</strong> — sıradaki oturumun ilk görevi (§23)</li>
+<li><strong>Pool collapse → terminasyon mantığı henüz kablosuz</strong>
+— <code>EnvironmentState.collapsed</code> /
+<code>COLLAPSE_EPSILON</code> üretiliyor ama
+<code>should_continue</code> yalnızca <code>MAX_EVENTS</code> +
+<code>TERMINATION_ENERGY</code> bakıyor; crisis travması terminasyon
+değil (somatik), collapse için ayrı END koşulu henüz yok</li>
+<li>Energy floor / γ=0 erken kapanma</li>
+<li>Meta <code>trigger_drift_healing</code> eşik kalibrasyonu</li>
+<li>Spontaneous convention: format sync ≠ restraint sync</li>
+<li><del><code>test_nli_filter.py</code> kırılganlığı</del> —
+<strong>ÇÖZÜLDÜ</strong> (<code>3d760e8</code>)</li>
+<li><del>Legacy disk <code>dau_lora_adapters/</code> arşiv</del> —
+<strong>ÇÖZÜLDÜ</strong> (<code>c9bdbaf</code>;
+<code>archive/dau_lora_adapters_cprime_legacy/</code>)</li>
+</ul>
+<h3 id="kapanan-v2.2v2.3-bu-branchte-ölçüldü">Kapanan (v2.2–v2.3 — bu
+branch’te ölçüldü)</h3>
+<ul>
+<li>✅ Yerel LLM replay — greedy birebir; sampling’te prompt-keyed seed
++ strict CUDA lock ile null faz1≡faz2</li>
+<li>✅ Null kontaminasyonu — <code>_build_lived_examples</code> artık
+train etmiyor</li>
+<li>✅ Tohum = niş (<code>_seed_niche</code>) — N=15≠N=1 kopya</li>
+<li>✅ Tercih hedefi — yaşam-PE ranking (reçete B); tasarımcı cümle
+yok</li>
+<li>✅ DPO OOM — <code>BATCH_SIZE=1</code> + gradient checkpointing
+(8GB)</li>
+<li>✅ Chat-template DPO / eval mode / adapter izolasyonu (önceki
+commit’ler)</li>
+<li>✅ Diversity gate + ön-kayıtlı W — 5-seed tarama → K=5; W=10
+(mini/null) ⚠ <strong>W kısmı D-036 ile geçersiz</strong>: 10-olay
+penceresi 50 olaylık fazın ilk beşte birini okuyordu ve etkiyi
+kaçırıyordu. K=5 geçerli.</li>
+<li>✅ C′ N=15 sampling+B koşumu —
+<strong>SAMPLE_N15_UNDERPOWERED</strong> (§10b)</li>
 </ul>
 <hr />
 <h2 id="bilinen-sınırlar-plastisite-günlüğü">18. Bilinen Sınırlar +
@@ -750,22 +1311,58 @@ Plastisite günlüğü</h2>
 <strong>kapalı</strong></li>
 <li>Protocol C: TPD kirlenmesi; pair t-test yok; claim locked</li>
 <li>C′ v2: N=1 — istatistik iddiası yok</li>
-<li>Crisis / LoRA generation-end: API var, graph otomatik çağrı
-kısmi</li>
+<li>Crisis: graph <code>pool_step_node</code> kablolu
+(<code>a1ec2b4</code>); collapse → END henüz yok (§17)</li>
+<li>ADIM 5 precision: <strong>ÇÖZÜLDÜ (v2.4 formül + v2.4.1 v3 smoke
+PASS)</strong> — rolling history + <code>VAR_REF</code> (§7). Sınır:
+sakin pencerelerde π hâlâ ≈1.2’ye doyabilir; v3’te sat≈0.0025 / π_n=14
+ile alet sağlıklı ölçüldü. v2.3 ve öncesi empirik sonuçlar sabit-kazanç
+aletiyle alınmıştır (§10b etiketleri).</li>
 </ul>
+<h3 id="yeni-sınırlar-v2.1-tarihsel-v2.2-durumu">Yeni sınırlar (v2.1
+tarihsel) → v2.2 durumu</h3>
+<h4 id="replay-non-determinism-kapatıldı-v2.2">1. Replay non-determinism
+— <strong>kapatıldı (v2.2)</strong></h4>
+<p>Eski N=15’te null faz1≠faz2 sanılıyordu; asıl nedenler sırayla: gizli
+train hook, tohumun trajektoriyi değiştirmemesi, sampling’te RNG
+kirlenmesi (<code>switch_adapter</code> early-return + LoRA reset).
+Düzeltmeler: <code>torch.manual_seed</code> / CUDA strict lock ·
+prompt-keyed sample seed · hook kaldırıldı · niş tohumları.
+<strong>Ölçüldü:</strong> sampling + aynı agent_id ile 10 event null
+replay birebir.</p>
+<h4 id="metrik-plato-dilusyonu-d-026-çürüttü">2. Metrik plato dilusyonu
+— ⚠ <strong>D-026 ÇÜRÜTTÜ</strong></h4>
+<blockquote>
+<p>Aşağıdaki reçete <em>“greedy plato yapar, sampling şart”</em>
+diyordu. Ölçüldü: greedy 50 olayda <code>n_unique</code>
+<strong>22–29</strong>, kapı 5 (D-026, D-034). Plato yok. Ön-kayıt S1
+<strong>greedy</strong>’de karar kıldı — sampling gürültü ekliyor ve
+GAP-9 altında gürültü azaltmak çiftten değerli. Metin tarihçe olarak
+duruyor.</p>
+</blockquote>
+<p>Greedy plato (~3 unique completion / 10 event) tercih verisini
+öldürüyordu. <code>DAU_LLM_DO_SAMPLE=1</code> (T=0.2) ile unique ≈5.
+N=15 öncesi: 5-seed tarama → <code>DIVERSITY_MIN_UNIQUE=K=5</code>
+(median); ⚠ <code>PE_WINDOW_EVENTS=W=10</code> <strong>D-036 ile 0’a
+(fazın tamamı) çekildi</strong>; aşağıdaki gerekçe tarihsel — (mini +
+null clean; post-hoc değil). N=15’te 3 seed <code>n_unique=4</code> ile
+gated → n_eff=12.</p>
 <h3 id="plastisite-günlüğü">Plastisite günlüğü</h3>
-<h4 id="sinyal-v1-vs-v2">Sinyal v1 vs v2</h4>
+<h4 id="sinyal-v1-vs-v2-vs-yaşam-pe-v2.2">Sinyal v1 vs v2 vs yaşam-PE
+(v2.2)</h4>
 <table>
 <colgroup>
-<col style="width: 12%" />
-<col style="width: 44%" />
-<col style="width: 44%" />
+<col style="width: 5%" />
+<col style="width: 20%" />
+<col style="width: 35%" />
+<col style="width: 38%" />
 </colgroup>
 <thead>
 <tr>
 <th></th>
 <th>Sinyal v1</th>
-<th>Sinyal v2</th>
+<th>Sinyal v2 (eski A)</th>
+<th>Yaşam-PE (B, v2.2)</th>
 </tr>
 </thead>
 <tbody>
@@ -773,30 +1370,43 @@ kısmi</li>
 <td>Kimlik</td>
 <td><code>pe_delta_trauma_drift_v1</code></td>
 <td><code>pe_ranked_pref_v2</code></td>
+<td>aynı dosya, yeni ranking</td>
 </tr>
 <tr>
-<td>Girdi</td>
-<td>PE/delta/trauma/drift skalar</td>
-<td>Aynı expected altında iki aday</td>
+<td>Tercih</td>
+<td>skalar CE</td>
+<td>MiniLM vs <strong>tasarımcı</strong> expected + sabit reject</td>
+<td>ajanın kendi kararları, <strong>yaşam PE</strong></td>
 </tr>
 <tr>
-<td>Kayıp</td>
-<td>Causal LM CE</td>
-<td>Chosen CE − α·CE(rejected)</td>
-</tr>
-<tr>
-<td>Hakem</td>
+<td>Aksiyom</td>
 <td>—</td>
-<td>MiniLM PE (+ ops. NLI contradiction)</td>
+<td>⚠ trait-adjacent</td>
+<td>✅ yalnızca yaşam</td>
 </tr>
 <tr>
-<td>Env</td>
-<td>default C′</td>
-<td><code>DAU_CPRIME_SIGNAL=v2</code></td>
+<td>Mini-test</td>
+<td>—</td>
+<td>ΔPE ≈ +0.002 (zarar)</td>
+<td>sampling ile ΔPE ≈ −0.180</td>
 </tr>
 </tbody>
 </table>
 <h4 id="empirik-tablo">Empirik tablo</h4>
+<blockquote>
+<p>⚠ <strong>v2.4.2: aşağıdaki ΔPE sütunlarının hiçbiri bugünkü aletle
+karşılaştırılamaz.</strong> Üç kırılma, hepsi bu tablodan sonra:
+<strong>D-036</strong> (pencere 10 olaydan fazın tamamına — bu satırlar
+50 olaylık fazın <strong>ilk beşte birinin</strong> ortalaması) ·
+<strong>D-037</strong> (öncesinde koşum-arası gürültü
+<strong>0.026</strong>, ölçülen etki 0.015–0.025 ⇒ gürültü etkiden
+büyüktü) · <strong>D-042</strong> (eğitim kollarının graft’ı süreçteki
+konuma bağlıydı).</p>
+<p>Ayrıca <strong>D-044</strong>: ΔPE’nin kendisi ayrımın %80–86’sını
+atıyor, yani bu sütunlar düşük duyarlıklı bir aletin çıktısı.</p>
+<p>Tablo <strong>tarihçe olarak</strong> duruyor. Bugünkü sayılar
+<code>dau_runs/</code>’ta ve D-038/D-043’te.</p>
+</blockquote>
 <table>
 <colgroup>
 <col style="width: 10%" />
@@ -832,46 +1442,170 @@ kısmi</li>
 <td><strong>paper-locked null</strong></td>
 </tr>
 <tr>
-<td>C′ mini</td>
-<td>3</td>
+<td>C′ mini / smoke</td>
+<td>≤3</td>
 <td>local</td>
-<td>v1 + placeholder train</td>
-<td>≈0.001</td>
-<td>≈−0.008</td>
-<td>≈0.010</td>
-<td><strong>WEAK_LORA</strong></td>
+<td>v1/v2 erken</td>
+<td>(tarihsel)</td>
+<td></td>
+<td></td>
+<td><strong>WEAK / SMOKE</strong> (†)</td>
 </tr>
 <tr>
-<td>C′ v2 smoke</td>
-<td>1 (2001)</td>
+<td>C′ N=15 eski</td>
+<td>15</td>
 <td>local</td>
-<td>v2 + lived train</td>
-<td><strong>−0.0264</strong></td>
-<td>+0.0062</td>
-<td>+0.0159</td>
-<td><strong>SMOKE_SEPARATION</strong></td>
+<td>v2+A, greedy, kontamine</td>
+<td>−0.0089</td>
+<td>−0.0090</td>
+<td>−0.0028</td>
+<td><strong>INSTRUMENT_LIMITED_NULL</strong></td>
+</tr>
+<tr>
+<td>C′ mini sampling+B</td>
+<td>1 (9101)</td>
+<td>local</td>
+<td>yaşam-PE + sample</td>
+<td><strong>−0.180</strong></td>
+<td><strong>0.000</strong></td>
+<td>−0.149</td>
+<td><strong>SAMPLE_LIVED_PE_SEPARATION</strong></td>
+</tr>
+<tr>
+<td>C′ N=15 sampling+B</td>
+<td>15 (n_eff=12)</td>
+<td>local</td>
+<td>yaşam-PE + sample · W=10 · K=5</td>
+<td><strong>+0.0081</strong></td>
+<td><strong>0.000</strong></td>
+<td>+0.0190</td>
+<td><strong>SAMPLE_N15_UNDERPOWERED</strong></td>
 </tr>
 </tbody>
 </table>
-<p>VRAM: peak allocated ≈ <strong>6386 MiB</strong> →
-<strong>GO</strong>.</p>
+<p><strong>(†)</strong> Gradyansız eğitim / adapter sızıntısı
+düzeltilmeden önce; ileri sürülmez.</p>
+<p><strong>v2.4.2 eki — bugünkü aletle alınan sayılar</strong>
+(keşifsel, N=3, hipotez testi <strong>değil</strong>; seed 2001–2003
+yakılmış):</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Koşum</th>
+<th>Ne kanıtladı</th>
+<th><code>lived − null</code></th>
+<th><code>lived − shuffle</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>baseline_d037</code> + <code>repro_d038</code></td>
+<td><strong>tekrarlanabilirlik</strong>: dokuz kol, altı adapter
+<code>sha256</code> özdeş</td>
+<td>+0.025 / +0.045 / +0.017 (<strong>3/3</strong>)</td>
+<td>+0.029 / +0.037 / −0.039</td>
+</tr>
+<tr>
+<td><code>control_d042</code> (D-043)</td>
+<td>D-039…D-042 sonrası <strong>20/20 değişmez</strong>; üç
+<code>null</code> kolu D-038’le byte düzeyinde aynı</td>
+<td>+0.004 / +0.018 / +0.072 (<strong>3/3</strong>)</td>
+<td>−0.007 / +0.027 / +0.001</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ N=3’te işaret testinin verebileceği en küçük p
+<strong>0.25</strong> — hiçbiri anlamlı değil ve olamaz. Bu koşumların
+işi sinyal değil <strong>alet doğrulaması</strong>.</p>
+<h4 id="v2.4.3-yukarıdaki-iki-satır-keşifseldir-ve-aşılmıştır">⚠ v2.4.3:
+yukarıdaki iki satır <strong>keşifseldir ve aşılmıştır</strong></h4>
+<p>Doğrulayıcı koşum (B2, N=40, seed 2004–2043) yapıldı ve
+<strong>birincil uç nokta ΔPE değil doğum-drift’tir</strong> (D-002).
+Yukarıdaki <code>lived − null</code> / <code>lived − shuffle</code>
+sütunları ΔPE’dir, yani <strong>birincil sonuç değildir</strong> ve onun
+yerine okunamaz.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Koşum</th>
+<th>Uç nokta</th>
+<th>Sonuç</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>B2 (N=40)</strong></td>
+<td><strong>doğum-drift büyüklüğü</strong> (ön-kayıt §3)</td>
+<td><code>a_s − b_s</code> ort. <strong>−0.0002</strong> · W=217.0 ·
+<strong>p = 0.9914</strong> · <code>d_z = −0.000</code> ⇒ <strong>H0
+reddedilemedi</strong></td>
+</tr>
+<tr>
+<td>B2, ikincil S3</td>
+<td>gen1 ΔPE (fazın tamamı)</td>
+<td>ort. <strong>+0.0104</strong>, 24/16 pozitif, <strong>p =
+0.070</strong> — iddia edilmiyor</td>
+</tr>
+<tr>
+<td>B2, ikincil S4</td>
+<td>gen2 ortalama PE</td>
+<td>ort. <strong>−0.0128</strong>, <strong>p = 0.035</strong> ama
+<strong>ters yönde</strong>, medyan 0 — iddia edilmiyor</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ İlginç olan: N=3’lük keşifsel koşumlarda <code>lived − null</code>
+<strong>9/9 pozitifti</strong> (yukarıdaki tablo). N=40’lık doğrulayıcı
+koşumda birincil uç noktada <strong>hiçbir ayrım yok</strong>. Bu,
+küçük-N keşifsel işaret desenlerinin neden kanıt sayılmadığının doğrudan
+örneğidir.</p>
+<p>Ayrıntı: <strong><code>docs/B2_RESULTS.md</code></strong>.</p>
+<p>C′ mini sampling+B: 10 event/arm, <code>DAU_LLM_DO_SAMPLE=1</code>,
+<code>T=0.2</code>, <code>DAU_LORA_ENABLED=1</code>, yaşam-PE pairs, GPU
+≈ 71 sn / seed (3 kol).</p>
+<p>C′ N=15 sampling+B final: 50 event/arm, aynı reçete +
+<code>W=10</code> + diversity <code>K=5</code>, GPU ≈ <strong>76
+dk</strong> (eski 13 saat CPU tahmini iptal; 1.5–2.5 saat üst sınırı da
+aşılmadı). Peak VRAM ≈ <strong>7.2 GiB</strong> train sırasında.</p>
+<p>VRAM: peak ≈ <strong>6.4–7.2 GiB</strong> + DPO batch=1 →
+<strong>GO</strong> (8GB).</p>
 <h4 id="paper-naratif-iskeleti-kilitli">Paper naratif iskeleti
 (kilitli)</h4>
 <ol type="1">
 <li>Ana katkı: frozen-weight in-context metacognition null (Protocol
 C)</li>
 <li>Mimari: trait yasağı, MiniLM PE, DAERM, LOD, format≠restraint</li>
-<li>Appendix A: C′ mini WEAK (+ placeholder caveat)</li>
-<li>Appendix B: C′ v2 smoke separation (N=1); open: N≥10–15
-replicate</li>
+<li>Appendix: C′ alet evrimi — <code>INSTRUMENT_LIMITED_NULL</code>
+(eski) → reçete düzeltmesi → <code>SAMPLE_LIVED_PE_SEPARATION</code>
+(N=1) → <code>SAMPLE_N15_UNDERPOWERED</code> (null clean; n_eff=12; H1
+yok) → ⚠ <strong>v2.4.3: ön-kayıtlı doğrulayıcı koşum (N=40), birincil
+null (p=0.9914), §11 sınıfı alet null’ı</strong>
+(<code>docs/B2_RESULTS.md</code>)</li>
 <li>Non-claims: persona LoRA, LLM-as-judge, per-event online LoRA, Layer
-6, full Groq C rerun, N&lt;15 istatistik iddiası</li>
+6, full Groq C rerun, N&lt;15 istatistik iddiası, post-hoc W/K bulgusu,
+eski <code>INSTRUMENT_LIMITED_NULL</code> = “etki yok” → ⚠
+<strong>v2.4.3’te eklenenler:</strong> B2’nin null’ı
+<strong>“aktarılmıyor” demek değildir</strong> (D-047); adapter’ın
+davranışı değiştirmesi <strong>aktarımın kanıtı değildir</strong>
+(<code>shuffle</code> de aynı ölçüde değiştiriyor); S4’ün p=0.035’i
+<strong>sinyal değildir</strong> (ters işaret, §4 önceden bağladı)</li>
 </ol>
 <hr />
-<h2 id="adim-uygulama-kaydı-v2.0-bu-branch">19. ADIM uygulama kaydı
-(v2.0 — bu branch)</h2>
-<h3 id="adim-1-layer-4-somatic-enforcement-kod">ADIM 1 — Layer 4 Somatic
-Enforcement ✅ kod</h3>
+<h2 id="adim-uygulama-kaydı-v2.4.1-bu-branch">19. ADIM uygulama kaydı
+(v2.4.1 — bu branch)</h2>
+<h3 id="adim-1-layer-4-somatic-enforcement-kod-wiring">ADIM 1 — Layer 4
+Somatic Enforcement ✅ kod + wiring</h3>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -880,7 +1614,8 @@ Enforcement ✅ kod</h3>
 <tbody>
 <tr>
 <td>Dosyalar</td>
-<td><code>dau/society/environment.py</code> (+ tests)</td>
+<td><code>environment.py</code>, <code>extraction.py</code>,
+<code>graph.py</code> <code>pool_step_node</code> (+ tests)</td>
 </tr>
 <tr>
 <td>Sabitler</td>
@@ -894,12 +1629,18 @@ Enforcement ✅ kod</h3>
 <code>update_drift</code></td>
 </tr>
 <tr>
+<td>Wiring</td>
+<td>✅ production (<code>a1ec2b4</code>) — <code>pool_step_node</code> →
+<code>step_pool_with_crisis</code>; <code>long_run</code> çift-step
+düzeltmesi</td>
+</tr>
+<tr>
 <td>Test</td>
-<td>crisis 5 unit test</td>
+<td>crisis 5 unit + <code>test_graph_crisis_wiring.py</code></td>
 </tr>
 <tr>
 <td>Gap</td>
-<td>graph otomatik çağrı yok</td>
+<td>pool collapse → terminasyon kablosuz (§17)</td>
 </tr>
 </tbody>
 </table>
@@ -951,7 +1692,8 @@ path)</td>
 </tr>
 <tr>
 <td>Path</td>
-<td><code>dau_runs/adapters/{agent_id}/</code></td>
+<td><code>dau_runs/adapters/{agent_id}/</code>
+(<code>ADAPTER_BASE_DIR</code>; tek runtime kök)</td>
 </tr>
 <tr>
 <td>Rank/α</td>
@@ -966,7 +1708,7 @@ path)</td>
 <tr>
 <td>Train</td>
 <td><code>run_micro_train_preference_step(..., agent_id=)</code> →
-<code>save_agent_adapter</code></td>
+gerçek DPO adımı → <code>save_agent_adapter</code></td>
 </tr>
 <tr>
 <td>Default</td>
@@ -974,14 +1716,37 @@ path)</td>
 </tr>
 <tr>
 <td>Test</td>
-<td><code>test_per_agent_adapter.py</code></td>
+<td><code>test_per_agent_adapter.py</code> (+
+<code>test_no_dead_adapter_root_reference</code>)</td>
 </tr>
 <tr>
 <td>Gap</td>
-<td>generation-end hook graph’a tam bağlı değil</td>
+<td><strong>kapandı</strong> (<code>e4c026b</code>,
+<code>f25b0ef</code>) — generation-end hook bağlı, eğitim gerçek; dead
+<code>ADAPTER_ROOT_DIR</code> kaldırıldı</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Düzeltme 1 — eğitim gerçekten yoktu
+(<code>e4c026b</code>).</strong> Önceki halinde
+<code>run_micro_train_preference_step</code> <strong>hiçbir gradyan
+adımı içermiyordu</strong>: taze adapter’ı diske kaydedip
+<code>trained: True</code> dönüyordu. Yani üretilen her adapter
+<code>lora_B = 0</code> ile <strong>birim dönüşümdü</strong> ve lived
+kolu davranışsal olarak null kolundan ayırt edilemezdi. Şimdi
+generation-end hook bağlı ve gerçek DPO micro-train çalışıyor.
+Doğrulama: eğitim sonrası <code>lora_B</code> abs-sum <strong>0.0 →
+128.8</strong>.</p>
+<p><strong>Düzeltme 2 — adapter izolasyonu
+(<code>f25b0ef</code>).</strong> Öncesinde peft, <strong>kayıtlı tüm
+adapter’ları her ajanın dizinine</strong> yazıyordu
+(<code>adapters/cprime-null-2001/cprime-lived-2001/</code> gibi),
+dolayısıyla null kolu lived kolunun eğitimini <strong>miras
+alıyordu</strong>. Şimdi bellekte tek bir <code>default</code> slot
+tutuluyor; <strong>izolasyon disk düzeyinde</strong> sağlanıyor.</p>
+<p>Bu iki düzeltme öncesinde üretilmiş <strong>tüm C′ sonuçları
+geçersizdir</strong> (§18 empirik tablosunda <strong>†</strong> ile
+işaretli satırlar).</p>
 <h3 id="adim-4-hipporag-2-ppr-kod">ADIM 4 — HippoRAG 2 PPR ✅ kod</h3>
 <table>
 <tbody>
@@ -1000,65 +1765,158 @@ path)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="adim-5-precision-weighted-pe">ADIM 5 — Precision-Weighted PE
-❌</h3>
-<p>Plan: <code>π_i = 1/(var(delta_history_i)+ε)</code>,
-<code>PE_weighted = π·PE_raw</code>. Bağımlılık: ADIM 2+4. DAERM
-çakışması haritalanacak.</p>
-<h3 id="adim-6-protocol-c-n15">ADIM 6 — Protocol C′ N≥15 ❌</h3>
-<p>Plan: <code>DAU_CPRIME_N_PAIRS=15</code>, signal v2, per-agent True;
-paired t-test + OOD probing. Bağımlılık: ADIM 1–5.</p>
+<h3 id="adim-5-precision-weighted-pe-kod-smoke-pass-v2.4.1">ADIM 5 —
+Precision-Weighted PE ✅ kod + smoke PASS (v2.4.1)</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>semantic_similarity.py</code>, <code>constraints.py</code>,
+<code>graph.py</code>, <code>state.py</code>
+(<code>pe_history</code>)</td>
+</tr>
+<tr>
+<td>Formül (v2.4+)</td>
+<td><code>π = clamp(1/(var(pe_history)/VAR_REF+ε), MIN, MAX)</code>;
+cold start <code>π=1.0</code>; append sırası: π sonra raw
+(<code>231c222</code>)</td>
+</tr>
+<tr>
+<td>Sabitler</td>
+<td><code>WINDOW=10</code> (⚠ bu <strong>precision</strong> history
+penceresi, ölçüm penceresi değil — D-036 onu değiştirmedi),
+<code>MIN_HISTORY=2</code>, <code>VAR_REF=1/12</code>,
+<code>MIN_WEIGHT=0.5</code>, <code>MAX_WEIGHT=1.2</code></td>
+</tr>
+<tr>
+<td>Test</td>
+<td><code>test_precision_pe.py</code> (rolling-history suite)</td>
+</tr>
+<tr>
+<td>Smoke</td>
+<td>v1 INCONCLUSIVE (starvation, evt=10) · v3 <strong>PASS</strong>
+(evt=22, seeds 9201–9203) — §7</td>
+</tr>
+<tr>
+<td>Not</td>
+<td>v2.3 ve öncesi = sabit kazanç <code>π≡1.2</code> (pe_vector);
+kilitli C′ sonuçları o aletle (§7, §10b). v3 smoke aleti doğrular; ΔPE
+lived&gt;shuffle <strong>informal only</strong> (N=3; etki iddiası
+yok).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adim-6-protocol-c-n15-kod-samplingb-koşuldu">ADIM 6 — Protocol
+C′ N≥15 ✅ kod + sampling+B koşuldu</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Dosyalar</td>
+<td><code>dau/diagnostics/run_protocol_c_prime.py</code> (+ tests)</td>
+</tr>
+<tr>
+<td>Eski koşum</td>
+<td>N=15 · 50 event · greedy · reçete A →
+<strong>INSTRUMENT_LIMITED_NULL</strong></td>
+</tr>
+<tr>
+<td>Mini (v2.2)</td>
+<td>N=1 · 10 event · sample+B →
+<strong>SAMPLE_LIVED_PE_SEPARATION</strong></td>
+</tr>
+<tr>
+<td>Final (v2.3)</td>
+<td>N=15 · 50 event · sample+B · W=10 · K=5 →
+<strong>SAMPLE_N15_UNDERPOWERED</strong> ⚠ <strong>W=10 ve sampling
+ikisi de artık geçersiz (D-036, S1)</strong></td>
+</tr>
+<tr>
+<td>Harness</td>
+<td>lived vs shuffle birincil; null bütünlük; diversity gate;
+sıfır-varyans; n_eff&lt;N → INCONCLUSIVE</td>
+</tr>
+</tbody>
+</table>
 <h3 id="bağımlılık-grafiği">Bağımlılık grafiği</h3>
 <pre><code>ADIM 1 ──────────────────────────────┐
 ADIM 2 ──────────────────────────────┤
                                       ↓
 ADIM 3 ← ADIM 2 sonrası ────────────→ ADIM 6
-ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15)
+ADIM 4 ← ADIM 1+2 sonrası ──────────→ (Protocol C′ N≥15 sampling+B ✅ koşuldu)
 ADIM 5 ← ADIM 2+4 sonrası ──────────┘</code></pre>
-<p>ADIM 1–4: <strong>kodlandı</strong> (bu branch). ADIM 5–6:
-<strong>bekliyor</strong>.</p>
+<p>ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
+<strong>SAMPLE_N15_UNDERPOWERED</strong> (alet temiz; H1 yok; N&lt;15
+claim yok).</p>
 <hr />
-<h2 id="yol-haritası-anti-roadmap-v2.0">20. Yol haritası + Anti-roadmap
-(v2.0)</h2>
+<h2 id="yol-haritası-anti-roadmap-v2.3">20. Yol haritası + Anti-roadmap
+(v2.3)</h2>
 <h3 id="doğrulanan-kilitli">Doğrulanan / kilitli</h3>
 <ul>
 <li>Trait injection yasağı</li>
 <li>Deterministik Layer 0–4 omurgası</li>
 <li>Nesil sonu micro-QLoRA ≫ per-event online</li>
-<li>Signal v2 preference + NLI gate kablosu</li>
 <li>Protocol C paper-locked null</li>
-<li>SMOKE_SEPARATION (N=1) — N expand tartışmalı</li>
+<li>C′ harness + replay (sampling’te prompt-keyed seed)</li>
+<li>Yaşam-PE tercih (reçete B) · niş tohumları · DPO 8GB fit</li>
+<li>C′ diversity gate + ön-kayıtlı W · N=15 null_arm_clean</li>
+</ul>
+<h3 id="yeniden-değerlendirilmesi-gereken">Yeniden değerlendirilmesi
+gereken</h3>
+<ul>
+<li>SMOKE / WEAK / eski N=15 <code>INSTRUMENT_LIMITED_NULL</code> —
+tarihsel alet kayıtları</li>
+<li>Mini <code>SAMPLE_LIVED_PE_SEPARATION</code> — N=1; N=15’te
+çoğalmadı</li>
+<li><code>SAMPLE_N15_UNDERPOWERED</code> — underpowered; yeni ön-kayıtlı
+reçete olmadan K/W gevşeterek “kurtarma” yasak</li>
 </ul>
 <h3 id="yanlışlanan-kapatılan">Yanlışlanan / kapatılan</h3>
 <ul>
 <li>Frozen-weight kapalı döngü metacognition</li>
 <li>MiniLM tek başına PE polarity yeterliliği</li>
 <li>Yaptırımsız restraint emergence</li>
+<li>“Replay imkânsız” (v2.1 blocker — kapatıldı)</li>
+<li>Tasarımcı <code>PREF_EXPECTED</code> tercih hedefi</li>
 </ul>
 <h3 id="sıradaki-öncelik">Sıradaki (öncelik)</h3>
 <ol type="1">
-<li>Crisis + LoRA generation-end’i graph’a kablola (gap kapat)</li>
-<li>ADIM 5 — precision-weighted PE (DAERM haritası ile)</li>
-<li>C′ harness’i bu branch’e hizala / main merge kararı</li>
-<li>ADIM 6 — Protocol C′ N≥15 + OOD harness</li>
-<li>Paper gövdesi (frozen-null ana; WEAK + SMOKE appendix)</li>
+<li>Çok-nesilli Protocol C′ <strong>pre-registration yazımı</strong>
+(§23) — <strong>henüz yok</strong></li>
+<li>Pilot N=1–3 → tam N=15 iki-nesil koşum (~2sa GPU, Varyant B) →
+dürüst analiz</li>
+<li>Pool collapse → <code>should_continue</code> terminasyon (§17)</li>
+<li>Paper gövdesi (frozen-null ana; C′ alet evrimi appendix:
+INSTRUMENT_LIMITED → SAMPLE_LIVED → SAMPLE_N15_UNDERPOWERED → precision
+v3 PASS)</li>
+<li><del>ADIM 5 precision formül + smoke</del> → <strong>v2.4.1
+tamam</strong> (§7)</li>
 </ol>
 <h3 id="anti-roadmap-yasak">Anti-roadmap (yasak)</h3>
 <ul>
-<li>Per-event online LoRA</li>
-<li>EWC (8GB Fisher maliyeti)</li>
-<li>TTT / PoT (kalıcılık yok)</li>
-<li>Prefix/prompt tuning ana plastisite rotası</li>
-<li>N&lt;15 ile istatistiksel iddia</li>
-<li>Layer 6 icadı · LLM-as-judge · trait injection · wall-clock
-zaman</li>
-<li>Jaccard’ı ana PE’ye geri alma · multi-pool fizik · full-weight
-FT</li>
+<li>Per-event online LoRA · EWC · TTT/PoT · prefix ana rota</li>
+<li>N&lt;15 ile istatistiksel iddia · post-hoc W/K bulgusu</li>
+<li>Eski <code>INSTRUMENT_LIMITED_NULL</code> veya
+<code>SAMPLE_N15_UNDERPOWERED</code> koşumunu “etki yok” diye
+sunmak</li>
+<li>Layer 6 · LLM-as-judge · trait injection · wall-clock zaman</li>
 <li>Persona/trait adapter · Groq Protocol C tekrarı</li>
 </ul>
 <hr />
 <h2 id="ortam-bayrakları-referans">21. Ortam bayrakları (referans)</h2>
 <table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 42%" />
+<col style="width: 33%" />
+</colgroup>
 <thead>
 <tr>
 <th>Env</th>
@@ -1080,17 +1938,46 @@ FT</li>
 <tr>
 <td><code>DAU_NLI_FILTER_ENABLED</code></td>
 <td><code>1</code></td>
-<td>preference polarity gate</td>
+<td>⚠ <strong>iki kez eskidi.</strong> (a) Parantez
+<strong>yanlıştı</strong> — <code>lora_update</code> içinde
+<code>is_genuine_polarity_pair</code> çağrılıyordu
+(<code>18fb01e</code>). (b) <strong>D-032</strong> kapıyı NLI’dan
+<strong>kosinüs mesafeye</strong> çevirdi; bant
+<code>[0.25, 0.80]</code>, MiniLM. <code>POLARITY_FILTER=nli</code> ile
+eskisine hâlâ erişilir. <code>NLI_CONTRADICTION_THRESHOLD=0.60</code>
+<strong>değeri değişmedi</strong> — ölçüm eşiğin yanlış değil
+<strong>ilgisiz</strong> olduğunu gösterdi (0.60’ta %12.9, 0.30’da
+%12.9)</td>
+</tr>
+<tr>
+<td><code>DAU_LLM_DO_SAMPLE</code></td>
+<td><code>0</code></td>
+<td>local sampling; C′ için <code>1</code></td>
 </tr>
 <tr>
 <td><code>DAU_LLM_TEMPERATURE</code></td>
 <td>(model)</td>
-<td>override</td>
+<td>sampling sıcaklığı (C′: <code>0.2</code>)</td>
 </tr>
 <tr>
 <td><code>DAU_LLM_SEED</code></td>
 <td>—</td>
-<td>deterministic replay</td>
+<td>faz tohumu (+ prompt hash)</td>
+</tr>
+<tr>
+<td><code>DAU_TORCH_THREADS</code></td>
+<td><code>14</code></td>
+<td>CPU thread pin</td>
+</tr>
+<tr>
+<td><code>CUBLAS_WORKSPACE_CONFIG</code></td>
+<td><code>:4096:8</code></td>
+<td>CUDA deterministic</td>
+</tr>
+<tr>
+<td><code>HF_HUB_OFFLINE</code></td>
+<td>—</td>
+<td>C′ koşumunda <code>1</code> önerilir</td>
 </tr>
 <tr>
 <td><code>DAU_THREAD_ID</code></td>
@@ -1110,12 +1997,37 @@ FT</li>
 <tr>
 <td><code>DAU_CPRIME_*</code></td>
 <td>(C′ harness)</td>
-<td>N_PAIRS / EVENTS / SIGNAL / SEEDS</td>
+<td>N_PAIRS / EVENTS / SIGNAL</td>
 </tr>
 </tbody>
 </table>
 <hr />
+<hr />
 <h2 id="versiyon-geçmişi">22. Versiyon geçmişi</h2>
+<div class="line-block"><strong>2.4.2</strong> |
+<strong>2026-08-11</strong> | Anlatı yeniden yazılmadı;
+<strong>yanlışlar işaretlendi, eksik katman eklendi</strong>. Preflight
+(20 değişmez) ve alet kimliği ilk kez belgede (§24) · karar kaydı
+sistemi D-001…D-044 (§25) · W=10, greedy platosu, NLI satırı ve sampling
+reçetesi ⚠ ile geçersiz işaretlendi · §18’in empirik tablosu üç
+kırılmayla (D-036 pencere, D-037 determinizm, D-042 konum)
+<strong>karşılaştırılamaz</strong> ilan edildi · GAP-2 kapandı ·
+<strong>332 test</strong>. <code>.html</code>/<code>.pdf</code>
+<strong>v2.4.1’de kaldı</strong>. |<br />
+<strong>2.4.3</strong> | <strong>2026-08-12</strong> |
+<strong>Doğrulayıcı koşum yapıldı ve sonuç bu belgeye girdi.</strong>
+B2: seed 2004–2043, N=40, ~13.1 sa · birincil <strong>p =
+0.9914</strong>, <code>d_z = −0.000</code> ⇒ <strong>H0
+reddedilemedi</strong> · §11 sınıfı <strong>alet null’ı</strong> (D-053,
+§5’ten üç kriter düştü). §23 <strong>baştan yazıldı</strong> (v2.4.2’de
+“tek düğüm S4” diyordu, bitti) · §25 <strong>D-045…D-053</strong> · §9’a
+konsolidasyonun deney yolundaki <strong>yeri</strong> (D-022/D-031) ve
+ilk ölçülen <code>deleted_count</code> (ort. 24.90) · §18’in ampirik
+tablosuna <em>“bunlar ΔPE’dir, birincil sonuç değildir”</em> uyarısı ·
+§20 non-claims’e üç madde · §12 kod ağacına
+<code>preflight.py</code>/<code>tool_identity.py</code> · <strong>344
+test</strong>. <code>.html</code>/<code>.pdf</code> <strong>yeniden
+üretildi</strong>. |</div>
 <table>
 <colgroup>
 <col style="width: 29%" />
@@ -1191,16 +2103,495 @@ kodlandı (crisis, NLI, per-agent QLoRA, PPR). memory_score PPR formülü.
 159 test (bu branch). ADIM 5–6 açık. <code>DAU_LORA_ENABLED=0</code>
 korunuyor. <code>v10</code> süpersede.</td>
 </tr>
+<tr>
+<td><strong>2.1</strong></td>
+<td><strong>2026-08-07</strong></td>
+<td>Ölçüm zincirinde 6 katmanlı hata düzeltildi; C′ N=15 uçtan uca →
+<strong><code>INSTRUMENT_LIMITED_NULL</code></strong>. Replay/plato
+blocker kaydı. 175 test.</td>
+</tr>
+<tr>
+<td><strong>2.2</strong></td>
+<td><strong>2026-08-07</strong></td>
+<td>Alet yeniden kuruldu: null train hook kaldırıldı · niş tohum ·
+yaşam-PE tercih · DPO 8GB fit · sampling + prompt-keyed seed. Mini N=1 →
+<strong><code>SAMPLE_LIVED_PE_SEPARATION</code></strong> (lived −0.180 ·
+null 0 · shuffle −0.149). N=15 sampling sırada; 13 saat CPU tahmini
+iptal (GPU ≈1.5–2.5 saat). <strong>177 test</strong>.
+<code>.html</code>/<code>.pdf</code> henüz yenilenmedi.</td>
+</tr>
+<tr>
+<td><strong>2.3</strong></td>
+<td><strong>2026-08-07</strong></td>
+<td>Diversity gate (K=5) + ön-kayıtlı W=10. C′ N=15 sampling+B final
+(~76 dk GPU): null <strong>0.000</strong> clean · lived
+<strong>+0.008</strong> · shuffle <strong>+0.019</strong> · n_eff=12 ·
+p=0.637 → <strong><code>SAMPLE_N15_UNDERPOWERED</code></strong> /
+INCONCLUSIVE. Mini separation N≥15’e taşınmadı; “etki yok” iddiası yok.
+<strong>182 test</strong>. <code>.html</code>/<code>.pdf</code> henüz
+yenilenmedi.</td>
+</tr>
+<tr>
+<td><strong>2.4</strong></td>
+<td><strong>2026-08-07</strong></td>
+<td>Precision fix (<code>231c222</code>: rolling history +
+<code>VAR_REF</code>); memory vault seed API
+(<code>apply_generation</code>); inherited somatic scale EW tüketimi;
+<strong>206 test</strong>. <code>.html</code>/<code>.pdf</code> henüz
+yenilenmedi.</td>
+</tr>
+<tr>
+<td><strong>2.4.1</strong></td>
+<td><strong>2026-08-08</strong></td>
+<td>Oturum kapanışı. Zincir: <code>231c222</code> precision+vault ·
+<code>a1ec2b4</code> crisis wiring · <code>c9bdbaf</code> adapter
+cleanup · <code>3d760e8</code> NLI flake · <code>2528e79</code> dual
+smoke_gates. Smoke: v1
+(<code>protocol_c_prime_precision_smoke.json</code>, seeds 9101–9103,
+evt=10) <strong>INCONCLUSIVE</strong> / instrument starvation · v2
+exploratory all-audit (aynı JSON) · <strong>v3
+(<code>…_smoke_v3.json</code>, seeds 9201–9203, evt=22) RESMİ
+PASS</strong> (n_pe=396, sat=0.0025, π_n=14, null_clean, n_gated=0).
+Precision davranışsal doğrulandı. ΔPE lived≈0.107 informal only (N=3;
+güç yok; “etki doğrulandı” yasak). Sıradaki = multi-gen pre-reg (§23).
+<strong>206 test</strong>. Push yok. <code>.pdf</code> md ile senkron;
+<code>.html</code> henüz stale.</td>
+</tr>
 </tbody>
 </table>
 <hr />
-<p><strong>Güncellendi (v2.0):</strong> Master artık
-<code>DAU_MASTER_REFERENCE_v20</code> — isim ailesi 1.0/<code>v10</code>
-değil. Kod gerçeği (ADIM 1–4 + empirik kilitler) detaylı yazıldı. Omurga
-default’ları değişmedi: LoRA kapalı, Groq default, trait yasak.</p>
-<p>Bu döküman her önemli katman / empirik dönüm tamamlanınca
-güncellenir.<br />
-Versiyon 2.0 — ADIM 1–4 kod; ADIM 5–6 plan; Protocol C paper-locked; C′
-WEAK + SMOKE_SEPARATION appendix.</p>
+<h2 id="nerede-duruyoruz-v2.4.3-baştan-yazıldı">23. Nerede Duruyoruz
+(v2.4.3 — baştan yazıldı)</h2>
+<p>⚠ <strong>Bu bölüm v2.4.1’de <em>“pre-reg sıradaki oturumun İLK
+görevi”</em> diyordu, v2.4.2’de <em>“tek düğüm S4”</em> diyordu. İkisi
+de bitti.</strong> Ön-kayıt kilitlendi, doğrulayıcı koşum yapıldı,
+analiz koşuldu, rapor yazıldı.</p>
+<h3 id="bitenler">Bitenler</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Adım</th>
+<th>Ne oldu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ön-kayıt</strong></td>
+<td>🔒 kilitli, commit <code>befd72b4ee57</code>, 7/7 slot kapalı,
+<strong>on yedi</strong> ilan edilmiş sınır (L1–L17)</td>
+</tr>
+<tr>
+<td><strong>B2 — koşum</strong></td>
+<td>seed 2004–2043, N=40, iki batch, ~13.1 sa, çökme yok</td>
+</tr>
+<tr>
+<td><strong>B3 — analiz</strong></td>
+<td>birincil + dört ikincil koşuldu; <strong>S5 ve S6
+koşulamadı</strong> (verisi/kolu yok)</td>
+</tr>
+<tr>
+<td><strong>B4 — rapor</strong></td>
+<td><code>docs/B2_RESULTS.md</code> · on yedi sınır + dört yeni
+(L18–L21)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sonuç">Sonuç</h3>
+<p><strong>Birincil null:</strong> <code>a_s − b_s</code> ortalama
+−0.0002, W = 217.0, <strong>p = 0.9914</strong>,
+<code>d_z = −0.000</code>.</p>
+<p>Ve bu bir <em>sınırda kaçırma</em> değil — uç noktanın çözünürlüğü
+ayrıca ölçüldü:</p>
+<table>
+<thead>
+<tr>
+<th>Mesafe</th>
+<th>Ortalama</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>‖lived − null‖</code></td>
+<td>0.3812</td>
+</tr>
+<tr>
+<td><code>‖shuffle − null‖</code></td>
+<td>0.3814</td>
+</tr>
+<tr>
+<td><strong><code>‖lived − shuffle‖</code></strong></td>
+<td><strong>0.3852</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Üç kol birbirine <strong>eşit uzaklıkta</strong>. Yaşamın
+tercihleriyle eğitmek ile o tercihlerin <strong>%100 tersiyle</strong>
+eğitmek, varisin doğum-drift’ini aynı ölçüde ve ayırt edilemez biçimde
+oynatıyor. Uç nokta dejenere değil (120 kolda 76 farklı büyüklük
+değeri).</p>
+<h3 id="sınıflandırması-alet-nulli">§11 sınıflandırması: <strong>ALET
+NULL’I</strong></h3>
+<p>Ön-kayıt §11 tanımları koşum görülmeden yazmıştı: <em>“alet null’ı =
+§5’ten biri düştü <strong>veya</strong> kanal 2 kararları
+değiştirmedi.”</em> §5’ten üç kriter düştü (D-053) ⇒ sınıf belirlendi.
+Bu bir yorum değil, kural uygulaması.</p>
+<p>⚠ Kanal 2 tarafı <strong>tersini</strong> işaret ediyordu: adapter
+faz-2 kararlarının <code>lived</code>’de ort. 26.1/50,
+<code>shuffle</code>’da 26.6/50’sini değiştirdi, hiç değiştirmeyen seed
+<strong>yok</strong>. Tanım “veya” ile bağlı olduğu için §5 tek başına
+belirledi.</p>
+<h3 id="sınıflandırmayı-bağımsız-destekleyen-üç-ölçüm">Sınıflandırmayı
+bağımsız destekleyen üç ölçüm</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Ölçüm</th>
+<th>Değer</th>
+<th>Ne diyor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dpo_loss</code></td>
+<td><strong>0.6919 / 0.6940</strong></td>
+<td><strong>ln 2 = 0.6931</strong> ⇒ tercih marjı ≈ 0</td>
+</tr>
+<tr>
+<td>Kırpılan adım</td>
+<td><strong>%100</strong></td>
+<td>Adım boyunu <code>lr</code> değil <code>DPO_MAX_GRAD_NORM=1.0</code>
+belirliyor</td>
+</tr>
+<tr>
+<td><code>dpo_grad_norm_min</code></td>
+<td><strong>≈ 2.96</strong></td>
+<td>En küçük gradyan bile tavanın ~3 katı</td>
+</tr>
+</tbody>
+</table>
+<p>⇒ D-029’un kilitlediği <code>lr = 1e-6</code> bu koşumu <strong>tarif
+etmiyor</strong>. <code>I1.3b</code> (D-046) tam bunun için eklenmişti
+ve <strong>kapı işini yaptı</strong> (L18).</p>
+<p>⚠ Buna karşılık <code>dpo_delta_logp_chosen</code> =
+<strong>+0.064</strong>, 18/20 pozitif ⇒ D-049’un korktuğu
+<strong>bastırma deseni gerçekleşmedi</strong>. Öğrenmenin <strong>yönü
+doğru, büyüklüğü yok.</strong></p>
+<h3 id="ne-iddia-edilemez">Ne iddia edilemez</h3>
+<ol type="1">
+<li>❌ <em>“Yaşanmışlık parametrik kanaldan aktarılmıyor”</em> — D-047
+yasakladı.</li>
+<li>❌ <em>“Mekanizma yanlış”</em> — sonuç alet null’ı sınıfında.</li>
+<li>❌ <em>“Adapter davranışı değiştiriyor, demek ki bir şey
+aktarılıyor”</em> — <code>shuffle</code> de aynı ölçüde değiştiriyor.
+<strong>Değişimin varlığı yönünü göstermez</strong>; birincilin
+<code>lived</code> vs <code>shuffle</code> olmasının sebebi budur.</li>
+<li>❌ <em>“S4 anlamlı çıktı (p=0.035), en azından bir sinyal var”</em>
+— işaret H1’in tersi, medyan 0, ve §4 birincil null iken ikincilin
+sonucu değiştirmeyeceğini önceden bağladı.</li>
+</ol>
+<h3 id="bu-nullın-değeri">Bu null’ın değeri</h3>
+<p>Boş bir null değil: <strong>neden göremediğimizi ölçtük.</strong> Bir
+sonraki koşum neyi düzelteceğini tahminle değil sayıyla biliyor — kırpma
+doygunluğu, <code>dpo_loss ≈ ln 2</code>, ve ilk kez nicelenmiş GAP-18
+(<code>uniq_rejected</code> 100/94’e karşı <code>uniq_chosen</code>
+1025/971).</p>
+<h3 id="sıradaki">Sıradaki</h3>
+<p><strong>Faz C</strong> (belge borcu) → <strong>D-013</strong> (branch
+main’e taşınmadı, tetiği ateşledi) → <strong>ikinci ön-kayıt</strong>.
+Liste <code>CLAUDE.md</code> §1’de.</p>
+<hr />
+<h2 id="preflight-değişmez-sistemi-ve-alet-kimliği-v2.4.2-yeni">24.
+Preflight değişmez sistemi ve alet kimliği (v2.4.2 — yeni)</h2>
+<p>Bu katman v2.4.1’de <strong>hiç yoktu</strong> ve bugün projenin en
+sağlam parçası.</p>
+<h3 id="neden-var">Neden var</h3>
+<p><code>preflight.py</code>’nin kendi docstring’i tanıyı koyuyor: bu
+projede <strong>yedi alet arızası da sayı üretti</strong> —
+<code>lora_B=0</code> sahte eğitim, adapter sızıntısı, greedy platosu,
+precision doygunluğu, GAP-1 (üç özdeş kol), GAP-11 (rastgele shuffle
+tohumu), GAP-14 (atıl PPR). Hiçbiri çökmedi.</p>
+<blockquote>
+<p>Hastalık <em>“hataları kaçırdık”</em> değil — sistemin, çıktısının
+bir anlamı olup olmadığından <strong>bağımsız olarak</strong> çıktı
+üretmesi.</p>
+</blockquote>
+<p>Değişmezler bunu tersine çeviriyor: sonuç yazılmadan önce koşum
+kendisi hakkında bir listeyi kanıtlamak zorunda.</p>
+<p><strong>İki başarısızlık kipi.</strong> <code>ABORT</code> → koşum
+durur, <strong>JSON yazılmaz</strong>; sessiz sahte sonuç imkânsız hale
+gelir. <code>FLAG</code> → koşum sürer, sonuç
+<code>invariants.&lt;id&gt;=false</code> ve bir <code>run_quality</code>
+damgası taşır — analiz edilebilir ama etiketli.</p>
+<p><strong>D-012 kuralı:</strong> eşiği hâlâ kalibre edilmemiş hiçbir
+değişmez ABORT edemez. Uydurma bir sabit üstünden koşum öldürmek,
+etiketlemekten kötüdür.</p>
+<h3 id="kayıtlı-20-değişmez">Kayıtlı 20 değişmez</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Faz</th>
+<th>Değişmezler</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 — koşum başlamadan</td>
+<td>I0.1 alet kimliği tam · I0.2 LoRA seçimi açık · I0.3
+<code>PYTHONHASHSEED</code> · I0.4 <code>agent_id</code>→seed türetimi ·
+I0.5 import-anı env · <strong>I0.6 strict determinizm</strong> (D-037) ·
+<strong>I0.7 adapter sızıntısı</strong> (D-033)</td>
+</tr>
+<tr>
+<td>1 — eğitim</td>
+<td><strong>I1.1 eğitim gerçekten oldu</strong> (D-039)</td>
+</tr>
+<tr>
+<td>2 — kollar</td>
+<td>I2.1 kollar özdeş değil · I2.2 null eğitilmemiş</td>
+</tr>
+<tr>
+<td>3 — ölçüm sağlığı</td>
+<td>I3.1–I3.4 (precision doygunluğu, kapılanma oranı, padding)</td>
+</tr>
+<tr>
+<td>4 — tekrar</td>
+<td><strong>I4.1 replay bit-identik</strong> (D-041) · I4.2 gen2 RNG
+tekdüze</td>
+</tr>
+<tr>
+<td>5 — bileşen canlılığı</td>
+<td>I5.1 PPR aktif · I5.2 · I5.3 anı yazıldı · I5.4 somatik ölçek</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ Belgede tanımlı 25’ten <strong>beşi hâlâ kodda yok</strong>: I1.2
+(regresyon testinde), I2.3 (yapısal olarak sağlanıyor), <strong>I1.3 /
+I1.4 / I1.5 (yok)</strong>.</p>
+<h3 id="iki-kapı-kendini-ilk-gününde-ödedi">İki kapı kendini ilk gününde
+ödedi</h3>
+<ul>
+<li><strong>I1.1</strong> — eğitim kolunun <code>Σ|lora_B|</code>
+değerini adım öncesi/sonrası okur. Diğer her sinyal gradyan adımının
+<strong>öncesinde</strong> üretiliyor: çift sayıları polarite
+filtresinden gelir, adapter dosyası döngüden sonra koşulsuz yazılır,
+<code>dpo_loss</code> son ileri geçişin değeridir. <code>lora_B=0</code>
+hatası üçünü de geçmişti; <strong>yalnız ağırlıklar biliyordu.</strong>
+⚠ <code>CLAUDE.md</code> §6 bu kontrolün “regresyon testinde” olduğunu
+söylüyordu ve <strong>yanlıştı</strong> — kod tabanında
+<code>lora_B</code>’ye değen tek bir test yoktu (D-038 Bulgu 2).</li>
+<li><strong>I4.1</strong> — bir eğitim kolunu ikinci kez koşup
+<code>arm_digest</code> karşılaştırır. <strong>İlk canlı koşumunda
+ayrışma bildirdi ve koşumu öldürdü — haklıydı.</strong> Kovalanınca
+D-042’nin konum bağımlılığı bulundu.</li>
+</ul>
+<h3 id="alet-kimliği-tool_identity.py">Alet kimliği
+(<code>tool_identity.py</code>)</h3>
+<p>Her koşum JSON’una kendisini üreten aletin tam kimliğini yazar:
+backend, <strong>yüklenen</strong> model adı, quantization bayrakları,
+DPO hiperparametreleri, LoRA rank/alpha, sampling, polarite bandı,
+kütüphane sürümleri, <code>argv</code>.</p>
+<p><strong>Kural (CLAUDE.md §2.8):</strong> <em>rapor aleti takip
+etmeli, aleti tekrar etmemeli.</em> Yeni bir sabit eklerken sor: alet
+kimliği bunu raporluyor mu, ve raporu <strong>sabitten mi okuyor yoksa
+yeniden mi üretiyor</strong>? Bu sınıf hata bir günde dört kez çıktı
+(U2, U3a, U4, U5).</p>
+<p><code>describe_quantization</code> bunun örneği:
+<code>build_load_kwargs</code>’ı geri okur, kendi config’ini kurmaz —
+kuran bir rapor er geç yükleyiciyle çelişir, ki açığa çıkarması gereken
+sessiz uyumsuzluk tam olarak odur.</p>
+<hr />
+<h2 id="karar-kaydı-sistemi-v2.4.2-yeni">25. Karar kaydı sistemi (v2.4.2
+— yeni)</h2>
+<p>v2.4.1’den sonra proje <strong>kanıtlı karar kaydına</strong> geçti:
+<code>docs/DECISIONS.md</code>, <strong>append-only</strong>,
+<strong>D-001…D-053</strong>. Kilitli her madde bir D-numarasına işaret
+eder; kanıtı olmayan hiçbir madde “kilitli karar” yazılmaz.</p>
+<p><strong>D-kaydı ne zaman şart:</strong> <code>constraints.py</code>
+eşik <strong>değeri</strong> değişiyorsa · bir ölçüm yapıldıysa (sonucu
+ne olursa olsun) · bir alternatif reddedildiyse · ön-kayıtlı protokol
+değişiyorsa · kilitli bir karar sorgulanıyorsa.</p>
+<h3 id="bu-belgeyi-doğrudan-geçersizleştiren-kayıtlar">Bu belgeyi
+doğrudan geçersizleştiren kayıtlar</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Kayıt</th>
+<th>Ne değişti</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D-018/D-023</strong></td>
+<td>Backend varsayılanı <code>local</code>; tanınmayan değer
+<code>ValueError</code></td>
+</tr>
+<tr>
+<td><strong>D-026</strong></td>
+<td>Model ölçüldü → Llama kalıyor; <strong>greedy platosu
+çürüdü</strong></td>
+</tr>
+<tr>
+<td><strong>D-027/28/29</strong></td>
+<td>DPO penceresi 512, gradient accumulation, <strong>lr
+5e-5→1e-6</strong></td>
+</tr>
+<tr>
+<td><strong>D-032</strong></td>
+<td>DPO prompt’u = yaşanan prompt · polarite kapısı
+<strong>kosinüs</strong></td>
+</tr>
+<tr>
+<td><strong>D-036</strong></td>
+<td>Ölçüm penceresi = <strong>fazın tamamı</strong></td>
+</tr>
+<tr>
+<td><strong>D-037</strong></td>
+<td><strong>Strict determinizm</strong>; I0.6 zorunlu kılıyor</td>
+</tr>
+<tr>
+<td><strong>D-040</strong></td>
+<td>Shuffle <strong>%100 ters</strong></td>
+</tr>
+<tr>
+<td><strong>D-042</strong></td>
+<td>Adapter graft’ı <strong>konumdan bağımsız</strong></td>
+</tr>
+<tr>
+<td><strong>D-044</strong></td>
+<td>ΔPE uç noktası ayrımın <strong>%80–86’sını atıyor</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="d-029-aksiyoma-doğrudan-dokunan-kayıt">D-029 — aksiyoma doğrudan
+dokunan kayıt</h3>
+<p><code>lr=5e-5</code> ile eğitilen ajan <em>“düşük PE’li şeyi tercih
+et”</em> değil <em>“yüksek PE’li şeyi asla söyleme”</em> öğreniyordu.
+Kanal 2’den aktarılan iz bir tercih değil <strong>bastırma
+deseni</strong> olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne
+olduğunu değiştirir. lr literatürden alındı, ölçümden
+<strong>seçilmedi</strong>.</p>
+<h3 id="d-044-uç-nokta-duyarlılığı">D-044 — uç nokta duyarlılığı</h3>
+<p>Faz-2’de kollar olay bazında 0.065–0.194 ayrışıyor; faz ortalaması
+bunun yalnız <strong>%14–20</strong>’sini görüyor. İptal
+<strong>simetrik</strong> (fark işaretlerinin %44–64’ü pozitif) ⇒
+adapter ajanın <strong>neye şaşırdığını</strong> yeniden düzenliyor,
+ortalama şaşkınlık düzeyini kaydırmıyor.</p>
+<p>⇒ Birincil uç noktayı (doğum-drift, tek anın vektörü)
+<strong>etkilemez</strong> ve o seçimi destekler. ΔPE ikincilleri null
+çıkarsa <strong>“ölçemedik”</strong> diye raporlanır, “etki yok” diye
+değil.</p>
+<h3
+id="d-045d-053-faz-anın-kapanışı-kilit-ve-doğrulayıcı-koşum-v2.4.3">D-045…D-053
+— Faz A’nın kapanışı, kilit ve doğrulayıcı koşum (v2.4.3)</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Kayıt</th>
+<th>Ne yaptı</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D-045</strong></td>
+<td>A5: gen2 uç noktası da kayıplı — korunan pay <code>lived−null</code>
+<strong>%17.5</strong>. ⇒ <strong>S4 null’ı “ölçemedik”</strong> (L10).
+Yan bulgu: gen2’nin iptali gen1’inki gibi <strong>simetrik
+değil</strong></td>
+</tr>
+<tr>
+<td><strong>D-046</strong></td>
+<td>A3: <strong>I1.3 daraltıldı · I1.3b eklendi</strong> (kırpma
+görünürlüğü) · I1.4 spec tautolojisiydi, çevrildi · I1.5
+<code>MIN_PAIRS</code> config’den. <strong>GAP-6 kapandı</strong> —
+temizlik swap’e değil <strong>DPO adımına</strong> kondu</td>
+</tr>
+<tr>
+<td><strong>D-047</strong></td>
+<td><strong>S4 slotu: SESOI ilan edilmiyor.</strong> Bütçe-kısıtlı
+örneklem gerekçelendirmesi (Lakens 2022) + ilan edilen duyarlılık.
+<code>p &gt; 0.05</code> ⇒ <em>“şu MDE’nin altında güçsüzüz”</em>, asla
+<em>“etki yok”</em></td>
+</tr>
+<tr>
+<td><strong>D-048</strong></td>
+<td>GAP-18’in şiddeti hiç ölçülmemişti; sayaçlar eklendi, karar sayıdan
+sonraya bırakıldı</td>
+</tr>
+<tr>
+<td><strong>D-049</strong></td>
+<td>DR #3 mutabakatı. ⚠ <strong>A2’nin eski tasarımı kusurlu
+çıktı</strong> — “getirimi tamamen kapat” OOD şoku ölçer, parametrik
+kapasiteyi değil. Ayrıca bastırma teşhisi
+(<code>delta_logp_chosen</code>) kalıcı ölçüme çevrildi</td>
+</tr>
+<tr>
+<td><strong>D-050</strong></td>
+<td>A6: <strong>precision ağırlığı aday olarak elendi.</strong> Yan
+bulgular: <strong>Precision-PE atıl</strong> (L13, π tavanda takılı) ·
+<strong>GAP-5 doğrulandı ve nicelendi</strong> (L14) · GAP-4’ün
+mekanizması yok (L15)</td>
+</tr>
+<tr>
+<td><strong>D-051</strong></td>
+<td>A7/GAP-19: saat gerçekten kırık ama birincile giden yol L1 + travma
+muafiyetiyle kapalı ⇒ <strong>değiştirilmedi</strong> (L16). ⚠
+<strong>Gizli bağımlılık:</strong> <code>F_agent</code> tek başına
+düzeltilirse GAP-19 canlanır</td>
+</tr>
+<tr>
+<td><strong>D-052</strong></td>
+<td>A8: <strong>N = 40</strong>, seed 2004–2043, iki batch. MDE
+<code>d_z = 0.465</code>. <strong>GAP-9 kapandı</strong> —
+<code>N=40–50</code> ΔPE için hesaplanmıştı, bizim birinciliğimiz için
+değil</td>
+</tr>
+<tr>
+<td><strong>D-053</strong></td>
+<td><strong>B2 koştu; §5 geçerlilik kapısı düştü, sapma ilan edilerek
+doğrulayıcı sayıldı.</strong> Üç kriter düştü (<code>run_quality</code>,
+<code>prompt_skipped_no_record</code>, <code>adapters/</code> boş
+değildi) ve üçü de belge içi çelişkiye işaret ediyordu</td>
+</tr>
+</tbody>
+</table>
+<h3 id="d-053-sonucun-sınıfını-belirleyen-kayıt">D-053 — sonucun
+sınıfını belirleyen kayıt</h3>
+<p>İki olgu bu kaydı önemli kılıyor:</p>
+<p><strong>1. <code>prompt_skipped_no_record = 0</code> kriteri yeniden
+koşumla sağlanamaz.</strong> D-037 determinizmi gereği aynı seed aynı
+SYSTEM_1 kararını üretir; sayaç yine 2 olur. Kriter ihlal edildiğinde
+<strong>kurtarılamaz</strong> — ancak aleti (kilit sonrası yasak) veya
+seed setini (§6 yasak) değiştirerek sağlanabilirdi. <strong>Taslak
+hatası</strong>, koşumun kusuru değil.</p>
+<p><strong>2. Sapmayı kabul edilebilir kılan şey ölçüldü.</strong>
+İhlallerin hiçbiri birincil karşıtlığa <strong>yönlü</strong> terim
+eklemiyor: kırpma iki eğitim kolunda birebir (10.8/10.8 adım,
+<code>grad_norm_min</code> 2.959 vs 2.984), atlanan iki karar birer
+birer <code>lived</code> ve <code>shuffle</code> kollarında.</p>
+<p>⇒ Ama §11’in tanımı gereği sonuç yine de <strong>alet null’ı</strong>
+sınıfında, çünkü o tanım “§5’ten biri düştü” diyor ve düştü.
+<strong>Sınıflandırma sonucu görmeden yazılmış bir kuraldan geliyor,
+yorumdan değil.</strong></p>
 </body>
 </html>

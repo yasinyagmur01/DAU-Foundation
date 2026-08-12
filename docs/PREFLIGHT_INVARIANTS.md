@@ -1,6 +1,16 @@
 # Preflight Değişmezleri (D-012)
 
-**Durum:** kilitli (2026-08-09). Koda dökülmeyi bekliyor.
+**Durum:** kilitli (2026-08-09) · **koda döküldü** (2026-08-12).
+⚠ Bu satır 2026-08-12'ye kadar *"koda dökülmeyi bekliyor"* diyordu ve
+**yanlıştı** — kapılar D-039…D-046 arasında yazıldı ve doğrulayıcı koşumda
+(B2, N=40) hepsi çalıştı.
+
+> **26 madde tanımlı, 24'ü kodda kapı olarak uygulanmış.** Sağdaki `Kodda`
+> sütunu bunu gösterir. Kaynak: koşum JSON'unun `invariants` bloğu
+> (`dau_runs/prereg_b2_batch1_2004_2023.json`), **belge değil**.
+>
+> B2'de 23 kapı geçti, **`I1.3b` bayrak kaldırdı** (kırpma %100) — kapının
+> tasarlandığı iş tam olarak buydu. Ayrıntı `docs/B2_RESULTS.md` L18.
 
 ## İlke
 
@@ -30,37 +40,37 @@ Kalibrasyonsuz ABORT, keyfi bir sabitle koşum öldürmek demektir.
 
 ## Faz 0 — Ön kontrol (koşum başlamadan, GPU'ya dokunmadan)
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I0.1 | **Alet kimliği tam.** backend · model id · quantization · `seq_len` · `epochs` · `batch` · accumulation · `DAU_LORA_ENABLED` · adapter dizini · sampling params · seed aralığı · torch/transformers/peft sürümleri. Herhangi biri belirlenemiyorsa dur. | ABORT | D-004; "koşum kendi konfigürasyonunu inkâr edemesin" |
-| I0.2 | **LoRA kapısı bilinçli.** `--lora` / `--no-lora` explicit verilmiş ve env ile tutarlı. Default'a düşülmüşse dur. | ABORT | GAP-1 |
-| I0.3 | **`PYTHONHASHSEED` sabit.** Set değilse dur (veya runner set edip kendini yeniden başlatsın). | ABORT | GAP-11 |
-| I0.4 | **Seed türetmesi doğrulanabilir.** Her `agent_id` için `_seed_from_agent_id` beklenen değeri dönmeli; hash fallback'e düşerse dur. | ABORT | GAP-11 (spesifik) |
-| I0.5 | **Import-time env tutarlı.** `TEMPERATURE` gibi import anında yakalanan değerler mevcut env ile aynı mı. | ABORT | GAP-15 |
-| I0.6 | **Determinizm ayarları aktif.** `CUBLAS_WORKSPACE_CONFIG` · torch deterministic algorithms · cudnn deterministic · **`warn_only` kapalı** (D-037). warn_only altında aynı seed/kod iki koşumda farklı adapter ve 21/50 karar farkı üretti; `null` bit-exact kaldı. Artık raporlanmıyor, **başarısız sayılıyor**. | ABORT | replay kaybı · **D-037** |
-| I0.7 | **Hiçbir ajan önceki koşumun adapter'ıyla başlamıyor.** Koşumun `agent_id`'lerinden herhangi birinde kayıtlı adapter varsa dur. `switch_adapter` her yerel kararda diskten yüklüyor ve **`DAU_LORA_ENABLED`'a bağlı değil**, yani `--no-lora` koşumu da kirlenir. Yerel backend dışında **N/A (`None`)**, `True` değil. | ABORT | **D-033** — 08-10 smoke'unda ölçüldü: kollar ayrıştı (`n_unique` 6/7/6), sapma **hipotez lehine** |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I0.1 | **Alet kimliği tam.** backend · model id · quantization · `seq_len` · `epochs` · `batch` · accumulation · `DAU_LORA_ENABLED` · adapter dizini · sampling params · seed aralığı · torch/transformers/peft sürümleri. Herhangi biri belirlenemiyorsa dur. | ABORT | D-004; "koşum kendi konfigürasyonunu inkâr edemesin" | ✅ |
+| I0.2 | **LoRA kapısı bilinçli.** `--lora` / `--no-lora` explicit verilmiş ve env ile tutarlı. Default'a düşülmüşse dur. | ABORT | GAP-1 | ✅ |
+| I0.3 | **`PYTHONHASHSEED` sabit.** Set değilse dur (veya runner set edip kendini yeniden başlatsın). | ABORT | GAP-11 | ✅ |
+| I0.4 | **Seed türetmesi doğrulanabilir.** Her `agent_id` için `_seed_from_agent_id` beklenen değeri dönmeli; hash fallback'e düşerse dur. | ABORT | GAP-11 (spesifik) | ✅ |
+| I0.5 | **Import-time env tutarlı.** `TEMPERATURE` gibi import anında yakalanan değerler mevcut env ile aynı mı. | ABORT | GAP-15 | ✅ |
+| I0.6 | **Determinizm ayarları aktif.** `CUBLAS_WORKSPACE_CONFIG` · torch deterministic algorithms · cudnn deterministic · **`warn_only` kapalı** (D-037). warn_only altında aynı seed/kod iki koşumda farklı adapter ve 21/50 karar farkı üretti; `null` bit-exact kaldı. Artık raporlanmıyor, **başarısız sayılıyor**. | ABORT | replay kaybı · **D-037** | ✅ |
+| I0.7 | **Hiçbir ajan önceki koşumun adapter'ıyla başlamıyor.** Koşumun `agent_id`'lerinden herhangi birinde kayıtlı adapter varsa dur. `switch_adapter` her yerel kararda diskten yüklüyor ve **`DAU_LORA_ENABLED`'a bağlı değil**, yani `--no-lora` koşumu da kirlenir. Yerel backend dışında **N/A (`None`)**, `True` değil. | ABORT | **D-033** — 08-10 smoke'unda ölçüldü: kollar ayrıştı (`n_unique` 6/7/6), sapma **hipotez lehine** | ✅ |
 
 Faz 0 saniyeler sürer ve hiçbir GPU maliyeti yoktur. Hepsi ABORT, çünkü
 hepsi ikili (var/yok), kalibrasyon gerektirmiyor.
 
 ## Faz 1 — Eğitim bütünlüğü (kol başına, eğitimden hemen sonra)
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I1.1 | **Eğitim gerçekten oldu.** lived/shuffle: `lora_B` abs-sum öncesi ≠ sonrası. null: **değişmemiş olmalı**. | ABORT | `lora_B=0` sahte eğitim; null kontaminasyonu |
-| I1.2 | **Adapter izolasyonu.** Her ajanın dizininde yalnızca kendi adaptörü; başka `agent_id` görülürse dur. | ABORT | adapter sızıntısı (`f25b0ef` öncesi) |
-| I1.3 | **Adım gerçekten iş yaptı.** `dpo_optimizer_steps > 0` · loss sonlu · `grad_norm_min > 0`. ⚠ **Kapsam D-046'da daraltıldı:** eski metin (`step_count > 0`) I1.1'i tekrar ediyordu — `lora_B` kımıldadıysa bir adım zaten atılmıştır. Kalan üç kusur bir ağırlık okumasıyla **görülemez**. | ABORT | NaN/inf loss · biriktirip hiç `optimizer.step` çağırmayan döngü · **tam sıfır gradyanla atılan adım** |
-| I1.3b | **Kırpma görünür.** Kaç `optimizer.step`'in `DPO_MAX_GRAD_NORM` tavanına değdiği. ⚠ **D-046'da eklendi, bu belgede yoktu.** Hata değil: her adım kırpılıyorsa adım boyunu tavan belirler ve D-029'un kilitlediği lr koşumu tarif etmez. | FLAG (herhangi bir kırpma etiket alır — `PAD_FRACTION_MAX` katılığı) | D-029'un gerekçesinin sessizce geçersizleşmesi |
-| I1.4 | **Filtre aç bırakmadı.** Aday havuzunun ne kadarı marjın altında elendi; hiç çift kalmadıysa düş. ⚠ **Spec değişti (D-046).** Eski metin *"`PE ≥ SNR_FLOOR` olan çiftlerin oranı"* diyordu ve **D-030 onu tautolojiye çevirdi**: marj testi `build_pe_ranked_pairs`'in içine taşındığından eğitime ulaşan her çift eşiği yapı gereği geçiyor, oran **daima 1.0**. Kırılamayan bekçi yazmak yerine D-030'dan sonra ayakta kalan soru soruldu. | FLAG | eğitim açlığı (ölçülen: 3714/7983 = %46.5 elendi) |
-| I1.5 | **Çift sayısı yeterli.** `n_pairs ≥ MIN_PAIRS`, ve `MIN_PAIRS = DPO_BATCH_SIZE × DPO_GRADIENT_ACCUMULATION_STEPS` — **config'den türetilmiş, gözlemden değil** (§2.7). Sabit yazılmadı: 4 yazılsaydı accumulation değişince "bir tam grup" demeye devam ederdi. | FLAG (`MIN_PAIRS_CALIBRATED=False`) | tek kısa tail grubuyla eğitim; efektif batch'in alet kimliğinin dediği olmaması |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I1.1 | **Eğitim gerçekten oldu.** lived/shuffle: `lora_B` abs-sum öncesi ≠ sonrası. null: **değişmemiş olmalı**. | ABORT | `lora_B=0` sahte eğitim; null kontaminasyonu | ✅ |
+| I1.2 | **Adapter izolasyonu.** Her ajanın dizininde yalnızca kendi adaptörü; başka `agent_id` görülürse dur. | ABORT | adapter sızıntısı (`f25b0ef` öncesi) | ❌ testte |
+| I1.3 | **Adım gerçekten iş yaptı.** `dpo_optimizer_steps > 0` · loss sonlu · `grad_norm_min > 0`. ⚠ **Kapsam D-046'da daraltıldı:** eski metin (`step_count > 0`) I1.1'i tekrar ediyordu — `lora_B` kımıldadıysa bir adım zaten atılmıştır. Kalan üç kusur bir ağırlık okumasıyla **görülemez**. | ABORT | NaN/inf loss · biriktirip hiç `optimizer.step` çağırmayan döngü · **tam sıfır gradyanla atılan adım** | ✅ |
+| I1.3b | **Kırpma görünür.** Kaç `optimizer.step`'in `DPO_MAX_GRAD_NORM` tavanına değdiği. ⚠ **D-046'da eklendi, bu belgede yoktu.** Hata değil: her adım kırpılıyorsa adım boyunu tavan belirler ve D-029'un kilitlediği lr koşumu tarif etmez. | FLAG (herhangi bir kırpma etiket alır — `PAD_FRACTION_MAX` katılığı) | D-029'un gerekçesinin sessizce geçersizleşmesi | ✅ |
+| I1.4 | **Filtre aç bırakmadı.** Aday havuzunun ne kadarı marjın altında elendi; hiç çift kalmadıysa düş. ⚠ **Spec değişti (D-046).** Eski metin *"`PE ≥ SNR_FLOOR` olan çiftlerin oranı"* diyordu ve **D-030 onu tautolojiye çevirdi**: marj testi `build_pe_ranked_pairs`'in içine taşındığından eğitime ulaşan her çift eşiği yapı gereği geçiyor, oran **daima 1.0**. Kırılamayan bekçi yazmak yerine D-030'dan sonra ayakta kalan soru soruldu. | FLAG | eğitim açlığı (ölçülen: 3714/7983 = %46.5 elendi) | ✅ |
+| I1.5 | **Çift sayısı yeterli.** `n_pairs ≥ MIN_PAIRS`, ve `MIN_PAIRS = DPO_BATCH_SIZE × DPO_GRADIENT_ACCUMULATION_STEPS` — **config'den türetilmiş, gözlemden değil** (§2.7). Sabit yazılmadı: 4 yazılsaydı accumulation değişince "bir tam grup" demeye devam ederdi. | FLAG (`MIN_PAIRS_CALIBRATED=False`) | tek kısa tail grubuyla eğitim; efektif batch'in alet kimliğinin dediği olmaması | ✅ |
 
 ## Faz 2 — Kol ayrışması (seed başına, üç kol bitince) ← en kritik
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I2.1 | **Kollar birbirinin aynısı değil.** Karar dizisi + PE dizisi hash'i; herhangi iki kol identikse dur. | ABORT | **GAP-1'in asıl sonucu** |
-| I2.2 | **Null eğitilmemiş.** Null'ın adapter dizini boş **ve** `lora_B` değişmemiş. | ABORT | null kontaminasyonu |
-| I2.3 | **Shuffle gerçekten karışmış.** En az bir çiftin yönü lived'a göre ters. | ABORT | shuffle no-op |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I2.1 | **Kollar birbirinin aynısı değil.** Karar dizisi + PE dizisi hash'i; herhangi iki kol identikse dur. | ABORT | **GAP-1'in asıl sonucu** | ✅ |
+| I2.2 | **Null eğitilmemiş.** Null'ın adapter dizini boş **ve** `lora_B` değişmemiş. | ABORT | null kontaminasyonu | ✅ |
+| I2.3 | **Shuffle gerçekten karışmış.** En az bir çiftin yönü lived'a göre ters. | ABORT | shuffle no-op | ❌ yapısal |
 
 **I2.1 tek başına listedeki en değerli değişmez.** `null ΔPE = 0.000 clean`
 metriğinin ikircikliğini ortadan kaldırır: artık "alet deterministik" ile
@@ -71,19 +81,19 @@ gereği aynı olur. Mock'ta I2.1 **FLAG**'e düşer, ABORT'a değil.
 
 ## Faz 3 — Ölçüm sağlığı
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I3.1 | **PE olayı yeterli.** `n_pe_events ≥ MIN_TRACE_FRACTION × beklenen`. Şu an yalnızca WARN basıyor. | FLAG | instrument starvation (v1 smoke) |
-| I3.2 | **Precision doygunluğu düşük.** `saturation_rate ≤ eşik`, `pi_n_distinct ≥ eşik`. Alanların multigen'de doldurulması şart. | FLAG | GAP-13 + precision regresyonu |
-| I3.3 | **Diversity.** Mevcut kapı korunur; ek olarak `n_gated / N > eşik` ise **tüm koşum** INCONCLUSIVE damgalanır. | FLAG | `n_eff < N` (geçen sefer 12/15) |
-| I3.4 | **PE listesi pad edilmedi.** Pad oranı > eşikse işaretle. | FLAG | erken biten stream'in `0.0`'larla dolması (K6) |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I3.1 | **PE olayı yeterli.** `n_pe_events ≥ MIN_TRACE_FRACTION × beklenen`. Şu an yalnızca WARN basıyor. | FLAG | instrument starvation (v1 smoke) | ✅ |
+| I3.2 | **Precision doygunluğu düşük.** `saturation_rate ≤ eşik`, `pi_n_distinct ≥ eşik`. Alanların multigen'de doldurulması şart. | FLAG | GAP-13 + precision regresyonu | ✅ |
+| I3.3 | **Diversity.** Mevcut kapı korunur; ek olarak `n_gated / N > eşik` ise **tüm koşum** INCONCLUSIVE damgalanır. | FLAG | `n_eff < N` (geçen sefer 12/15) | ✅ |
+| I3.4 | **PE listesi pad edilmedi.** Pad oranı > eşikse işaretle. | FLAG | erken biten stream'in `0.0`'larla dolması (K6) | ✅ |
 
 ## Faz 4 — Determinizm kanıtı
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I4.1 | **Replay testi.** Bir seed iki kez koşulur, PE dizisi bit-identik. | ABORT | her türlü gizli RNG sızıntısı |
-| I4.2 | **Gen2 RNG durumu kol-bağımsız.** Gen2 öncesi RNG durum hash'i üç kolda aynı. | ABORT | GAP-12 |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I4.1 | **Replay testi.** Bir seed iki kez koşulur, PE dizisi bit-identik. | ABORT | her türlü gizli RNG sızıntısı | ✅ |
+| I4.2 | **Gen2 RNG durumu kol-bağımsız.** Gen2 öncesi RNG durum hash'i üç kolda aynı. | ABORT | GAP-12 | ✅ |
 
 I4.1 pahalı (bir seed'i iki kez koşmak). Öneri: **her koşumun ilk seed'inde
 bir kez** çalışsın, sonra atlansın. Maliyeti ~1/N.
@@ -93,12 +103,12 @@ bir kez** çalışsın, sonra atlansın. Maliyeti ~1/N.
 Yeni kategori. Soru şu değil: "bu bileşen doğru mu?" — şu: **"bu bileşen
 hiç çalıştı mı?"**
 
-| id | Değişmez | Mod | Yakaladığı |
-|---|---|---|---|
-| I5.1 | **PPR aktif mi.** `memory_edges` satır sayısı > 0. | FLAG (+ JSON'a `ppr_active`) | GAP-14 |
-| I5.2 | **Polarite kapısı aktif mi.** `POLARITY_FILTER_STATS.total_candidates > 0` (D-032'de NLI→kosinüs; sayaç da yeniden adlandırıldı). | FLAG | kapı kapalıyken sessizce `True` döner |
-| I5.3 | **Hafıza yazıldı mı.** `_memory_written[agent_id] > 0`. | FLAG | boş vault zinciri (K6) |
-| I5.4 | **Inherited somatic scale uygulandı mı.** Gen2'de ≥1 kez. | FLAG | GAP-3 |
+| id | Değişmez | Mod | Yakaladığı | Kodda |
+|---|---|---|---|---|
+| I5.1 | **PPR aktif mi.** `memory_edges` satır sayısı > 0. | FLAG (+ JSON'a `ppr_active`) | GAP-14 | ✅ |
+| I5.2 | **Polarite kapısı aktif mi.** `POLARITY_FILTER_STATS.total_candidates > 0` (D-032'de NLI→kosinüs; sayaç da yeniden adlandırıldı). | FLAG | kapı kapalıyken sessizce `True` döner | ✅ |
+| I5.3 | **Hafıza yazıldı mı.** `_memory_written[agent_id] > 0`. | FLAG | boş vault zinciri (K6) | ✅ |
+| I5.4 | **Inherited somatic scale uygulandı mı.** Gen2'de ≥1 kez. | FLAG | GAP-3 | ✅ |
 
 GAP-14 kararı verilene kadar I5.1 FLAG kalır. "PPR bağlansın" kararı
 çıkarsa ABORT'a yükselir.

@@ -315,12 +315,20 @@ enjeksiyonu** geçecek — sonraki ön-kayıt.
 
 ⇒ **Sıradaki iş: Faz C** (belge borcu). Ondan sonra **ikinci ön-kayıt**.
 
-### Faz C — işler bitince (Yasin: "belge borcu işler bittikten sonra")
+### ✅ Faz C — KAPANDI (2026-08-12)
 
-Master ref §6/§19 consolidation anlatısı · §12 kod ağacı (`preflight.py`,
-`tool_identity.py` yok) · §11/§14 test sayıları · **`.html`/`.pdf` v2.4.1'de
-kaldı** · `EXECUTION_PLAN.md` (D-038…D-044 hiç geçmiyor) ·
-`PREFLIGHT_INVARIANTS.md` uygulanma durumu sütunu. **Cursor'a uygun.**
+| İş | Nasıl kapandı |
+|---|---|
+| Master ref D-045…D-053 + §23 baştan | ✅ **v2.4.3** (`33fcd1e`) |
+| §9 consolidation anlatısı (D-022/D-031) | ✅ ilk ölçülen `deleted_count` (ort. 24.90) ile |
+| §12 kod ağacı · §14 test sayısı (206 → 344) | ✅ Cursor |
+| `PREFLIGHT_INVARIANTS.md` **Kodda** sütunu | ✅ Cursor · 24/26 · *"koda dökülmeyi bekliyor"* satırı da düzeltildi |
+| `dau_runs/` etiketleme | ✅ **`dau_runs/README.md`** · 38 dosya · dört kategori · ⚠ mtime güvenilmez, `.gitignore` istisnasıyla takipli |
+| `.html` / `.pdf` | ✅ pandoc ile **yeniden üretildi** (29 sayfa). PDF'te emoji → metin karşılığı |
+| `EXECUTION_PLAN.md` | ✅ **kapatıldı**, geri doldurulmadı — gerekçe dosyanın başında |
+
+⚠ Cursor'ın yakaladığı iki eskimiş sayı düzeltildi: `preflight.py` **805 → 1208**,
+`run_cprime_multigen.py` **1153 → 1378**, testi **~900 → 1495** (§7).
 
 ---
 
@@ -746,8 +754,8 @@ bare `0.5` (shuffle), default `k: int = 5`. **Cursor'a uygun**, Faz C.
 | Karar prompt'unun saklanması (D-032) | `dau/foundation/graph.py`, `agent_node` SYSTEM_2 dalı |
 | `_train_adapter` | `dau/diagnostics/run_protocol_c_prime.py:756` (**`lora_update.py`'de değil**) |
 | `TransferCandidate` | `dau/foundation/generation.py:55` |
-| Gate altyapısı | `dau/diagnostics/preflight.py` (805 satır) + `tool_identity.py` (242) |
-| Multigen orkestrasyon | `dau/diagnostics/run_cprime_multigen.py` (1153) + testi (~900) |
+| Gate altyapısı | `dau/diagnostics/preflight.py` (**1208** satır) + `tool_identity.py` (242) |
+| Multigen orkestrasyon | `dau/diagnostics/run_cprime_multigen.py` (**1378**) + testi (**1495**) |
 
 - `CLAUDE.md` **repo kökünde** durur — Claude Code onu yalnızca kökten
   otomatik yükler.

@@ -2,7 +2,10 @@
 
 **Versiyon 2.4.3** · 2026-08-12
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
-*(`.pdf` ve `.html` **v2.4.1'de kaldı** — md kaynaktır ve tek güncel olandır)*
+*(`.md` kaynaktır. `.html` ve `.pdf` **v2.4.3'te yeniden üretildi** —
+pandoc; PDF'te emoji'ler metin karşılığına çevrildi (`✅` → `[OK]` vb.)
+çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF'in görüntüsü
+md'den farklıdır.)*
 
 ---
 
@@ -538,7 +541,7 @@ zayıf/gürültülü yön.
 
 ---
 
-## 12. Kod ağacı (v2.3)
+## 12. Kod ağacı (v2.4.3)
 
 ```
 dau/foundation/
@@ -584,6 +587,10 @@ dau/society/
 dau/diagnostics/
  ├── run_protocol_c.py     — frozen Meta ON/OFF (paper-locked)
  ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
+ ├── preflight.py          — 1208 satır; değişmez kapıları (I0.1–I5.4);
+ │                          ABORT/FLAG modları
+ ├── tool_identity.py      — 242 satır; koşumun alet kimliği; yüklenen
+ │                          ağırlığı ve ayarları raporlar
  └── long_run.py / pe_histogram.py / actuator_audit.py
 
 docs/
@@ -640,10 +647,11 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (rolling-history suite) |
-| **Collect (v2.4.1 branch)** | **206** |
+| **Collect (v2.4.3 branch)** | **344 passed, 2 deselected** |
 
-*(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” sayıları önceki
-kesitler; bu belge **bu branch collect=206** ile kilitlenir.)*
+*(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” / v2.4.1’deki
+“206” sayıları önceki kesitler; bu belge **bu branch collect=344** ile
+kilitlenir.)*
 
 **NLI flake ÇÖZÜLDÜ (`3d760e8`):** unit path mock HF; gerçek model
 `@pytest.mark.integration` (günlük suite dışı). Kök neden: HF Hub canlı
@@ -1061,6 +1069,7 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 ## 22. Versiyon geçmişi
 
 | **2.4.2** | **2026-08-11** | Anlatı yeniden yazılmadı; **yanlışlar işaretlendi, eksik katman eklendi**. Preflight (20 değişmez) ve alet kimliği ilk kez belgede (§24) · karar kaydı sistemi D-001…D-044 (§25) · W=10, greedy platosu, NLI satırı ve sampling reçetesi ⚠ ile geçersiz işaretlendi · §18'in empirik tablosu üç kırılmayla (D-036 pencere, D-037 determinizm, D-042 konum) **karşılaştırılamaz** ilan edildi · GAP-2 kapandı · **332 test**. `.html`/`.pdf` **v2.4.1'de kaldı**. |
+| **2.4.3** | **2026-08-12** | **Doğrulayıcı koşum yapıldı ve sonuç bu belgeye girdi.** B2: seed 2004–2043, N=40, ~13.1 sa · birincil **p = 0.9914**, `d_z = −0.000` ⇒ **H0 reddedilemedi** · §11 sınıfı **alet null'ı** (D-053, §5'ten üç kriter düştü). §23 **baştan yazıldı** (v2.4.2'de "tek düğüm S4" diyordu, bitti) · §25 **D-045…D-053** · §9'a konsolidasyonun deney yolundaki **yeri** (D-022/D-031) ve ilk ölçülen `deleted_count` (ort. 24.90) · §18'in ampirik tablosuna *"bunlar ΔPE'dir, birincil sonuç değildir"* uyarısı · §20 non-claims'e üç madde · §12 kod ağacına `preflight.py`/`tool_identity.py` · **344 test**. `.html`/`.pdf` **yeniden üretildi**. |
 
 | Ver | Tarih | Not |
 |-----|-------|-----|
