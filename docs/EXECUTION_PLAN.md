@@ -7,23 +7,41 @@ Bu dosya, kod fazının adım adım yürütülmesi içindir.
 
 ---
 
-## ⚠ 2026-08-11: BU DOSYA FAZ 2'DE DONDU — kuyruk artık burada değil
+## 🔒 2026-08-12: BU DOSYA KAPANDI — kapsamı Faz 2'de biter, tarihçedir
 
-Kod fazı (Adım 1–7, U1–U7) kapandı. Ondan sonra alet **yirmi kez** daha
-değişti (**D-023…D-044**) ve bu dosya o değişikliklerin **hiçbirini
-içermiyor**.
+**Karar (Faz C):** dosya **arşive alındı**, geri doldurulmadı. Gerekçesi
+aşağıda; geri alınabilir bir karardır.
 
-> **Sıradaki iş `CLAUDE.md` §1'deki ÇALIŞMA KUYRUĞU'ndan alınır.**
-> Orada ayrıca **GAP TETİK TABLOSU** (hangi GAP hangi adımda gündeme gelir),
-> **DR BRIEF SIRASI** ve **EV İŞLERİ** tetikleri var.
+Kod fazı (Adım 1–7, U1–U7) kapandı ve bu dosyanın kapsamı **orada biter**.
+Ondan sonra alet **otuz kez** daha değişti (**D-023…D-053**) ve bu dosya o
+değişikliklerin **hiçbirini içermiyor** — bilerek.
 
-Bu dosya **tarihçe** olarak duruyor: Faz 2'nin adım ayrıntıları, dur-kontrol
-kriterleri ve commit hash'leri hâlâ doğru ve okunabilir. Yeni iş buraya
-**yazılmıyor** — kuyruk tek yerde tutuluyor ki iki liste birbirinden
-ayrışmasın.
+**Neden geri doldurulmadı:** D-038…D-053'ün ayrıntısı zaten iki yerde tam
+olarak duruyor — `docs/DECISIONS.md` (kanıt, gerekçe, reddedilen
+alternatifler) ve `CLAUDE.md` §1 (güncel durum ve kuyruk). Üçüncü bir kopya
+üretmek, bu dosyanın kendi uyarısının (*"iki liste birbirinden ayrışmasın"*)
+tam olarak yasakladığı şey olurdu. Bir belge borcu, aynı bilgiyi üçüncü kez
+yazarak değil, **nereye bakılacağını doğru söyleyerek** kapanır.
 
-Faz C'de (belge borcu) bu dosya ya güncellenecek ya da resmen arşive
-alınacak; karar o zaman verilir.
+### Nereye bakılır
+
+| Ne arıyorsan | Nerede |
+|---|---|
+| Faz 2'nin adım ayrıntıları, dur-kontrolleri, commit hash'leri | **bu dosya** (aşağısı) — hâlâ doğru |
+| D-023…D-053: karar, kanıt, reddedilen alternatif | `docs/DECISIONS.md` |
+| Şu an neredeyiz, sıradaki iş, GAP tetikleri | `CLAUDE.md` §1 |
+| Ön-kayıt: slotlar, uç noktalar, sınırlar | `docs/PREREGISTRATION.md` 🔒 |
+| **Doğrulayıcı koşumun sonucu** | **`docs/B2_RESULTS.md`** |
+| Bilimsel anlatı, formüller, tarihçe | `docs/DAU_MASTER_REFERENCE_v20.md` v2.4.3 |
+
+### Bu dosyanın kapsamı bittikten sonra ne oldu (tek paragraf)
+
+Faz 2'yi karar kapısı (D-018…D-022) ve uygulama (U1–U7) kapattı. Ardından
+alet düzeltmeleri (D-032 çift darboğazı, D-036 ölçüm penceresi, D-037
+determinizm, D-039…D-042 dört kapı ve konum bağımsızlığı), Faz A denetimleri
+(D-044…D-051), N kararı (D-052), ön-kayıt kilidi (`befd72b4ee57`) ve
+**doğrulayıcı koşum** geldi. Sonuç: birincil uç noktada **null**
+(p = 0.9914), §11 sınıfı **alet null'ı** (D-053).
 
 ---
 

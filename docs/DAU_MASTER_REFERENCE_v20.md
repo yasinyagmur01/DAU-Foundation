@@ -1,8 +1,29 @@
 # DAU — Master Reference
 
-**Versiyon 2.4.2** · 2026-08-11
+**Versiyon 2.4.3** · 2026-08-12
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
 *(`.pdf` ve `.html` **v2.4.1'de kaldı** — md kaynaktır ve tek güncel olandır)*
+
+---
+
+## 🔔 v2.4.3 — DOĞRULAYICI KOŞUM YAPILDI, SONUÇ NULL
+
+**Bu belgenin bütün anlatısı, henüz sonucu olmayan bir projeye aitti.
+Artık sonuç var.**
+
+| | |
+|---|---|
+| Koşum | seed **2004–2043**, N=40, iki batch, ~13.1 saat |
+| Birincil (ön-kayıt §3) | `a_s − b_s`, eşleştirilmiş Wilcoxon, **p = 0.9914**, `d_z = −0.000` |
+| Karar | **H0 reddedilemedi** |
+| §11 sınıfı | **ALET NULL'I** — §5 geçerlilik kapısından üç kriter düştü (**D-053**) |
+| Rapor | **`docs/B2_RESULTS.md`** — sonucun ne olduğu *ve ne olmadığı* orada |
+
+⚠ **"Etki yok" denemez** (§9-S4/D-047, koşum görülmeden bağlandı). Doğru
+ifade: *"`d_z ≥ 0.465` büyüklüğünde etki yok; altındaki için veri bilgisiz."*
+⚠ **Mekanizma hakkında hüküm verilemez** — sonuç alet null'ı sınıfında.
+
+Ayrıntı §23'te (yeniden yazıldı) ve §25'te (D-045…D-053).
 
 ---
 
@@ -14,8 +35,9 @@ yerleri işaretliyor ve eksik olanı ekliyor.** İşaretsiz her bölüm hâlâ
 v2.4.1 anlatısıdır.
 
 **Otorite sırası:** `CLAUDE.md` (güncel durum) → `docs/DECISIONS.md`
-(**D-001…D-044**, append-only, kanıtlı) → `docs/PREREGISTRATION.md` (taslak)
-→ **bu belge**. Çelişki görürsen bu belge kaybeder.
+(**D-001…D-053**, append-only, kanıtlı) → `docs/PREREGISTRATION.md`
+(🔒 **KİLİTLİ**, `befd72b4ee57`) → **`docs/B2_RESULTS.md`** (sonuç) →
+**bu belge**. Çelişki görürsen bu belge kaybeder.
 
 ### Bu belgedeki sayıların hiçbiri bugünkü aletten değil
 
@@ -342,6 +364,52 @@ get_drift_bias: flagged ise magnitude, değilse 0.0
   `somatic_scale=-0.3`)
 - Constants: `GENERATION_TRANSFER_THRESHOLD=0.6`, `GENERATION_MIN_RECALL=1`,
   `DRIFT_TRANSFER_MIN=1.5`, `HEAL_THRESHOLD=0.6`, `HEAL_RATE=0.3`
+
+### ⚠ v2.4.3: konsolidasyon deney yolunda **nereye** bağlı (D-022/D-031)
+
+Yukarısı konsolidasyonun **ne yaptığını** anlatıyor; v2.4.1'de eksik olan,
+deney yolunda **ne zaman** koştuğuydu. GAP-14 bunu *"hiç kimse çağırmıyor"*
+diye açmıştı ve **belge yanılmıştı** — demo yolu çağırıyordu, deney yolu
+çağırmıyordu.
+
+**Karar (D-031, uygulama `987a1bc`): faz-2'den sonra, `transfer_to_heir`'den
+hemen önce.** Reddedilen alternatifler: *faz-1 sonrası* ve *her iki faz
+sonrası*.
+
+**Gerekçe — `null` kolunu korumak.** Gen1 iki yaşam sürüyor (faz-1 → eğitim
+→ faz-2) ve `delta_pe = pe_after − pe_before` aradaki **tek müdahaleyi**
+(eğitimi) yalıtmak için var. `null` iki fazı da eğitimsiz koşuyor ⇒
+`delta_pe ≈ 0` olmalı, kontrolün varlık sebebi bu. `run_consolidation`
+**siliyor** (Ebbinghaus). Fazların **arasına** girerse faz-2 farklı bir kasa
+görür ve `null`'ın `delta_pe`'si **saf unutma etkisi** olur — kontrol,
+ölçmesi gereken sıfırı ölçemez hale gelir. Faz-2 seçeneği bunu yapmıyor.
+
+### İlk ölçüm (B2, N=40, 120 kol)
+
+Konsolidasyon raporu JSON'a **hiç girmiyordu**; `060d907` ile bağlandı
+(D-051'in yan bulgusu). İlk kez görünen sayılar:
+
+| Kol | `deleted_count` ort. | aralık |
+|---|---|---|
+| `lived` | 25.25 | 10 – 57 |
+| `null` | 24.52 | 8 – 56 |
+| `shuffle` | 24.93 | 10 – 63 |
+| **toplam** | **24.90** | 8 – 63 |
+
+Rapor ayrıca `strengthened_count`, `edges_created`, `drift_flag_count` ve
+`now_counter` taşıyor. Kollar arası fark yok — beklenen, çünkü konsolidasyon
+adapter'dan bağımsız çalışıyor.
+
+⚠ **İki ilan edilmiş sınır buraya bağlı:**
+- **L15** — Ebbinghaus **kasada** çalışıyor, çift kurucu kasayı **hiç
+  okumuyor** ⇒ kanal 2 unutmaya **bağışık**, kanal 1 değil. Bir anı
+  unutulup varise geçmese bile, ondan türetilmiş çift ağırlıkları **çoktan
+  eğitmiştir**. Hata değil, "iki kanal"ın tanımı — ama D-002'nin *"ikisi de
+  yaşamın izidir"* cümlesi bunu taşımıyor.
+- **L16** — `now_counter = 50` (faz-2 uzunluğu) kullanılıyor ve faz-2
+  `EventClock`'u sıfırdan sayıyor ⇒ faz-1 anıları bir faz daha taze
+  görünüyor (GAP-19). Etkisi şu an **bloke** ama **gizli**: `F_agent` tek
+  başına düzeltilirse canlanır (D-051).
 
 ---
 
@@ -775,6 +843,26 @@ clean; post-hoc değil). N=15’te 3 seed `n_unique=4` ile gated → n_eff=12.
 ⚠ N=3'te işaret testinin verebileceği en küçük p **0.25** — hiçbiri anlamlı
 değil ve olamaz. Bu koşumların işi sinyal değil **alet doğrulaması**.
 
+#### ⚠ v2.4.3: yukarıdaki iki satır **keşifseldir ve aşılmıştır**
+
+Doğrulayıcı koşum (B2, N=40, seed 2004–2043) yapıldı ve **birincil uç nokta
+ΔPE değil doğum-drift'tir** (D-002). Yukarıdaki `lived − null` /
+`lived − shuffle` sütunları ΔPE'dir, yani **birincil sonuç değildir** ve
+onun yerine okunamaz.
+
+| Koşum | Uç nokta | Sonuç |
+|---|---|---|
+| **B2 (N=40)** | **doğum-drift büyüklüğü** (ön-kayıt §3) | `a_s − b_s` ort. **−0.0002** · W=217.0 · **p = 0.9914** · `d_z = −0.000` ⇒ **H0 reddedilemedi** |
+| B2, ikincil S3 | gen1 ΔPE (fazın tamamı) | ort. **+0.0104**, 24/16 pozitif, **p = 0.070** — iddia edilmiyor |
+| B2, ikincil S4 | gen2 ortalama PE | ort. **−0.0128**, **p = 0.035** ama **ters yönde**, medyan 0 — iddia edilmiyor |
+
+⚠ İlginç olan: N=3'lük keşifsel koşumlarda `lived − null` **9/9 pozitifti**
+(yukarıdaki tablo). N=40'lık doğrulayıcı koşumda birincil uç noktada
+**hiçbir ayrım yok**. Bu, küçük-N keşifsel işaret desenlerinin neden
+kanıt sayılmadığının doğrudan örneğidir.
+
+Ayrıntı: **`docs/B2_RESULTS.md`**.
+
 C′ mini sampling+B: 10 event/arm, `DAU_LLM_DO_SAMPLE=1`, `T=0.2`,
 `DAU_LORA_ENABLED=1`, yaşam-PE pairs, GPU ≈ 71 sn / seed (3 kol).
 
@@ -791,9 +879,15 @@ VRAM: peak ≈ **6.4–7.2 GiB** + DPO batch=1 → **GO** (8GB).
 3. Appendix: C′ alet evrimi — `INSTRUMENT_LIMITED_NULL` (eski) →
    reçete düzeltmesi → `SAMPLE_LIVED_PE_SEPARATION` (N=1) →
    `SAMPLE_N15_UNDERPOWERED` (null clean; n_eff=12; H1 yok)
+   → ⚠ **v2.4.3: ön-kayıtlı doğrulayıcı koşum (N=40), birincil null
+   (p=0.9914), §11 sınıfı alet null'ı** (`docs/B2_RESULTS.md`)
 4. Non-claims: persona LoRA, LLM-as-judge, per-event online LoRA, Layer 6,
    full Groq C rerun, N&lt;15 istatistik iddiası, post-hoc W/K bulgusu,
    eski `INSTRUMENT_LIMITED_NULL` = “etki yok”
+   → ⚠ **v2.4.3'te eklenenler:** B2'nin null'ı **"aktarılmıyor" demek
+   değildir** (D-047); adapter'ın davranışı değiştirmesi **aktarımın kanıtı
+   değildir** (`shuffle` de aynı ölçüde değiştiriyor); S4'ün p=0.035'i
+   **sinyal değildir** (ters işaret, §4 önceden bağladı)
 
 ---
 
@@ -989,61 +1083,87 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 
 ---
 
-## 23. Sıradaki Oturum İçin Bağlam (v2.4.2)
+## 23. Nerede Duruyoruz (v2.4.3 — baştan yazıldı)
 
-⚠ **Bu bölüm v2.4.1'de *"pre-reg sıradaki oturumun İLK görevi"* diyordu ve
-beş yerde tekrarlıyordu. Kod önüne geçti** — ön-kayıt yazılmadan önce alet
-yirmi kez değişti, ve her değişiklik kendi D-kaydıyla meşruydu (§2.10'un
-penceresi hâlâ açık).
+⚠ **Bu bölüm v2.4.1'de *"pre-reg sıradaki oturumun İLK görevi"* diyordu,
+v2.4.2'de *"tek düğüm S4"* diyordu. İkisi de bitti.** Ön-kayıt kilitlendi,
+doğrulayıcı koşum yapıldı, analiz koşuldu, rapor yazıldı.
 
-### Nerede duruyoruz
+### Bitenler
 
-Alet tarafı bitti ve **doğrulandı**: `run_quality=clean`, 20/20 değişmez,
-aynı seed + aynı kod **bit düzeyinde** tekrarlanıyor (dokuz kol, üç koşum).
-Ön-kayıt taslağı `docs/PREREGISTRATION.md`'de, **beş slotu kapalı**
-(S1 greedy · S3 α=0.05 · S5 1 epoch · S6 replay yok · S7 50/20/3).
+| Adım | Ne oldu |
+|---|---|
+| **Ön-kayıt** | 🔒 kilitli, commit `befd72b4ee57`, 7/7 slot kapalı, **on yedi** ilan edilmiş sınır (L1–L17) |
+| **B2 — koşum** | seed 2004–2043, N=40, iki batch, ~13.1 sa, çökme yok |
+| **B3 — analiz** | birincil + dört ikincil koşuldu; **S5 ve S6 koşulamadı** (verisi/kolu yok) |
+| **B4 — rapor** | `docs/B2_RESULTS.md` · on yedi sınır + dört yeni (L18–L21) |
 
-### Tek düğüm: S4
+### Sonuç
 
-**En küçük anlamlı etki (`d_z`)** beyan edilmeden N hesaplanamaz, N olmadan
-doğrulayıcı koşum başlayamaz.
+**Birincil null:** `a_s − b_s` ortalama −0.0002, W = 217.0, **p = 0.9914**,
+`d_z = −0.000`.
 
-⚠ **Gözlenen d'den seçilemez** — post-hoc tuning olur (CLAUDE.md §2.7). İki
-meşru yol var: *(a)* etkiyi beyan et, N'i güç tablosundan oku · *(b)* N'i
-**bütçeden** seç ve tespit edilebilir en küçük etkiyi ilan et. İkincisi de
-post-hoc değil, çünkü N veriden değil bütçeden geliyor.
+Ve bu bir *sınırda kaçırma* değil — uç noktanın çözünürlüğü ayrıca ölçüldü:
 
-| d_z | 0.3 | 0.4 | 0.5 | 0.8 | 1.0 |
-|---|---|---|---|---|---|
-| **gereken N** | 88 | 50 | 32 | 13 | 8 |
+| Mesafe | Ortalama |
+|---|---|
+| `‖lived − null‖` | 0.3812 |
+| `‖shuffle − null‖` | 0.3814 |
+| **`‖lived − shuffle‖`** | **0.3852** |
 
-⚠ **N ≥ 6 matematiksel şart** — altında Wilcoxon çift yönlü α=0.05'te etki ne
-olursa olsun reddedemez.
+Üç kol birbirine **eşit uzaklıkta**. Yaşamın tercihleriyle eğitmek ile o
+tercihlerin **%100 tersiyle** eğitmek, varisin doğum-drift'ini aynı ölçüde
+ve ayırt edilemez biçimde oynatıyor. Uç nokta dejenere değil (120 kolda
+76 farklı büyüklük değeri).
 
-### Kilit sonrası
+### §11 sınıflandırması: **ALET NULL'I**
 
-Doğrulayıcı koşum **seed 2004'ten** başlar. ⚠ **2001–2003 yakılmış** (D-038):
-sonuçlarına bakıldı, doğrulayıcı analize giremezler — ama regresyon testi
-olarak kullanılabilirler ve kullanıldılar (D-043).
+Ön-kayıt §11 tanımları koşum görülmeden yazmıştı: *"alet null'ı = §5'ten
+biri düştü **veya** kanal 2 kararları değiştirmedi."* §5'ten üç kriter
+düştü (D-053) ⇒ sınıf belirlendi. Bu bir yorum değil, kural uygulaması.
 
-### Kilitten önce yapılabilecekler (pencere kapanınca biter)
+⚠ Kanal 2 tarafı **tersini** işaret ediyordu: adapter faz-2 kararlarının
+`lived`'de ort. 26.1/50, `shuffle`'da 26.6/50'sini değiştirdi, hiç
+değiştirmeyen seed **yok**. Tanım "veya" ile bağlı olduğu için §5 tek
+başına belirledi.
 
-- **A3** — eksik üç kapı: I1.3 (gradyan adımı atıldı), I1.4 (çiftler gürültü
-  değil), I1.5 (çift sayısı yeterli). I1.1 ve I4.1'in ne bulduğuna bakınca
-  düşük öncelikli değil.
-- **A2** — OOD probing: yaşamdan sonra anı getirimini kapat, yalnız
-  ağırlıklara yansıyanı ölç. `DECISIONS.md` bunu *"pre-reg'e alınmalı"* diye
-  kaydetmiş, hiç uygulanmamış. **Kanal 1'i Kanal 2'den ayıran tek temiz yol.**
-- **A4** — environment'ı ayrım üretir hale getirmek. Şu an `E=0.000` ve
-  `survival=1.0` dokuz kolun dokuzunda; kimse kimseden farklı yaşamıyor, ve
-  bu yüzden `F_agent` dejenere. Bir alt-proje; ön-kaydı bekletir.
+### Sınıflandırmayı bağımsız destekleyen üç ölçüm
 
-### İlan edilmiş sınırlar (ön-kayıt §8)
+| Ölçüm | Değer | Ne diyor |
+|---|---|---|
+| `dpo_loss` | **0.6919 / 0.6940** | **ln 2 = 0.6931** ⇒ tercih marjı ≈ 0 |
+| Kırpılan adım | **%100** | Adım boyunu `lr` değil `DPO_MAX_GRAD_NORM=1.0` belirliyor |
+| `dpo_grad_norm_min` | **≈ 2.96** | En küçük gradyan bile tavanın ~3 katı |
 
-Seçilim katmanı atıl (`F_agent` clamp'te sıfıra eziliyor — birim
-uyuşmazlığı) · popülasyon yok ⇒ aktarım **Lamarckçı**, Darwinci değil · iki
-nesil ⇒ kalıcılık iddia edilemez · polarite bandı ve SNR tabanı kalibre değil
-· GAP-18/19 · `W_SEM=0.0` · **L9: ΔPE uç noktası ayrımın %80–86'sını atıyor**.
+⇒ D-029'un kilitlediği `lr = 1e-6` bu koşumu **tarif etmiyor**. `I1.3b`
+(D-046) tam bunun için eklenmişti ve **kapı işini yaptı** (L18).
+
+⚠ Buna karşılık `dpo_delta_logp_chosen` = **+0.064**, 18/20 pozitif ⇒
+D-049'un korktuğu **bastırma deseni gerçekleşmedi**. Öğrenmenin **yönü
+doğru, büyüklüğü yok.**
+
+### Ne iddia edilemez
+
+1. ❌ *"Yaşanmışlık parametrik kanaldan aktarılmıyor"* — D-047 yasakladı.
+2. ❌ *"Mekanizma yanlış"* — sonuç alet null'ı sınıfında.
+3. ❌ *"Adapter davranışı değiştiriyor, demek ki bir şey aktarılıyor"* —
+   `shuffle` de aynı ölçüde değiştiriyor. **Değişimin varlığı yönünü
+   göstermez**; birincilin `lived` vs `shuffle` olmasının sebebi budur.
+4. ❌ *"S4 anlamlı çıktı (p=0.035), en azından bir sinyal var"* — işaret
+   H1'in tersi, medyan 0, ve §4 birincil null iken ikincilin sonucu
+   değiştirmeyeceğini önceden bağladı.
+
+### Bu null'ın değeri
+
+Boş bir null değil: **neden göremediğimizi ölçtük.** Bir sonraki koşum
+neyi düzelteceğini tahminle değil sayıyla biliyor — kırpma doygunluğu,
+`dpo_loss ≈ ln 2`, ve ilk kez nicelenmiş GAP-18 (`uniq_rejected` 100/94'e
+karşı `uniq_chosen` 1025/971).
+
+### Sıradaki
+
+**Faz C** (belge borcu) → **D-013** (branch main'e taşınmadı, tetiği
+ateşledi) → **ikinci ön-kayıt**. Liste `CLAUDE.md` §1'de.
 
 ---
 
@@ -1119,8 +1239,8 @@ config'ini kurmaz — kuran bir rapor er geç yükleyiciyle çelişir, ki açı�
 ## 25. Karar kaydı sistemi (v2.4.2 — yeni)
 
 v2.4.1'den sonra proje **kanıtlı karar kaydına** geçti: `docs/DECISIONS.md`,
-**append-only**, D-001…D-044. Kilitli her madde bir D-numarasına işaret eder;
-kanıtı olmayan hiçbir madde "kilitli karar" yazılmaz.
+**append-only**, **D-001…D-053**. Kilitli her madde bir D-numarasına işaret
+eder; kanıtı olmayan hiçbir madde "kilitli karar" yazılmaz.
 
 **D-kaydı ne zaman şart:** `constraints.py` eşik **değeri** değişiyorsa · bir
 ölçüm yapıldıysa (sonucu ne olursa olsun) · bir alternatif reddedildiyse ·
@@ -1157,4 +1277,37 @@ ortalama şaşkınlık düzeyini kaydırmıyor.
 ⇒ Birincil uç noktayı (doğum-drift, tek anın vektörü) **etkilemez** ve o
 seçimi destekler. ΔPE ikincilleri null çıkarsa **"ölçemedik"** diye
 raporlanır, "etki yok" diye değil.
+
+### D-045…D-053 — Faz A'nın kapanışı, kilit ve doğrulayıcı koşum (v2.4.3)
+
+| Kayıt | Ne yaptı |
+|---|---|
+| **D-045** | A5: gen2 uç noktası da kayıplı — korunan pay `lived−null` **%17.5**. ⇒ **S4 null'ı "ölçemedik"** (L10). Yan bulgu: gen2'nin iptali gen1'inki gibi **simetrik değil** |
+| **D-046** | A3: **I1.3 daraltıldı · I1.3b eklendi** (kırpma görünürlüğü) · I1.4 spec tautolojisiydi, çevrildi · I1.5 `MIN_PAIRS` config'den. **GAP-6 kapandı** — temizlik swap'e değil **DPO adımına** kondu |
+| **D-047** | **S4 slotu: SESOI ilan edilmiyor.** Bütçe-kısıtlı örneklem gerekçelendirmesi (Lakens 2022) + ilan edilen duyarlılık. `p > 0.05` ⇒ *"şu MDE'nin altında güçsüzüz"*, asla *"etki yok"* |
+| **D-048** | GAP-18'in şiddeti hiç ölçülmemişti; sayaçlar eklendi, karar sayıdan sonraya bırakıldı |
+| **D-049** | DR #3 mutabakatı. ⚠ **A2'nin eski tasarımı kusurlu çıktı** — "getirimi tamamen kapat" OOD şoku ölçer, parametrik kapasiteyi değil. Ayrıca bastırma teşhisi (`delta_logp_chosen`) kalıcı ölçüme çevrildi |
+| **D-050** | A6: **precision ağırlığı aday olarak elendi.** Yan bulgular: **Precision-PE atıl** (L13, π tavanda takılı) · **GAP-5 doğrulandı ve nicelendi** (L14) · GAP-4'ün mekanizması yok (L15) |
+| **D-051** | A7/GAP-19: saat gerçekten kırık ama birincile giden yol L1 + travma muafiyetiyle kapalı ⇒ **değiştirilmedi** (L16). ⚠ **Gizli bağımlılık:** `F_agent` tek başına düzeltilirse GAP-19 canlanır |
+| **D-052** | A8: **N = 40**, seed 2004–2043, iki batch. MDE `d_z = 0.465`. **GAP-9 kapandı** — `N=40–50` ΔPE için hesaplanmıştı, bizim birinciliğimiz için değil |
+| **D-053** | **B2 koştu; §5 geçerlilik kapısı düştü, sapma ilan edilerek doğrulayıcı sayıldı.** Üç kriter düştü (`run_quality`, `prompt_skipped_no_record`, `adapters/` boş değildi) ve üçü de belge içi çelişkiye işaret ediyordu |
+
+### D-053 — sonucun sınıfını belirleyen kayıt
+
+İki olgu bu kaydı önemli kılıyor:
+
+**1. `prompt_skipped_no_record = 0` kriteri yeniden koşumla sağlanamaz.**
+D-037 determinizmi gereği aynı seed aynı SYSTEM_1 kararını üretir; sayaç
+yine 2 olur. Kriter ihlal edildiğinde **kurtarılamaz** — ancak aleti
+(kilit sonrası yasak) veya seed setini (§6 yasak) değiştirerek sağlanabilirdi.
+**Taslak hatası**, koşumun kusuru değil.
+
+**2. Sapmayı kabul edilebilir kılan şey ölçüldü.** İhlallerin hiçbiri
+birincil karşıtlığa **yönlü** terim eklemiyor: kırpma iki eğitim kolunda
+birebir (10.8/10.8 adım, `grad_norm_min` 2.959 vs 2.984), atlanan iki karar
+birer birer `lived` ve `shuffle` kollarında.
+
+⇒ Ama §11'in tanımı gereği sonuç yine de **alet null'ı** sınıfında, çünkü
+o tanım "§5'ten biri düştü" diyor ve düştü. **Sınıflandırma sonucu görmeden
+yazılmış bir kuraldan geliyor, yorumdan değil.**
 
