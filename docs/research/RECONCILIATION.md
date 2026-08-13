@@ -422,3 +422,101 @@ I10 (entropi/merak terimi) ve I13/I15 (kanal ayrımı protokolü) **sonraki
 | **Çifte ayrışma protokolü** | I15 | Kanal ayrımı iddiasının çıtası; mevcut tasarım tek yön ölçüyor |
 | **Zaman × kol etkileşimi (LMM/FDA)** — genel form | I17 | ⚠ "ikinci yarı AUC" özel formu **alınmaz** (I18) |
 | **İddia cümlesinin daraltılması + "transjenerasyonel" terimi** | I2, I3 | B4 raporunda kullanılır, kod değişikliği değil |
+
+
+---
+
+# J. DR brief #4 — ayrım üretmeyen bir evrende seçilim (2026-08-13)
+
+**Ham cevap:** `2026-08-13_DR4-answer-raw.md` · **Sorusu:**
+`2026-08-12_environment-differentiation-and-selection.md` · **Kayıt:** D-065.
+
+Raporun **içeriği dört brief içinde en isabetlisi**, **kaynak disiplini ise
+en kötüsü**. İki ayrı şeyi ayırmak gerekiyor: hangi mekanizmayı önerdiği
+(çoğu yerinde), ve o mekanizmayı kime dayandırdığı (çoğu havada).
+
+## J.0 ⚠ Kaynak denetimi — brief'in kendi şartıydı, rapor uymadı
+
+Brief §0 açıkça *"her iddia için yazar + yıl + kalıcı kimlik, emin değilsen
+**doğrulanamadı** yaz"* dedi. Rapor on iki kimlikten **beşini** eksiksiz
+verdi, ve verdiklerinden **biri yanlış makaleye ait**.
+
+| Kimlik | Denetim (Crossref / arXiv, 2026-08-13) | Sonuç |
+|---|---|---|
+| `10.1086/341018` | Pepper & Smuts, *A Mechanism for the Evolution of Altruism among Nonkin*, Am. Nat. 2002 | ✅ **birebir doğru** |
+| `10.1103/PhysRevLett.95.098104` | Santos & Pacheco, *Scale-Free Networks Provide a Unifying Framework…*, PRL 2005 | ✅ **birebir doğru** |
+| `10.1017/S0140525X06009083` | Mesoudi, Whiten & Laland, *Towards a unified science of cultural evolution*, BBS 2006 | ✅ **birebir doğru** |
+| `arXiv:2404.16698` | Piatti, Jin, Kleiman-Weiner, Schölkopf, Sachan, Mihalcea, *Cooperate or Collapse* (GovSim), 2024 | ✅ **doğru** |
+| `arXiv:2604.21255` | Yang, Zhang, Wen, Gong, Liu, Chu, Yu, *When Agents Look the Same: Quantifying Distillation-Induced Similarity in Tool-Use Behaviors*, 2026 | ✅ **kimlik gerçek** — rapor "doğrulanamadı" demişti, **biz doğruladık** |
+| `arXiv:2606.18263` | Bhattacharyya, Singla, Shah, Chen, Ajmera, *How Well Do Large Language Models Capture Human Personality?*, 2026 | ✅ **kimlik gerçek** — persona manifold collapse orada |
+| `10.1007/s00778-019-00574-9` → *"Cleasby vd., 2019"* | Gerçek sahibi: **Su, Liu, Zheng, Zhou, Zheng**, *A survey of trajectory distance measures and performance evaluation*, **VLDB Journal 2020** | ❌ **YANLIŞ ATIF** |
+| *"MDPI 2072-4292"* (eşikli biliş iddiası) | 2072-4292 = **Remote Sensing** dergisinin ISSN'i. Yazar/yıl/başlık yok | ❌ **kimlik değil** |
+| Kacser & Burns 1973 · Dykhuizen vd. 1987 | Gerçek: Dykhuizen, Dean & Hartl, *Metabolic flux and fitness*, **Genetics 115:25–31, 1987**; Kacser & Burns akı kontrol kuramı | ✅ **biz tamamladık** |
+| Mouret & Clune 2015 (MAP-Elites) | *Illuminating search spaces by mapping elites*, **arXiv:1504.04909** | ✅ **biz tamamladık** |
+| Reidys & Stadler 2001 · Ackley & Littman 1992 · Hinton & Nowlan 1987 · Sherratt & Morand-Ferron | kimlik verilmedi, doğrulanmadı | ⛔ **kullanılmadı** |
+| *"popülasyon için alt sınır N=20–50"* | **hiçbir kaynak verilmedi** | ⛔ **kullanılmadı** |
+
+⚠ **Cleasby yanlış atfı, bu projede yedinci kaynak kimliği hatası.** Doğrusu:
+Cleasby, Wakefield, Morrissey ve ark., *Using time-series similarity measures to
+compare animal movement trajectories in ecology*, **Behav. Ecol. Sociobiol. 73
+(2019)** — makale **gerçek**, rapor yalnız **DOI'yi başka bir makaleden almış**.
+
+## J.1 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| J1 | Özdeş kurallı kapalı sistemde salt stokastiklik (farklı seed) kalıcı ayrım üretmez; ortak havuz → trajedi Nash dengesi | Ölçtüğümüzle aynı yönde (D-060: %94–100 defect). ⚠ Ama **bize atfettiği varsayım bizim değil**: brief §3 zaten *"popülasyon tek başına yetmez"* diyordu | **uyumlu — ama DR bizi yanlış okudu** |
+| J2 | **Yerel havuz + koşullu hareket ("Walk Away")** akrabalık olmadan pozitif kümelenme üretir (Pepper & Smuts 2002 ✅) | Kodda tek ve **global** havuz (`EnvironmentState.pool`, `step_pool`), uzam yok, ajan **bir** | **uyumlu — önkoşulu yok**, ② ile birlikte anlamlı |
+| J3 | Ölçek-bağımsız ağ topolojisi işbirliğini ve çeşitliliği taşır (Santos & Pacheco 2005 ✅) | Etkileşim ağı **sıfır** (N=1) | **uyumlu — önkoşulu yok** |
+| J4 | ⭐ **GovSim:** LLM ajanları iletişim kursa bile sürdürülebilirliği kuramıyor, GPT-4 dahil hayatta kalma <%54; **"evrenselleştirme" bilişsel önseli** işbirliğini belirgin biçimde artırıyor (Piatti vd. 2024 ✅) | ⭐ **Bizim için en değerli satır.** Bir alternatif açıklamayı eliyor: %94–100 defect **bizim evrenimizin özel kusuru değil**, literatürün taban gözlemi. Ve müdahalenin **prompt düzeyinde** işe yaradığı ölçülmüş | **uyumlu — dış referans noktası kazandık** |
+| J5 | Davranışsal homojenizasyon: farklı ajanlar aynı akıl yürütmeye çöker, sebebi ortak öğretmenden damıtma (Yang vd. 2026 ✅ kimlik) | ⚠ **Kapsam kayması:** o çalışma **modeller arası** benzerliği ölçüyor; bizde tek model, tek ajan. Bizim çöküşümüzü "damıtma" açıklayamaz — açıklaması **bedelsizlik** (D-060 §2.3) | **kısmen — mekanizma bizim vakamıza uymuyor** |
+| J6 | Persona manifold çöküşü: zengin persona **çeşitliliği azaltıyor** (Bhattacharyya vd. 2026 ✅ kimlik) | Doğrudan A4-③'e dokunuyor: `SYSTEM_PROMPT`'u **zenginleştirmek** çeşitlilik satın almıyor. L14 ile uyumlu | **uyumlu — ikinci ön-kayıt girdisi** |
+| J7 | Prompt→sınıflandırıcı kısa devresinin adı *"Verbal Alignment Masking / reward hacking"* | ⚠ Ad için gösterilen kaynak (2604.21255) **bu iddiayı taşımıyor** — o makale tool-use benzerliği üzerine. Olgunun kendisi bizde **ölçülü** (L14: COOPERATE sözlüğünün 3/4'ü prompt'ta) | **ad alınmadı — kaynak eşleşmiyor** |
+| J8 | `decay ≥ recovery` yapısaldır; enerji monoton azalan; sıfır bedel ⇒ defect bedava | **D-061'in cebirsel kanıtının aynısı.** Rapor bizim ölçümümüzü tekrar ediyor ⇒ **kanıt değil**, teyit | **uyumlu — ama bağımsız kanıt değil** |
+| J9 | ⭐ **Azalan getiri:** akı, enzim aktivitesinin **içbükey/hiperbolik** fonksiyonudur; yüksek ifadede **seçilim nötrleşir** (Dykhuizen, Dean & Hartl 1987, Genetics 115:25–31 ✅ biz doğruladık) | ⭐ **A4-① için literatürdeki en sağlam dayanak.** Ve tersten okununca bugünkü durumumuzun teşhisi: doyum ⇒ nötrlük. *"Çıkarım = enerji"* doğrusal bağı defect'i baskın bırakır; **içbükey** kazanç eğrisi gerekir | **uyumlu — ① için benimsenir** |
+| J10 | Ölüm eşiği ajanı "yeterince al"maya zorlar; yenilik arayışını açlık tetikler | Kodda ölüm yok: `should_continue` `AB_ENERGY_FLOOR` yastığıyla yaşamı sürdürüyor. ⚠ Destek kaynağı (Sherratt & Morand-Ferron) **doğrulanmadı** | **yön uyumlu — kaynak kullanılmadı** |
+| J11 | Eşikli/çift modlu maliyet: yüksek efor ancak eşik aşılınca mobilize olur | ⚠ Kaynak kimliği **dergi ISSN'i** ⇒ kullanılmaz. Ayrıca DR bilmiyor: bizde **zaten** eşikli çift mod var (LOD: SYSTEM_1/SYSTEM_2, bilişsel yük eşiği). Eksik olan o değil, **eylemin ajana yansıyan enerji farkı** | **kullanılmadı — ve kısmen zaten var** |
+| J12 | İddia Darwinci değil **Lamarckçı/kültürel**; bu çerçevede nicel modellenebilir (Mesoudi vd. 2006 ✅) | Brief #3'ün mutabakatı (§I2/I3) bunu zaten karara bağlamıştı. Rapor **bağımsız olarak aynı yere** geldi | **uyumlu — §I ile örtüşüyor** |
+| J13 | `shuffle` kolu (aynı çiftler, ters yön) plastik yanıtı gürültüden ayırmak için **mükemmel bir epigenetik kontrol** | Kontrolümüzün dışarıdan tasdiki. ⚠ Ama **tek başına** yeterli olduğunu söylemiyor; çifte ayrışma çıtası (§I15) hâlâ açık | **uyumlu** |
+| J14 | Popülasyon için asgari **N=20–50** | ⛔ **Kaynaksız sayı.** Brief #1'in dersi birebir tekrar ediyor: kaynaksız eşik kilitli karara **giremez** | **kullanılmadı** |
+| J15 | Düz/nötr fitness manzarası tanısı; varyans eşiğin altındaysa adaptif yürüyüş rastgele yürüyüşe döner | Teşhis bizim ölçümümüzle aynı (D-060: sınıf 120/120 `low`). ⚠ Kaynak (Reidys & Stadler) doğrulanmadı, ve **nicel eşik verilmedi** — brief tam da onu sormuştu | **uyumlu — ama sorulan sayı gelmedi** |
+| J16 | ⭐ **MAP-Elites / Kalite-Çeşitlilik**: tek hedefli fitness yerine davranışsal tanımlayıcı ızgarası (Mouret & Clune 2015 ✅ biz tamamladık) | Fikir sağlam ama **arşiv + popülasyon varsayıyor** ⇒ ②'nin önkoşulu. Önerdiği eksenler (ortalama PE × havuz çekimi) bizde **zaten ölçülü** | **uyumlu — ②'ye bağlı, ikinci ön-kayıt** |
+| J17 | Birincil uç noktanız **ağırlık vektörü L-normu**, AdamW gürültüsüne boğuluyor | ❌ **Olgusal hata.** Birincilimiz ağırlık değil: varisin **doğum-drift büyüklük vektörü** (`transfer_to_heir` → `birth_drift_magnitudes`), gen2 koşmadan, ve varis **ebeveynin adapter'ını almıyor** (kodda `3A: do not load parent adapter`). AdamW'nin o vektöre değen bir yolu yok | **DR yanılmış** |
+| J18 | Uç noktayı **varisin eylem dizisinin `shuffle` koluna DTW uzaklığı** yap | İki ayrı sorun: (a) o bir **uç nokta değil karşıtlık** — birincilimiz `null` çapasına uzaklıkları karşılaştırıyor; (b) ⚠ **yörünge uç noktalarının daha büyük ayrım gösterdiğini zaten ölçtük** (D-044/D-045) ve **bilerek almadık**: etkiyi görüp uç nokta seçmek post-hoc olur (§2.7, L9) | **bilinçli sapma — sıralama korunuyor** |
+| J19 | Yörünge benzerliği araçları: DTW, Fréchet (Cleasby vd. 2019) | Araçlar yerinde; §I17 de aynı yere işaret etmişti. ⚠ **DOI yanlış** (bkz. J.0), doğrusu Behav. Ecol. Sociobiol. 73 (2019) | **uyumlu — kimlik düzeltildi** |
+| J20 | Sonuç: popülasyon **tek başına** düz manzarayı aşmaz; önce bedel + azalan getiri gerekir | ⭐ Bu, `CLAUDE.md`'nin **"①  önce, sonra ②"** önerisiyle bağımsız olarak **aynı sıralama**. Rapor bunu bizden duymadan söyledi (brief §3 soruyordu, cevap vermiyordu) | **uyumlu — öneriyi güçlendiriyor** |
+
+## J.2 ⚠ Girdi kalitesi: J17'nin yarısı bizim hatamız
+
+Brief §1 *"varis ebeveynin adapter'ını almıyor"* diyordu ama §2.5 birincili
+yalnızca *"doğum-drift vektörü"* diye adlandırdı ve **neyin vektörü olduğunu
+yazmadı**. DR onu ağırlık vektörü sandı ve S6'nın yarısını (AdamW gürültüsü,
+"milyarlarca parametreye dağılma") o yanlış varsayım üstüne kurdu.
+
+**Üç brief'in ortak dersi burada dördüncü kez tekrarlandı:** brief kalitesi
+girdi kalitesiyle sınırlı, ve girdiyi biz yazıyoruz.
+
+## J.3 A4 kararına ne girdi
+
+| Seçenek | Raporun getirdiği |
+|---|---|
+| **① metabolik döngü** | **Güçlendi.** J9 kazanç eğrisinin **biçimini** söylüyor (doğrusal değil içbükey) — D-061 *"toparlanma terimi yeniden tasarlanmalı"* demişti ama biçimi söylemiyordu. J10 ölüm eşiğini ekliyor (yön uyumlu, kaynağı zayıf) |
+| **② popülasyon** | **Sıralaması doğrulandı, öncelik almadı.** J20 bağımsız olarak *"tek başına yetmez"* diyor; J16 (MAP-Elites) ②'nin **üstüne** gelecek bir katman |
+| **③ prompt priming'i kaldır** | **Karışık.** J4 prompt düzeyindeki bilişsel önselin **ölçülmüş** bir kaldıraç olduğunu gösteriyor (evrenselleştirme) ⇒ ③'ün "tek başına işe yaramaz" değerlendirmesi **zayıfladı**. Ama J6 tersini hatırlatıyor: prompt'u **zenginleştirmek** çeşitlilik satın almıyor. İkisi çelişmiyor — fark, eklenen şeyin **persona** mı **karar kuralı** mı olduğu |
+
+⇒ **Claude Code'un önerisi değişmedi: ① önce, sonra ②.** Rapor bunu iki
+bağımsız yoldan destekledi (J9 mekanizma, J20 sıralama).
+⚠ **①'in nasıl yapılacağı hâlâ tasarım kararı** (D-007) ve içinde en az üç
+alt seçim var: kazanç eğrisinin biçimi, ölüm eşiği olacak mı, ve
+`METABOLIC_FLOOR`'un çifte rolü (asgari tüketim **ve** azami toparlanma)
+ayrılacak mı.
+
+## J.4 İkinci ön-kayıta taşınanlar
+
+| Ne | Kaynak | Not |
+|---|---|---|
+| **İçbükey (azalan getirili) enerji kazanç eğrisi** | J9 | ⚠ Eğrinin **parametreleri** ölçümden seçilemez (§2.7) — biçim literatürden, değer gerekçeyle |
+| **Ölüm eşiği** (enerji 0 ⇒ yaşam biter) | J10 | ⚠ Erken ölüm örneklemi daraltır; N hesabına girer |
+| **MAP-Elites / davranışsal tanımlayıcı ızgarası** | J16 | ②'nin önkoşulu; eksenler bizde zaten ölçülü |
+| **DTW / Fréchet yörünge ölçütü** | J18, J19 | ⚠ **Etkiye bakmadan** kilitlenmeli — D-064'ün çözünürlük envanteri bunun disiplinli yolu |
+| **"Evrenselleştirme" tarzı karar kuralı önseli** | J4 | ⚠ Aksiyomun *"trait verilmez"* yasağına yakın; **tasarım kararı**, sessizce alınmaz |

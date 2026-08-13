@@ -25,9 +25,11 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `367 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-064.** Sıradaki kayıt **D-065** olarak açılır.
-- **A yolunun üçü de bitti (W1 ✅ · W2 ✅ · W3 ✅).** DR raporu gelene kadar
-  başlatılacak yeni iş **yok**; gelince **B yolu** (aşağıda) koşulur.
+- **Son D-kaydı: D-065.** Sıradaki kayıt **D-066** olarak açılır.
+- **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
+  cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
+- ⏳ **TEK AÇIK İŞ: A4 tasarım kararı — Yasin'in (D-007).** Aşağıdaki üç
+  seçenek, artık DR girdisiyle birlikte.
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
@@ -65,14 +67,23 @@ ayrı iştir ve **A4 = environment ayrımı**, karıştırma.
 
 | Seçenek | Kanıt | Maliyet |
 |---|---|---|
-| **① Metabolik döngüyü kapat** — çıkarım enerjiyi beslesin, enerji bitince ölüm | Fitness'ın %70'i (enerji 0.4 + survival 0.3) canlanır. ⚠ D-061: toparlanma terimi **yeniden tasarlanmalı**, tavan yükseltmek yetmez | orta, orkestrasyon değişmiyor |
-| **② Popülasyon** (D-014 / L2) | Tek gerçek Darwinci yol; farklı üreme olmadan seçilim iddiası kurulamaz | en büyük iş |
-| **③ Prompt priming'i kaldır** (L14) | En ucuz ama **tek başına işe yaramaz**: bedel yokken çeşitlilik rastgele olur. Ayrıca her koşumu geçersiz kılar | ucuz ama yıkıcı |
+| **① Metabolik döngüyü kapat** — çıkarım enerjiyi beslesin, enerji bitince ölüm | Fitness'ın %70'i (enerji 0.4 + survival 0.3) canlanır. ⚠ D-061: toparlanma terimi **yeniden tasarlanmalı**. ⭐ **D-065/J9 biçimi verdi:** kazanç eğrisi **içbükey** olmalı (doğrusal *"çıkarım = enerji"* defect'i baskın bırakır) | orta, orkestrasyon değişmiyor |
+| **② Popülasyon** (D-014 / L2) | Tek gerçek Darwinci yol; farklı üreme olmadan seçilim iddiası kurulamaz. **D-065/J16:** üstüne MAP-Elites gelebilir | en büyük iş |
+| **③ Prompt priming'i kaldır** (L14) | ⚠ **D-065 ile karıştı:** J4 (GovSim) prompt düzeyindeki **karar kuralı** önselinin ölçülmüş bir kaldıraç olduğunu gösteriyor; J6 ise **persona** zenginleştirmenin çeşitlilik satın almadığını. Yine de bedel yokken tek başına yetmez, ve her koşumu geçersiz kılar | ucuz ama yıkıcı |
 
-**Claude Code'un önerisi: ① önce, sonra ②.** Gerekçe ölçümden: ② tek başına
-çalışmaz, çünkü N ajanın hepsi aynı baskın stratejiyi oynarsa fitness'ları
-yine özdeş olur. ⚠ ① `F_agent`'a dokunuyor ⇒ **GAP-19 de aynı anda
-düzeltilmeli** (D-051/L16), yoksa canlanır.
+**Claude Code'un önerisi değişmedi: ① önce, sonra ②.** Artık iki bağımsız
+dayanağı var: kendi ölçümümüz (② tek başına çalışmaz — N ajanın hepsi aynı
+baskın stratejiyi oynarsa fitness'ları yine özdeş olur) ve **DR'nin bağımsız
+aynı sıralaması** (D-065/J20).
+
+⚠ ① `F_agent`'a dokunuyor ⇒ **GAP-19 de aynı anda düzeltilmeli**
+(D-051/L16), yoksa canlanır.
+
+⚠ **①'in içinde üç alt karar var, üçü de sessizce alınmayacak (§2.3):**
+kazanç eğrisinin **biçimi** (içbükey — hangi aile?) · **ölüm eşiği** olacak mı
+(J10: yön uyumlu, kaynağı doğrulanamadı; erken ölüm N hesabına girer) ·
+`METABOLIC_FLOOR`'un **çifte rolü** (aynı sabit hem asgari tüketim hem azami
+toparlanma — D-061'in kökü) ayrılacak mı.
 
 ## ✅ B2 sonrası ne öğrenildi (D-055…D-061)
 
@@ -405,7 +416,21 @@ GAP-19 → **L16**. GAP-9 **kapandı** (D-052).
 
 | # | Brief | Durum |
 |---|---|---|
-| **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ⏳ **cevap bekleniyor.** Altı soru: S1 heterojenlik kalıpları · S2 LLM'de eylem uzayı çökmesi · S3 metabolik döngü tasarımı · S4 popülasyonsuz seçilim iddiası · S5 düz fitness manzarası · S6 düşük çözünürlüklü uç nokta |
+| **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ✅ **cevaplandı ve mutabakata bağlandı (D-065, §J).** Ham cevap: `2026-08-13_DR4-answer-raw.md`. **İçeriği dört brief'in en isabetlisi, kaynak disiplini en kötüsü:** 12 kimlikten 5'i eksiksiz, biri **yanlış makaleye** atıflı (yedinci kimlik hatası), biri dergi ISSN'i, ve *"N=20–50"* kaynaksız ⇒ kullanılmadı |
+
+**Cevaptan alınan üç şey (D-065):** ⭐ **J9** azalan getiri (Dykhuizen, Dean &
+Hartl 1987, Genetics 115:25–31) — akı, aktivitenin **içbükey** fonksiyonu,
+doyumda seçilim **nötrleşir** ⇒ A4-①'in eksik parçası olan **kazanç eğrisinin
+biçimi** · **J4** GovSim (Piatti vd. 2024): GPT-4 dahil hiçbir model ortak
+kaynak ikilemini çözemiyor (<%54) ⇒ bizim %94–100 defect'imiz **evrenimizin
+özel kusuru değil** · **J20** rapor bağımsız olarak *"popülasyon tek başına
+yetmez, önce bedel"* dedi ⇒ **① önce, sonra ②** sıralaması dışarıdan doğrulandı.
+
+**Reddedilenler:** **J17** DR birincili *"ağırlık vektörü"* sandı (değil —
+doğum-drift, ve varis adapter almıyor); hatanın yarısı **bizim brief'imizin**
+eksik tarifi · **J18** DTW'yi şimdi birincil yapmak — yörünge uç noktalarının
+daha büyük ayrım verdiğini **zaten ölçtük** (D-044/045) ve bilerek almadık,
+etkiyi görüp seçmek post-hoc olur (L9).
 
 ⚠ **Yalnız brief gönderildi, master reference gönderilmedi** — bilerek.
 Master ref kendi başında *"işaretsiz her bölüm hâlâ v2.4.1 anlatısıdır"*

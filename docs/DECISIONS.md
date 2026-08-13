@@ -4551,3 +4551,95 @@ eşitlik (float) kullanıldı: "özdeş" bit düzeyinde demek. Yörünge uç nok
 (120 farklı değer) yüksek çözünürlüklü görünüyor ama **hiçbiri test edilmedi**;
 D-044'ün iptal bulgusu tam da yüksek çözünürlüğün duyarlılık anlamına
 gelmediğini gösteriyor. Hiçbir kol karşıtlığı hesaplanmadı, bilerek.
+
+---
+
+## D-065 · 2026-08-13 · DR brief #4 cevaplandı: mutabakat §J, bir kaynak yanlış atıflı, A4 sıralaması bağımsız olarak doğrulandı
+
+**Durum:** mutabakat (D-006 zorunlu adımı) · **Etiket:** kod değişmedi ·
+ham cevap `docs/research/2026-08-13_DR4-answer-raw.md` · tablo
+`docs/research/RECONCILIATION.md` **§J** (J1–J20)
+
+### Kaynak denetimi — önce yapıldı, çünkü kullanılamayacak kaynağı tartışmanın anlamı yok
+
+Brief §0 yazar+yıl+kalıcı kimlik şart koşmuştu. Rapor on iki kimlikten
+**beşini** eksiksiz verdi ve **birini yanlış makaleye** bağladı.
+
+- ✅ **Doğrulandı (Crossref/arXiv, bugün):** Pepper & Smuts 2002
+  (`10.1086/341018`) · Santos & Pacheco 2005 (`10.1103/PhysRevLett.95.098104`) ·
+  Mesoudi, Whiten & Laland 2006 (`10.1017/S0140525X06009083`) · Piatti vd.
+  2024 GovSim (`arXiv:2404.16698`).
+- ✅ **Rapor "doğrulanamadı" demişti, biz doğruladık:** `arXiv:2604.21255`
+  (Yang vd. 2026, tool-use damıtma benzerliği) · `arXiv:2606.18263`
+  (Bhattacharyya vd. 2026, persona manifold collapse) · Mouret & Clune 2015
+  MAP-Elites (`arXiv:1504.04909`) · Dykhuizen, Dean & Hartl 1987
+  (*Metabolic flux and fitness*, Genetics 115:25–31).
+- ❌ **Yanlış atıf:** `10.1007/s00778-019-00574-9` *"Cleasby vd. 2019"* diye
+  verilmiş; o DOI **Su, Liu, Zheng, Zhou, Zheng**, *A survey of trajectory
+  distance measures*, **VLDB Journal 2020**. Kastedilen makale gerçek ama
+  başka yerde: Cleasby ve ark., **Behav. Ecol. Sociobiol. 73 (2019)**.
+  **Bu projede yedinci kaynak kimliği hatası.**
+- ❌ **Kimlik değil:** *"MDPI 2072-4292"* — o bir dergi ISSN'i (*Remote
+  Sensing*), yazar/yıl/başlık yok ⇒ iddia **kullanılmadı**.
+- ⛔ **Kullanılmadı:** Reidys & Stadler 2001 · Ackley & Littman 1992 ·
+  Hinton & Nowlan 1987 · Sherratt & Morand-Ferron (kimlik yok) ve
+  **kaynaksız "N=20–50 popülasyon alt sınırı"** sayısı.
+
+### Alınan üç şey
+
+1. **J9 — azalan getiri (Dykhuizen vd. 1987).** Akı, aktivitenin **içbükey**
+   fonksiyonu; doyumda **seçilim nötrleşir**. Bu hem bugünkü durumumuzun
+   teşhisi hem de A4-①'in **biçim** reçetesi: *"çıkarım = enerji"* doğrusal
+   bağı defect'i baskın bırakır, kazanç eğrisi içbükey olmalı. D-061
+   *"toparlanma terimi yeniden tasarlanmalı"* demişti ama biçimi
+   söylemiyordu — **eksik parça buydu**.
+2. **J4 — GovSim (Piatti vd. 2024).** En güçlü modeller bile ortak kaynak
+   ikileminde sürdürülebilirlik kuramıyor (<%54 hayatta kalma). ⇒ Bizim
+   **%94–100 defect** oranımız evrenimizin özel kusuru **değil**, alanın taban
+   gözlemi. Bir alternatif açıklama elendi.
+3. **J20 — sıralama.** Rapor bağımsız olarak *"popülasyon tek başına düz
+   manzarayı aşmaz, önce bedel gerekir"* dedi. `CLAUDE.md`'nin **① önce,
+   sonra ②** önerisiyle aynı.
+
+### Reddedilen / düzeltilenler
+
+- **J17 — DR'nin olgusal hatası.** Birincilimizi *"ağırlık vektörü L-normu"*
+  sanıp S6'nın yarısını AdamW gürültüsü üstüne kurmuş. Birincil ağırlık
+  değil: varisin **doğum-drift büyüklük vektörü**, gen2 koşmadan alınıyor ve
+  varis ebeveynin adapter'ını **almıyor**. ⚠ Hatanın yarısı **bizim**: brief
+  §2.5 birincili *"doğum-drift vektörü"* diye adlandırıp neyin vektörü
+  olduğunu yazmamıştı.
+- **J18 — DTW'yi şimdi birincil yapmak.** İki sorun: önerdiği şey uç nokta
+  değil **karşıtlık** (bizimki `null` çapasına uzaklıkları karşılaştırıyor);
+  ve yörünge uç noktalarının daha büyük ayrım gösterdiğini **zaten ölçtük**
+  (D-044/D-045) ve bilerek almadık — etkiyi görüp uç nokta seçmek post-hoc
+  olur (§2.7, L9). **Sıralama korunuyor**, araç ikinci ön-kayıta gidiyor ve
+  orada **etkiye bakılmadan** kilitlenecek (D-064'ün envanteri bunun yolu).
+- **J5 — kapsam kayması.** Damıtma kaynaklı homojenizasyon **modeller arası**
+  bir olgu; bizde tek model, tek ajan. Bizim çöküşümüzün açıklaması
+  bedelsizlik (D-060 §2.3), damıtma değil.
+- **J7 — ad alınmadı.** *"Verbal alignment masking"* için gösterilen kaynak o
+  iddiayı taşımıyor. Olgu bizde ölçülü (L14), ama adı kaynaksız kalıyor.
+- **J14 — kaynaksız eşik.** N=20–50 sayısı kilitli karara giremez; brief #1'in
+  dersi (`r≥0.85` varsayımı) birebir tekrar ediyor.
+
+### A4 için durum
+
+Öneri **değişmedi: ① önce, sonra ②.** Rapor bunu iki bağımsız yoldan
+destekledi (mekanizma J9, sıralama J20). ③ (prompt priming) için tablo
+karıştı: J4 prompt düzeyindeki **karar kuralı** önselinin ölçülmüş bir
+kaldıraç olduğunu gösteriyor, J6 ise **persona** zenginleştirmenin çeşitlilik
+satın almadığını. İkisi çelişmiyor; fark eklenen şeyin ne olduğunda.
+
+⚠ **Karar Yasin'in (D-007) ve henüz verilmedi.** ①'in içinde en az üç alt
+seçim var: kazanç eğrisinin biçimi · ölüm eşiği olacak mı · `METABOLIC_FLOOR`'un
+çifte rolü (asgari tüketim **ve** azami toparlanma) ayrılacak mı. Ayrıca ①
+`F_agent`'a dokunduğu için **GAP-19 aynı anda düzeltilmeli** (D-051/L16).
+
+### Sınırlar
+
+Bu bir mutabakattır, ölçüm değil: §J'nin hiçbir satırı DAU'da yeni bir sayı
+üretmedi. Doğrulanan kimlikler **kimlik** doğrulamasıdır — makalelerin
+içeriği okunmadı, yalnız başlık/yazar/yıl eşleşmesi denetlendi. GovSim'in
+%54 rakamı ve "evrenselleştirme" etkisi rapordan alındı, **makaleden
+okunmadı**; ikinci ön-kayıta girecekse önce okunmalı.
