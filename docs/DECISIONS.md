@@ -4643,3 +4643,108 @@ Bu bir mutabakattır, ölçüm değil: §J'nin hiçbir satırı DAU'da yeni bir 
 içeriği okunmadı, yalnız başlık/yazar/yıl eşleşmesi denetlendi. GovSim'in
 %54 rakamı ve "evrenselleştirme" etkisi rapordan alındı, **makaleden
 okunmadı**; ikinci ön-kayıta girecekse önce okunmalı.
+
+---
+
+## D-066 · 2026-08-13 · A4-①: metabolik döngü kapandı — hasat enerjiye dönüyor, tükenmek öldürüyor
+
+**Durum:** tasarım kararı + uygulama · **Karar: Yasin'in** (üç kapı, üç onay:
+① metabolik döngü · doygun/hiperbolik kazanç · ölüm eşiği başlangıç
+dokunulmazlığıyla) · **Kod:** `a7b157f` · suite 367 → **378**
+
+### Neden ① ve neden şimdi
+
+D-060/D-061 seçilim katmanının atıl olduğunu ölçtü: `F = 0.4·(E/E_max) +
+0.3·(1−|Δhavuz|/P_max) + 0.3·survival` üç girdisinin ikisi sabit (`E`=0.000
+120/120 kolda, survival=1.0 120/120), üçüncüsü %0.7 yayılıyordu. Ayrım
+üretmeyen evrenin kökü buydu, ve DR #4 (D-065) sıralamayı bağımsız olarak
+doğruladı: **popülasyon tek başına düz manzarayı aşmaz, önce bedel gerekir.**
+
+### Üç parça — biri olmadan diğerleri anlamsız
+
+**1. Havuz fiziği: kusur düzeltmesi, ayar değil.** `step_pool` havuzu
+`POOL_MIN`'de clamp'liyor ama deftere **istenen** miktarı yazıyordu. Boş
+meradan *"8.0 aldım"* fiziksel olarak gerçekleşmemiş bir olaydı ve deftere
+öyle geçiyordu. ⇒ `agent_delta_pool` **kararın sınıfını** topluyordu, ortak
+kaynağı değil — D-060'ın 393.55 ≈ 50×8 değerinin ve %0.7 yayılımın sebebi bu.
+Artık defter **teslim edileni** yazıyor (`realized_extractions`), kısa düşen
+havuz isteme oranlı paylaşılıyor.
+
+⚠ **Bu olmadan ① ölü doğardı:** çökmüş havuzdan enerji akmaya devam eder,
+defect yine bedelsiz kalırdı.
+
+**2. Kazanç eğrisi içbükey, doğrusal değil.**
+`gain(x) = 0.50 · x / (2.0 + x)`, `x` = **gerçekleşen** hasat.
+Dayanak D-065/J9 (Dykhuizen, Dean & Hartl 1987, *Metabolic flux and fitness*,
+Genetics 115:25–31, kimliği bizim doğruladığımız): akı, aktivitenin
+**içbükey-hiperbolik** fonksiyonudur ve **doyumda seçilim nötrleşir**.
+Doğrusal *"hasat = enerji"* bağı defect'i kesin baskın bırakır ⇒ düz manzarayı
+yeni kostümle geri getirirdi.
+
+Sonuç **aritmetik, ayarlanmış değil:** COORDINATE (1.0) → 0.167 ·
+COOPERATE (2.0) → 0.250 · DEFECT (8.0) → 0.400 ⇒ **4× havuz hasarı 1.6×
+enerji** satın alıyor. Çökmüş havuz **0.0** veriyor.
+
+Kredi `pool_step_node`'da veriliyor, değerlendirici'ye dokunulmadı: enerji bir
+sonraki olayın başında görünüyor (yedin, sonra gücün var). Denetlendi —
+`internal_state`'i yazan tek başka düğüm değerlendirici ve o **önce** koşuyor,
+`meta_observer` bu alana dokunmuyor ⇒ ezme yok.
+
+**3. Ölüm.** `AB_ENERGY_FLOOR = 0.15`, `TERMINATION_ENERGY = 0.05`'in
+**üstünde** oturuyordu ⇒ `effective_energy` asla ölüm eşiğine inemiyordu,
+yani **ölüm yapısal olarak imkânsızdı** ve survival terimi 120/120 kolda 1.0
+okuyordu. Yastık artık yalnız **doğum geçişini** kapsıyor
+(`METABOLIC_GRACE_EVENTS`); sonrasında tükenmek yaşamı bitiriyor.
+
+### Sabitler — üçü de **kalibre değil**, ve alet kimliği bunu söylüyor
+
+| Sabit | Değer | Çapa (yapısal, ölçümden seçilmedi) |
+|---|---|---|
+| `METABOLIC_GAIN_MAX` | 0.50 | `METRIC_MAX`'ın yarısı ⇒ **tek olay depoyu dolduramaz** |
+| `METABOLIC_GAIN_HALF_SATURATION` | 2.0 | `EXTRACTION_COOPERATE` ⇒ işbirlikçi hasat yarı-doyum noktası |
+| `METABOLIC_GRACE_EVENTS` | 10 | fazın beşte biri ⇒ doğum geçişi |
+
+`METABOLIC_GAIN_CALIBRATED = False` ve `build_tool_identity` bir
+`metabolism` bloğu yazıyor (U5/D-030 deseni: kalibre edilmemiş eşik yerleşmiş
+gibi okunmasın). **Değerleri ikinci ön-kayıt kilitler.**
+
+### Kasıtlı test kırılması (Faz kuralı A.3, aynı commit)
+
+`test_step_pool_over_extraction_causes_collapse` deftere **90.0** yazıldığını
+doğruluyordu; artık teslim edilen **82.4**. Gerekçe testin içine yazıldı.
+
+### Mutasyon kontrolü — sekiz mutasyon, biri ilk denemede **yakalanmadı**
+
+Yakalananlar: defteri yine istenen miktara bağla (**4** kırılma) · kazancı
+doğrusallaştır (3) · enerji kredisini kaldır (2) · krediyi gerçekleşen yerine
+istenenden hesapla (1) · yastığı yine tüm koşuma yay (1) · kimlik bloğunu
+kaldır (1) · kimliği kalibre gibi raporla (1).
+
+⚠ **Yakalanmayan:** *"kimlikte sabiti yeniden üret"* (`METABOLIC_GAIN_MAX`
+yerine literal `0.5`). Test sabiti **kendi değeriyle** karşılaştırıyordu, yani
+sahte bir blok da geçiyordu — **§2.8'in tam deseni**, ve bu sefer testin
+kendisinde. Test, sabiti oynatıp kimliğin **takip ettiğini** doğrulayacak
+biçimde yeniden yazıldı; mutasyon o zaman yakalandı.
+
+### ⚠ Sonuçları
+
+- **`dau_runs/`'daki hiçbir koşum bugünün aletiyle karşılaştırılamaz.**
+  Evrenin fiziği değişti — D-036/D-037/D-042'den daha büyük bir kırılma.
+- **Yaşam uzunluğu artık sabit değil.** Ölüm mümkün ⇒ `n_events` kollar
+  arasında değişebilir ⇒ çift sayısı, `arm_digest`, güç hesabı etkilenir.
+  ⚠ İkinci ön-kayıtın N hesabı bunu içermeli.
+- ⏳ **GAP-19 şimdi tetiklendi.** D-051 gizli bağımlılığı yazmıştı: *"L1
+  düzeltilir de sayaç düzeltilmezse GAP-19 anında canlanır."* `F_agent` artık
+  dejenere değil ⇒ `select_for_transfer`'ın `f < LOW ∧ travma` dalı her zaman
+  ateşlemeyecek ⇒ travma-dışı anılar aktarılabilir hale gelecek ⇒ tutulup
+  tutulmayacakları **kırık saatle** hesaplanacak. **Bir sonraki iş budur ve
+  koşum ondan önce başlatılamaz.**
+
+### Sınırlar
+
+**Hiçbir koşum yapılmadı.** Bu kayıt fiziğin değiştiğini söylüyor, yeni fiziğin
+ne ürettiğini **değil**. Kazancın enerjiyi gerçekten dalgalandırıp
+dalgalandırmadığı, ölümün ne sıklıkta olduğu, ve `F_agent`'ın gerçekten
+yayılıp yayılmadığı **ölçülmedi** — küçük bir pilot şart. Üç sabit de
+kalibre değil ve ⚠ **parametreleri sonuca bakarak ayarlamak post-hoc
+tuning olur** (§2.7): pilot **yönü** gösterebilir, değeri seçemez.

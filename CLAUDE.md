@@ -24,12 +24,18 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). `origin` ile
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
-- **Suite:** `367 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-065.** Sıradaki kayıt **D-066** olarak açılır.
+- **Suite:** `378 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-066.** Sıradaki kayıt **D-067** olarak açılır.
 - **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
   cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
-- ⏳ **TEK AÇIK İŞ: A4 tasarım kararı — Yasin'in (D-007).** Aşağıdaki üç
-  seçenek, artık DR girdisiyle birlikte.
+- ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
+  defter teslim edileni yazıyor, tükenmek öldürüyor. ⚠ **Evrenin fiziği
+  değişti — `dau_runs/`'daki hiçbir koşum bugünün aletiyle karşılaştırılamaz.**
+- ⏳ **SIRADAKİ İŞ: GAP-19.** D-051'in gizli bağımlılığı **tetiklendi**:
+  `F_agent` artık dejenere değil ⇒ travma-dışı anılar aktarılabilir hale
+  gelecek ⇒ tutulup tutulmayacakları **kırık saatle** hesaplanacak.
+  ⚠ **Koşum bundan önce başlatılamaz.** Sonra küçük bir pilot: enerji
+  gerçekten dalgalanıyor mu, ölüm ne sıklıkta, `F_agent` yayılıyor mu.
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
