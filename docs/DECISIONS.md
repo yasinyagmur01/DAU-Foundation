@@ -5183,3 +5183,101 @@ alan hangisinin koştuğunu söylemiyor.
 - Ölçülmedi: yeni formülün gerçek koşumda ne kadar yayılım ürettiği. Bu
   **kasıtlı** — etkiye bakıp formül seçmek L9/§2.7 ihlali olurdu.
 - `METABOLIC_GAIN_CALIBRATED = False` **değişmedi** (K4).
+
+---
+
+## D-072 · 2026-08-13 · Landmark aletlendi — kollar artık aynı **yaşta** okunabiliyor
+
+**Durum:** kod değişikliği (saf aletleme) · **commit `345c9f3`** ·
+**girdi:** D-070/K1-K2-K5 · suite `400 passed`
+
+### Neden
+
+D-066'dan beri ömürler kola göre değişiyor (D-068: gen2'de `lived` 17 olay,
+`null`/`shuffle` 20). Yaşam sonunda okunan her uç nokta **iki soruyu aynı anda**
+cevaplıyor — kol ajanı nasıl değiştirdi, ve ajan ne kadar dayandı — ve ikincisi
+birinciyi boğuyor. D-071 aynı confound'u `F_agent`'ın havuz teriminin **içinde**
+buldu. Sabit ordinalde okumak kolları karşılaştırılabilir kılıyor.
+
+⚠ **Bedeli D-070/K5'te zaten kabul edildi:** karşılaştırılan şey bir **kesit**,
+yaşamın tamamı değil. İkinci ön-kayıtta ilan edilmiş sınır olarak yazılacak.
+
+### Ne eklendi
+
+| Nerede | Ne |
+|---|---|
+| `graph.py` | `_body_event_log` — olay başına enerji + drift; `reset_/get_body_event_log`, `_record_body_event` |
+| `constraints.py` | **`LANDMARK_EVENT = 10`** |
+| `run_cprime_multigen.py` | `_landmark_reading` — sabit ordinaldeki drift + enerji, artı **yaşam boyu ortalama enerji** |
+| `run_protocol_c_prime.py` | `ArmResult`: `events_lived` · `landmark_reached` · `landmark_energy` · `landmark_drift_flags/magnitudes` · `energy_mean_over_life` |
+| `tool_identity.py` | **`endpoints`** bloğu (`landmark_event`) |
+
+**Satır nerede yazılıyor:** `pool_step_node`'un **sonunda** — döngünün son
+düğümü orası: hasat girmiş, metabolik kredi uygulanmış, kriz travması drift
+haritasını çizmiş. Daha erken yazılsa satır **hâlâ olmakta olan** bir olayı
+anlatırdı. Drift **kopyalanıyor**: `DriftState` mutable ve ajan satır
+yazıldıktan sonra da yaralanmaya devam ediyor.
+
+**Hangi yaşamdan:** **faz 2**. Faz 1'de henüz adapter yok, üç kol özdeş —
+faz 1'den okunan bir landmark kola göre **hiç** değişemezdi. Ayrıca aktarılan
+drift'in geldiği yaşam da o.
+
+**`E_final` neden bırakıldı (K2):** onu **ölüm kuralının kendisi** belirliyor.
+Tükenerek ölen bir ajanın son enerjisi tanımı gereği 0.000 — pilotta altı kolun
+altısı. Ortalama burada **zaman integralinin ömre bölünmüşü**: `EventClock`
+birer birer tıklıyor ve her satır o olayın bir sonrakine kadar bıraktığı
+enerjiyi tutuyor.
+
+### `LANDMARK_EVENT = 10` ile `METABOLIC_GRACE_EVENTS = 10`
+
+Ayarlanmış bir uyum **değil**, aynı yapısal anın iki kez görünmesi: grace doğum
+geçişini örtüyor, karşılaştırmaya değer ilk ordinal onun hemen sonrası.
+
+⚠ **Testi yazarken sınır bir kez yanlış çakıldı ve test yakaladı.** İlk hâli
+*"landmark olayından sonra da yaşamaya devam eder"* diye iddia ediyordu;
+`should_continue` `len(event_log) >= GRACE` olduğunda floor'u kaldırıyor, yani
+**10. olay kapandıktan hemen sonra ölüm mümkün**. Doğru ifade: bir yaşam
+**10. olayına ulaşmadan bitemez** — `should_continue`, N. olayın koşulup
+koşulmayacağını `len(event_log)` N−1 iken soruyor. Test artık sınırı **iki
+yönlü** çakıyor: `LANDMARK_EVENT − 1`'de tükenmiş ajan yaşamaya devam ediyor,
+`LANDMARK_EVENT`'te ölüm mümkün hâle geliyor.
+
+### Sessiz fallback yasağı (§2.9) — iki yol da gürültülü
+
+- **Yaşam landmark'a ulaştı ama satırı yok** ⇒ `SystemExit`. Bu **bozuk
+  alet**tir, kısa yaşam değil, ve ikisi satırlardan ayırt edilemez.
+- **Yaşam landmark'tan önce bitti** ⇒ `NaN` + `[WARN]`, başka bir ordinalden
+  **ikame yok**. Grace landmark'ı örttüğü sürece erişilemez; kural tam da bu
+  yüzden yazıldı (D-070'in şartı).
+
+### Dur-kontrol (⚠ keşifsel, ön-kayıtlı değil)
+
+Mock LLM, 12 olaylık **gerçek akış**, tek kol, GPU'suz: **12 satır, ordinaller
+1…12**, landmark 10'dan okundu, `energy_mean_over_life` hesaplandı.
+⇒ Kalıcı teste çevrildi (0.25 sn). Gerekçe: grafik testleri satırın
+**yazıldığını**, okuyucu testleri **doğru satırın seçildiğini** kanıtlıyor ama
+aradaki **kavşağı** — yazılan ordinallerin okunanla uyuşması ve tamponun faz
+2'nin sonundan drenaja kadar yaşaması — ikisi de görmüyor. S5'te (D-063/L20)
+kırılan tam olarak orasıydı.
+
+### Mutasyon kontrolü (§2.4) — beşi de kırdı
+
+| Mutasyon | Kıran test |
+|---|---|
+| enerji krediden **önce** kaydediliyor | `test_body_event_log_records_energy_after_the_metabolic_credit` |
+| drift kopyalanmıyor, referans veriliyor | `test_body_event_row_snapshots_drift_instead_of_aliasing_it` |
+| landmark **son** satırdan okunuyor | `test_landmark_reading_reads_the_fixed_ordinal_not_the_last_event` (+3) |
+| eksik satır abort etmiyor | `test_missing_landmark_row_on_a_long_life_aborts` |
+| kol sonucu drenaj edilen logu okumuyor | `test_arm_result_carries_the_landmark_of_phase_two` |
+
+### Sınırlar
+
+- **Saf aletleme.** Hiçbir hesaplama değişmedi; `pool_step_node`'un döndürdüğü
+  patch aynı (`drift_state` artık aynı nesneyi bir değişkenden veriyor).
+- **Uç nokta henüz değişmedi.** Birincil hâlâ doğum-drift'ten okunuyor; landmark
+  alanları **yanında** duruyor. Değişimi ikinci ön-kayıt yapacak (K5).
+- **Landmark değerlerine bakılmadı** ve bakılmayacak (L9/§2.7): dur-kontrol
+  alanların *dolduğunu* doğruladı, *ne söylediğini* değil.
+- Society fiziği olmayan bir yaşamda satır **hiç yazılmıyor** (`pool_step_node`
+  erken dönüyor). C′ yolunda `env_state` her zaman var; okuyucu bu durumu
+  sessizce doldurmuyor, abort ediyor.
