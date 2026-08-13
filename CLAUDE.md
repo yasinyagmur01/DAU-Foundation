@@ -27,9 +27,26 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Suite:** `356 passed, 2 deselected`. Çalışma ağacı temiz.
 - **Son D-kaydı: D-061.** Sıradaki kayıt **D-062** olarak açılır.
 
-## ▶▶ SIRADAKİ İŞ — DR raporu gelince buradan başla
+## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
-**Yasin raporu sunup "devam et" dediğinde:**
+⚠ **DR raporu her an gelebilir.** Yasin'in DR hakkı tükendi, ~3–4 saat
+bekleme var (2026-08-12 gecesi). O gelene kadar **A yolu** koşulur; rapor
+sunulduğu anda **B yolu** öne geçer ve A yarıda bırakılabilir (üçü de
+bağımsız iş, yarım kalan zarar vermez).
+
+### ▸ A yolu — rapor gelmeden yapılacak üç iş, **bu sırayla**
+
+Üçü de DR cevabından bağımsız ve ikinci ön-kayıt için zaten gerekli.
+Yasin onayladı (2026-08-12). ⚠ **W** öneki bilerek: Faz A'nın **A1–A8**'i
+ayrı iştir ve **A4 = environment ayrımı**, karıştırma.
+
+| # | İş | Süre | Neden şimdi |
+|---|---|---|---|
+| **W1** | **Sahte-PE / confound testi.** D-059 Bulgu 4'te `lived` 4/4 `lr` değerinde `shuffle`'dan kolay öğreniliyor. Alternatif elenmedi: `lived`'in `chosen`'ı daima **düşük-PE**, ve taban model kısa/sık kalıpları zaten daha olası bulabilir. **Ölçüm:** korpustaki completion'ların **taban model log-olabilirliği** ile **PE**'si arasındaki korelasyon. Güçlüyse confound gerçek ve nicelenmiş olur | ~30 dk (korpus hazır: `dau_runs/training_artifacts/`, 8 kol) | İkinci ön-kayıta *"lived kolay öğreniliyor"* diye girmek, confound elenmeden **tehlikeli** |
+| **W2** | **S5 + S6 aletlemesi.** L20: altı ikincilin ikisi koşulamadı — S5'in verisi (`decision_to_extraction`, travmaya kadar geçen olay) JSON'a **hiç yazılmıyor**, S6'nın (`f_agent=None`) kolu **üretilmiyor** | ~1.5 sa kod+test, **GPU yok** | Saf aletleme; hangi A4 seçeneği seçilirse seçilsin lazım |
+| **W3** | **Uç nokta çözünürlük envanteri.** D-056: birincilin **%99'u sabit**. Alternatif uç noktaların **çözünürlüğü** ölçülür (kaç farklı değer, kaç seed'de kollar özdeş) | ~45 dk, **GPU yok** | ⚠ **Yalnız çözünürlük, ETKİ DEĞİL.** Hangi uç noktanın büyük `lived−shuffle` farkı verdiğine bakıp seçmek post-hoc tuning olur (§2.7, L9 yasakladı) |
+
+### ▸ B yolu — Yasin raporu sunup "devam et" dediğinde
 
 1. **`docs/research/2026-08-12_environment-differentiation-and-selection.md`**
    okunur — gönderilen brief odur, altı soru (S1–S6) orada.
@@ -75,7 +92,7 @@ havuz çökünce kimse ölmüyor. Ayrım üretmeyen evrenin sebebi bu.
 
 | İş | Not |
 |---|---|
-| **Sahte-PE kontrolü** | D-059 Bulgu 4: `lived` 4/4 `lr` değerinde `shuffle`'dan kolay öğreniliyor. Alternatif açıklama **elenmedi** — düşük-PE completion'lar taban model önselinden de kolay olabilir. Rastgele PE atanmış kolla kontrol, ~40 dk, korpus hazır |
+| ~~Sahte-PE kontrolü~~ | ⇒ **W1 oldu**, yukarıdaki A yolunda |
 | **İkinci ön-kayıt** | A4 kararından sonra. Girdiler: `lr` bandı (D-059), KTO kararı (GAP-18: `uniq_rejected` 100/94), S5 verisini kaydet, S6 kolunu üret, uç nokta seçimi (D-056) |
 | **13.3 saatlik doğrulayıcı koşum** | ⚠ **Kilit yazılmadan başlanmaz** |
 
