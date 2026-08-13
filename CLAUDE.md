@@ -19,43 +19,102 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-12, gece) — ⏳ **DR CEVABI BEKLENİYOR**
+# 1. Şu An Neredeyiz (2026-08-13) — ✅ **KARARLAR VERİLDİ, UYGULAMA BEKLİYOR**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). `origin` ile
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
 - **Son D-kaydı: D-070.** Sıradaki kayıt **D-071** olarak açılır.
-- **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
-  cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
-- ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
-  defter teslim edileni yazıyor, tükenmek öldürüyor. ⚠ **Evrenin fiziği
-  değişti — `dau_runs/`'daki hiçbir koşum bugünün aletiyle karşılaştırılamaz.**
-- ✅ **GAP-19 kapandı (D-067)** — kasa nerede kaldığını hatırlıyor; kasaya
-  giren her sayaç faz-yerel, çeviriyi yalnız kasa yapıyor. D-051'in *"ikisi
-  birlikte ya da hiçbiri"* şartı ödendi.
-- ✅ **Pilot koşuldu (D-068, N=2).** ① **mekanik olarak çalıştı:** ölüm var
-  (yaşamlar 19 ve 10 olay), **sınıf bariyeri kırıldı** (`low` 0.208 vs
-  **`normal` 0.413**; B2'de 120/120 `low`), `Δhavuz` 130.8 vs 62.2 (B2: ±%0.7),
-  bedel zinciri uçtan uca ateşledi (havuz çökünce hasat 8.0→6.17→0), ve
-  **yaşam uzunluğu kola göre değişti** (gen2: `lived` 17, `null`/`shuffle` 20).
-- ⏳ **SIRADAKİ İŞ — üç açık karar, üçü de Yasin'in:**
-  ① **Ölçüm penceresi:** sabit 50 olay, ölümün mümkün olduğu evrende
-  çalışmıyor (gen1'de **%71 padding**, alet *"arm not measurable"* diyor).
-  ② **Enerji okuma anı:** `E_final` hâlâ 0.000 — formül değil **seçilim**
-  yüzünden (tükenerek ölenin son enerjisi sıfırdır). `F_agent`'ın 0.4
-  ağırlığı hâlâ bilgi taşımıyor.
-  ③ **Davranış hâlâ çökmüş:** hasat neredeyse hep 8.0 (DEFECT); evren bedeli
-  kesiyor ama ajan davranışını değiştirmiyor. **D-065/J4 (GovSim) tam bunu
-  rapor ediyor** ve ölçülmüş tek kaldıraç bilişsel önsel ⇒ **A4-③ artık
-  spekülatif değil.**
+- **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
+  (D-065, §J) · **A4-① uygulandı** (D-066) · **GAP-19 kapandı** (D-067) ·
+  ilk pilot (D-068) · DR yerine yerel tarama (D-069, §K) · **yedi kilit karar
+  verildi** (D-070).
+- ⚠ **Evrenin fiziği değişti (D-066/D-067).** `dau_runs/`'daki **hiçbir**
+  koşum bugünün aletiyle karşılaştırılamaz — bu D-036/D-037/D-042'den daha
+  büyük bir kırılmadır.
 
-## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
+---
 
-⚠ **DR raporu her an gelebilir.** Yasin'in DR hakkı tükendi, ~3–4 saat
-bekleme var (2026-08-12 gecesi). O gelene kadar **A yolu** koşulur; rapor
-sunulduğu anda **B yolu** öne geçer ve A yarıda bırakılabilir (üçü de
-bağımsız iş, yarım kalan zarar vermez).
+## ▶▶ SIRADAKİ İŞ — üç kod değişikliği, **bu sırayla**
+
+Yedi kararın hepsi **D-070'te verildi** (Yasin onayladı). Sıradaki iş onların
+**uygulaması**. Üçü de GPU'suz, üçü de ayrı commit + kendi mutasyon kontrolü.
+Aralarında durmak güvenli.
+
+### 1. K4-b — `F_agent`'ın havuz terimi olay başına normalize (~30 dk)
+
+**Neden:** D-070 ölçtü — ham `|Δhavuz|` yayılımının **onda dokuzu ömür**:
+seed 4001 130.8/19 olay = 6.88 · seed 4002 62.2/10 = 6.22 ⇒ ham yayılım %110,
+olay başına **%10.7**. Bugünkü `F_agent`'ın ~%60'ı ömrü **iki kez** sayıyor
+(0.3 havuz ≈ ömür vekili + 0.3 hayatta kalma). Stearns 1989'un (D-069/V8)
+çift sayımı.
+
+**İş:** `f_agent_inputs` (`dau/foundation/self_model.py`) ve
+`dau/generation/fitness.py`. ⚠ **`events_lived` şu an `f_agent_inputs`'ta
+yok** — taşınması gerekiyor.
+⚠ Terim normalize edilince **zayıflayacak**; bu kabul edildi (D-070).
+
+### 2. Landmark aletlemesi (~1 sa)
+
+**Neden:** K1/K2/K5 landmark okumasına geçti (D-070).
+
+**İş:** 10. olaydaki **drift durumu** ve **enerji**, artı **zaman-integre
+enerji** kaydedilir. Desen hazır: `graph._pool_event_log` (D-063) aynen
+kopyalanabilir. Alanlar `ArmResult` / `BirthDriftLog`'a eklenir ⇒ `asdict`
+üzerinden JSON'a girer.
+
+⚠ Landmark = **10. olay**, ve `METABOLIC_GRACE_EVENTS = 10` olduğu için her
+soy landmark'ta **yapısal olarak hayatta**. Yine de *"landmark'tan önce ölen"*
+kuralı **yazılacak** (§2.9 sessiz fallback yasağı) — grace ileride değişirse
+kural sessizce boşa düşmemeli.
+
+### 3. LOCF'un kaldırılması (~1 sa, **en belirsizi**)
+
+**Neden:** D-069 — `_pad_pe_list` diziyi son gözlemle 50'ye tamamlıyor, bu
+literatürde **LOCF** ve Lachin 2015 (`10.1177/1740774515602688`) doğrudan
+eleştirisi: muhafazakâr değil, yanlılık iki yöne de olabilir, varyansı küçük
+gösterir. D-068'de gen1'in **%71'i** pad'di.
+
+**İş:** uç nokta pad edilmiş dizinin ortalaması olmaktan çıkar; **olay-başına
+oran** ikincil olarak yazılır.
+
+⚠ **Burada bir karar noktası çıkabilir ve Yasin'e sorulmalı:** `I3.4` kapısı
+**pad oranını** ölçüyor. Pad'lemeyi bırakırsak o kapı ne ölçecek?
+(`PREFLIGHT_INVARIANTS.md`'de I3.1/I3.4'ün anlam değişimi zaten not edildi.)
+
+### Sonra
+
+**İkinci ön-kayıt taslağı** (~1–2 sa): yedi kararın metne dökülmesi, K5'in
+sınırının ilanı (*"birincil, aktarılan drift'in kendisi değil, sabit yaşta
+okunan kesiti"*), geçerlilik kriterleri, ve **N'in K3'e göre yeniden
+hesabı** (Schoenfeld 1983: güç olay sayısına dayanır, bizde sansür yok ⇒
+olay = soy sayısı).
+
+**Ondan sonra koşum.** ⚠ **Kilit yazılmadan koşum başlamaz.**
+⚠ Yeni koşum **yeni seed'lerden** başlamalı: 2001–2043 ve 3001–3004 ve
+**4001–4002** kullanıldı, yoksa I0.7 abort eder.
+
+### ⚠ Bu iş sırasında geçerli olan sınırlar
+
+- **Hiçbir sabit sonuca bakılarak ayarlanmaz** (§2.7). Üç metabolik sabit
+  D-070'te *"olduğu gibi"* kilitlendi ve `METABOLIC_GAIN_CALIBRATED = False`
+  **kalıyor** — rapor bunu söylemeye devam etmeli.
+- **Uç nokta etkiye bakılarak seçilmez** (L9). Pilotun `pe_after` sayıları
+  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'li, alet *"arm not measurable"*
+  dedi.
+- **DR brief #5 gönderilemedi** (teknik sorun). Dosya duruyor:
+  `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md`.
+  D-069'un yerel taraması K1–K3'ü karara bağlanabilir hale getirdi ama
+  **kapatmadı**; DR düzelirse brief aynen sorulabilir. Taramanın
+  cevaplayamadığı üç şey §K.2'de.
+
+---
+
+## ▶ TARİHÇE — Faz A/B/C ve bekleme işleri (kapandı)
+
+⚠ Aşağısı **tarihçedir**; güncel iş yukarıda. Hangi kararın hangi adımdan
+çıktığını aramak için duruyor.
 
 ### ▸ A yolu — rapor gelmeden yapılacak üç iş, **bu sırayla**
 
@@ -671,10 +730,10 @@ kaymış.)
 | Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (**26 madde tanımlı, 24'ü kodda** — I1.2 testte, I2.3 yapısal) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
-| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
+| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.4** — ⚠ **§26 yeni: evrenin fiziği değişti** (D-054…D-068). `.html`/`.pdf` v2.4.3'te kaldı |
 | Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
-| Bekleyen DR sorusu (S1–S6) | `docs/research/2026-08-12_environment-differentiation-and-selection.md` |
+| Gönderilemeyen DR brief'i (#5) | `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` · yerine yapılan yerel tarama: `RECONCILIATION.md` **§K** |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
