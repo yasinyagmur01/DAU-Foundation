@@ -205,6 +205,17 @@ class BirthDriftLog:
     n_retrieval_context: int
     has_inherited_warning_marker: bool
     has_somatic_scale_marker: bool
+    # S6 shadow (D-003): what would have transferred with the Layer-4 fitness
+    # gate switched off. ⚠ Recorded here rather than as a fourth arm because
+    # the primary endpoint cannot see F_agent at all: birth_drift_magnitudes
+    # comes from GenerationRecord.inherited_drift, which is a straight copy of
+    # the parent's drift, and select_for_transfer only ever reads drift. So
+    # "f_agent=None, same test as the primary" is guaranteed identical by
+    # construction; the channel F_agent does gate is which engrams transfer.
+    f_agent_none_n_transfer_candidates: int = EMPTY_COUNT
+    f_agent_none_inherited_memory_ids: list[str] = field(default_factory=list)
+    f_agent_none_n_inherited_warnings: int = EMPTY_COUNT
+    f_agent_none_inheritance_identical: bool = False
 
 
 @dataclass
@@ -644,6 +655,19 @@ def transfer_to_heir(
         threat_marker=threat,
     )
 
+    # S6 shadow, taken after the real record so nothing it touches can reach
+    # the transfer that counts. Read-only against the vault: the candidate
+    # builder only lists nodes and scores them, and select_for_transfer works
+    # on freshly built candidate objects — so this costs a pass over the
+    # vault, not a fourth arm.
+    shadow = consolidate_generation(
+        parent_state,
+        memory_store,
+        f_agent=None,
+        reward_marker=reward,
+        threat_marker=threat,
+    )
+
     heir_id = heir_agent_id(gen1_arm, seed)
     # 1A: fresh niche via _seed_niche(seed) — not gen1's continuing pool.
     heir_blank = _initial_state(heir_id, seed)
@@ -683,6 +707,13 @@ def transfer_to_heir(
         n_retrieval_context=len(heir.retrieval_context),
         has_inherited_warning_marker=has_warning,
         has_somatic_scale_marker=has_scale,
+        f_agent_none_n_transfer_candidates=len(shadow.inherited_memories),
+        f_agent_none_inherited_memory_ids=list(shadow.inherited_memories),
+        f_agent_none_n_inherited_warnings=len(shadow.inherited_warning_ids),
+        f_agent_none_inheritance_identical=(
+            list(shadow.inherited_memories) == list(record.inherited_memories)
+            and list(shadow.inherited_warning_ids) == list(record.inherited_warning_ids)
+        ),
     )
     print(
         f"[MULTIGEN][TRANSFER] {parent_state.agent_id} → {heir_id} "

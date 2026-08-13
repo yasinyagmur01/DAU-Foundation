@@ -72,6 +72,7 @@ from dau.diagnostics.tool_identity import (
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
     GENERATION_INHERITED_KEY,
+    consolidate_generation,
     GENERATION_MIN_RECALL,
     INHERITED_WARNING_KEY,
     RECORD_ID_KEY,
@@ -1638,3 +1639,84 @@ def test_run_life_clears_the_commons_buffer_before_streaming(
 
     counters = [row["event_counter"] for row in graph_mod.get_pool_event_log()]
     assert STALE_POOL_ROW_COUNTER not in counters
+
+
+# ---------------------------------------------------------------------------
+# S6 — f_agent=None shadow record (L20; the arm B2 could not produce)
+# ---------------------------------------------------------------------------
+
+
+def test_transfer_records_what_f_agent_none_would_have_inherited(
+    store: MemoryStore,
+) -> None:
+    """The fitness gate's effect must be readable without a fourth arm.
+
+    The parent here is low-fitness with a transferable trauma, which is the
+    branch where the two paths disagree: with F_agent the trauma transfers as
+    an inherited warning, without it the legacy salience rules decide.
+    """
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    _heir, record, birth = transfer_to_heir(
+        parent_state=parent,
+        memory_store=store,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+    )
+
+    assert birth.f_agent_none_n_transfer_candidates == len(
+        birth.f_agent_none_inherited_memory_ids
+    )
+    assert birth.n_inherited_warnings == len(record.inherited_warning_ids)
+    # The gate is not decorative on this parent: it marks a warning the
+    # legacy path does not.
+    assert birth.f_agent_none_n_inherited_warnings != birth.n_inherited_warnings
+    assert birth.f_agent_none_inheritance_identical is False
+
+
+def test_f_agent_none_shadow_does_not_disturb_the_real_transfer(
+    store: MemoryStore,
+) -> None:
+    """The shadow reads the vault; it must not change what actually transfers.
+
+    A second consolidate_generation that wrote to the store would corrupt the
+    heir's inheritance — the exact failure the shadow exists to avoid paying
+    for with a fourth arm.
+    """
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    nodes_before = {node.id for node in store.list_nodes(parent.agent_id)}
+
+    _heir, record, birth = transfer_to_heir(
+        parent_state=parent,
+        memory_store=store,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+    )
+
+    assert {node.id for node in store.list_nodes(parent.agent_id)} == nodes_before
+    assert birth.inherited_memory_ids == list(record.inherited_memories)
+    assert birth.n_transfer_candidates == len(record.inherited_memories)
+
+
+def test_birth_drift_cannot_see_f_agent_at_all(store: MemoryStore) -> None:
+    """Why S6 is not a fourth arm: the primary endpoint is blind to F_agent.
+
+    birth_drift_magnitudes comes from GenerationRecord.inherited_drift, which
+    consolidate_generation copies from the parent's drift; select_for_transfer
+    only reads drift. So "f_agent=None, same test as the primary" is identical
+    by construction, and running it as an arm would buy a known answer.
+    """
+
+    parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    with_gate = consolidate_generation(parent, store, f_agent=0.0)
+    without_gate = consolidate_generation(parent, store, f_agent=None)
+
+    assert with_gate.inherited_drift.magnitudes == without_gate.inherited_drift.magnitudes
+    assert with_gate.inherited_drift.flags == without_gate.inherited_drift.flags
+    # Same drift, different inheritance — that is the channel S6 can measure.
+    # On this parent the id set survives both paths and the disagreement is in
+    # the marking: the gate transfers the trauma as an inherited warning with a
+    # negative somatic scale, the legacy path transfers it unmarked.
+    assert with_gate.inherited_warning_ids != without_gate.inherited_warning_ids
+    assert with_gate.inherited_somatic_scales != without_gate.inherited_somatic_scales
