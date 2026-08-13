@@ -25,7 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `356 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-061.** Sıradaki kayıt **D-062** olarak açılır.
+- **Son D-kaydı: D-062.** Sıradaki kayıt **D-063** olarak açılır.
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
@@ -42,7 +42,7 @@ ayrı iştir ve **A4 = environment ayrımı**, karıştırma.
 
 | # | İş | Süre | Neden şimdi |
 |---|---|---|---|
-| **W1** | **Sahte-PE / confound testi.** D-059 Bulgu 4'te `lived` 4/4 `lr` değerinde `shuffle`'dan kolay öğreniliyor. Alternatif elenmedi: `lived`'in `chosen`'ı daima **düşük-PE**, ve taban model kısa/sık kalıpları zaten daha olası bulabilir. **Ölçüm:** korpustaki completion'ların **taban model log-olabilirliği** ile **PE**'si arasındaki korelasyon. Güçlüyse confound gerçek ve nicelenmiş olur | ~30 dk (korpus hazır: `dau_runs/training_artifacts/`, 8 kol) | İkinci ön-kayıta *"lived kolay öğreniliyor"* diye girmek, confound elenmeden **tehlikeli** |
+| ~~W1~~ | ✅ **D-062** — confound *tarif edildiği biçimiyle* **yok** (PE ↔ token başı olabilirlik ρ=+0.063, p=0.37; uzunluk kontrollü kısmi +0.044). **Ama D-059 Bulgu 4 seed-kararlı değil:** seed bazında 2 seed `lived` lehine, 1 seed **tersine**, 1 seed sıfır. Confound'un yeri değişti: **uzunluk → taban marj → kayıp farkı**. Yan bulgu: eğitim dizilerinin **%85.5'i 512 tavanında kesiliyor** ve sohbet şablonu başlığı kayboluyor (D-027'nin gerekçesi o dizilerde bozuluyor) | — | ✅ |
 | **W2** | **S5 + S6 aletlemesi.** L20: altı ikincilin ikisi koşulamadı — S5'in verisi (`decision_to_extraction`, travmaya kadar geçen olay) JSON'a **hiç yazılmıyor**, S6'nın (`f_agent=None`) kolu **üretilmiyor** | ~1.5 sa kod+test, **GPU yok** | Saf aletleme; hangi A4 seçeneği seçilirse seçilsin lazım |
 | **W3** | **Uç nokta çözünürlük envanteri.** D-056: birincilin **%99'u sabit**. Alternatif uç noktaların **çözünürlüğü** ölçülür (kaç farklı değer, kaç seed'de kollar özdeş) | ~45 dk, **GPU yok** | ⚠ **Yalnız çözünürlük, ETKİ DEĞİL.** Hangi uç noktanın büyük `lived−shuffle` farkı verdiğine bakıp seçmek post-hoc tuning olur (§2.7, L9 yasakladı) |
 
@@ -140,6 +140,8 @@ Kilit kapandığı için aşağıdakilerin **hiçbiri** bu koşuma giremez.
 | **Precision-PE `VAR_REF`** | L13 — π tavanda takılı, mekanizma atıl |
 | **`SYSTEM_PROMPT` lexicon** | L14 — davranışsal sınıflandırıcıyı besliyor |
 | **Popülasyon / N nesil** | **D-014**: hedef N nesil, gen1→gen2 en kısa çalışabilir biçim |
+| **`DPO_MAX_SEQUENCE_TOKENS` yeniden değerlendirmesi** | **D-062** Bulgu 4: dizilerin **%85.5'i** 512'de kesiliyor (tam uzunluk medyan 894), ve kesme prompt'un başından olduğu için **sohbet şablonu başlığı + BOS gidiyor** ⇒ D-027'nin *"eğitim=çıkarım biçimi"* gerekçesi o dizilerde geçersiz. ⚠ Kilitli sabit, bu koşumda dokunulmadı |
+| **Uzunluk kontrolü (çift kurma)** | **D-062** Bulgu 2: `chosen` ort. 57.2 vs `rejected` 38.7 token, seed'e göre fark −4.6 … +42.1. DPO **toplam** logp kullandığı için uzunluk doğrudan marja giriyor; taban marjın seed'ler arası %100↔%7 salınımının açıklaması bu |
 | **Magic number kalıntıları** | `time.sleep(10)`, bare `0.5`, `k: int = 5`. **Cursor'a uygun** |
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
