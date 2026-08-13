@@ -1,0 +1,237 @@
+ARASTIRMA TALEBI — TEK SOY YERINE POPULASYON: SECILIM SEMASI VE ORTAK HAVUZ
+
+Tarih: 2026-08-13
+
+
+0. BU TALEBI OKUYAN ICIN: NEYE IHTIYACIMIZ VAR, NEYE YOK
+
+Ihtiyacimiz olan: kucuk populasyonlarda ureme/secilim semasinin ve paylasilan
+bir ortak kaynagin deney tasarimina nasil kuruldugua dair yerlesik yontem
+bilgisi. Adlari, tuzaklari, ve olculmus karsilastirmalar.
+
+Ihtiyacimiz olmayan:
+
+- Bizim proje gecmisimiz. Erisimin yok; makul gorunen ama kaynaksiz bir
+  anlati bize zarar verir.
+- "Sizin kurulumunuz hangi sonucu verir" tahmini. Etkiyi ongorup tasarim
+  secmek post-hoc olur ve on-kaydi gecersiz kilar. Gecerlilik ve ayirt etme
+  gucu olcutleri istiyoruz, etki buyuklugu degil.
+- LLM/prompt tarafi. Ayri bir turda kapandi (bkz. bolum 6).
+- Kod onerisi. Uygulamayi biz yaziyoruz; sorumuz yontem sorusu.
+
+KAYNAK KIMLIGI KRITIK VE SICILIMIZ KOTU. Onceki bes talepte yedi kaynak
+yanlis atfedildi. Ornekler: bir DOI (10.1007/s00778-019-00574-9) bir
+hareket-ekolojisi makalesine atfedilmisti ama aslinda bir VLDB Journal
+derlemesine ait; bir iddia yazar ve yil yerine derginin ISSN numarasiyla
+"kaynaklandirilmisti"; Distinct-N ve Self-BLEU olcutlerinin ikisi birden
+"Papineni 2002"ye baglanmisti, oysa o BLEU makalesidir.
+
+Bu hata bize de oldu: kendi yerel taramamizda Schoenfeld'in orneklem
+makalesi icin 10.2307/2530643 yazdik; acip baktigimizda Greenland ve Robins
+1985 cikti. Dogrusu 10.2307/2531021. Yani dogrulama dongusu tek tarafli bir
+suclama degil, biz de her kimligi Crossref veya arXiv uzerinden tek tek
+aciyoruz ve dogrulanmayani kullanmiyoruz.
+
+Her iddia icin yazar, yil ve kalici kimlik (DOI veya arXiv numarasi) ver.
+Emin degilsen "dogrulanamadi" yaz. Uydurulmus bir referans, cevapsiz bir
+sorudan daha pahalidir.
+
+
+1. SISTEMIN DURUST TARIFI
+
+Ajan: yerel calisan Llama-3.1-8B-Instruct, 4-bit nicelenmis, ajan basina
+ayri bir LoRA adapter. Olay basina bir karar veriyor. Zaman olay sirali,
+duvar saati kullanilmiyor.
+
+Ortam: lojistik olarak yenilenen ortak kaynak havuzu (commons / CPR). Ajanin
+karari, deterministik bir eslemeyle hasat miktarina cevriliyor. Bu eslemede
+LLM yargic olarak kullanilmiyor.
+
+Bedel: hasat enerjiye donuyor (icbukey, doyuma giden bir kazanc egrisiyle),
+bos havuz hicbir sey vermiyor, ve enerji tukenince yasam biter.
+
+Nesil: ata bir varis uretiyor. Varis, atanin anilarini ve drift durumunu
+miras aliyor ama atanin LoRA adapterini almiyor.
+
+ONEMLI: BIRINCIL UC NOKTAMIZ BIR AGIRLIK VEKTORU DEGILDIR. Onceki bir turda
+bu yanlis anlasildi ve gelen cevabin yarisi optimizer gurultusu uzerine
+kuruldu. Dogrusu su: uc nokta, varisin sabit bir yasta okunan drift
+durumunun buyukluk vektorudur. Uc alan uzerinde tanimli (kaynak, sosyal,
+belirsizlik) ve ajanin yasadiklarindan tureyen bir DURUM olcusudur. Model
+parametrelerine bakan bir olcu degildir.
+
+Kontrol kollari: ayni tercih ciftleriyle ama tercih yonu yuzde yuz ters
+cevrilmis egitim (shuffle), ve hic egitilmemis kol (null). Yani sordugumuz
+sey "egitim oldu mu" degil, "egitimin icerigi yasama ozgu mu".
+
+1.1 DEGISTIREMEYECEGIMIZ KISITLAR (oneriler bunlara uymali)
+
+- Trait enjeksiyonu yok. Ajana hicbir kisilik veya egilim degeri atanamaz.
+  Her sey yasanandan cikmali. Bu bir aksiyom, tasarim tercihi degil.
+- Davranissal onsel yok. Karar kurali veya evrenselleştirme turu bilissel
+  onseller kapali (ayni aksiyomun sonucu). Bunun bedelini biliyoruz,
+  bolum 2.2'ye bakin.
+- LLM yargic yok. Butun metrikler deterministik Python.
+- Duvar saati yok. Zaman olay sirasindan ibaret.
+
+
+2. NEREDEYIZ: BEDEL KURULDU, SECILIM KATMANI HALA TEK SOY
+
+2.1 Bedel calisiyor
+
+Onceki tasarimda olum yapisal olarak imkansizdi ve hayatta kalma terimi 120
+kolun 120'sinde 1.0 okuyordu. Metabolik dongu kapatildiktan sonra, iki
+tohumluk kesifsel bir pilotta: yasamlar 50 olaylik butceye karsi 19 ve 10
+olayda bitti; havuz coktugunde gerceklesen hasat 8.0'dan 6.17'ye, oradan
+sifira dustu; bir varis ikinci nesilde 17 olay yasadi, diger iki kolun
+varisleri 20 olay yasadi.
+
+Yani bedel zinciri uctan uca atesliyor.
+
+2.2 AMA DAVRANIS COKUK VE BUNU SORMUYORUZ
+
+Ayni pilotta ajanlar olaylarin yuzde 94 ile 100'unde en yuksek hasadi
+(defect) secmeye devam etti: bedeli oduyor, havuzu cokertiyor, oluyor ve
+davranisini degistirmiyor. Onceki bir turda bunun evrenimize ozgu olmadigini,
+LLM ajanlarinin ortak kaynak ikilemini kendiliginden cozemedigini ogrendik.
+
+Bu talep bunu cozmeyi sormuyor. Tek olculmus kaldirac (bilissel onsel) bizde
+aksiyom geregi kapali (bolum 1.1) ve bu, ilan edilmis bir sinir olarak
+on-kayda yazilacak. Sorumuz su: boyle bir populasyonda secilim iddiasi
+kurulabilir mi, ve kurulamiyorsa bunu ONCEDEN hangi olcutle anlariz?
+
+2.3 Populasyon tarafinda elimizde ne var
+
+Zaten coklu ajan olan kisimlar:
+- Havuz fizigi. N ajanin talebi oransal olarak bolusuluyor; kitlikta herkes
+  istediginden az aliyor.
+- Kriz travmasi ajan basina uygulaniyor.
+- Iki ajanli bir sosyal katman var: rakibin isbirligi olasiligi uzerine
+  Markov beklentisi.
+
+Hala tek ajan olan kisimlar:
+- Her ajan kendi havuz kopyasiyla doguyor. Yani havuz su an ortak mulk degil,
+  ozel mulk.
+- Grafik dongusu akis basina tek bir ajan yurutuyor.
+- Ureme tekil: bir ebeveyn bir varis uretiyor. "Kim urer, kac varis" diye bir
+  katman hic yok.
+
+
+3. ASIL SORU
+
+Ortak bir kaynagi paylasan, onlarca bireylik bir populasyonda secilim iddiasi
+nasil kurulur? Ve mudahale (bizde: yasanmis tercihlerle egitim) bireye
+uygulanip ortam paylasiliyorken, kollar birbirini kirletmeden nasil
+karsilastirilir?
+
+
+4. CEVAPLANMASINI ISTEDIGIMIZ SORULAR
+
+SORU 1 — Kucuk populasyonda ureme ve secilim semasi
+
+Onlarca bireylik populasyonlarda hangi semalar yerlesik: kesme (truncation),
+turnuva, uygunlukla orantili, Moran veya duragan durum (steady state) mi,
+yoksa nesil nesil (generational) mi?
+
+- Bunlar arasinda olculmus karsilastirma var mi? Hangisi kucuk N'de secilim
+  baskisini korurken cesitliligi en az yok ediyor?
+- Populasyon sabit boyutta mi tutulur, yoksa dogum olum dengesine mi
+  birakilir? Bizde olum zaten davranisin sonucu; bu, sabit boyut varsayimini
+  ihlal ediyor mu?
+
+SORU 2 — Suruklenme mi secilim mi: kucuk N'de nasil ayrilir
+
+N onlarcayken rastgele suruklenme (genetic drift) gercek bir rakip aciklama.
+
+- Bir degisimin secilim oldugunu gostermek icin hangi tasarimlar
+  kullaniliyor: tekrarli (replike) populasyonlar, notr isaretli soylar,
+  suruklenme notr kontroller?
+- Suruklenmeyi dislamak icin olculmus bir asgari N veya asgari nesil sayisi
+  var mi, yoksa bu her zaman etki buyuklugune mi bagli?
+- Bizim null ve shuffle kollarimiz bu rolu ustlenebilir mi, yoksa suruklenme
+  kontrolu ayri bir sey mi?
+
+SORU 3 — ORTAK HAVUZDA KOL KIRLENMESI (bu talebin en kritik sorusu)
+
+Mudahale bireye uygulaniyor ama ortam paylasiliyor. Iki tasarim mumkun ve
+sonuclari farkli:
+
+(a) Kol basina ayri havuz. Her kol kendi populasyonu ve kendi otlagiyla
+    kosar. Kollar bagimsiz kalir, ama farkli davranislar birbiriyle DOGRUDAN
+    rekabet etmez.
+
+(b) Tek havuz, karisik kollar. lived, null ve shuffle ajanlari ayni otlakta
+    yasar. Dogrudan rekabet olur, ama bir kolun asiri hasadi digerinin
+    ortamini degistirir, yani bagimsizlik varsayimi duser.
+
+Sorular:
+- Bu ayrimin literaturde bir adi var mi, ve hangi kosulda hangisi
+  savunulabilir sayiliyor?
+- (b) secilirse, bir kolun digerinin ortamini degistirmesi nasil ele
+  aliniyor: frekansa bagli secilim, referans veya isaretli sus kullanimi,
+  yoksa istatistik duzeyinde (kumelenmis tasarim) duzeltme mi?
+- (a) secilirse, "rekabet etmeden secilim" iddiasi hangi noktada zayiflar?
+
+SORU 4 — Uygunluk hem secilim girdisi hem olculen sonucken
+
+Populasyonda uygunluk skorumuz kimin uredigini belirleyecek, ve ayni zamanda
+raporladigimiz bir sonuc. Bu dongusel.
+
+- Yapay yasam ve deneysel evrim literaturunde bu dongusellik nasil kiriliyor?
+  Secilim olcutu ile sonuc olcutunun ayri tutulmasi standart mi, yoksa ayni
+  olmasi kabul mu ediliyor?
+- Uygunlugu olcen ile secen ayni sayiysa, hangi cikarimlar gecersiz oluyor?
+
+SORU 5 — Kac nesil: "birikimli kalitim" iddiasinin citasi
+
+Hedefimiz N nesil; bugun elimizde ata ve varis, yani iki nesil var.
+
+- Tek adimlik aktarim ile birikimli veya kalitsal etki iddiasi arasindaki
+  fark literaturde nasil konuyor, ve kac nesil olculmus bir cita olarak
+  geciyor?
+- Nesil sayisi arttikca biriken artefaktlar neler (ornegin baslangic
+  kosullarinin unutulmasi, cesitliligin tukenmesi), ve bunlar hangi
+  teshislerle izleniyor?
+
+SORU 6 — Sabit hesap butcesi altinda: daha cok birey mi, daha cok nesil mi
+
+Bizim kisitimiz GPU saati ve sert. Kaba olcek: bir olay yaklasik 3.3 saniye.
+10 birey, 5 nesil, 50 olay, 3 kol ve 40 tohum yaklasik 270 saat eder.
+
+- Sabit degerlendirme butcesi altinda populasyon buyuklugu ile nesil sayisi
+  arasindaki takas icin olculmus bir rehber var mi?
+- Guc, birey sayisina mi nesil sayisina mi daha duyarli? Bu, "guc olay
+  sayisina dayanir" mantigiyla nasil uzlasiyor?
+- Kucuk butcede yasami kisaltmak (ornegin 50 olaydan 30 olaya) hangi noktada
+  olctugumuz seyi bozar?
+
+
+5. CEVABIN BICIMI
+
+Her iddia icin dort sey istiyoruz:
+
+1. Ne soyleniyor. Tek cumle.
+2. Kaynak. Yazar, yil, DOI veya arXiv numarasi. Emin degilsen
+   "dogrulanamadi" yaz.
+3. Kanit turu. Olculmus deney mi, simulasyon mu, teorik oneri mi?
+4. Bizim kurulumumuza uyarlanabilirligi. Hangi varsayimi ihlal ediyor?
+
+Bir oneri bizim olctugumuz bir sayiyla celisiyorsa celiskiyi goster; biz o
+sayiyi yeniden olceriz. Gecmis turlarda en degerli cikti, bizim
+varsayimimizi curuten satir oldu.
+
+Bir oneri bolum 1.1'deki kisitlardan birini ihlal ediyorsa (trait
+enjeksiyonu, davranissal onsel, LLM yargic, duvar saati) yine de yaz, ama
+hangi kisiti ihlal ettigini isaretle. Kisiti gevsetmenin bedelini bilmek,
+oneriyi hic gormemekten iyidir.
+
+
+6. BU TALEBIN BILEREK DISARIDA BIRAKTIKLARI
+
+- Davranis cokusunu cozmek. Tek olculmus kaldirac aksiyom geregi kapali;
+  bolum 2.2'de sinir olarak duruyor.
+- Uc nokta tanimi ve sansurleme. Onceki talebin konusuydu; sabit yasta kesit
+  ve olay basina oran karari verildi ve uygulandi.
+- Ogrenme orani, DPO ayarlari, model secimi, nicemleme. Olculdu, donduruldu.
+- "Hangi tasarim daha buyuk fark verir." Bilerek sorulmuyor, bolum 0.
+- Bizim karar gecmisimiz. Erisimin yok.
