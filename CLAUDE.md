@@ -19,95 +19,76 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-13) — ✅ **KARARLAR VERİLDİ, UYGULAMA BEKLİYOR**
+# 1. Şu An Neredeyiz (2026-08-13) — ✅ **ÜÇ KOD DEĞİŞİKLİĞİ DE BİTTİ**
 
-- **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). `origin` ile
-  senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
-  B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
-- **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-070.** Sıradaki kayıt **D-071** olarak açılır.
+- **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
+  `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
+  etiketinde. ⚠ **Bugünün altı commit'i henüz push edilmedi.**
+- **Suite:** `410 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-073.** Sıradaki kayıt **D-074** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
-  (D-065, §J) · **A4-① uygulandı** (D-066) · **GAP-19 kapandı** (D-067) ·
-  ilk pilot (D-068) · DR yerine yerel tarama (D-069, §K) · **yedi kilit karar
-  verildi** (D-070).
-- ⚠ **Evrenin fiziği değişti (D-066/D-067).** `dau_runs/`'daki **hiçbir**
-  koşum bugünün aletiyle karşılaştırılamaz — bu D-036/D-037/D-042'den daha
-  büyük bir kırılmadır.
+  (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
+  tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
+  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)**.
+- ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
+  (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
+  karşılaştırılamaz.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — üç kod değişikliği, **bu sırayla**
+## ▶▶ SIRADAKİ İŞ — **ikinci ön-kayıt taslağı**
 
-Yedi kararın hepsi **D-070'te verildi** (Yasin onayladı). Sıradaki iş onların
-**uygulaması**. Üçü de GPU'suz, üçü de ayrı commit + kendi mutasyon kontrolü.
-Aralarında durmak güvenli.
+Üç kod değişikliğinin üçü de bitti, her biri kendi commit'i ve mutasyon
+kontrolüyle. **Kod tarafında koşumdan önce yapılacak zorunlu iş kalmadı.**
 
-### 1. K4-b — `F_agent`'ın havuz terimi olay başına normalize (~30 dk)
+Sıradaki iş **ikinci ön-kayıt taslağı** (~1–2 sa, GPU'suz). İçermesi gerekenler:
 
-**Neden:** D-070 ölçtü — ham `|Δhavuz|` yayılımının **onda dokuzu ömür**:
-seed 4001 130.8/19 olay = 6.88 · seed 4002 62.2/10 = 6.22 ⇒ ham yayılım %110,
-olay başına **%10.7**. Bugünkü `F_agent`'ın ~%60'ı ömrü **iki kez** sayıyor
-(0.3 havuz ≈ ömür vekili + 0.3 hayatta kalma). Stearns 1989'un (D-069/V8)
-çift sayımı.
-
-**İş:** `f_agent_inputs` (`dau/foundation/self_model.py`) ve
-`dau/generation/fitness.py`. ⚠ **`events_lived` şu an `f_agent_inputs`'ta
-yok** — taşınması gerekiyor.
-⚠ Terim normalize edilince **zayıflayacak**; bu kabul edildi (D-070).
-
-### 2. Landmark aletlemesi (~1 sa)
-
-**Neden:** K1/K2/K5 landmark okumasına geçti (D-070).
-
-**İş:** 10. olaydaki **drift durumu** ve **enerji**, artı **zaman-integre
-enerji** kaydedilir. Desen hazır: `graph._pool_event_log` (D-063) aynen
-kopyalanabilir. Alanlar `ArmResult` / `BirthDriftLog`'a eklenir ⇒ `asdict`
-üzerinden JSON'a girer.
-
-⚠ Landmark = **10. olay**, ve `METABOLIC_GRACE_EVENTS = 10` olduğu için her
-soy landmark'ta **yapısal olarak hayatta**. Yine de *"landmark'tan önce ölen"*
-kuralı **yazılacak** (§2.9 sessiz fallback yasağı) — grace ileride değişirse
-kural sessizce boşa düşmemeli.
-
-### 3. LOCF'un kaldırılması (~1 sa, **en belirsizi**)
-
-**Neden:** D-069 — `_pad_pe_list` diziyi son gözlemle 50'ye tamamlıyor, bu
-literatürde **LOCF** ve Lachin 2015 (`10.1177/1740774515602688`) doğrudan
-eleştirisi: muhafazakâr değil, yanlılık iki yöne de olabilir, varyansı küçük
-gösterir. D-068'de gen1'in **%71'i** pad'di.
-
-**İş:** uç nokta pad edilmiş dizinin ortalaması olmaktan çıkar; **olay-başına
-oran** ikincil olarak yazılır.
-
-⚠ **Burada bir karar noktası çıkabilir ve Yasin'e sorulmalı:** `I3.4` kapısı
-**pad oranını** ölçüyor. Pad'lemeyi bırakırsak o kapı ne ölçecek?
-(`PREFLIGHT_INVARIANTS.md`'de I3.1/I3.4'ün anlam değişimi zaten not edildi.)
-
-### Sonra
-
-**İkinci ön-kayıt taslağı** (~1–2 sa): yedi kararın metne dökülmesi, K5'in
-sınırının ilanı (*"birincil, aktarılan drift'in kendisi değil, sabit yaşta
-okunan kesiti"*), geçerlilik kriterleri, ve **N'in K3'e göre yeniden
-hesabı** (Schoenfeld 1983: güç olay sayısına dayanır, bizde sansür yok ⇒
-olay = soy sayısı).
+1. **Yedi kararın metne dökülmesi** (D-070) — kilitli hâlleriyle.
+2. **K5'in sınırının ilanı:** *"birincil uç nokta, aktarılan drift'in kendisi
+   değil, sabit yaşta okunan karşılaştırılabilir kesitidir."*
+3. **Hangi okumanın birincil olduğu.** Alet ikisini de üretiyor ama ön-kayıt
+   **seçmek zorunda** (D-073 bunu bilerek açık bıraktı):
+   - birincil: `landmark_drift_magnitudes` (K5)
+   - PE ikincilleri: `delta_pe_landmark` (sabit yaş) **ve** `delta_pe`
+     (olay başına oran) — hangisi S3/S4'ün ön-kayıtlı hâli?
+   - enerji: `landmark_energy` **ve** `energy_mean_over_life` (K2 ikisini de
+     istedi — ikisi de birincil olamaz)
+4. **Geçerlilik kriterleri.** ⚠ **`I3.4` artık bayrak basmıyor** (D-073) ⇒
+   erken sonlanma oranının **eşiği ön-kayıtta** belirlenmeli, yoksa hiçbir
+   yerde belirlenmemiş olur.
+5. **N'in K3'e göre yeniden hesabı** (Schoenfeld 1983: güç olay sayısına
+   dayanır, sansür yok ⇒ olay = soy sayısı).
 
 **Ondan sonra koşum.** ⚠ **Kilit yazılmadan koşum başlamaz.**
-⚠ Yeni koşum **yeni seed'lerden** başlamalı: 2001–2043 ve 3001–3004 ve
-**4001–4002** kullanıldı, yoksa I0.7 abort eder.
+⚠ Yeni koşum **yeni seed'lerden** başlamalı: **2001–2043 · 3001–3004 ·
+4001–4002** diskte adapter bıraktı (`dau_runs/adapters/`, 102 dizin) ⇒ bu
+seed'lerle başlanırsa **I0.7 abort eder**.
+⚠ Ayrıca 7777 (D-072/D-073 dur-kontrolleri) ve 9101 (`SEED_UNIT`, testler)
+**adapter yazmadı** — `null` kolu, LoRA kapalı — yani I0.7'yi tetiklemezler,
+ama karışıklık olmaması için deneyde kullanılmamalı.
+
+### ⚠ Ön-kayıt yazılırken elde olan yeni alanlar
+
+| Nerede | Alan |
+|---|---|
+| `ArmResult` | `events_lived_phase1/2` · `landmark_reached` · `landmark_energy` · `landmark_drift_flags/magnitudes` · `energy_mean_over_life` · `pe_before/after_landmark` · `delta_pe_landmark` · `pe_before/after_at_landmark` |
+| `Gen2Result` | `events_lived` · `mean_pe_landmark` · `mean_pe_at_landmark` |
+| `BirthDriftLog` | `f_agent_t_survived` · `f_agent_t_generation` |
+| `tool_identity` | `fitness` bloğu · `endpoints` bloğu |
+| `describe_pe_window` | `pe_locf_padding=False` · `pe_landmark_event` |
 
 ### ⚠ Bu iş sırasında geçerli olan sınırlar
 
 - **Hiçbir sabit sonuca bakılarak ayarlanmaz** (§2.7). Üç metabolik sabit
   D-070'te *"olduğu gibi"* kilitlendi ve `METABOLIC_GAIN_CALIBRATED = False`
-  **kalıyor** — rapor bunu söylemeye devam etmeli.
+  **kalıyor**.
 - **Uç nokta etkiye bakılarak seçilmez** (L9). Pilotun `pe_after` sayıları
-  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'li, alet *"arm not measurable"*
-  dedi.
+  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'li. D-072/D-073'ün
+  dur-kontrollerinde de yalnız *"alan doluyor mu"* soruldu.
 - **DR brief #5 gönderilemedi** (teknik sorun). Dosya duruyor:
   `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md`.
   D-069'un yerel taraması K1–K3'ü karara bağlanabilir hale getirdi ama
-  **kapatmadı**; DR düzelirse brief aynen sorulabilir. Taramanın
-  cevaplayamadığı üç şey §K.2'de.
+  **kapatmadı**; taramanın cevaplayamadığı üç şey §K.2'de.
 
 ---
 
@@ -220,7 +201,7 @@ sayıyla söylüyor.
 ⚠ İki liste ayrı: **birincisi olmadan koşum başlayamaz**, ikincisi koşuma
 girip girmeyeceği tartışılacak adaylar.
 
-### A. Yedi kilit kararı — ✅ **HEPSİ VERİLDİ (D-070)**
+### A. Yedi kilit kararı — ✅ **VERİLDİ (D-070) ve UYGULANDI (D-071…D-073)**
 
 | # | Karar | Seçilen |
 |---|---|---|
@@ -234,13 +215,19 @@ girip girmeyeceği tartışılacak adaylar.
 | **K6** | S5'in "ilk travma"sı | **Commons krizi** |
 | **K7** | Davranış müdahalesi | **Hayır** — aksiyom. Çöküş **bulgu olarak** raporlanır |
 
-⇒ **SIRADAKİ İŞ: uygulama.** Üç kod değişikliği, her biri ayrı commit ve
-kendi mutasyon kontrolüyle:
-1. **K4-b** — `F_agent`'ın havuz terimi olay başına normalize.
-2. **Landmark aletlemesi** — 10. olaydaki drift + enerji, ve zaman-integre
-   enerji kaydedilir.
-3. **LOCF kaldırılır** — uç nokta pad edilmiş dizinin ortalaması olmaktan
-   çıkar; olay-başına oran ikincil olarak yazılır.
+⇒ **Üç kod değişikliğinin üçü de uygulandı:**
+
+| # | İş | Kayıt | Commit |
+|---|---|---|---|
+| 1 | **K4-b** — havuz terimi olay başına normalize | **D-071** | `74834e6` |
+| 2 | **Landmark aletlemesi** — 10. olaydaki drift + enerji + zaman-integre enerji | **D-072** | `345c9f3` |
+| 3 | **LOCF kaldırıldı** — uç nokta pad edilmiş dizinin ortalaması olmaktan çıktı | **D-073** | `709b2ac` |
+
+⚠ **İkisi yol üzerinde ek karar çıkardı ve Yasin'e soruldu (§2.3):**
+D-071'de `F_agent`'ın **hayatta kalma terimi hiçbir zaman ömrü ölçmüyormuş**
+(`t_survived/t_survived` ≡ 1.0) ⇒ payda faz bütçesine çevrildi.
+D-073'te LOCF'a dokunan **iki kapı** ayrıldı: `I3.1`'in paydası yaşanan olaya
+çevrildi, `I3.4` bayrak basmayı bıraktı (yeni `MODE_REPORT`).
 
 Sonra: ikinci ön-kayıt taslağı, ve **ondan sonra** koşum.
 
