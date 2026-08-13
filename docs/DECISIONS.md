@@ -3994,3 +3994,98 @@ artefakt üretmiyor (doğru davranış, ama korpusta null yok). Yazılan dosyala
 `dau_runs/` altında ve **git'te takip edilmiyor** — korpus makineye özgü,
 ama D-037 determinizmi sayesinde `prereg/b2-code` etiketinden yeniden
 üretilebilir. Replay sürücüsü **bu kayda dahil değil**, ayrı iş.
+
+---
+
+## D-059 · 2026-08-12 · Tarama sonucu: kaldıraç kırpma değil `lr`. L18 doğruydu ama sebep değildi
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** · adapter kaydedilmedi ·
+`constraints.py` değiştirilmedi · korpus: seed 3001–3004, 8 kol, 96 hücre
+
+### Soru
+
+B2 iki şey ölçmüştü: kırpma **%100** (`grad_norm_min ≈ 2.96` vs tavan 1.0) ve
+`dpo_loss ≈ ln 2` (tercih marjı ≈ 0). **L18** bunu sınır olarak yazdı ve
+`CLAUDE.md` *"en somut aksiyon çıktısı"* dedi. Tarama şunu sordu: tercih marjı
+kıpırdatılabiliyor mu, ve kıpırdatan şey ne?
+
+### Bulgu 1 — **kırpma kaldıraç değil**
+
+| `lr` | clip=1 (kırpma %100) | clip=3 (%95) | clip=10 (%0) |
+|---|---|---|---|
+| 1e-6 | 0.6951 | 0.6935 | 0.6939 |
+| 5e-6 | 0.6894 | 0.6891 | 0.6911 |
+| 1e-5 | 0.6801 | 0.6813 | 0.6804 |
+| 2e-5 | 0.6518 | 0.6520 | 0.6491 |
+
+Tavanı 1'den 10'a çıkarmak kırpmayı **%100'den %0'a** indiriyor ve kayıp
+**değişmiyor** — dört `lr` değerinin dördünde de.
+
+**Sebebi mekanik:** `AdamW` adımı ikinci moment tahminine bölerek normalize
+ediyor, yani gradyanın **ölçeğine büyük ölçüde duyarsız**. `clip_grad_norm_`
+gradyanı yeniden ölçekliyor; Adam o ölçeklemeyi zaten geri alıyor.
+
+⇒ **L18'in gözlemi doğru, çıkarımı yanlıştı.** Kırpma gerçekten doygundu, ama
+zayıf öğrenmenin **sebebi o değildi**. Bu belge ve `CLAUDE.md` onu "en somut
+aksiyon çıktısı" diye işaretlemişti; **düzeltiliyor**.
+
+### Bulgu 2 — kaldıraç **`lr`**, ve marj kıpırdıyor
+
+`dpo_loss` ortalaması (clip'ten bağımsız): **0.694 → 0.689 → 0.680 → 0.651**
+(`lr` 1e-6 → 5e-6 → 1e-5 → 2e-5). ln 2 = 0.6931'den **0.044** aşağı.
+
+⇒ *"Tercih marjı ln 2'de çakılı"* durumu **aşılabilir bir durum**, kalıcı bir
+tavan değil.
+
+### Bulgu 3 — taranan bantta **bastırma yok**
+
+D-049/D-029'un teşhisi: bastırma = `chosen` ≈ 0 veya negatif iken `rejected`
+güçlü negatif.
+
+| `lr` | `Δlogp chosen` | `Δlogp rejected` | oran | yorum |
+|---|---|---|---|---|
+| 1e-6 | −0.003 | +0.013 | — | chosen yükselmiyor |
+| 5e-6 | **+0.053** | −0.017 | 0.33 | dengeli |
+| 1e-5 | **+0.147** | −0.113 | 0.77 | dengeli |
+| 2e-5 | **+0.447** | −0.451 | 1.01 | dengeli |
+| *5e-5 (D-029)* | *−0.123* | *−4.371* | *35* | **bastırma** |
+
+⇒ 5e-6 … 2e-5 bandında öğrenme **simetrik**: `chosen` yükselirken `rejected`
+aynı ölçüde düşüyor. Bastırma 2e-5 ile 5e-5 arasında bir yerde başlıyor.
+
+### Bulgu 4 — `lived` her `lr` değerinde `shuffle`'dan **daha kolay öğreniliyor**
+
+| `lr` | `lived` kayıp | `shuffle` kayıp | fark |
+|---|---|---|---|
+| 1e-6 | 0.6921 | 0.6957 | −0.0036 |
+| 5e-6 | 0.6901 | 0.6921 | −0.0020 |
+| 1e-5 | 0.6788 | 0.6820 | −0.0032 |
+| 2e-5 | 0.6466 | 0.6517 | **−0.0051** |
+
+Dördünde de aynı yönde, ve `lr` büyüdükçe fark büyüyor. İki kol **aynı
+çiftleri** kullanıyor, yalnız yönü ters — yani yön keyfi olsaydı ikisi eşit
+zorlukta olurdu.
+
+⚠ **Bu bir sinyal iddiası DEĞİL, ve alternatif açıklaması var:** `lived`'in
+`chosen`'ı daima düşük-PE completion. Taban model kısa/sık kalıpları zaten
+daha olası buluyorsa, `lived` yönü **taban önseldan** dolayı da daha kolay
+olabilir — yaşamdan öğrenilmiş bir şey olmadan. Ayırt etmek için sahte-PE
+kontrolü gerekir (rastgele PE atanmış çiftler); **koşulmadı**.
+N=4 seed, hipotez testi yok, düzeltme yok.
+
+### Ne değişti, ne değişmedi
+
+⇒ **Aletin zayıf öğrenmesi düzeltilebilir bir sorun**, ve düzeltmesi `lr`.
+⇒ **Kırpma tavanına dokunmak gereksiz** — ikinci ön-kayıtta `DPO_MAX_GRAD_NORM`
+değiştirmek için gerekçe **yok**.
+⇒ `lr` değeri bu tablodan **seçilmedi** (§2.7). Tarama bandın şeklini gösterdi;
+kilitlenecek değer ayrıca gerekçelendirilir ve tercihen sahte-PE kontrolüyle
+birlikte kararlaştırılır.
+
+### Sınırlar
+
+Korpus **tek bir evrenden** geliyor (seed 3001–3004, mevcut environment), ve
+D-056 o evrenin ajanları ayırmadığını gösterdi. Tarama *"eğitim öğrenebiliyor
+mu"* sorusunu cevaplıyor, *"öğrendiği şey yaşama özgü mü"* sorusunu **değil** —
+ikincisi A4'ün arkasında. Bulgu 4 o soruya değiyor ama alternatif açıklaması
+elenmedi.
