@@ -4748,3 +4748,92 @@ dalgalandırmadığı, ölümün ne sıklıkta olduğu, ve `F_agent`'ın gerçek
 yayılıp yayılmadığı **ölçülmedi** — küçük bir pilot şart. Üç sabit de
 kalibre değil ve ⚠ **parametreleri sonuca bakarak ayarlamak post-hoc
 tuning olur** (§2.7): pilot **yönü** gösterebilir, değeri seçemez.
+
+---
+
+## D-067 · 2026-08-13 · GAP-19 kapandı: kasa nerede kaldığını hatırlıyor
+
+**Durum:** tasarım kararı + uygulama · **Karar: Yasin'in** (üç seçenek sunuldu:
+kasa tabanı · açık faz kaydırması · önce ölç sonra düzelt) · **Kod:** `7c76a8c` ·
+suite 378 → **384** · **Tetikleyen:** D-066
+
+### Neden şimdi — D-051'in gizli bağımlılığı ateşlendi
+
+D-051 GAP-19'u ölçmüş ama **değiştirmemişti**, çünkü kırık saatin birincile
+giden yolunu iki dejenerelik kesiyordu: `should_forget` travmayı hiç silmiyor,
+ve `f_agent = 0.000` olduğu için varise **yalnız travma** geçiyordu. Kayıt şunu
+yazmıştı: *"L1 düzeltilir de sayaç düzeltilmezse GAP-19 anında canlanır. İkisi
+birlikte düzeltilmeli ya da hiçbiri."*
+
+**D-066 `F_agent`'ı canlandırdı** ⇒ `select_for_transfer`'ın `f < LOW ∧ travma`
+dalı artık her zaman ateşlemeyecek ⇒ travma-dışı anılar aktarılabilir hale
+gelecek ⇒ tutulup tutulmayacakları **kırık saatle** hesaplanacaktı. Tetik
+çekildi, ve borç aynı gün ödendi.
+
+### Mekanizma (D-051'de doğrulanmıştı, burada düzeltildi)
+
+Faz-2 `initial=None` ile başlıyor ⇒ `event_log` boş ⇒
+`EventClock(counter=len(state.event_log))` **sıfırdan** sayıyor — ama kasa
+faz-1 ile **ortak**. İki fazın anıları aynı `[1,50]` aralığını paylaşıyordu ve
+`_consolidate_gen1` 50'yi *"şimdi"* sayıyordu:
+
+| | kırık saat | gerçek |
+|---|---|---|
+| faz-1'de 48. olayda son kullanılan anı | `t = 2` ⇒ `R = 0.72` ⇒ **kalır** | `t = 52` ⇒ `R = 0.0002 < R_MIN` ⇒ **silinir** |
+
+### Seçilen çözüm: yaş kasanın özelliği, gövdenin değil
+
+`MemoryStore` bir `counter_base` tutuyor. **Kural:** kasaya giren her sayaç
+**faz-yereldir**, ve çeviriyi (`vault_counter`) yalnızca kasa yapar. Yaşam
+bitince `seal_phase` çağrılıyor ve bir sonraki yaşam onun üstüne sayıyor.
+
+- ⚠ **Bütçeyle değil yaşananla mühürleniyor:** D-066'dan sonra yaşam erken
+  bitebiliyor; `n_events` ile mühürlemek kasayı **ajanın yaşamadığı zaman
+  kadar** yaşlandırırdı.
+- **Ajanın prompt'undaki `event_count` değişmedi** — faz-2'nin *"taze gövde"*
+  tasarımı ona bağlıydı ve korundu.
+- **Demo yolu birebir aynı:** yeni kasa `COUNTER_BASE_NEW_VAULT = 0` ile
+  başlıyor, hiç mühürlenmezse hiçbir şey değişmiyor.
+- **5 Yasak #3 ihlal edilmiyor:** saat hâlâ saf olay sırası; yalnız **başlangıç
+  noktası** gövdeyle değil kasayla taşınıyor.
+
+**Reddedilen alternatifler:** *açık faz kaydırması* (`counter_offset` parametresi)
+— daha dar ama üçüncü bir faz eklendiğinde kaydırmayı vermeyi unutmak serbest;
+*önce ölç sonra düzelt* — D-051'in *"ikisi birlikte ya da hiçbiri"* şartını
+esnetirdi.
+
+### Mutasyon kontrolü — yedi mutasyon, **ikisi ilk turda yakalanmadı**
+
+Yakalananlar: yazım yine faz-yerel damgalar (1) · hatırlama yine faz-yerel
+damgalar (1) · taban hiç ilerlemez (3) · yaşam kasayı mühürlemez (1) · mühür
+bütçeyle atılır (1).
+
+⚠ **Yakalanmayanlar: konsolidasyon ve getirim çevirisi** — yani D-051'in tarif
+ettiği hatanın **tam yaşadığı iki yer** bekçisizdi. Yazma yolunu test etmek
+okuma yolunu test etmiş sayılmıyor. İki test eklendi:
+
+1. **Uyku, faz-1 anısını gerçek yaşıyla yargılıyor mu** — `t = 52`'de trace
+   siliniyor; kırık saatte `t = 2` ile kalıyordu.
+2. **Getirim, ajanın kaçıncı yaşamda olduğundan bağımsız mı** — aynı yaştaki
+   iz, birinci yaşamda da ikinci yaşamda da aynı skoru almalı.
+
+⚠ İkinci test **ilk yazılışında da yakalamıyordu**: *"yeni olan daha yüksek
+skor alır"* sıralaması çevirisiz de doğru çıkıyordu (çevirisiz `t < 0` olup
+retention 1'in üstüne çıkıyor ve sıra yine tutuyordu). **Saat-kayması
+değişmezliğine** çevrildi; o zaman yakaladı.
+
+### ⚠ Sonuçları
+
+- **Unutma davranışı değişti** ⇒ konsolidasyonun sildiği anı sayısı, dolayısıyla
+  varise geçen küme değişecek. D-031'in ölçtüğü `deleted_count` ort. 24.90
+  **artık geçerli değil**.
+- D-066 ile birlikte: **`dau_runs/`'daki hiçbir koşum bugünün aletiyle
+  karşılaştırılamaz.**
+
+### Sınırlar
+
+Yine **hiçbir koşum yapılmadı**. Kırık saatin düzeltilmesinin varise geçen
+kümeyi *ne kadar* değiştirdiği ölçülmedi — D-051 etkinin o zaman **sıfır**
+olduğunu göstermişti, ama o iki dejenereliğin ikisi de artık kalkıyor. Gen2
+kasası da aynı mühürleme yolundan geçiyor (varis yaşamı üçüncü faz olarak
+sayıyor); bu **tasarım gereği** ama **ölçülmedi**.

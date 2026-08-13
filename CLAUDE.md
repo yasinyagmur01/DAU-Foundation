@@ -24,18 +24,23 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). `origin` ile
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
-- **Suite:** `378 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-066.** Sıradaki kayıt **D-067** olarak açılır.
+- **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-067.** Sıradaki kayıt **D-068** olarak açılır.
 - **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
   cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
 - ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
   defter teslim edileni yazıyor, tükenmek öldürüyor. ⚠ **Evrenin fiziği
   değişti — `dau_runs/`'daki hiçbir koşum bugünün aletiyle karşılaştırılamaz.**
-- ⏳ **SIRADAKİ İŞ: GAP-19.** D-051'in gizli bağımlılığı **tetiklendi**:
-  `F_agent` artık dejenere değil ⇒ travma-dışı anılar aktarılabilir hale
-  gelecek ⇒ tutulup tutulmayacakları **kırık saatle** hesaplanacak.
-  ⚠ **Koşum bundan önce başlatılamaz.** Sonra küçük bir pilot: enerji
-  gerçekten dalgalanıyor mu, ölüm ne sıklıkta, `F_agent` yayılıyor mu.
+- ✅ **GAP-19 kapandı (D-067)** — kasa nerede kaldığını hatırlıyor; kasaya
+  giren her sayaç faz-yerel, çeviriyi yalnız kasa yapıyor. D-051'in *"ikisi
+  birlikte ya da hiçbiri"* şartı ödendi.
+- ⏳ **SIRADAKİ İŞ: küçük pilot.** ⚠ **Hiçbir şey ölçülmedi** — D-066 ve D-067
+  fiziği değiştirdi, ne ürettiğini bilmiyoruz. Pilotun cevaplayacakları:
+  enerji gerçekten dalgalanıyor mu · ölüm ne sıklıkta ve ne zaman ·
+  `F_agent` yayılıyor mu (120/120 `low` kırıldı mı) · `Δhavuz` artık
+  ayrışıyor mu · konsolidasyonun sildiği anı sayısı nereye gitti.
+  ⚠ **Pilot yönü gösterir, değer seçemez** (§2.7): üç metabolik sabit de
+  kalibre değil ve sonuca bakarak ayarlanamaz.
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
