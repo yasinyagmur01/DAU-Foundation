@@ -28,6 +28,9 @@ POOL_ABOVE_CRISIS: float = 80.0
 POOL_NEAR_CRISIS: float = 25.0
 MAX_EVENTS_ONE_CYCLE: int = 1
 PE_STUB: float = 0.1
+# Arbitrary non-zero ordinal: the row must copy the event it describes, not
+# re-derive a counter of its own.
+SEVENTH_EVENT: int = 7
 
 
 def _decision_event(decision: str) -> Event:
@@ -182,3 +185,67 @@ def test_graph_one_cycle_advances_pool_event_counter_once(
     assert isinstance(final.env_state, EnvironmentState)
     assert final.env_state.event_counter == 1
     assert len(final.event_log) == 1
+
+
+# ---------------------------------------------------------------------------
+# S5 commons trace (L20: B2 could not run S5 because none of this was recorded)
+# ---------------------------------------------------------------------------
+
+
+def test_pool_event_log_records_extraction_and_no_crisis() -> None:
+    """Above the crisis floor: one row, real harvest amount, crisis False."""
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    pool_step_node(state)
+
+    rows = graph_mod.get_pool_event_log()
+    assert len(rows) == 1
+    assert rows[0]["extraction"] == pytest.approx(EXTRACTION_DEFECT)
+    assert rows[0]["crisis"] is False
+    assert rows[0]["pool_ratio"] >= POOL_CRISIS_THRESHOLD
+
+
+def test_pool_event_log_crisis_flag_matches_the_gate_that_scars() -> None:
+    """Below the floor: crisis=True, and it agrees with the drift patch.
+
+    The flag is only useful if it marks the events that actually scarred the
+    agent — a flag computed from a different ratio than apply_crisis_trauma
+    reads would silently disagree with the drift map.
+    """
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_NEAR_CRISIS)
+    patch = pool_step_node(state)
+
+    rows = graph_mod.get_pool_event_log()
+    assert len(rows) == 1
+    assert rows[0]["crisis"] is True
+    assert rows[0]["pool_ratio"] < POOL_CRISIS_THRESHOLD
+    assert rows[0]["pool_ratio"] == pytest.approx(get_pool_ratio(patch["env_state"]))
+    assert patch["drift_state"].flags["resource"] is True
+
+
+def test_pool_event_log_row_counter_follows_the_event_it_describes() -> None:
+    """event_counter comes from the decision event, so PE rows can be joined."""
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state.event_log[-1] = Event(
+        event_type="agent_decision",
+        payload={"decision": NPC_ACTION_EXTRACT_MODERATE},
+        timestamp=SEVENTH_EVENT,
+    )
+    pool_step_node(state)
+
+    assert graph_mod.get_pool_event_log()[0]["event_counter"] == SEVENTH_EVENT
+
+
+def test_pool_event_log_stays_empty_without_society_physics() -> None:
+    """No env_state → no commons row (the node returns before the physics)."""
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS, env_state=None)
+    pool_step_node(state)
+
+    assert graph_mod.get_pool_event_log() == []

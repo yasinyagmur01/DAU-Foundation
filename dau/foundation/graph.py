@@ -23,6 +23,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
 
 from dau.society.environment import (
+    POOL_CRISIS_THRESHOLD,
     EnvironmentState,
     get_pool_ratio,
     step_pool_with_crisis,
@@ -215,6 +216,48 @@ def get_pe_event_log() -> list[dict[str, Any]]:
     """Return a shallow copy of recorded event-level PE audit rows."""
 
     return list(_pe_event_log)
+
+
+# Event-level commons buffer — S5 needs the behavioural trace (what the agent
+# extracted, and whether the pool was in crisis when it did) and nothing on the
+# PE path carries it: pe rows are about surprise, not about the commons.
+_pool_event_log: list[dict[str, Any]] = []
+
+
+def reset_pool_event_log() -> None:
+    """Clear the module-local commons event buffer."""
+
+    _pool_event_log.clear()
+
+
+def get_pool_event_log() -> list[dict[str, Any]]:
+    """Return a shallow copy of recorded event-level commons rows."""
+
+    return list(_pool_event_log)
+
+
+def _record_pool_event(
+    *,
+    event_counter: int,
+    extraction: float,
+    pool_ratio: float,
+    crisis: bool,
+) -> None:
+    """Append one commons row: harvest amount and the pool state it produced.
+
+    ``pool_ratio`` is read after the step, which is the same ratio
+    ``apply_crisis_trauma`` gates on — so ``crisis`` records whether that
+    event actually scarred the agent, not an approximation of it.
+    """
+
+    _pool_event_log.append(
+        {
+            "event_counter": int(event_counter),
+            "extraction": float(extraction),
+            "pool_ratio": float(pool_ratio),
+            "crisis": bool(crisis),
+        }
+    )
 
 
 def _record_pe_event(
@@ -1131,6 +1174,13 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
         state.env_state,
         {state.agent_id: amount},
         {state.agent_id: drift},
+    )
+    pool_ratio = get_pool_ratio(new_env)
+    _record_pool_event(
+        event_counter=int(state.event_log[-1].timestamp),
+        extraction=amount,
+        pool_ratio=pool_ratio,
+        crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
     )
     return {
         "env_state": new_env,

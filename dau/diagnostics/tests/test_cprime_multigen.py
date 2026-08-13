@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import random
+from dataclasses import asdict
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
@@ -14,6 +15,7 @@ import numpy as np
 import pytest
 
 import dau.diagnostics.run_cprime_multigen as multigen_mod
+import dau.foundation.graph as graph_mod
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
     heir_agent_id,
@@ -1493,3 +1495,146 @@ def test_consolidation_failure_is_not_swallowed(
             state=SimpleNamespace(event_log=[0]),
             store=object(),
         )
+
+
+# ---------------------------------------------------------------------------
+# S5 — gen2 behavioural trace reaches the results file (L20)
+# ---------------------------------------------------------------------------
+
+CRISIS_AT_THIRD_EVENT: int = 3
+TRAUMA_AT_SECOND_EVENT: int = 2
+STALE_POOL_ROW_COUNTER: int = 99
+
+
+def _pool_rows(crisis_flags: list[bool]) -> list[dict[str, Any]]:
+    """Commons rows shaped like graph._record_pool_event writes them."""
+
+    return [
+        {
+            "event_counter": index + 1,
+            "extraction": float(index),
+            "pool_ratio": 0.1 if crisis else 0.9,
+            "crisis": crisis,
+        }
+        for index, crisis in enumerate(crisis_flags)
+    ]
+
+
+def _delta_class_rows(trauma_positions: set[int]) -> list[dict[str, Any]]:
+    """PE audit rows carrying delta_class, the second reading of 'trauma'."""
+
+    return [
+        {
+            "event_counter": index + 1,
+            "prediction_error": 0.5,
+            "raw_pe": 0.5,
+            "precision_weight": 1.0,
+            "delta_class": "TRAUMA" if (index + 1) in trauma_positions else "SHALLOW",
+        }
+        for index in range(4)
+    ]
+
+
+def test_s5_behaviour_keeps_both_readings_of_first_trauma() -> None:
+    """Commons crisis and TRAUMA-class imprint are different events (2.11).
+
+    The pre-registration line for S5 says "events until the first trauma"
+    without saying which one, so the recorder must not collapse them.
+    """
+
+    behaviour = multigen_mod._s5_behaviour(
+        _pool_rows([False, False, True, False]),
+        _delta_class_rows({TRAUMA_AT_SECOND_EVENT}),
+    )
+
+    assert behaviour["events_to_first_crisis"] == CRISIS_AT_THIRD_EVENT
+    assert behaviour["events_to_first_delta_trauma"] == TRAUMA_AT_SECOND_EVENT
+    assert behaviour["n_crisis_events"] == 1
+    assert behaviour["crisis_by_event"] == [False, False, True, False]
+    assert behaviour["extraction_by_event"] == [0.0, 1.0, 2.0, 3.0]
+
+
+def test_s5_behaviour_reports_absence_as_never_not_as_event_zero() -> None:
+    """A life with no crisis must not read as 'crisis on the zeroth event'."""
+
+    behaviour = multigen_mod._s5_behaviour(_pool_rows([False, False]), _delta_class_rows(set()))
+
+    assert behaviour["events_to_first_crisis"] == multigen_mod.EVENT_NEVER_OCCURRED
+    assert behaviour["events_to_first_delta_trauma"] == multigen_mod.EVENT_NEVER_OCCURRED
+    assert behaviour["n_crisis_events"] == 0
+
+
+def test_gen2_result_carries_the_commons_trace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """B2 could not run S5 because none of this reached the JSON (L20)."""
+
+    monkeypatch.setenv("DAU_LLM_SEED", "0")
+    monkeypatch.setenv("DAU_LLM_TEMPERATURE", "0.2")
+
+    def _fake_life(*, agent_id, seed, n_events, store, initial):
+        graph_mod.reset_pool_event_log()
+        for row in _pool_rows([False, False, True]):
+            graph_mod._pool_event_log.append(row)
+        return [0.25] * n_events, [], _delta_class_rows({TRAUMA_AT_SECOND_EVENT}), initial
+
+    monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
+
+    heir_id = heir_agent_id(ARM_UNIT, SEED_UNIT)
+    result = run_gen2_measure(
+        heir=_initial_state(heir_id, SEED_UNIT),
+        store=None,
+        seed=SEED_UNIT,
+        gen1_arm=ARM_UNIT,
+        events_gen2=EVENTS_SMOKE,
+        k_gen2=1,
+        pe_window=EVENTS_SMOKE,
+    )
+
+    assert result.crisis_by_event == [False, False, True]
+    assert result.n_crisis_events == 1
+    assert result.events_to_first_crisis == CRISIS_AT_THIRD_EVENT
+    assert result.events_to_first_delta_trauma == TRAUMA_AT_SECOND_EVENT
+    assert result.pool_ratio_by_event[-1] == pytest.approx(0.1)
+    # asdict() feeds the results file; a field the writer drops is invisible.
+    assert "extraction_by_event" in asdict(result)
+
+
+def test_run_life_clears_the_commons_buffer_before_streaming(
+    monkeypatch: pytest.MonkeyPatch,
+    store: MemoryStore,
+) -> None:
+    """A life must not inherit the previous life's commons rows.
+
+    The buffer is module-global and drained after the stream; without the
+    reset, gen2's S5 trace would silently contain gen1 phase-2 events.
+    """
+
+    graph_mod.reset_pool_event_log()
+    graph_mod._pool_event_log.append(
+        {
+            "event_counter": STALE_POOL_ROW_COUNTER,
+            "extraction": 1.0,
+            "pool_ratio": 0.5,
+            "crisis": False,
+        }
+    )
+
+    agent_id = heir_agent_id(ARM_UNIT, SEED_UNIT)
+    start = _initial_state(agent_id, SEED_UNIT)
+    monkeypatch.setattr(
+        multigen_mod,
+        "build_graph",
+        lambda checkpointer=None: SimpleNamespace(stream=lambda *a, **k: iter([start])),
+    )
+
+    multigen_mod.run_life_keep_vault(
+        agent_id=agent_id,
+        seed=SEED_UNIT,
+        n_events=EVENTS_SMOKE,
+        store=store,
+        initial=start,
+    )
+
+    counters = [row["event_counter"] for row in graph_mod.get_pool_event_log()]
+    assert STALE_POOL_ROW_COUNTER not in counters

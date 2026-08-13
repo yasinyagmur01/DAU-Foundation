@@ -165,6 +165,12 @@ MOCK_DECISION_TEXTS: tuple[str, ...] = (
 # Diversity gate for gen2 uses K_GEN2; pe_gap floor matches gen1.
 GEN2_DIVERSITY_MIN_PE_GAP: float = DIVERSITY_MIN_PE_GAP
 
+# S5 (gen2 behavioural endpoint). The audit row class written for a traumatic
+# imprint, and the ordinal reported when the event never happened in a life —
+# a life with no crisis must not read as "crisis on event 0".
+DELTA_CLASS_TRAUMA: str = "TRAUMA"
+EVENT_NEVER_OCCURRED: int = -1
+
 
 # ---------------------------------------------------------------------------
 # Result dataclasses
@@ -229,6 +235,22 @@ class Gen2Result:
     # than asserted so I4.2 can prove the gen2 lock is still in place in a
     # real run, not only under test (GAP-12).
     rng_digest: str = ""
+    # S5 behavioural trace. B2 could not run S5 at all because none of this
+    # reached the results file (L20): the gen2 block carried only the PE trace.
+    # Raw per-event rows plus the two "how long until it happened" ordinals —
+    # no summary statistic, because which statistic S5 uses is a
+    # pre-registration decision, not this recorder's (2.7).
+    extraction_by_event: list[float] = field(default_factory=list)
+    pool_ratio_by_event: list[float] = field(default_factory=list)
+    crisis_by_event: list[bool] = field(default_factory=list)
+    n_crisis_events: int = EMPTY_COUNT
+    # ⚠ Two readings of "events until the first trauma" (2.11): the commons
+    # crisis that scars via apply_crisis_trauma, and the TRAUMA-class imprint
+    # on the PE path. They are different events and the pre-registration line
+    # does not say which one it means — so both are recorded and neither is
+    # chosen here.
+    events_to_first_crisis: int = EVENT_NEVER_OCCURRED
+    events_to_first_delta_trauma: int = EVENT_NEVER_OCCURRED
 
 
 @dataclass
@@ -349,6 +371,9 @@ def run_life_keep_vault(
     original_max = graph_mod.MAX_EVENTS
     original_floor = graph_mod.AB_ENERGY_FLOOR
     reset_pe_event_log()
+    # Same lifetime as the PE buffer: drained by the caller after the stream
+    # ends, so it must start empty or it would carry the previous life's rows.
+    graph_mod.reset_pool_event_log()
 
     try:
         graph_mod.MAX_EVENTS = int(n_events)
@@ -788,6 +813,38 @@ def run_gen1_arm_lineage(
     return arm_result, state_2, store, tmp
 
 
+def _first_ordinal(flags: list[bool]) -> int:
+    """1-based position of the first True, or EVENT_NEVER_OCCURRED.
+
+    Position in the life, not ``event_counter``: the two coincide for a heir
+    (its event log starts empty) but only the position stays meaningful if a
+    life ever begins mid-counter.
+    """
+
+    for index, flag in enumerate(flags):
+        if flag:
+            return index + 1
+    return EVENT_NEVER_OCCURRED
+
+
+def _s5_behaviour(
+    pool_rows: list[dict[str, Any]],
+    pe_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """S5's raw behavioural trace for one life — recording only, no statistic."""
+
+    crisis = [bool(row["crisis"]) for row in pool_rows]
+    trauma = [str(row.get("delta_class", "")) == DELTA_CLASS_TRAUMA for row in pe_rows]
+    return {
+        "extraction_by_event": [float(row["extraction"]) for row in pool_rows],
+        "pool_ratio_by_event": [float(row["pool_ratio"]) for row in pool_rows],
+        "crisis_by_event": crisis,
+        "n_crisis_events": sum(crisis),
+        "events_to_first_crisis": _first_ordinal(crisis),
+        "events_to_first_delta_trauma": _first_ordinal(trauma),
+    }
+
+
 def run_gen2_measure(
     *,
     heir: DAUAgentState,
@@ -815,6 +872,9 @@ def run_gen2_measure(
         store=store,
         initial=heir,
     )
+    # Drained after the stream, before anything else can start a life and
+    # reset the buffer (S5, L20).
+    behaviour = _s5_behaviour(graph_mod.get_pool_event_log(), pe_rows)
     mean_pe = _window_mean(pe_list, window=pe_window)
     n_unique, pe_gap_max = _phase1_diversity(lived_examples)
     gate_reason = _gen2_diversity_gate_reason(n_unique, pe_gap_max, k_gen2)
@@ -838,6 +898,7 @@ def run_gen2_measure(
         n_saturated=n_sat,
         pi_values=list(pi_vals),
         rng_digest=rng_digest,
+        **behaviour,
     )
 
 
