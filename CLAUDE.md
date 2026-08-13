@@ -25,7 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-068.** Sıradaki kayıt **D-069** olarak açılır.
+- **Son D-kaydı: D-069.** Sıradaki kayıt **D-070** olarak açılır.
 - **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
   cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
 - ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
@@ -165,9 +165,9 @@ girip girmeyeceği tartışılacak adaylar.
 
 | # | Karar | Durum | Nereden |
 |---|---|---|---|
-| **K1** | **Uç nokta tanımı** — yaşam uzunluğu değişkenken sabit 50 slotluk pencere çalışmıyor (gen1'de %71 pad, alet *"arm not measurable"* diyor) | ⏳ **DR #5 bekliyor** | D-068 |
-| **K2** | **Enerji okuma anı** — `E_final` ölüm kuralının kendisi yüzünden 6/6 kolda 0.000; `F_agent`'ın 0.4 ağırlığı hâlâ bilgisiz | ⏳ **DR #5 bekliyor** | D-068 |
-| **K3** | **N ve güç** — ölüm mümkün olduğu için yaşam başına veri değişken; eski güç hesabı geçersiz | ⏳ K1'e bağlı (DR #5 / S6) | D-068 |
+| **K1** | **Uç nokta tanımı** — yaşam uzunluğu değişkenken sabit 50 slotluk pencere çalışmıyor (gen1'de %71 pad) | 🟡 **Karara hazır (D-069):** yaptığımız şeyin adı **LOCF** ve eleştirisi yazılı (Lachin 2015). Öneri: **landmark** (Anderson ve ark. 1983), indeks yapısal çapadan | D-068 |
+| **K2** | **Enerji okuma anı** — `E_final` ölüm kuralının kendisi yüzünden 6/6 kolda 0.000 | 🟡 **Karara hazır (D-069):** landmark değeri + zaman-integre ortalama; `E_final` bırakılır | D-068 |
+| **K3** | **N ve güç** — eski güç hesabı geçersiz | 🟢 **Cevap lehimize (D-069):** güç **olay** sayısına dayanır (Schoenfeld 1983) ve bizde sansür yok ⇒ olay = soy sayısı. Hesap yeniden yapılabilir | D-068 |
 | **K4** | **Üç metabolik sabitin kilitlenmesi** — `GAIN_MAX` 0.50 · `HALF_SAT` 2.0 · `GRACE` 10, üçü de `CALIBRATED=False` | ⚠ **Yasin'in.** Değer sonuca bakarak seçilemez (§2.7) | D-066 |
 | **K5** | **Birincil uç nokta seçimi** + `social` kanalının varlığı **geçerlilik ön-koşulu** mu olacak | ⚠ **Yasin'in.** Etkiye bakılarak seçilemez (L9) | D-064 |
 | **K6** | **S5'in hangi travma okuması** — commons krizi mi `TRAUMA` sınıfı imprint mi (ikisi de kaydediliyor, seçilmedi) | ⚠ **Yasin'in** | D-063 |
@@ -455,7 +455,7 @@ GAP-19'un kendisi D-067'de kapandı; sınır ilk ön-kayıt için geçerliydi.
 
 | # | Brief | Durum |
 |---|---|---|
-| **5** | **Yaşam uzunluğu değişkenken uç nokta nasıl tanımlanır** — `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` | ⏳ **gönderilmeyi bekliyor.** Altı soru: S1 bilgilendirici sansürleme · S2 landmark vs yaşam boyu özet · S3 ölümün belirlediği durum değişkeni · S4 hayatta kalma hem girdi hem sonuçken · S5 farklı uzunluklu dizilerde eşleştirilmiş karşılaştırma · S6 küçük N'de zaman-olay gücü. ⚠ **Etki sorulmuyor, bilerek** (D-064/L9 disiplini) |
+| **5** | **Yaşam uzunluğu değişkenken uç nokta nasıl tanımlanır** — `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` | ⏳ **gönderilemedi — DR'de teknik sorun.** ⇒ **D-069: yerel tarama yapıldı** (§K, sekiz kimlik Crossref'ten doğrulandı), K1–K3 karara hazır hale geldi. ⚠ Tarama **sistematik derleme değil**; brief geçerliliğini koruyor, DR düzelince aynen sorulabilir. Altı soru: S1 bilgilendirici sansürleme · S2 landmark vs yaşam boyu özet · S3 ölümün belirlediği durum değişkeni · S4 hayatta kalma hem girdi hem sonuçken · S5 farklı uzunluklu dizilerde eşleştirilmiş karşılaştırma · S6 küçük N'de zaman-olay gücü. ⚠ **Etki sorulmuyor, bilerek** (D-064/L9 disiplini) |
 | **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ✅ **cevaplandı ve mutabakata bağlandı (D-065, §J).** Ham cevap: `2026-08-13_DR4-answer-raw.md`. **İçeriği dört brief'in en isabetlisi, kaynak disiplini en kötüsü:** 12 kimlikten 5'i eksiksiz, biri **yanlış makaleye** atıflı (yedinci kimlik hatası), biri dergi ISSN'i, ve *"N=20–50"* kaynaksız ⇒ kullanılmadı |
 
 **Cevaptan alınan üç şey (D-065):** ⭐ **J9** azalan getiri (Dykhuizen, Dean &

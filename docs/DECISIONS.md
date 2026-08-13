@@ -4923,3 +4923,93 @@ I3.4 · I1.3b). Kol karşılaştırması **yapılmadı ve yapılamaz** — hem N
 padding. `pi_n_distinct = 2` (I3.2) ⇒ precision mekanizması hâlâ atıl (L13).
 Kırpma yine %100 (I1.3b, D-059 ile aynı). Gen2 kolları seed 4002'de birebir
 aynı çıktı; seed 4001'de `lived` ayrıştı — **N=2'de bu gözlem, bulgu değil**.
+
+---
+
+## D-069 · 2026-08-13 · DR yerine yerel tarama: uç noktamızın adı **LOCF**'muş
+
+**Durum:** literatür taraması + öneri · **Etiket:** ⚠ **DR raporu değil** —
+Deep Research bu tur çalışmadı, tarama Claude Code tarafından yapıldı ·
+**kod değişmedi** · mutabakat `docs/research/RECONCILIATION.md` **§K**
+
+### Neden burada
+
+K1 (uç nokta tanımı) ve K2 (enerji okuma anı) DR brief #5'i bekliyordu; DR
+kullanılamadı. İkisi de *"literatürde X mi Y mi savunulabilir"* tipi (D-007
+⇒ normalde DR'nin işi), ama **kaynak kimliği doğrulanabilir** sorular
+olduğu için yerel tarama meşru bir ara çözüm sayıldı — Yasin onayladı.
+
+**Yöntem:** sekiz kimlik Crossref üzerinden **açılıp** doğrulandı. ⚠ Yalnız
+kimlik; **içerik okunmadı** (D-065'in sınırının aynısı).
+
+⚠ **Tarama kendi yanlış atıfını üretti ve yakaladı:** Schoenfeld'in örneklem
+makalesi için ilk aday `10.2307/2530643`'tü; açıldığında **Greenland & Robins
+1985** çıktı. Doğrusu `10.2307/2531021`. ⇒ Doğrulama döngüsü **bize de**
+gerekiyor, yalnız DR'ye değil.
+
+### Bulgu 1 — ⭐ yaptığımız şeyin adı var ve eleştirisi yazılmış
+
+`_pad_pe_list` diziyi **son gözlemle** 50'ye tamamlıyor, sonra ortalaması
+alınıyor. Bu, literatürde **LOCF** (*last observation carried forward*).
+Lachin (Clinical Trials, 2015, `10.1177/1740774515602688`) doğrudan bunun
+eleştirisi: LOCF **muhafazakâr değildir**, yanlılığın yönü **iki tarafa da**
+olabilir, ve varyansı **olduğundan küçük** gösterir.
+
+D-068'de gen1'in **%71'i** pad'di ⇒ uç noktamızın çoğu artık LOCF çıktısı.
+
+⇒ **İcat etmemiz gereken bir şey yok, bırakmamız gereken bir şey var.**
+
+### Bulgu 2 — teşhis ve çözüm adları
+
+- **Immortal time bias** (Suissa 2008, `10.1093/aje/kwm324`): hayatta kalma
+  süresi pencereyi belirlediğinde ortaya çıkan yanlılık. Bizdeki karşılığı:
+  sabit pencerede ortalama almak *"nasıl yaşadı"* ile *"ne kadar yaşadı"*yı
+  karıştırıyor.
+- **Landmark analizi** (Anderson, Cain & Gelber, J Clin Oncol 1983,
+  `10.1200/jco.1983.1.11.710`): sabit bir ana kadar bekle, o anda hayatta
+  olanları al, ölçümü oradan yap. Bizde doğrudan uygulanabilir.
+- **Seri ölçümü özet istatistiğe indirgeme** (Matthews ve ark., BMJ 1990,
+  `10.1136/bmj.300.6719.230`): *"yaşam boyu özet"* adayımızın karşılığı.
+  ⚠ AUC ömürle **ölçeklenir** ⇒ olay-başına oran tercih edilmeli.
+- **Rekabet eden riskler** (Fine & Gray, JASA 1999,
+  `10.1080/01621459.1999.10474144`): not edildi, bu tur alınmıyor.
+- **Joint models** (Henderson, Diggle & Dobson, Biostatistics 2000,
+  `10.1093/biostatistics/1.4.465`): "değerin son hâlini ölüm mekanizması
+  belirliyor" durumunun doğru aracı ⚠ ama ölçeğimizin çok üstünde.
+
+### Bulgu 3 — K3'ün (N/güç) cevabı beklenmedik biçimde **lehimize**
+
+Schoenfeld (Biometrics 1983, `10.2307/2531021`): zaman-olay analizinde güç
+**denek sayısına değil olay sayısına** dayanır. Bizde **sansür yok** — her
+ajan kesin ölüyor ⇒ **olay sayısı = soy sayısı**. Ömür uç noktası için güç,
+sansürlü tasarımlardan **daha verimli**.
+
+### Bulgu 4 — `F_agent`'ta çift sayım riski gerçek
+
+Stearns (Functional Ecology 1989, `10.2307/2389364`): ömür bir yaşam-tarihi
+**bileşenidir** ve uygunlukla takas ilişkisi içindedir. `F_agent`'ın %30'u
+`t_surv/T_gen`; ölüm mümkün olunca ömür hem **girdi** hem **sonuç** oldu.
+⇒ K4/K5 kararına girdi.
+
+### Öneri (literatür değil, öneri — karar Yasin'in)
+
+1. **LOCF bırakılır.**
+2. **Birincil: landmark**, sabit bir olay indeksinde. ⚠ İndeks **yapısal**
+   çapadan (`METABOLIC_GRACE_EVENTS = 10`, doğum geçişinin bitişi) seçilir —
+   **ölçülen ölüm zamanlarına bakılarak değil** (L9).
+3. Landmark'tan önce ölen soy için kural **önceden** ilan edilir; kaç soyun
+   düştüğü bir **geçerlilik kriteri** olur, sonuç değil.
+4. **İkincil:** yaşam boyu özet, **olay başına oran** olarak normalize
+   (AUC değil — ömürle ölçeklenir, Bulgu 4'ün çift sayımını geri getirir).
+5. **Enerji:** landmark değeri + zaman-integre ortalama; `E_final` bırakılır.
+6. **Güç:** olay sayısı = soy sayısı, hesap Schoenfeld ile yeniden yapılır.
+
+### Sınırlar
+
+**Sistematik derleme değil, hedefli tarama** — bulunamamış bir alt literatür
+olabilir. Üç şey **cevaplanamadı**: ALife geleneğinin kendi yaklaşımı ·
+**landmark noktasının nasıl seçileceğine dair bir ilke** (yöntem var, seçim
+kuralı yok — bu yüzden yapısal çapa öneriliyor) · küçük-N simülasyonda
+örneklem gerekçelendirme standardı. ⇒ **DR brief #5 geçerliliğini koruyor**;
+bu tarama K1/K2'yi karara bağlanabilir hale getirdi, **kapatmadı**.
+Hiçbir kod değişmedi, hiçbir sabit seçilmedi.

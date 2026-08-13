@@ -520,3 +520,76 @@ ayrılacak mı.
 | **MAP-Elites / davranışsal tanımlayıcı ızgarası** | J16 | ②'nin önkoşulu; eksenler bizde zaten ölçülü |
 | **DTW / Fréchet yörünge ölçütü** | J18, J19 | ⚠ **Etkiye bakmadan** kilitlenmeli — D-064'ün çözünürlük envanteri bunun disiplinli yolu |
 | **"Evrenselleştirme" tarzı karar kuralı önseli** | J4 | ⚠ Aksiyomun *"trait verilmez"* yasağına yakın; **tasarım kararı**, sessizce alınmaz |
+
+
+---
+
+# K. Yerel literatür taraması — değişken yaşam uzunluğunda uç nokta (2026-08-13)
+
+⚠ **Bu bir DR raporu DEĞİL.** Deep Research bu tur çalışmadı; tarama Claude
+Code tarafından yapıldı. **Sistematik derleme değil, hedefli tarama** —
+bulunmamış bir alt literatür olabilir. DR düzeldiğinde
+`2026-08-13_variable-lifespan-endpoints-and-censoring.md` aynen sorulabilir.
+
+**Yöntem:** her kimlik Crossref/arXiv'den **açılıp** doğrulandı (başlık +
+yazar + dergi + yıl). ⚠ **Yalnız kimlik doğrulandı, içerik okunmadı** —
+D-065'e koyduğumuz sınırın aynısı burada da geçerli.
+
+⚠ **Taramanın kendisi bir yanlış atıf üretti ve yakalandı:** Schoenfeld'in
+örneklem büyüklüğü makalesi için ilk aday DOI `10.2307/2530643` yazılmıştı;
+açıldığında **Greenland & Robins 1985** çıktı. Doğrusu `10.2307/2531021`.
+⇒ Doğrulama döngüsü DR'ye olduğu kadar **bize de** gerekiyor.
+
+## K.0 Doğrulanan kimlikler
+
+| # | Kaynak | Kimlik | Durum |
+|---|---|---|---|
+| V1 | Lachin, *Fallacies of last observation carried forward analyses*, Clinical Trials | `10.1177/1740774515602688` · **2015** | ✅ |
+| V2 | Suissa, *Immortal Time Bias in Pharmacoepidemiology*, Am J Epidemiol, 2008 | `10.1093/aje/kwm324` | ✅ |
+| V3 | Anderson, Cain & Gelber, *Analysis of survival by tumor response*, J Clin Oncol, 1983 | `10.1200/jco.1983.1.11.710` | ✅ |
+| V4 | Matthews, Altman, Campbell & Royston, *Analysis of serial measurements in medical research*, BMJ, 1990 | `10.1136/bmj.300.6719.230` | ✅ |
+| V5 | Fine & Gray, *A Proportional Hazards Model for the Subdistribution of a Competing Risk*, JASA, 1999 | `10.1080/01621459.1999.10474144` | ✅ |
+| V6 | Schoenfeld, *Sample-Size Formula for the Proportional-Hazards Regression Model*, Biometrics, 1983 | `10.2307/2531021` | ✅ (ilk aday yanlıştı) |
+| V7 | Henderson, Diggle & Dobson, *Joint modelling of longitudinal measurements and event time data*, Biostatistics, 2000 | `10.1093/biostatistics/1.4.465` | ✅ |
+| V8 | Stearns, *Trade-Offs in Life-History Evolution*, Functional Ecology, 1989 | `10.2307/2389364` | ✅ |
+
+## K.1 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| K1 | ⭐ **Bizim yaptığımız şeyin adı var: LOCF.** `_pad_pe_list` diziyi **son gözlemle** 50'ye tamamlıyor, sonra ortalaması alınıyor — bu literatürde *last observation carried forward*. V1 doğrudan bunun eleştirisi: LOCF **muhafazakâr değildir**, yanlılığın yönü **iki tarafa da** olabilir ve varyansı **olduğundan küçük** gösterir | D-068: gen1'de **%71** pad. Yani uç noktamızın çoğu artık LOCF çıktısı | **fark edilmemiş kayma** — icat etmemiz gereken bir şey yok, **bırakmamız** gereken bir şey var |
+| K2 | **Hayatta kalma süresi maruziyeti/pencereyi belirlediğinde ortaya çıkan yanlılığın adı: immortal time bias** (V2) | Bizde birebir karşılığı: uzun yaşayan kol daha çok **gerçek** olay üretiyor; sabit pencerede ortalama almak *"nasıl yaşadı"* ile *"ne kadar yaşadı"*yı karıştırıyor | **uyumlu — teşhis adı kazandık** |
+| K3 | ⭐ **Standart çözüm: landmark analizi** (V3). Sabit bir zamana kadar bekle, o anda **hayatta olanları** al, ölçümü oradan yap | Bizde doğrudan uygulanabilir: uç nokta sabit bir **olay indeksinde** okunur, o indekste ölmüş soylar **önceden ilan edilmiş** bir kuralla dışarıda kalır | **benimsenmeye aday — K1 kararı** |
+| K4 | **Seri ölçümler tek bir özet istatistiğe indirgenip o karşılaştırılır** (AUC, eğim, tepe) — V4. Farklı uzunluktaki dizileri ham ortalamayla karşılaştırmaya alternatif | Bizim *"yaşam boyu özet"* adayımızın literatürdeki karşılığı. ⚠ Uzunluk farkı **hâlâ** içeride: AUC yaşam uzunluğuyla ölçeklenir, oran (olay başına) ölçeklenmez | **uyumlu — ama normalizasyon biçimi ayrıca karar** |
+| K5 | **Ölüm, ilgilendiğimiz sonucun önünü kesiyorsa bu bir rekabet eden risktir** ve alt-dağılım modeli o iş için (V5) | ⚠ Bizde ölüm **sonucun kendisiyle iç içe**, sadece rakip değil. Uygulanabilir ama tasarımı büyütür | **not edildi — bu tur alınmıyor** |
+| K6 | ⭐ **Zaman-olay analizinde güç, denek sayısına değil OLAY sayısına dayanır** (V6) | ⇒ **K3'ün (N/güç) cevabı buradan:** bizde **sansür yok**, her ajan kesin ölüyor ⇒ olay sayısı = soy sayısı. Bu **lehimize**: ömür uç noktası için güç, sansürlü tasarımlardan daha verimli | **uyumlu — hesap yeniden yapılabilir** |
+| K7 | **Uzunlamasına bir değişkenle olay zamanını birlikte modelleme** (joint models, V7) — tam olarak "değerin son hâli ölüm mekanizmasınca belirlendiğinde" için | ⚠ Bizim ölçeğimizin (onlarca soy) **çok üstünde**. Doğru araç ama şu an pahalı | **not edildi — ertelendi** |
+| K8 | **Ömür bir yaşam-tarihi bileşenidir ve uygunlukla takas ilişkisi içindedir** (V8) | ⚠ `F_agent`'ın %30'u `t_surv/T_gen`. Ölüm mümkün hale gelince ömür hem **girdi** hem **sonuç** oldu ⇒ **çift sayım** riski gerçek | **açık — K4/K5 kararına girdi** |
+
+## K.2 Bu taramanın **cevaplayamadığı**
+
+- ALife/yapay yaşam literatüründe bu problemin **kendi** geleneği ne diyor
+  (tarama biyoistatistik tarafında kaldı).
+- Landmark noktasının **nasıl seçildiğine** dair bir ilke bulunamadı;
+  V3 yöntemi tarif ediyor, seçim kuralını değil.
+- Küçük-N simülasyon çalışmalarında örneklem gerekçelendirmesi standardı.
+
+⇒ **DR brief #5 hâlâ geçerli ve gönderilmeyi bekliyor.** Bu tarama K1/K2'yi
+karara bağlanabilir hale getirdi, kapatmadı.
+
+## K.3 Claude Code'un önerisi (literatür değil, öneri)
+
+1. **LOCF bırakılır.** Uç nokta pad edilmiş dizinin ortalaması olmaktan çıkar.
+2. **Birincil: landmark.** Sabit bir olay indeksinde okunur. ⚠ İndeks
+   **yapısal** bir çapadan seçilir — `METABOLIC_GRACE_EVENTS = 10`, yani doğum
+   geçişinin bittiği an — **ölüm zamanlarına bakılarak değil**. Ölçülen ölüm
+   zamanlarına bakıp landmark seçmek post-hoc olur (L9).
+3. **Landmark'tan önce ölen soy için kural önceden ilan edilir**, ve *"kaç soy
+   düştü"* bir **geçerlilik kriteri** olur (sonuç değil).
+4. **İkincil: yaşam boyu özet**, olay başına oran olarak normalize (AUC değil —
+   AUC ömürle ölçeklenir ve K8'in çift sayımını geri getirir).
+5. **Enerji (K2) aynı iki biçimde okunur:** landmark anındaki değer +
+   zaman-integre ortalama. `E_final` **bırakılır** — değeri ölüm kuralının
+   kendisi belirliyor.
+6. **Güç (K3):** sansürsüz olduğumuz için olay sayısı = soy sayısı; hesap V6
+   ile yeniden yapılır.
