@@ -108,7 +108,7 @@ projenin en sağlam parçası. Bkz. yeni **§24**.
 | Shuffle kolu | **çiftlerin tamamı ters** (eskiden %50 yazı-tura) | **D-040** |
 | Adapter graft'ı | sabit `LORA_INIT_SEED`, konumdan bağımsız | **D-042** |
 | Değişmez kapıları | **20 kayıtlı** (belgede tanımlı 25'ten) | D-012, D-039, D-041 |
-| Test | **332 passed, 2 deselected** — ⚠ belge boyunca 206 | — |
+| Test | **384 passed, 2 deselected** (v2.4.4) — ⚠ belge boyunca 206 | — |
 | Ön-kayıt | **taslak**, 5 slot kapalı, S4/S2 açık | `PREREGISTRATION.md` |
 
 ### Kapanmış iki büyük darboğaz
@@ -688,10 +688,10 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (rolling-history suite) |
-| **Collect (v2.4.3 branch)** | **344 passed, 2 deselected** |
+| **Collect (v2.4.4 branch)** | **384 passed, 2 deselected** |
 
 *(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” / v2.4.1’deki
-“206” sayıları önceki kesitler; bu belge **bu branch collect=344** ile
+“206” sayıları önceki kesitler; bu belge **bu branch collect=384** ile
 kilitlenir.)*
 
 **NLI flake ÇÖZÜLDÜ (`3d760e8`):** unit path mock HF; gerçek model
