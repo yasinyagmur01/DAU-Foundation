@@ -81,7 +81,7 @@ from dau.foundation.generation import (
     RECORD_ID_KEY,
     SOMATIC_SCALE_KEY,
 )
-from dau.foundation.state import DAUAgentState, DeltaRecord, InternalState
+from dau.foundation.state import DAUAgentState, DeltaRecord, Event, InternalState
 from dau.generation.fitness import WARNING_SOMATIC_SCALE
 from dau.memory.decay import compute_strength_init
 from dau.memory.store import MemoryStore
@@ -1508,6 +1508,8 @@ def test_consolidation_failure_is_not_swallowed(
 CRISIS_AT_THIRD_EVENT: int = 3
 TRAUMA_AT_SECOND_EVENT: int = 2
 STALE_POOL_ROW_COUNTER: int = 99
+# Shorter than EVENTS_SMOKE so 'lived' and 'budgeted' cannot be confused.
+SHORT_LIFE_EVENTS: int = 3
 
 
 def _pool_rows(crisis_flags: list[bool]) -> list[dict[str, Any]]:
@@ -1758,3 +1760,40 @@ def test_tool_identity_reports_the_metabolic_loop_and_its_calibration(
     )
     moved = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
     assert moved["metabolism"]["gain_max"] == METABOLIC_GAIN_PROBE
+
+
+def test_life_seals_the_vault_clock_with_events_actually_lived(
+    monkeypatch: pytest.MonkeyPatch,
+    store: MemoryStore,
+) -> None:
+    """Phase-2 must not reuse phase-1's ordinals (GAP-19 / D-067).
+
+    Sealed with the lived length, not the budget: since D-066 a life can end
+    early, and sealing with n_events would age the vault by time the agent
+    never had.
+    """
+
+    agent_id = heir_agent_id(ARM_UNIT, SEED_UNIT)
+    start = _initial_state(agent_id, SEED_UNIT)
+    lived = [
+        Event(event_type="agent_decision", payload={"decision": "x"}, timestamp=i + 1)
+        for i in range(SHORT_LIFE_EVENTS)
+    ]
+    ended = start.model_copy(update={"event_log": lived})
+    monkeypatch.setattr(
+        multigen_mod,
+        "build_graph",
+        lambda checkpointer=None: SimpleNamespace(stream=lambda *a, **k: iter([ended])),
+    )
+
+    assert store.counter_base == 0
+    multigen_mod.run_life_keep_vault(
+        agent_id=agent_id,
+        seed=SEED_UNIT,
+        n_events=EVENTS_SMOKE,
+        store=store,
+        initial=start,
+    )
+
+    assert store.counter_base == SHORT_LIFE_EVENTS
+    assert store.counter_base != EVENTS_SMOKE

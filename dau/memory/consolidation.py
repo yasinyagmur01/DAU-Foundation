@@ -50,6 +50,9 @@ def run_consolidation(
     high-intensity episodes wire into an association graph.
     """
 
+    # Sleep happens at the end of a life, but the traces being judged may come
+    # from an earlier life on the same vault (GAP-19).
+    now_counter = store.vault_counter(now_counter)
     nodes = store.list_nodes(agent_id)
     deleted_count = 0
     strengthened_count = 0

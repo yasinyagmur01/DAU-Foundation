@@ -37,6 +37,7 @@ CHROMA_COLLECTION_NAME: str = "dau_memory"
 CHROMA_DB_PATH: str = "dau_memory_chroma"
 SQLITE_MEMORY_PATH: str = "dau_memory.db"
 DOMAIN_EDGE_WINDOW: int = 10  # DEEP/TRAUMA within this event-counter span link
+COUNTER_BASE_NEW_VAULT: int = 0
 EMBEDDING_DIM: int = 32  # Chroma vault only; W_SEM=0 so vectors are not scored
 # Heir birth stamp for inherited engrams (recency starts at lineage handoff).
 SEED_BIRTH_COUNTER_DEFAULT: int = 0
@@ -144,6 +145,13 @@ class MemoryStore:
         self._conn = sqlite3.connect(sqlite_path)
         self._conn.row_factory = sqlite3.Row
         self._init_schema()
+        # GAP-19 / D-067: how many lived events this vault has already seen.
+        # Every counter that crosses into the vault is PHASE-LOCAL — a life
+        # starts its clock at zero even when it opens on a vault that is
+        # already full — and the base is what turns it back into the vault's
+        # own ordinal. Zero for a vault that has only ever seen one life, so
+        # the demo path is untouched.
+        self.counter_base: int = COUNTER_BASE_NEW_VAULT
 
     def _init_schema(self) -> None:
         """Create memory_nodes / memory_edges if missing.
@@ -238,8 +246,8 @@ class MemoryStore:
                 agent_id,
                 domain,
                 classification,
-                int(record.timestamp),
-                int(record.timestamp),
+                self.vault_counter(record.timestamp),
+                self.vault_counter(record.timestamp),
                 strength,
                 float(record.magnitude),
                 classification,
@@ -419,11 +427,31 @@ class MemoryStore:
         row = cur.fetchone()
         return int(row[0]) if row is not None else 0
 
+    def vault_counter(self, phase_local_counter: int) -> int:
+        """Translate a life's own event ordinal into the vault's (GAP-19).
+
+        Phase-2 opens with an empty event log and counts from zero again, but
+        it shares the vault with phase-1: without this, a memory last used at
+        event 48 of phase-1 and one last used at event 48 of phase-2 are the
+        same age, and Ebbinghaus decay reads `t = 2` where the truth is 52.
+        The clock is still pure event ordering (Yasak #3) — only the origin
+        moves, and it moves with the vault rather than with the body.
+        """
+
+        return self.counter_base + int(phase_local_counter)
+
+    def seal_phase(self, events: int) -> None:
+        """Close one life on this vault; the next one counts on top of it."""
+
+        self.counter_base += int(events)
+
     def update_activation(self, record_id: str, now_counter: int) -> None:
         """Bump last_activated_counter and increment strength on recall.
 
         Biology analogy: remembering a trace rehearses it — synapses strengthen
         and the last-use stamp moves forward on the event counter.
+
+        ``now_counter`` is phase-local; the vault stamps its own ordinal.
         """
 
         cur = self._conn.cursor()
@@ -434,7 +462,7 @@ class MemoryStore:
                 strength = strength + 1
             WHERE id = ?
             """,
-            (int(now_counter), record_id),
+            (self.vault_counter(now_counter), record_id),
         )
         self._conn.commit()
 

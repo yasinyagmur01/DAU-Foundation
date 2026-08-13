@@ -53,8 +53,10 @@ def compute_memory_score(
     if node is None:
         return 0.0
 
+    # Nodes carry the vault's ordinal; the caller counts from its own life
+    # start (GAP-19), so the two must be put on the same clock before decay.
     recency = compute_retention(
-        now_counter,
+        store.vault_counter(now_counter),
         node.last_activated_counter,
         node.strength,
     )

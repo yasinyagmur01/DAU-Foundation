@@ -410,6 +410,12 @@ def run_life_keep_vault(
         pe_list = [float(row["prediction_error"]) for row in pe_rows]
         pe_list = _pad_pe_list(pe_list, n_events)
         lived_examples = _build_lived_examples(state, pe_rows)
+        # GAP-19 / D-067: this life is over, so the vault's clock moves past it
+        # and the next life on the same vault counts on top. Sealed with the
+        # events actually lived rather than the budget — since D-066 a life can
+        # end early, and sealing with n_events would age the vault by time the
+        # agent never had.
+        store.seal_phase(len(state.event_log))
         return pe_list, lived_examples, pe_rows, state
     finally:
         # Liveness sample taken here because the finally below drops
