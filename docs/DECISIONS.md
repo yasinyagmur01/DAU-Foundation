@@ -5553,3 +5553,86 @@ yalnız açık erişimlilerde okundu**. Bulunamamış bir alt literatür olabili
 ⇒ **Brief #6 geçerliliğini koruyor**; DR düzelirse aynen sorulur ve iki
 bağımsız kaynak mutabakata bağlanır. **Hiçbir kod değişmedi, hiçbir sabit
 seçilmedi, hiçbir tasarım kararı verilmedi.**
+
+---
+
+## D-076 · 2026-08-14 · DR #6 mutabakatı: **doğru kimlik, yanlış iddia** — yeni bir kusur türü
+
+**Durum:** mutabakat · **kod değişmedi** · ham cevap
+`docs/research/2026-08-14_DR6-answer-raw.md` · mutabakat
+`RECONCILIATION.md` **§M**
+
+### DR nihayet çalıştı
+
+Beş denemeden sonra brief #6 cevaplandı. ⚠ **D-075 geçersizleşmiyor** — yerel
+tarama bağımsız bir kaynak olarak duruyor ve iki yerde DR ile **aynı sonuca**
+varmış olması (ayrı havuz) delil değeri taşıyor.
+
+### ⚠ Yeni kusur türü: kaynak gerçek, iddia ona ait değil
+
+Önceki dört turda kusur *"kaynak yok / kimlik yanlış"*tı. Bu turda kaynaklar
+**gerçek**, ama üç iddia **o kaynakta olmayan** şeyler söylüyor:
+
+| İddia | Yüklendiği kaynak | Kaynak gerçekte ne |
+|---|---|---|
+| *"tespit gücü N'ye üstel duyarlı"* (S6) | Goldberg & Deb 1991 | devralma süresi / seçilim baskısı analizi — deney tasarımı güç analizi **değil** |
+| *"nötr ebeveyn seçim kontrolü"* (S2) | Branke & Schmidt 2003 | *Selection in the Presence of Noise* — gürültülü uygunluk, sürüklenme kontrolü değil |
+| *"olay bütçesi 30'un altına inmemeli"* (S6) | Elena & Lenski 2003 | mikrobiyal evrim derlemesi; bizim olay bütçemiz hakkında hiçbir şey söyleyemez |
+
+⇒ **DOI doğrulaması bu kusuru YAKALAMIYOR.** Kimlik kontrolü artık yetmez;
+iddianın kaynağın **konusu** olup olmadığı da bakılmalı. Bu, kaynak disiplinine
+eklenen yeni bir adımdır.
+
+**Bir kırık DOI:** Bedau, Snyder & Packard 1998 → `10.1162/artl.1998.4.4.431`
+**404**. ⚠ Kavram (evrimsel aktivite istatistikleri) gerçek — Bullock & Bedau
+2006 (`10.1162/artl.2006.12.2.193`) doğrulandı — **atıf** kırık.
+
+**Beş kimlik doğrulandı ve konuya uygun:** Goldberg & Deb 1991 · Bäck 1994
+(⚠ *"ölçülmüş deney"* diye etiketlenmiş, teorik) · Chevin 2011
+(`10.1098/rsbl.2010.0580`) · Hudgens & Halloran 2008
+(`10.1198/016214508000000292`) · Price 1970 (`10.1038/227520a0`).
+Beş kaynak **doğrulanmadı** (Crossref 429).
+
+### ⚠ On üç iddianın on üçü *"Tam Uyumlu"*
+
+Brief açıkça *"kısıt ihlal ediliyorsa işaretle"* demişti; **sıfır işaret**
+geldi. En az ikisi kısıtlara dokunuyor: iki aşamalı doygunluk tasarımı kolların
+**ne olduğunu** değiştirir, ve Price eşitliği `w` = varis sayısı istiyor —
+bugün her ebeveynin **tam olarak bir** varisi var ⇒ `w` sabit, kovaryans
+**tanımsız**.
+
+### ⭐ İçsel çelişki — ②'nin amacını vuruyor
+
+**§5:** birikimli seçilim izleri **G = 5–10**'da belirir; G=2 yalnız anlık
+aktarım gösterir. **§6 sentezi:** bütçe **G = 3**'e kaydırılsın.
+
+⇒ Rapor **kendi çıtasının altını** öneriyor ve bunu fark etmiyor. ②'nin bütün
+gerekçesi birikimli kalıtım iddiasıydı (D-014, D-074).
+
+### ⭐ Gerçekten değerli: Price eşitliği D-075'in borcunu ödüyor
+
+D-075, `F_agent`'ın hem seçilim ölçütü hem sonuç olmasının **tautology
+problem**'e girdiğini yazmıştı. Price (1970) yerleşik cevabı veriyor:
+
+`Δz̄ = (1/w̄)·Cov(wᵢ, zᵢ) + (1/w̄)·E(wᵢ·Δzᵢ)`
+
+Uygunluk `w` **seçilimi sürükler**, sabit yaşta okunan drift vektörü `z`
+**sonuç ölçütü** olarak kalır ⇒ döngü kırılır. **K5 kararımız (landmark drift)
+tam olarak `z` rolüne oturuyor** — yani D-070/D-072'de verdiğimiz karar,
+bağımsız bir gerekçeyle desteklenmiş oldu.
+
+⚠ **Ön koşulu var:** `w` değişken olmalı. Bugün sabit.
+
+### ⭐ İki bağımsız kaynak aynı yerde: **ayrı havuz**
+
+DR (Hudgens & Halloran 2008: SUTVA ihlali / kısmi girişim) ve D-075 (Xiao vd.
+2023: referans suş varsayımı) **farklı literatürlerden** aynı sonuca varıyor:
+kol başına ayrı havuz. ⚠ Bedeli de ilan edilmiş (Chevin 2011): izolasyon,
+seçilim iddiasını birey düzeyinden **grup düzeyine** kaydırır.
+
+### Sınırlar
+
+**Hiçbir tasarım kararı verilmedi, hiçbir sabit seçilmedi, kod değişmedi.**
+Beş kimlik doğrulanmadı. `N=16, G=3, 35 olay` önerisi **alınmadı**: dayanağı
+yanlış atıf (M.1), kendi §5'iyle çelişiyor (M.3), ve sayı seçimi §2.7 gereği
+ölçümle gerekçelendirilmeli.

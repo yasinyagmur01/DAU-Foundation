@@ -733,3 +733,109 @@ doğrulanamadı** (sayfa vermedi). ⇒ *"kaç nesil yeter"* sorusuna bu taramada
    **strateji metni aktararak** alıyor. Bizim aksiyomumuz o kanalı kapatıyor.
    Bu, K7'nin bedelinin literatürdeki üçüncü bağımsız teyidi (J4 ve D-068'den
    sonra).
+
+---
+
+# §M — DR brief #6 mutabakatı: popülasyon ve ortak havuz (2026-08-14)
+
+**Ham cevap:** `2026-08-14_DR6-answer-raw.md` · **Brief:**
+`2026-08-13_population-selection-and-shared-commons.md`
+
+⚠ DR nihayet çalıştı (beş denemeden sonra). Cevap **kapsamlı ve iki yerde
+gerçekten değerli**, ama sicil deseni tekrarlandı ve **yeni bir kusur türü**
+ekledi.
+
+## M.0 Kimlik doğrulaması — 13 iddia, 12 kaynak
+
+| Kaynak | Verilen DOI | Crossref'te ne çıktı | Durum |
+|---|---|---|---|
+| Goldberg & Deb 1991 | `10.1016/b978-0-08-050684-5.50008-2` | *A Comparative Analysis of Selection Schemes Used in Genetic Algorithms* | ✅ (D-075/V1 ile aynı) |
+| Bäck 1994 | `10.1109/ICEC.1994.350042` | *Selective pressure in evolutionary algorithms: a characterization of selection mechanisms*, IEEE ICEC | ✅ |
+| Branke & Schmidt 2003 | `10.1007/3-540-45105-6_91` | **Selection in the Presence of Noise**, GECCO 2003 | ✅ kimlik |
+| Chevin 2011 | `10.1098/rsbl.2010.0580` | *On measuring selection in experimental evolution*, Biology Letters 7:210–213 (Crossref yıl: 2010) | ✅ **ve konuya birebir** |
+| Hudgens & Halloran 2008 | `10.1198/016214508000000292` | *Toward Causal Inference With Interference*, JASA 103:832–842 | ✅ **ve konuya birebir** |
+| Price 1970 | `10.1038/227520a0` | *Selection and Covariance*, Nature 227:520–521 | ✅ |
+| **Bedau, Snyder & Packard 1998** | `10.1162/artl.1998.4.4.431` | **404 — DOI çözülmüyor.** Crossref başlık taraması da bulmuyor | ❌ **KIRIK** |
+| Wright 1931 · Elena & Lenski 2003 · Aronow & Samii 2017 · Haigh 1978 · Wiser vd. 2013 | — | ⏳ **doğrulanmadı** (Crossref 429; bu turda sıraya girmedi) | ⏳ |
+
+⚠ **Evrimsel aktivite istatistikleri kavramı gerçek** (Bullock & Bedau 2006,
+`10.1162/artl.2006.12.2.193` doğrulandı) — **kırık olan atıf**, kavram değil.
+
+## M.1 ⚠ YENİ KUSUR TÜRÜ: doğru kimlik, **yanlış iddia**
+
+Önceki turlarda hata *"kaynak yok / kaynak uydurma"*ydı. Bu turda kaynaklar
+**gerçek** ama bazılarına **o kaynakta olmayan iddialar** yükleniyor. Bu daha
+tehlikeli: DOI doğrulaması bunu **yakalamıyor**.
+
+| Nereye | Ne yükleniyor | Kaynak gerçekte ne | Karar |
+|---|---|---|---|
+| **S6** | *"tespit gücü N'ye üstel olarak daha duyarlı"* → Goldberg & Deb 1991 | O makale **devralma süresi / seçilim baskısı** analizidir; deney tasarımı güç analizi **değildir** | ❌ **brief yanılmış** |
+| **S2** | *"nötr ebeveyn seçim kontrolü"* → Branke & Schmidt 2003 | O makale **gürültülü uygunluk altında seçilim** üzerinedir; sürüklenme kontrolü tasarımı değil | ❌ **brief yanılmış** |
+| **S6** | *"olay bütçesi 30'un altına düşmemeli"* → Elena & Lenski 2003 | Mikrobiyal evrim derlemesi bizim olay bütçemiz hakkında **hiçbir şey söyleyemez** | ❌ **çıkarım, atıf kılığında** |
+| **S1** | Bäck 1994 → *"Ölçülmüş Deney"* | **Teorik karakterizasyon** | ⚠ kanıt türü yanlış etiketlenmiş |
+
+## M.2 ⚠ On üç iddianın on üçü *"Tam Uyumlu"*
+
+Brief açıkça *"bir öneri kısıtlardan birini ihlal ediyorsa **işaretle**"* dedi.
+On üç satırda **sıfır** işaret. Bu ayırt etme değil, onaylama.
+
+**En az iki öneri kısıtlara dokunuyor ve işaretlenmemiş:**
+
+- **İki aşamalı doygunluk tasarımı** (%25/%50/%75 `lived` oranlı kovanlar)
+  kolların **ne olduğunu** değiştirir; bu ön-kayıtlı bir protokol maddesidir.
+- **Price eşitliği** `wᵢ` = *"ürettiği varis sayısı"* istiyor. Bugün bir
+  ebeveynin **tam olarak bir** varisi var ⇒ `w` **sabit**, kovaryans tanımsız.
+  Yani öneri, henüz var olmayan bir mekanizmayı **varsayıyor**.
+
+## M.3 ⭐ İçsel çelişki — ve ②'nin amacını doğrudan vuruyor
+
+- **§5 (kendi cümlesi):** birikimli seçilim izleri **G = 5–10** aralığında
+  belirir; G=2 yalnız *"anlık aktarım"* gösterir.
+- **§6 sentezi:** bütçe **G = 3**'e kaydırılmalı.
+
+⇒ **Rapor kendi çıtasının altını öneriyor.** ②'nin bütün gerekçesi birikimli
+kalıtım iddiası (D-014, D-074); G=3 o iddiayı raporun kendi ölçütüne göre
+kuramaz. Rapor bu çelişkiyi **fark etmiyor**.
+
+## M.4 D-075 ile çelişki — ve çözümü
+
+| | Ne diyor | Dayanağı |
+|---|---|---|
+| **DR (§6)** | N'yi büyüt, G'yi küçült ⇒ **N=16, G=3** | Goldberg & Deb 1991 — ⚠ **yanlış atıf** (M.1) |
+| **D-075/V4** | *"replication … is more important … than increasing the population size"* | Kofler & Schlötterer 2013, **birebir alıntı, ölçülmüş** |
+
+⚠ **Ama bunlar aynı ekseni konuşmuyor.** Kofler'in ekseni *tekrar sayısı vs
+popülasyon boyutu*; DR'nin ekseni *popülasyon boyutu vs nesil sayısı*.
+Üç eksen var: **tohum · N · G**.
+
+⇒ **Doğrudan çelişki değil, ama DR'nin dayanağı çürük ve Kofler'inki ölçülmüş.**
+Birleştirilmiş yön: **tohum > N > G**. ⚠ Bu da §5'in G çıtasıyla çarpışıyor
+(M.3) ⇒ **üç eksenin dengesi bir tasarım kararıdır ve literatür bizim
+ölçeğimiz için vermiyor.**
+
+## M.5 ✅ Gerçekten değerli üç şey
+
+1. **⭐ S4 çözüldü: Price eşitliği.** D-075'te açtığım totoloji borcunun
+   yerleşik cevabı bu. Değişimi **Cov(w, z)** (seçilim) + **E(w·Δz)** (aktarım
+   sapması) diye ayırıyor ⇒ uygunluk (`w`) seçilimi sürüklerken, **sabit yaşta
+   okunan drift vektörü (`z`)** sonuç ölçütü olarak kalabiliyor. Bizim K5
+   kararımız (landmark drift) tam olarak `z` rolüne oturuyor.
+   ⚠ **Ön koşul:** `w` değişken olmalı — yani gerçek üreme farkı gerekiyor.
+2. **⭐ S3'ün adı: SUTVA ihlali / kısmi girişim.** Hudgens & Halloran 2008
+   doğrulandı ve konuya birebir. **D-075'in bağımsız olarak vardığı sonuçla
+   aynı yere çıkıyor:** kol başına ayrı havuz, SUTVA'yı korur.
+   ⚠ Ve **bedelini** de söylüyor (Chevin 2011): izolasyon, seçilim iddiasını
+   birey düzeyinden **grup düzeyine** kaydırır.
+3. **Turnuva seçilimi (k=2)**, kesme seçilimine karşı: küçük N'de çeşitliliği
+   koruma gerekçesi Goldberg & Deb'in **gerçekten** olduğu yer.
+   ⚠ Vallinder & Hughes 2024'ün (D-075/V3) kesme seçilimi kullandığını not
+   et — yayımlanmış en yakın analog, DR'nin önerdiğinin **tersini** yapıyor.
+
+## M.6 Karara hazır olanlar / olmayanlar
+
+**Karara hazır:** ayrı havuz (iki bağımsız kaynak aynı yerde) · Price
+eşitliğinin `w`/`z` ayrımı · turnuva vs kesme tartışmasının çerçevesi.
+
+**Karara hazır DEĞİL:** N/G/tohum dengesi (M.3+M.4) · birikimli kalıtım çıtası
+(hâlâ sayı yok; D-075 de verememişti) · Bedau atfı kırık olduğu için
+çeşitlilik/aktivite ölçütleri.
