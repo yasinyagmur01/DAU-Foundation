@@ -19,36 +19,65 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-12) — ✅ **B FAZI BİTTİ, SONUÇ NULL**
+# 1. Şu An Neredeyiz (2026-08-12, gece) — ⏳ **DR CEVABI BEKLENİYOR**
 
-- **Branch:** `cursor/per-agent-qlora-adapter-c116` = **`main`** (D-013 kapandı, **D-054**).
-  Eski main `archive/main-pre-c116` etiketinde. ⚠ `origin`'e **push edilmedi**.
-- **Suite:** `344 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-054.** Sıradaki kayıt **D-055** olarak açılır.
-- ✅ **B2/B3/B4 tamamlandı.** Rapor: **`docs/B2_RESULTS.md`**.
-  **Birincil null:** `a_s` vs `b_s`, N=40, eşleştirilmiş Wilcoxon,
-  **p = 0.9914**, `d_z = −0.000`. Üç kol birbirine **eşit uzaklıkta**
-  (`‖lived−null‖` 0.3812 · `‖shuffle−null‖` 0.3814 · `‖lived−shuffle‖` 0.3852).
-- ⚠ **§11 sınıfı: ALET NULL'I** — §5 geçerlilik kapısından üç kriter düştü
-  (**D-053**), ve §11 "§5'ten biri düşerse alet null'ı" diyor. Mekanizma
-  hakkında hüküm **verilemez**. "Etki yok" da denemez (§9-S4/D-047):
-  doğru ifade *"`d_z ≥ 0.465` yok, altı için veri bilgisiz"*.
-- 🔒 **`docs/PREREGISTRATION.md` KİLİTLİ** · commit `befd72b4ee57`.
-  **Yedi slotun yedisi kapalı. On yedi ilan edilmiş sınır** (⚠ bu dosya
-  daha önce beş yerde "on sekiz" diyordu — **yanlıştı**, L1–L17 var).
-  Raporda dört yeni sınır eklendi: **L18** kırpma doygunluğu · **L19** §5
-  düştü · **L20** S5/S6 koşulmadı · **L21** batch başına sayaçlar.
-- **Faz A bitti:** A1/A3/A5/A6/A7/A8 → D-044…D-052.
-- **GAP durumu:** 1,2,6,7,9,11,12,13,14,15,16,20 **kapandı** ·
-  3,4,5,10,19 **ilan edilen sınıra çevrildi** (L17,L15,L14,L8,L16) ·
-  **18 ölçüldü** (`uniq_rejected` 100/94 — KTO kararı ikinci ön-kayıta) ·
-  **17** raporda not edildi.
-- ⚠ **Gizli bağımlılık (D-051):** `F_agent` (L1) tek başına düzeltilirse
-  GAP-19 canlanır. **İkisi birlikte ya da hiçbiri.** Sonraki ön-kayıt.
-- **Değişmez sayısı: 24.** Belgede tanımlı 26'nın ikisi kodda yok
-  (I1.2 testte, I2.3 yapısal).
-- **Üç DR cevabı da işlendi** (D-047 §G · D-048 §H · D-049 §I). Kanal kapandı.
-- **Master reference: v2.4.2** (§8). ⚠ D-045…D-052 orada **yok** — Faz C borcu.
+- **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). `origin` ile
+  senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
+  B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
+- **Suite:** `356 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-061.** Sıradaki kayıt **D-062** olarak açılır.
+
+## ▶▶ SIRADAKİ İŞ — DR raporu gelince buradan başla
+
+**Yasin raporu sunup "devam et" dediğinde:**
+
+1. **`docs/research/2026-08-12_environment-differentiation-and-selection.md`**
+   okunur — gönderilen brief odur, altı soru (S1–S6) orada.
+2. **Mutabakat tablosu üretilir** (§9 / D-006, zorunlu): her iddia için
+   *brief ne diyor / kod ne yapıyor / karar ∈ {bilinçli sapma · fark
+   edilmemiş kayma · uyumlu · brief yanılmış}*. Çıktı
+   `docs/research/RECONCILIATION.md`'ye **§J** olarak eklenir.
+3. ⚠ **Kaynak kimlikleri kontrol edilir.** Geçmişte altı kaynak yanlış
+   atfedilmişti; brief bu yüzden yazar+yıl+DOI istedi. Doğrulanmamış kaynak
+   **kullanılmaz**.
+4. Sonra **A4 tasarım kararı** (aşağıda), Yasin'in onayıyla.
+
+**Bekleyen karar — A4'ün hangi kaldıracı çevireceği (D-007, Yasin'in):**
+
+| Seçenek | Kanıt | Maliyet |
+|---|---|---|
+| **① Metabolik döngüyü kapat** — çıkarım enerjiyi beslesin, enerji bitince ölüm | Fitness'ın %70'i (enerji 0.4 + survival 0.3) canlanır. ⚠ D-061: toparlanma terimi **yeniden tasarlanmalı**, tavan yükseltmek yetmez | orta, orkestrasyon değişmiyor |
+| **② Popülasyon** (D-014 / L2) | Tek gerçek Darwinci yol; farklı üreme olmadan seçilim iddiası kurulamaz | en büyük iş |
+| **③ Prompt priming'i kaldır** (L14) | En ucuz ama **tek başına işe yaramaz**: bedel yokken çeşitlilik rastgele olur. Ayrıca her koşumu geçersiz kılar | ucuz ama yıkıcı |
+
+**Claude Code'un önerisi: ① önce, sonra ②.** Gerekçe ölçümden: ② tek başına
+çalışmaz, çünkü N ajanın hepsi aynı baskın stratejiyi oynarsa fitness'ları
+yine özdeş olur. ⚠ ① `F_agent`'a dokunuyor ⇒ **GAP-19 de aynı anda
+düzeltilmeli** (D-051/L16), yoksa canlanır.
+
+## ✅ B2 sonrası ne öğrenildi (D-055…D-061)
+
+| Kayıt | Bulgu |
+|---|---|
+| **D-055** | `run_vram_spike.py` çalışmaz (sarmaladığı üç fonksiyon yok) ⇒ bu branch'te **VRAM aracı yok** |
+| **D-056** | **Uç noktanın %99'u sabit.** `resource` 120/120 kolda, kollar arası fark 40 seed'in **38'inde sıfır**. 11/40 seed'de `lived`=`shuffle` **birebir** ⇒ orada mükemmel adapter bile görünemezdi. Kalan 29'da `\|a−b\|` ort. 0.444 ama **işaret +15/−14** ⇒ büyük hareket, rastgele yön |
+| **D-057** | Eğitim girdileri diske yazılıyor (`DAU_DUMP_TRAINING_ARTIFACTS`) ⇒ sweep artık yaşamları yeniden koşmuyor |
+| **D-058** | Sweep sürücüsü + **devam ettirilebilirlik** (`sweep_dpo_hyperparams.jsonl`) |
+| **D-059** | ⚠ **Kırpma kaldıraç DEĞİL.** Tavanı 1→10 (kırpma %100→%0) kaybı hiç değiştirmiyor — AdamW ölçeğe duyarsız. **L18'in gözlemi doğru, çıkarımı yanlıştı.** Kaldıraç `lr`: kayıp 0.694→**0.651**, bastırma yok. **Parametrik kanal öğrenebiliyor** |
+| **D-060** | **A4 formül düzeltmesi değil.** `f_agent`=0.000 · `energy`=0.000 · `fitness_class`=`low` 120/120 · `Δpool` yayılım %0.7. Birim hatası düzeltilse bile **120 kolun hepsi aynı sınıfa** düşüyor |
+| **D-061** | **Enerji yapı gereği asla artamıyor** (cebirsel kanıt: `decay ≥ recovery` her zaman). 2. olayda tabana vuruyor, yaşamın %96'sı sıfırda |
+
+**Kök neden (D-060 §2.3):** ajanlar olayların **%94–100'ünde** en yüksek
+çıkarımı seçiyor, çünkü **defect'in bedeli yok** — çıkarım enerjiye dönmüyor,
+havuz çökünce kimse ölmüyor. Ayrım üretmeyen evrenin sebebi bu.
+
+## ⬜ Açık kalan iş
+
+| İş | Not |
+|---|---|
+| **Sahte-PE kontrolü** | D-059 Bulgu 4: `lived` 4/4 `lr` değerinde `shuffle`'dan kolay öğreniliyor. Alternatif açıklama **elenmedi** — düşük-PE completion'lar taban model önselinden de kolay olabilir. Rastgele PE atanmış kolla kontrol, ~40 dk, korpus hazır |
+| **İkinci ön-kayıt** | A4 kararından sonra. Girdiler: `lr` bandı (D-059), KTO kararı (GAP-18: `uniq_rejected` 100/94), S5 verisini kaydet, S6 kolunu üret, uç nokta seçimi (D-056) |
+| **13.3 saatlik doğrulayıcı koşum** | ⚠ **Kilit yazılmadan başlanmaz** |
 
 ## ✅ B2/B3/B4 BİTTİ — sonuç `docs/B2_RESULTS.md`'de
 
@@ -279,11 +308,12 @@ strict altında **birebir aynı adapter, 0/50 fark**, aynı süre (20dk24 vs
 farkı 0.015–0.025 ⇒ **gürültü etkiden büyüktü.** Ön-kayıtın önündeki asıl
 engel buydu ve kalktı.
 
-## ▶ ÇALIŞMA KUYRUĞU — sıradaki iş buradan alınır
+## ▶ ÇALIŞMA KUYRUĞU — ✅ **A/B/C fazlarının hepsi kapandı**
 
-**"devam et" denince:** kuyruğun en üstündeki ✅ olmayan satırı al, §2.3
-gereği analiz→öneri→onay ile ilerle. Kuyruk sırası **Yasin tarafından
-onaylandı (2026-08-11)**; sıra değiştirmek yeni onay ister.
+⚠ **Bu bölüm artık tarihçedir.** Güncel iş §1'in başındaki
+**▶▶ SIRADAKİ İŞ**'te; "devam et" oradan başlar. Aşağısı Faz A/B/C'nin
+nasıl kapandığını gösteriyor ve hangi kararın hangi adımdan çıktığını
+aramak için duruyor.
 
 ### Faz A — kilitten önce (pencere kapanınca biter, §2.10)
 
@@ -350,7 +380,21 @@ GAP-19 → **L16**. GAP-9 **kapandı** (D-052).
 
 ---
 
-## ▶ DR KANALI — bu ön-kayıt için **kapandı**
+## ▶ DR KANALI — ⏳ **brief #4 gönderildi, cevap bekleniyor**
+
+| # | Brief | Durum |
+|---|---|---|
+| **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ⏳ **cevap bekleniyor.** Altı soru: S1 heterojenlik kalıpları · S2 LLM'de eylem uzayı çökmesi · S3 metabolik döngü tasarımı · S4 popülasyonsuz seçilim iddiası · S5 düz fitness manzarası · S6 düşük çözünürlüklü uç nokta |
+
+⚠ **Yalnız brief gönderildi, master reference gönderilmedi** — bilerek.
+Master ref kendi başında *"işaretsiz her bölüm hâlâ v2.4.1 anlatısıdır"*
+diyor ve içinde **32 ⚠ işaretli yanlış** var; ayrıca karar geçmişini
+içeriyor ve §9 provenans sorusunu DR'ye yasaklıyor. Brief'in 15 sayısı
+programla teyit edildi.
+
+**Cevap gelince ne yapılacağı §1'in başında yazılı.**
+
+### İlk üç brief — kapandı
 
 Üçü de gönderildi, cevaplandı ve mutabakata bağlandı. Ayrıntı
 `docs/research/RECONCILIATION.md` **§G, §H, §I**.
@@ -386,8 +430,9 @@ atfedilmişti, o BLEU'dur).
 
 ## 2.1 İlk beş dakika — sırayla, atlamadan
 
-1. **Bu dosya** (otomatik yüklenir) → §1'deki **ÇALIŞMA KUYRUĞU**. "devam et"
-   denince kuyruğun en üstündeki ⬜ satır alınır, başka yere bakılmaz.
+1. **Bu dosya** (otomatik yüklenir) → §1'in başındaki **▶▶ SIRADAKİ İŞ**.
+   "devam et" denince oradan başlanır, başka yere bakılmaz. DR raporu
+   sunulduysa adım adım orada yazılı.
 2. **GAP TETİK TABLOSU** — alınan adımın bir GAP tetiği var mı? Varsa
    **Yasin'e hatırlat ve neden o anın optimal olduğunu söyle** (talimat,
    2026-08-11).
@@ -531,6 +576,7 @@ kaymış.)
 | Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.2** — yanlışlar ⚠ ile işaretli, §24/§25 yeni |
 | Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
+| Bekleyen DR sorusu (S1–S6) | `docs/research/2026-08-12_environment-differentiation-and-selection.md` |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
