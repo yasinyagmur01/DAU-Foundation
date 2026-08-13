@@ -7,7 +7,7 @@ import pytest
 import dau.foundation.graph as graph_mod
 from dau.foundation.constraints import build_default_constraints
 from dau.foundation.drift import DriftState
-from dau.foundation.constraints import METABOLIC_GRACE_EVENTS
+from dau.foundation.constraints import LANDMARK_EVENT, METABOLIC_GRACE_EVENTS
 from dau.foundation.graph import (
     END,
     NODE_AGENT,
@@ -42,6 +42,8 @@ PE_STUB: float = 0.1
 SEVENTH_EVENT: int = 7
 # Stock too thin to satisfy a DEFECT-sized request even after regeneration.
 POOL_MIN_STOCK: float = 1.0
+# Written into the drift map AFTER a row is recorded, to prove the row copied.
+LATER_SCAR_MAGNITUDE: float = 0.99
 
 
 def _decision_event(decision: str) -> Event:
@@ -358,3 +360,115 @@ def test_a_fed_agent_past_the_grace_window_keeps_living() -> None:
     )
 
     assert should_continue(state) == NODE_AGENT
+
+
+# ---------------------------------------------------------------------------
+# K1/K2/K5 (D-070) — the per-event body trace the landmark is read from
+# ---------------------------------------------------------------------------
+
+
+def test_body_event_log_records_energy_after_the_metabolic_credit() -> None:
+    """The row is the state the NEXT event starts from, not a mid-cycle one.
+
+    Recording before the credit would report the energy the evaluator left,
+    which is a different quantity from the one should_continue is about to
+    judge — and the landmark reading would then describe a moment that never
+    existed.
+    """
+
+    graph_mod.reset_body_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(
+        update={"internal_state": InternalState(energy=ENERGY_HALF)}
+    )
+
+    patch = pool_step_node(state)
+    rows = graph_mod.get_body_event_log()
+
+    assert len(rows) == 1
+    assert rows[0]["energy"] == pytest.approx(patch["internal_state"].energy)
+    assert rows[0]["energy"] > ENERGY_HALF
+
+
+def test_body_event_log_records_drift_after_crisis_scarring() -> None:
+    """Drift is read post-crisis, so the landmark sees the scar of that event."""
+
+    graph_mod.reset_body_event_log()
+    state = _state_with_env(pool=POOL_NEAR_CRISIS)
+
+    patch = pool_step_node(state)
+    row = graph_mod.get_body_event_log()[0]
+
+    assert row["drift_flags"]["resource"] is True
+    assert row["drift_flags"] == patch["drift_state"].flags
+    assert row["drift_magnitudes"] == pytest.approx(patch["drift_state"].magnitudes)
+
+
+def test_body_event_row_snapshots_drift_instead_of_aliasing_it() -> None:
+    """A live reference would let later scarring rewrite the landmark.
+
+    DriftState is mutable and the agent goes on being scarred after the row
+    is written, so a row holding the same dict would report the drift of the
+    END of the life under the ordinal of event N.
+    """
+
+    graph_mod.reset_body_event_log()
+    state = _state_with_env(pool=POOL_NEAR_CRISIS)
+
+    patch = pool_step_node(state)
+    row = graph_mod.get_body_event_log()[0]
+    recorded = dict(row["drift_magnitudes"])
+
+    patch["drift_state"].magnitudes["resource"] = LATER_SCAR_MAGNITUDE
+    patch["drift_state"].flags["social"] = True
+
+    assert graph_mod.get_body_event_log()[0]["drift_magnitudes"] == recorded
+    assert "social" not in graph_mod.get_body_event_log()[0]["drift_flags"]
+
+
+def test_body_event_row_counter_follows_the_event_it_describes() -> None:
+    """The landmark is an ordinal, so the row must carry the event's own."""
+
+    graph_mod.reset_body_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state.event_log[-1] = Event(
+        event_type="agent_decision",
+        payload={"decision": NPC_ACTION_EXTRACT_MODERATE},
+        timestamp=SEVENTH_EVENT,
+    )
+    pool_step_node(state)
+
+    assert graph_mod.get_body_event_log()[0]["event_counter"] == SEVENTH_EVENT
+
+
+def test_no_lineage_can_die_before_reaching_the_landmark() -> None:
+    """LANDMARK_EVENT and METABOLIC_GRACE_EVENTS are the same moment (D-070).
+
+    Not a coincidence to be maintained by hand. should_continue is asked
+    whether to run event N while len(event_log) is N-1, so an exhausted agent
+    is carried through every ordinal up to and including LANDMARK_EVENT — the
+    landmark row is always written before death becomes possible.
+
+    The boundary is exact, and asserted in both directions: the very next
+    decision is the first one death can win. That is what makes the "died
+    before the landmark" rule unreachable today, and why it is still written
+    (§2.9) — if grace ever shrinks below the landmark, this test fails rather
+    than the rule going quietly dead.
+    """
+
+    assert LANDMARK_EVENT <= METABOLIC_GRACE_EVENTS
+
+    def _exhausted_after(events: int) -> DAUAgentState:
+        state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+        return state.model_copy(
+            update={
+                "internal_state": InternalState(energy=0.0),
+                "event_log": [_decision_event(NPC_ACTION_EXTRACT_MODERATE)]
+                * events,
+            }
+        )
+
+    # About to run the landmark event itself: still alive, out of energy.
+    assert should_continue(_exhausted_after(LANDMARK_EVENT - 1)) == NODE_AGENT
+    # Landmark event closed and recorded — now exhaustion may end the life.
+    assert should_continue(_exhausted_after(LANDMARK_EVENT)) == END

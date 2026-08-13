@@ -238,6 +238,53 @@ def get_pool_event_log() -> list[dict[str, Any]]:
     return list(_pool_event_log)
 
 
+# Event-level body buffer — K1/K2/K5 read the agent at a fixed AGE, and
+# nothing else carries the per-event trace they need. The state itself keeps
+# only the latest energy and drift; event_log payloads keep the energy the
+# agent decided ON, which is the pre-evaluator value, not what the event left
+# behind. Drift is not on the PE path at all.
+_body_event_log: list[dict[str, Any]] = []
+
+
+def reset_body_event_log() -> None:
+    """Clear the module-local per-event body buffer."""
+
+    _body_event_log.clear()
+
+
+def get_body_event_log() -> list[dict[str, Any]]:
+    """Return a shallow copy of recorded per-event body rows."""
+
+    return list(_body_event_log)
+
+
+def _record_body_event(
+    *,
+    event_counter: int,
+    energy: float,
+    drift_flags: dict[str, bool],
+    drift_magnitudes: dict[str, float],
+) -> None:
+    """Append one body row: energy and drift as the event LEAVES them.
+
+    Written at the close of the cycle, after the commons has been harvested
+    and the metabolic credit applied, so the row is the state the next event
+    starts from — the same state should_continue is about to judge.
+
+    Drift is copied, not referenced: DriftState is mutable and the agent goes
+    on scarring after this row is written.
+    """
+
+    _body_event_log.append(
+        {
+            "event_counter": int(event_counter),
+            "energy": float(energy),
+            "drift_flags": dict(drift_flags),
+            "drift_magnitudes": dict(drift_magnitudes),
+        }
+    )
+
+
 def _record_pool_event(
     *,
     event_counter: int,
@@ -1211,9 +1258,27 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
             )
         }
     )
+    # Landmark instrumentation (D-070). Written here rather than in the
+    # evaluator because this is the last node of the cycle: the harvest is in,
+    # the metabolic credit is applied, and crisis trauma has already scarred
+    # the drift map. Anywhere earlier and the row would describe an event that
+    # was still happening.
+    #
+    # The two early returns above leave no row, deliberately — a life with no
+    # society physics has no commons and no metabolic credit, and inventing a
+    # row for it would be the silent fallback §2.9 forbids. The reader treats
+    # a missing landmark row on a life long enough to have reached it as an
+    # abort, not as a default.
+    fed_drift = updated_drifts[state.agent_id]
+    _record_body_event(
+        event_counter=int(state.event_log[-1].timestamp),
+        energy=float(fed.energy),
+        drift_flags=dict(fed_drift.flags),
+        drift_magnitudes=dict(fed_drift.magnitudes),
+    )
     return {
         "env_state": new_env,
-        "drift_state": updated_drifts[state.agent_id],
+        "drift_state": fed_drift,
         "internal_state": fed,
     }
 

@@ -34,6 +34,7 @@ from dau.foundation.constraints import (
     DPO_LEARNING_RATE,
     DPO_MAX_GRAD_NORM,
     DPO_MAX_SEQUENCE_TOKENS,
+    LANDMARK_EVENT,
     METABOLIC_GAIN_CALIBRATED,
     METABOLIC_GAIN_HALF_SATURATION,
     METABOLIC_GAIN_MAX,
@@ -261,6 +262,13 @@ def build_tool_identity(
             "w_pool": FITNESS_W_POOL,
             "w_survival": FITNESS_W_SURVIVAL,
             "pool_term_per_event_max": EXTRACTION_DEFECT,
+        },
+        # K1/K2/K5 (D-070). Which ordinal every lineage is read at. Two runs of
+        # this harness can disagree about what "the endpoint" means without
+        # disagreeing about any number in the results file, so the ordinal has
+        # to travel with the run that used it.
+        "endpoints": {
+            "landmark_event": LANDMARK_EVENT,
         },
         "sampling": _sampling(),
         "seeds": {

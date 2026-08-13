@@ -342,6 +342,23 @@ class ArmResult:
     dpo_delta_logp_chosen: float = float("nan")
     dpo_delta_logp_rejected: float = float("nan")
     dpo_chosen_went_down: int = EMPTY_COUNT
+    # K1/K2/K5 (D-070). Read at LANDMARK_EVENT of phase 2, so arms are compared
+    # at the same AGE — since D-066 they no longer live equally long, and
+    # n_events above is the BUDGET, not what any arm actually got through.
+    # events_lived is recorded next to them because without it the landmark and
+    # the mean cannot be told apart from a life that simply ended early, which
+    # is the gap that made the D-066 pilot's f_agent unrecomputable (D-071).
+    #
+    # energy_mean_over_life is K2's second reading: E_final is decided by the
+    # death rule itself (a life that ends by exhaustion reports 0.000 by
+    # definition — six arms of six in the pilot), so it measures the ending,
+    # not the living.
+    events_lived: int = EMPTY_COUNT
+    landmark_reached: bool = False
+    landmark_energy: float = float("nan")
+    landmark_drift_flags: dict[str, bool] = field(default_factory=dict)
+    landmark_drift_magnitudes: dict[str, float] = field(default_factory=dict)
+    energy_mean_over_life: float = float("nan")
 
 
 @dataclass

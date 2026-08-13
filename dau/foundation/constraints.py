@@ -60,6 +60,21 @@ METABOLIC_GRACE_EVENTS: int = 10
 # defect (8.0) returns 0.40, so 4x the pool damage buys 1.6x the energy. The
 # second pre-registration locks the values; until then the tool identity says
 # out loud that they are declared, not measured (U5 / D-030 pattern).
+
+# K1/K2/K5 (D-070): the ordinal every lineage is read at, so arms are compared
+# at the same AGE rather than at whatever age each happened to die. Since D-066
+# lifespans differ by arm, and an end-of-life reading mixes "how the arm changed
+# the agent" with "how long the agent lasted".
+#
+# Events are 1-indexed (build_event ticks before sealing), so this is the tenth
+# event. It coincides with METABOLIC_GRACE_EVENTS, which is not a fitted
+# agreement but the same structural moment seen twice: grace covers the birth
+# transient, and the first ordinal worth comparing is the one just after it.
+# The consequence is that death is still suspended AT the landmark
+# (should_continue only lets a life end once len(event_log) >= GRACE), so every
+# lineage reaches it. The "died before the landmark" rule is still written and
+# still loud — if grace ever moves, the rule must not go quietly dead (§2.9).
+LANDMARK_EVENT: int = 10
 METABOLIC_GAIN_CALIBRATED: bool = False
 
 # Signal v2 — NLI polarity gate for preference pairs (CPU cross-encoder)

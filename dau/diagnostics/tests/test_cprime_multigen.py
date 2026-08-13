@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import random
+import statistics
 from dataclasses import asdict
 from types import SimpleNamespace
 from typing import Any
@@ -104,6 +106,7 @@ POOL_EXTRACTED: float = 250.0
 # Deliberately larger than the unit fixtures' event logs, so a survival term
 # that silently went back to t_survived/t_survived would read 1.0 instead.
 EVENTS_GEN1_UNIT: int = 50
+EVENT_TYPE_LANDMARK: str = "landmark-probe"
 EVENTS_SMOKE: int = 5
 N_SMOKE: int = 1
 
@@ -1820,6 +1823,27 @@ def test_tool_identity_reports_the_fitness_formulas_scale(
     assert moved["fitness"]["pool_term_per_event_max"] == EXTRACTION_MAX_PROBE
 
 
+LANDMARK_EVENT_PROBE: int = 7
+
+
+def test_tool_identity_reports_the_landmark_ordinal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two runs can mean different things by "the endpoint" (K1/K2/K5, D-070).
+
+    Nothing else in the results file carries the ordinal: the landmark fields
+    on ArmResult are named for the concept, not for the event they were read
+    at, so a run that moved LANDMARK_EVENT would be silently incomparable.
+    """
+
+    identity = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    assert identity["endpoints"]["landmark_event"] == C.LANDMARK_EVENT
+
+    monkeypatch.setattr(tool_identity_mod, "LANDMARK_EVENT", LANDMARK_EVENT_PROBE)
+    moved = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    assert moved["endpoints"]["landmark_event"] == LANDMARK_EVENT_PROBE
+
+
 def test_life_seals_the_vault_clock_with_events_actually_lived(
     monkeypatch: pytest.MonkeyPatch,
     store: MemoryStore,
@@ -1855,3 +1879,220 @@ def test_life_seals_the_vault_clock_with_events_actually_lived(
 
     assert store.counter_base == SHORT_LIFE_EVENTS
     assert store.counter_base != EVENTS_SMOKE
+
+
+# ---------------------------------------------------------------------------
+# K1/K2/K5 (D-070) — landmark reading: same age, not same ending
+# ---------------------------------------------------------------------------
+
+LANDMARK_ENERGY: float = 0.62
+LANDMARK_SCAR: float = 0.41
+LATE_ENERGY: float = 0.10
+LATE_SCAR: float = 0.88
+SHORT_LIFE_BEFORE_LANDMARK: int = C.LANDMARK_EVENT - 3
+
+
+def _body_rows(
+    n_events: int,
+    *,
+    landmark_energy: float = LANDMARK_ENERGY,
+    late_energy: float = LATE_ENERGY,
+) -> list[dict[str, object]]:
+    """Body rows for a life of n_events, distinguishable at the landmark."""
+
+    rows: list[dict[str, object]] = []
+    for counter in range(1, n_events + 1):
+        at_landmark = counter == C.LANDMARK_EVENT
+        rows.append(
+            {
+                "event_counter": counter,
+                "energy": landmark_energy if at_landmark else late_energy,
+                "drift_flags": {"resource": True} if at_landmark else {"energy": True},
+                "drift_magnitudes": (
+                    {"resource": LANDMARK_SCAR}
+                    if at_landmark
+                    else {"energy": LATE_SCAR}
+                ),
+            }
+        )
+    return rows
+
+
+def test_landmark_reading_reads_the_fixed_ordinal_not_the_last_event() -> None:
+    """The whole point: the same AGE, whatever age the life ended at.
+
+    A life that runs past the landmark keeps scarring, and the end-of-life
+    drift is what the transferred record already carries. Reading the last row
+    here would reproduce that endpoint under a new name.
+    """
+
+    rows = _body_rows(C.LANDMARK_EVENT * 2)
+    reading = multigen_mod._landmark_reading(rows, len(rows))
+
+    assert reading["landmark_reached"] is True
+    assert reading["landmark_energy"] == pytest.approx(LANDMARK_ENERGY)
+    assert reading["landmark_drift_flags"] == {"resource": True}
+    assert reading["landmark_drift_magnitudes"] == pytest.approx(
+        {"resource": LANDMARK_SCAR}
+    )
+
+
+def test_energy_mean_covers_the_whole_life_not_just_the_landmark() -> None:
+    """K2's second reading: E_final is decided by the death rule, not by living.
+
+    Unit-spaced ordinals make the mean the time integral over the lifespan, so
+    two lives of different length are still comparable on it.
+    """
+
+    rows = _body_rows(C.LANDMARK_EVENT * 2)
+    reading = multigen_mod._landmark_reading(rows, len(rows))
+
+    expected = statistics.fmean(float(row["energy"]) for row in rows)
+    assert reading["energy_mean_over_life"] == pytest.approx(expected)
+    # Not secretly the landmark value, and not the final one either.
+    assert reading["energy_mean_over_life"] != pytest.approx(LANDMARK_ENERGY)
+    assert reading["energy_mean_over_life"] != pytest.approx(LATE_ENERGY)
+
+
+def test_landmark_not_reached_is_reported_never_imputed() -> None:
+    """A life that ended early has no landmark — and gets no substitute (§2.9).
+
+    Unreachable while grace covers the landmark, which is exactly why the rule
+    is written: if METABOLIC_GRACE_EVENTS ever moves below it, the reading must
+    say "not measured" rather than quietly reporting some other ordinal.
+    """
+
+    rows = _body_rows(SHORT_LIFE_BEFORE_LANDMARK)
+    reading = multigen_mod._landmark_reading(rows, len(rows))
+
+    assert reading["landmark_reached"] is False
+    assert math.isnan(float(reading["landmark_energy"]))
+    assert reading["landmark_drift_flags"] == {}
+    assert reading["landmark_drift_magnitudes"] == {}
+    # The life still happened, so its integrated energy is still measured.
+    assert not math.isnan(float(reading["energy_mean_over_life"]))
+
+
+def test_missing_landmark_row_on_a_long_life_aborts() -> None:
+    """Instrumentation that stopped writing must not read as a short life.
+
+    The two are indistinguishable from the rows alone, and they mean opposite
+    things: one is a finding about the agent, the other is a broken instrument.
+    """
+
+    rows = [
+        row
+        for row in _body_rows(C.LANDMARK_EVENT * 2)
+        if row["event_counter"] != C.LANDMARK_EVENT
+    ]
+
+    with pytest.raises(SystemExit, match=str(C.LANDMARK_EVENT)):
+        multigen_mod._landmark_reading(rows, C.LANDMARK_EVENT * 2)
+
+
+def test_arm_result_carries_the_landmark_of_phase_two(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Phase 2, because that is the life the transferred drift comes from.
+
+    Phase 1 runs before any adapter exists, so all three arms are identical
+    there; a landmark read off phase 1 could not differ by arm at all.
+    """
+
+    lives: list[int] = []
+
+    def _fake_life(*, agent_id, seed, n_events, store, initial):
+        lives.append(len(lives))
+        graph_mod.reset_body_event_log()
+        for row in _body_rows(n_events):
+            graph_mod._record_body_event(
+                event_counter=int(row["event_counter"]),
+                energy=float(row["energy"]),
+                drift_flags=dict(row["drift_flags"]),
+                drift_magnitudes=dict(row["drift_magnitudes"]),
+            )
+        state = _initial_state(agent_id, seed)
+        state = state.model_copy(
+            update={
+                "event_log": [
+                    Event(event_type=EVENT_TYPE_LANDMARK, timestamp=counter)
+                    for counter in range(1, n_events + 1)
+                ]
+            }
+        )
+        return [0.3] * n_events, [], [], state
+
+    monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
+    monkeypatch.setattr(
+        multigen_mod,
+        "_open_lineage_store",
+        lambda: (None, _FakeTmp()),
+    )
+
+    arm_result, _state, _store, _tmp = run_gen1_arm_lineage(
+        seed=SEED_UNIT,
+        arm=ARM_NULL,
+        events_gen1=EVENTS_GEN1_UNIT,
+    )
+
+    assert len(lives) == 2, "both phases must run, or 'phase 2' means nothing"
+    assert arm_result.events_lived == EVENTS_GEN1_UNIT
+    assert arm_result.landmark_reached is True
+    assert arm_result.landmark_energy == pytest.approx(LANDMARK_ENERGY)
+    assert arm_result.landmark_drift_magnitudes == pytest.approx(
+        {"resource": LANDMARK_SCAR}
+    )
+    assert not math.isnan(arm_result.energy_mean_over_life)
+
+
+LANDMARK_E2E_EVENTS: int = C.LANDMARK_EVENT + 1
+
+
+def test_landmark_survives_a_real_graph_stream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The junction no unit test reaches: real stream writes, reader finds.
+
+    The graph tests prove pool_step_node appends a row and the reader tests
+    prove _landmark_reading picks the right one, but between them sit the two
+    things that actually break — the ordinals the graph writes agreeing with
+    the ordinal the reader looks up, and the buffer surviving from the end of
+    phase 2 to the drain without another life clearing it. Both were silent
+    failure modes in the S5 wiring they are copied from (D-063 / L20).
+
+    One arm and one event past the landmark: enough to prove the junction,
+    cheap enough to keep in the suite.
+    """
+
+    monkeypatch.setenv(LORA_ENABLED_ENV, "0")
+    monkeypatch.setattr(
+        "dau.foundation.graph._prediction_error",
+        lambda expected, actual: 0.25 + (len(str(actual)) % 7) * 0.05,
+    )
+    previous = multigen_mod.install_mock_llm()
+    try:
+        arm_result, _state, _store, tmp = run_gen1_arm_lineage(
+            seed=SEED_UNIT,
+            arm=ARM_NULL,
+            events_gen1=LANDMARK_E2E_EVENTS,
+        )
+    finally:
+        multigen_mod.restore_llm_builder(previous)
+
+    try:
+        assert arm_result.events_lived == LANDMARK_E2E_EVENTS
+        assert arm_result.landmark_reached is True
+        # A real body, so the values are whatever the life produced — what is
+        # under test is that they were READ, not what they are.
+        assert not math.isnan(arm_result.landmark_energy)
+        assert not math.isnan(arm_result.energy_mean_over_life)
+        # One row per event of the second phase, numbered from one: if the
+        # buffer had carried phase 1 as well this would be twice as long, and
+        # the landmark would have been read off the untrained life.
+        rows = graph_mod.get_body_event_log()
+        assert [row["event_counter"] for row in rows] == list(
+            range(1, LANDMARK_E2E_EVENTS + 1)
+        )
+    finally:
+        if tmp is not None:
+            tmp.cleanup()

@@ -85,7 +85,7 @@ from dau.diagnostics.tool_identity import (
     build_tool_identity,
     resolve_lora_choice,
 )
-from dau.foundation.constraints import LORA_B_ABS_SUM_UNREAD
+from dau.foundation.constraints import LANDMARK_EVENT, LORA_B_ABS_SUM_UNREAD
 from dau.foundation.drift import DriftState
 from dau.foundation.emotional_weight import (
     MARKER_REWARD,
@@ -388,6 +388,10 @@ def run_life_keep_vault(
     # Same lifetime as the PE buffer: drained by the caller after the stream
     # ends, so it must start empty or it would carry the previous life's rows.
     graph_mod.reset_pool_event_log()
+    # Same lifetime and the same reason: the landmark is an ordinal within ONE
+    # life, so a buffer carrying the previous life's rows would let event 10 be
+    # read off the wrong agent.
+    graph_mod.reset_body_event_log()
 
     try:
         graph_mod.MAX_EVENTS = int(n_events)
@@ -815,6 +819,15 @@ def run_gen1_arm_lineage(
         store=store,
         initial=None,
     )
+    # Drained here, before anything else can start a life and reset the buffer
+    # (same rule as the S5 pool rows, L20). Phase 2 and not phase 1: the arms
+    # are identical until the adapter is trained, and this is the life the
+    # transferred drift comes from — so the landmark is a cross-section of the
+    # same life the primary endpoint has always been read off.
+    landmark = _landmark_reading(
+        graph_mod.get_body_event_log(),
+        len(state_2.event_log),
+    )
     pe_after = _window_mean(pe_after_list)
     delta_pe = NAN_DELTA if gated else (pe_after - pe_before)
 
@@ -844,6 +857,8 @@ def run_gen1_arm_lineage(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
+        events_lived=len(state_2.event_log),
+        **landmark,
         arm_digest=arm_digest(
             _decisions(state_1) + _decisions(state_2),
             list(pe_before_list) + list(pe_after_list),
@@ -876,6 +891,68 @@ def _first_ordinal(flags: list[bool]) -> int:
         if flag:
             return index + 1
     return EVENT_NEVER_OCCURRED
+
+
+def _landmark_reading(
+    body_rows: list[dict[str, Any]],
+    events_lived: int,
+) -> dict[str, Any]:
+    """Read one life at a fixed AGE, plus its energy averaged over that life.
+
+    K1/K2/K5 (D-070). Since D-066 lifespans differ by arm, so an end-of-life
+    reading answers two questions at once — how the arm changed the agent, and
+    how long the agent lasted — and the second one drowns the first (K4-b found
+    the same confound inside F_agent's pool term). Reading every lineage at
+    LANDMARK_EVENT makes the arms comparable at the cost of a narrower claim:
+    what is compared is a cross-section, not the whole life. That limit gets
+    declared in the second pre-registration.
+
+    The mean over events IS the time integral divided by lifespan here: event
+    ordinals are unit-spaced by construction (EventClock ticks by one), and
+    each row holds the energy that event left standing until the next one.
+
+    Two failure modes, both loud (§2.9):
+
+    * the life reached the landmark but no row exists — impossible unless the
+      instrumentation broke, so it aborts rather than reporting a hole;
+    * the life ended before the landmark — cannot happen while death is
+      suspended through METABOLIC_GRACE_EVENTS, but the rule is written anyway
+      so that moving grace cannot retire it in silence. Reports NaN, never a
+      substituted value from another ordinal.
+    """
+
+    by_counter = {int(row["event_counter"]): row for row in body_rows}
+    row = by_counter.get(LANDMARK_EVENT)
+    energies = [float(row["energy"]) for row in body_rows]
+    energy_mean = float(statistics.fmean(energies)) if energies else NAN_DELTA
+
+    if row is None:
+        if events_lived >= LANDMARK_EVENT:
+            raise SystemExit(
+                f"[LANDMARK] life ran {events_lived} events but no body row "
+                f"for event {LANDMARK_EVENT}; recorded ordinals: "
+                f"{sorted(by_counter)}"
+            )
+        print(
+            f"[LANDMARK][WARN] life ended at event {events_lived}, before the "
+            f"landmark at {LANDMARK_EVENT} — reading unavailable, not imputed",
+            flush=True,
+        )
+        return {
+            "landmark_reached": False,
+            "landmark_energy": NAN_DELTA,
+            "landmark_drift_flags": {},
+            "landmark_drift_magnitudes": {},
+            "energy_mean_over_life": energy_mean,
+        }
+
+    return {
+        "landmark_reached": True,
+        "landmark_energy": float(row["energy"]),
+        "landmark_drift_flags": dict(row["drift_flags"]),
+        "landmark_drift_magnitudes": dict(row["drift_magnitudes"]),
+        "energy_mean_over_life": energy_mean,
+    }
 
 
 def _s5_behaviour(
