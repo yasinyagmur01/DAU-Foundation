@@ -5088,3 +5088,98 @@ değişiklikleri (K4-b'nin normalizasyonu, landmark aletlemesi, LOCF'un
 kaldırılması) ayrı commit'lerde ve her biri kendi mutasyon kontrolüyle
 gelecek. Kararların **hiçbiri ölçüm sonucuna bakılarak** verilmedi; K4-b'nin
 girdisi olan %10.7 rakamı bir **çift sayım teşhisi**, etki büyüklüğü değil.
+
+---
+
+## D-071 · 2026-08-13 · K4-b uygulandı — ve `F_agent`'ın hayatta kalma terimi hiçbir zaman ömrü ölçmüyormuş
+
+**Durum:** kod değişikliği + ölçüm · **Karar: Yasin'in** (gate-and-confirm,
+§2.3) · **commit `74834e6`** · **girdi:** D-070/K4-b · suite `388 passed`
+
+### Uygulamadan önce çıkan çelişki (§2.11)
+
+D-070'in K4-b gerekçesi *"bugünkü `F_agent` = 0.4·enerji (ölü) + 0.3·havuz
+(≈ ömür vekili) + 0.3·hayatta kalma (ömür) ⇒ skorun ~%60'ı ömrü iki kez
+sayıyor"* diyordu. Kod bunu doğrulamadı.
+
+`f_agent_inputs`, `t_generation`'a **ajanın kendi ömrünü** veriyordu
+(`max(t_survived, MIN_SURVIVAL_DENOMINATOR)`) ⇒ hayatta kalma terimi
+`t_survived / t_survived` ≡ **1.0**, her soyda, bugüne kadarki **her
+koşumda**. Terim ömrü ölçmüyordu; her soya sabit **+0.3** ekliyordu.
+
+**Kanıt — pilotun iki soyu, `F = 0.3·(1 − |Δhavuz|/100) + 0.3` ile:**
+
+| seed | `Δhavuz` | hesap | JSON'daki `f_agent` |
+|---|---|---|---|
+| 4001 | 130.7955 | 0.3·(−0.307955) + 0.3 = **0.2076134** | 0.20761337418662523 |
+| 4002 | 62.1716 | 0.3·(0.3782844) + 0.3 = **0.4134853** | 0.41348533116013630 |
+
+Enerji `0.000` (D-068), survival sabit `0.3` ⇒ yayılımın **%100'ü** havuz
+teriminden geliyordu. ⇒ **D-068'in *"yayılımın tamamı `survival` ve
+`Δhavuz`'dan geliyor"* cümlesi ve D-070'in K4-b gerekçesindeki *"0.3 hayatta
+kalma = ömür"* teşhisi yanlış** (kayıtlar append-only; düzeltme burada).
+
+⚠ **Bunun K4-b'ye doğrudan sonucu var:** ömrün `F_agent`'a girdiği tek yer o
+kümülatif toplamdı. K4-b tek başına uygulansaydı ömür skordan **tamamen**
+çıkacaktı — D-066'nın canlandırdığı ölüm kanalı fitness'ta görünmez olurdu.
+`compute_fitness`'in **kendi docstring'i** (*"what fraction of the
+generation's event span the organism endured"*) en baştan doğruyu söylüyordu;
+çelişen `f_agent_inputs`'tı.
+
+**Yasin'e soruldu, iki karar alındı** (§2.3, "adım içinde yeni karar noktası
+çıkarsa tekrar sor"):
+
+| Soru | Seçilen | Reddedilen |
+|---|---|---|
+| Hayatta kalma terimi | **Düzeltilsin — payda faz bütçesi** | Dokunma (ömür skordan tümüyle silinirdi) · Önce ölç (§2.7: sonuca bakıp formül seçmek post-hoc) |
+| Olay başına ölçek | **`EXTRACTION_DEFECT = 8.0`** | `POOL_MAX` (stok ÷ akış, boyut hatası; terimi ~0.93'e sıkıştırır) · `EXTRACTION_PARSE_MAX = 25.0` (tasarım hedefi değil, kaçak ayrıştırmaya karşı emniyet freni) |
+
+### Ne değişti
+
+`F = w_e·(E/E_max) + w_p·(1 − (|Δhavuz|/t_survived)/X_max) + w_s·(t_survived/t_gen)`
+
+- **Havuz terimi bir oran.** `X_max = EXTRACTION_DEFECT`, deterministik
+  karar→sonuç tablosunun verebileceği en büyük hasat ⇒ terim davranışsal
+  okunur: **1.0** havuza hiç dokunmadı, **0.0** her olayda defect etti.
+  ⚠ Serbest metinden 8'in üstü ayrıştırılabildiği için terim negatife
+  düşebilir; nihai kırpma sınırlıyor — ömür toplamı `POOL_MAX`'ı aştığında
+  zaten böyleydi.
+- **`t_generation` = fazın olay bütçesi**, zorunlu parametre, **varsayılan
+  yok** (§2.9): fonksiyonun kendi başına ulaşabildiği tek değer zaten hataya
+  yol açan ömrün kendisi.
+- Bütçenin taşınması: `meta_observer_node` imzasını LangGraph sabitlediği
+  için `graph.MAX_EVENTS`'ten **çağrı anında** okuyor (import fonksiyon
+  içinde — `graph` bu modülü yüklüyor, `state.py` aynı döngüyü aynı biçimde
+  kırıyor; her çağrıda çünkü her koşucu global'i bir yaşamın etrafında
+  yeniden bağlıyor). `transfer_to_heir` ise **parametre** alıyor: oraya
+  gelindiğinde `run_life_keep_vault` global'i `finally` bloğunda geri
+  yüklemiş oluyor.
+
+### Raporlama (§2.8)
+
+`BirthDriftLog` → **`f_agent_t_survived` + `f_agent_t_generation`**. Havuz
+terimi oran olduğu için `delta_pool` tek başına anlamsız, ve okuyanın
+`t_generation`'ın `t_survived`'a çöküp çökmediğini **görebilmesi** gerekiyor.
+`tool_identity` → **`fitness` bloğu** (üç ağırlık + `pool_term_per_event_max`):
+aynı `f_agent` değeri artık iki farklı fizikten çıkabiliyor ve başka hiçbir
+alan hangisinin koştuğunu söylemiyor.
+
+### Mutasyon kontrolü (§2.4) — üçü de kırdı
+
+| Mutasyon | Kıran test |
+|---|---|
+| havuz terimi `\|Δhavuz\|/POOL_MAX`'a geri | `test_pool_term_is_a_rate_not_a_lifetime_sum` |
+| `t_generation` yeniden `t_survived` | `test_transfer_records_what_f_agent_was_computed_from` |
+| `meta_observer` bütçeyi donduruyor (sabit 20) | `test_meta_observer_reads_the_live_event_budget` |
+
+### Sınırlar
+
+- **Hiçbir sabit sonuca bakılarak seçilmedi** (§2.7). `EXTRACTION_DEFECT`
+  yapısal bir çapa (tablonun maksimumu), pilotun 6.88/6.22'sinden türetilmedi.
+- **Pilotun `f_agent`'ları yeni formülle yeniden hesaplanamıyor.**
+  `dau_runs/pilot_d066_metabolic_n2.json` `t_survived`'ı **kaydetmiyor** —
+  yeni formül ona ihtiyaç duyuyor. Bu eksiklik zaten yeni iki alanın gerekçesi.
+  ⇒ D-071 öncesi ve sonrası `f_agent` değerleri **karşılaştırılamaz**.
+- Ölçülmedi: yeni formülün gerçek koşumda ne kadar yayılım ürettiği. Bu
+  **kasıtlı** — etkiye bakıp formül seçmek L9/§2.7 ihlali olurdu.
+- `METABOLIC_GAIN_CALIBRATED = False` **değişmedi** (K4).
