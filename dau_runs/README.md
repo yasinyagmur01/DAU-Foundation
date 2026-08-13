@@ -39,6 +39,7 @@ sütunu içeriğe göre verildi, tarihe göre değil.**
 | nli_score_distribution.json | 2026-08-10 13:00 | ESKİ ALET | NLI skor dağılımı |
 | overnight_audit_results.json | ⚠ mtime 08-12, **içerik çok daha eski** | ESKİ ALET | Protocol C / metacognition dönemi: `npc_baseline`, `meta_ab_*`, `nuance_loss_pilot`, `sensor_label`. Layer 5 çalışmasından |
 | pilot_d033_n3_local.json | 2026-08-10 16:17 | ESKİ ALET | D-033 pilot; N=3; local |
+| pilot_d066_metabolic_n2.json | 2026-08-13 14:56 | KEŞİFSEL | **D-068** — metabolik evrenin ilk pilotu (N=2, seed 4001–4002). ⚠ `run_quality=flagged`, uç nokta %71 padding ⇒ `pe_after` sayıları **okunmaz**. Fizik D-066/D-067 sonrası ⇒ önceki hiçbir dosyayla karşılaştırılamaz |
 | prereg_b2_batch1_2004_2023.json | 2026-08-12 02:11 | GEÇERLİ | B2 batch1; seed 2004–2023 |
 | prereg_b2_batch2_2024_2043.json | 2026-08-12 11:21 | GEÇERLİ | B2 batch2; seed 2024–2043 |
 | protocol_c_prime_heartbeat.json | 2026-08-07 20:45 | ESKİ ALET | C′ heartbeat |

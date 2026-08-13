@@ -4837,3 +4837,89 @@ kümeyi *ne kadar* değiştirdiği ölçülmedi — D-051 etkinin o zaman **sıf
 olduğunu göstermişti, ama o iki dejenereliğin ikisi de artık kalkıyor. Gen2
 kasası da aynı mühürleme yolundan geçiyor (varis yaşamı üçüncü faz olarak
 sayıyor); bu **tasarım gereği** ama **ölçülmedi**.
+
+---
+
+## D-068 · 2026-08-13 · Metabolik evren pilotu: seçilim katmanı **canlandı**, ölçüm penceresi **kırıldı**
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** · N=2 (seed
+4001–4002), `--lora`, 50 olay bütçesi · `run_quality = flagged` · ham çıktı
+`dau_runs/pilot_d066_metabolic_n2.json`
+
+### Soru
+
+D-066 ve D-067 fiziği değiştirdi ama **hiçbir şey ölçülmemişti**. Pilotun beş
+sorusu: enerji dalgalanıyor mu · ölüm oluyor mu · `F_agent` yayılıyor mu ·
+`Δhavuz` ayrışıyor mu · konsolidasyon ne siliyor.
+
+⚠ İlk deneme `--no-lora` ile koşuldu ve **I2.1 abort etti** (*"identical arms"*)
+— kapı doğru davrandı: eğitim yokken üç kol özdeş. Kayda değer, çünkü fizik
+sorusu kol ayrımı gerektirmiyordu ama alet geçerli koşum istiyor.
+
+### Cevaplar
+
+| Soru | Cevap |
+|---|---|
+| Ölüm oluyor mu | ✅ **Evet.** Faz-1 yaşamları **19** (seed 4001) ve **10** (seed 4002) olayda bitti, 50 bütçesine karşı |
+| `F_agent` yayılıyor mu | ✅ **Sınıf bariyeri kırıldı.** 0.2076 (`low`) vs **0.4135 (`normal`)**. B2'de 120/120 kol `low` ve `f_agent=0.000`'dı |
+| `Δhavuz` ayrışıyor mu | ✅ **130.8 vs 62.2.** B2: 393.55 ± 2.62, altı farklı değer, yayılım %0.7 |
+| Enerji dalgalanıyor mu | ⚠ **Kısmen — aşağıya bak** |
+| Konsolidasyon | ✅ değişti: silinen 9/8/9 ve 4/3/3. D-031'in ölçtüğü ort. **24.90 artık geçerli değil** |
+
+**Bedel mekanizması çalışıyor, gözle görülür biçimde.** Seed 4002'nin gen2
+havuzu 8. olayda tabana vuruyor (`pool_ratio` 0.372 → 0.000) ve **gerçekleşen
+hasat 8.0 → 6.17 → 0** diye düşüyor: D-066'nın defter düzeltmesi canlıda
+ateşledi. Her yaşamda **3 olay sıfır hasatla** geçiyor.
+
+**Ayrım artık uç noktalara da ulaşıyor:** `lived`-4001'in varisi gen2'de
+**17 olay** yaşadı, `null`/`shuffle`'ınki **20**. Yaşam uzunluğu kola göre
+değişiyor — B2'de böyle bir kanal **yoktu**. Ayrıca `lived`-4001'in doğum
+drift'i `{'energy': True, 'resource': True}` — **`energy` alanı ilk kez
+bayraklandı**.
+
+### ⚠ İki yeni sorun, ikisi de bu koşumun ürettiği
+
+**1. Enerji terimi hâlâ ölü — ama artık BAŞKA bir sebeple.** `E_final = 0.000`,
+altı kolun altısında. Sebep formül değil **seçilim**: ajanlar tükenerek
+ölüyor, ve tükenerek ölen bir ajanın son enerjisi tanımı gereği sıfır.
+`F_agent`'ın en büyük ağırlığı (0.4) yine bilgi taşımıyor; yayılımın tamamı
+`survival` ve `Δhavuz`'dan geliyor. ⇒ **Ölçüm anı yanlış:** ya yaşam boyu
+ortalama enerji, ya sabit bir olaydaki enerji alınmalı. **Tasarım kararı.**
+
+**2. Uç nokta padding'e boğuldu.** I3.4: gen1'de **426/600 slot padding
+(%71)**, I3.1 PE kapsaması 0.29'a düştü. Alet her kolda bunu bastı:
+*"PE trace 19/50 events — mean is padding-dominated, arm not measurable"*.
+⇒ **Sabit 50 olaylık pencere, ölümün mümkün olduğu bir evrende çalışmıyor.**
+
+⚠ Bu yüzden bu koşumun `pe_after` sayıları (`lived` 0.5005 · `null` 0.4265 ·
+`shuffle` 0.3500) **okunmayacak**. Aralarındaki fark padding oranından da
+gelebilir; aletin kendisi ölçülemez diyor.
+
+### ⚠ Davranış hâlâ çökmüş durumda
+
+Hasat neredeyse her olayda **8.0 = DEFECT**. Evren artık bunun bedelini
+kestiriyor (havuz çöküyor, hasat sıfırlanıyor, ajan ölüyor) ama **ajan
+davranışını değiştirmiyor** — bedeli ödeyip aynı şeyi yapmaya devam ediyor.
+
+Bu, D-065/J4'ün (GovSim, Piatti vd. 2024) **tam olarak rapor ettiği olgu**:
+LLM ajanları ortak kaynak ikileminde kendiliğinden düzenlenmiyor, ve orada
+ölçülmüş tek kaldıraç **bilişsel önsel** (evrenselleştirme) oldu.
+⇒ **A4-③ (prompt/karar kuralı) artık spekülatif değil, sıradaki aday.**
+
+### Ne değişti, ne değişmedi
+
+⇒ ① **mekanik olarak çalıştı**: fitness girdilerinin ikisi (survival, Δhavuz)
+canlandı, sınıf bariyeri kırıldı, bedel zinciri uçtan uca ateşledi.
+⇒ Kalan darboğaz **davranışsal**, ve literatürde adresi belli.
+⇒ ⚠ **Hiçbir sabit ayarlanmadı ve ayarlanmayacak.** Üç metabolik sabitin
+değerini bu sonuca bakarak seçmek post-hoc tuning olur (§2.7). Pilot **yönü**
+gösterdi: kazanç yeterli, ama ölçüm penceresi ve enerji okuma anı yeniden
+tasarlanmalı.
+
+### Sınırlar
+
+**N=2**, tek evren, hipotez testi yok, `run_quality=flagged` (I3.1 · I3.2 ·
+I3.4 · I1.3b). Kol karşılaştırması **yapılmadı ve yapılamaz** — hem N=2 hem
+padding. `pi_n_distinct = 2` (I3.2) ⇒ precision mekanizması hâlâ atıl (L13).
+Kırpma yine %100 (I1.3b, D-059 ile aynı). Gen2 kolları seed 4002'de birebir
+aynı çıktı; seed 4001'de `lived` ayrıştı — **N=2'de bu gözlem, bulgu değil**.

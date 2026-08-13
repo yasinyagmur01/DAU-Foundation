@@ -25,7 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-067.** Sıradaki kayıt **D-068** olarak açılır.
+- **Son D-kaydı: D-068.** Sıradaki kayıt **D-069** olarak açılır.
 - **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
   cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
 - ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
@@ -34,13 +34,21 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - ✅ **GAP-19 kapandı (D-067)** — kasa nerede kaldığını hatırlıyor; kasaya
   giren her sayaç faz-yerel, çeviriyi yalnız kasa yapıyor. D-051'in *"ikisi
   birlikte ya da hiçbiri"* şartı ödendi.
-- ⏳ **SIRADAKİ İŞ: küçük pilot.** ⚠ **Hiçbir şey ölçülmedi** — D-066 ve D-067
-  fiziği değiştirdi, ne ürettiğini bilmiyoruz. Pilotun cevaplayacakları:
-  enerji gerçekten dalgalanıyor mu · ölüm ne sıklıkta ve ne zaman ·
-  `F_agent` yayılıyor mu (120/120 `low` kırıldı mı) · `Δhavuz` artık
-  ayrışıyor mu · konsolidasyonun sildiği anı sayısı nereye gitti.
-  ⚠ **Pilot yönü gösterir, değer seçemez** (§2.7): üç metabolik sabit de
-  kalibre değil ve sonuca bakarak ayarlanamaz.
+- ✅ **Pilot koşuldu (D-068, N=2).** ① **mekanik olarak çalıştı:** ölüm var
+  (yaşamlar 19 ve 10 olay), **sınıf bariyeri kırıldı** (`low` 0.208 vs
+  **`normal` 0.413**; B2'de 120/120 `low`), `Δhavuz` 130.8 vs 62.2 (B2: ±%0.7),
+  bedel zinciri uçtan uca ateşledi (havuz çökünce hasat 8.0→6.17→0), ve
+  **yaşam uzunluğu kola göre değişti** (gen2: `lived` 17, `null`/`shuffle` 20).
+- ⏳ **SIRADAKİ İŞ — üç açık karar, üçü de Yasin'in:**
+  ① **Ölçüm penceresi:** sabit 50 olay, ölümün mümkün olduğu evrende
+  çalışmıyor (gen1'de **%71 padding**, alet *"arm not measurable"* diyor).
+  ② **Enerji okuma anı:** `E_final` hâlâ 0.000 — formül değil **seçilim**
+  yüzünden (tükenerek ölenin son enerjisi sıfırdır). `F_agent`'ın 0.4
+  ağırlığı hâlâ bilgi taşımıyor.
+  ③ **Davranış hâlâ çökmüş:** hasat neredeyse hep 8.0 (DEFECT); evren bedeli
+  kesiyor ama ajan davranışını değiştirmiyor. **D-065/J4 (GovSim) tam bunu
+  rapor ediyor** ve ölçülmüş tek kaldıraç bilişsel önsel ⇒ **A4-③ artık
+  spekülatif değil.**
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
