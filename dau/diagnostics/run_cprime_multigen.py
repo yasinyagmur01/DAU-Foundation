@@ -186,16 +186,19 @@ class BirthDriftLog:
     gen1_arm: str
     seed: int
     f_agent: float
-    # The two inputs F_agent is most sensitive to, recorded because the pilot
+    # Every input F_agent is computed from, recorded because the pilot
     # returned f_agent=0.000 and fitness_class="low" for all nine lineages
-    # (D-034). F = 0.4*(E/E_max) + 0.3*(1 - |dpool|/POOL_MAX) + 0.3*survival,
-    # clamped to [0,1], and agent_delta_pool sums EVERY extraction of the life
-    # rather than a net change — so over 50 events the pool term can run far
-    # enough negative to clamp the whole score to zero regardless of what the
-    # agent did. Without these two numbers a structurally dead gate and a
-    # genuinely unfit cohort look identical in the results file.
+    # (D-034) and the score alone cannot say why.
+    # F = 0.4*(E/E_max) + 0.3*(1 - (|dpool|/t_survived)/X_max) + 0.3*(t_survived/t_gen),
+    # clamped to [0,1]. All four are kept because after K4-b (D-070) no single
+    # one of them is redundant: the pool term is now a per-event rate, so it
+    # cannot be read without t_survived, and t_generation stopped being a copy
+    # of t_survived — which is what had pinned the survival term at exactly
+    # 1.0 for every lineage this harness has ever scored.
     f_agent_energy_final: float
     f_agent_delta_pool: float
+    f_agent_t_survived: float
+    f_agent_t_generation: float
     fitness_class: str
     n_transfer_candidates: int
     inherited_memory_ids: list[str]
@@ -630,11 +633,18 @@ def transfer_to_heir(
     memory_store: MemoryStore,
     seed: int,
     gen1_arm: str,
+    events_gen1: int,
 ) -> tuple[DAUAgentState, GenerationRecord, BirthDriftLog]:
     """Consolidate parent → birth heir with apply_generation (pre-invoke).
 
     Ordering guarantee: apply_generation returns before this function returns;
     callers must not stream the heir graph until after this returns.
+
+    ``events_gen1`` is F_agent's survival denominator (K4-b). It is passed in
+    rather than read from graph.MAX_EVENTS the way meta_observer_node does,
+    because run_life_keep_vault restores that global in its finally block —
+    by the time we get here it holds the module default again, not the budget
+    the life was actually run against.
     """
 
     # GAP-12: this runs after gen1 training, so the incoming RNG state is
@@ -643,13 +653,15 @@ def transfer_to_heir(
     # rather than by grep.
     _lock_seeds(seed)
 
-    self_model = build_self_model(parent_state)
+    self_model = build_self_model(parent_state, events_gen1)
     f_agent = float(self_model.f_agent)
     # Read through the same helper _resolve_f_agent uses, so the report cannot
     # drift from the score it explains (CLAUDE.md 2.8).
-    f_inputs = f_agent_inputs(parent_state)
+    f_inputs = f_agent_inputs(parent_state, events_gen1)
     f_agent_energy = float(f_inputs["energy_final"])
     f_agent_dpool = float(f_inputs["delta_pool"])
+    f_agent_t_survived = float(f_inputs["t_survived"])
+    f_agent_t_generation = float(f_inputs["t_generation"])
     reward = float(self_model.emotional_weight.somatic_markers.get(MARKER_REWARD, 0.0))
     threat = float(self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0))
 
@@ -704,6 +716,8 @@ def transfer_to_heir(
         f_agent=f_agent,
         f_agent_energy_final=f_agent_energy,
         f_agent_delta_pool=f_agent_dpool,
+        f_agent_t_survived=f_agent_t_survived,
+        f_agent_t_generation=f_agent_t_generation,
         fitness_class=classify_fitness(f_agent),
         n_transfer_candidates=len(record.inherited_memories),
         inherited_memory_ids=list(record.inherited_memories),
@@ -1012,6 +1026,7 @@ def run_lineage(
             memory_store=store,
             seed=seed,
             gen1_arm=arm,
+            events_gen1=events_gen1,
         )
         # Birth-drift logged at transfer time — independent of gen2 PE.
         gen2 = run_gen2_measure(

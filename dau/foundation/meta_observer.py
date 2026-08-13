@@ -297,6 +297,27 @@ def trigger_retrieval(
     return context + list(supplements)
 
 
+def _generation_event_budget() -> int:
+    """The event span this life is being run against, read live (K4-b).
+
+    F_agent's survival term needs the budget, not the agent's own lifespan,
+    and inside a run the graph loop is the only thing that knows it —
+    should_continue ends the life on this same value.
+
+    Two deliberate awkwardnesses. The import is function-local because graph
+    imports this module at load time, so a module-level import would be a
+    cycle (state.py breaks the same cycle the same way). And it is read per
+    call rather than bound once, because every runner rebinds
+    graph.MAX_EVENTS around a life (run_cprime_multigen.py:390) — an
+    import-time binding would freeze the module default into every fitness
+    read and silently score a 50-event life against 20.
+    """
+
+    from .graph import MAX_EVENTS
+
+    return int(MAX_EVENTS)
+
+
 def meta_observer_node(state: DAUAgentState) -> dict[str, Any]:
     """Build S_self, run four actuators in order, persist SelfModel on state.
 
@@ -307,7 +328,8 @@ def meta_observer_node(state: DAUAgentState) -> dict[str, Any]:
 
     print(f"[META] meta_observer_node called, event={len(state.event_log)}")
 
-    self_model = build_self_model(state)
+    budget = _generation_event_budget()
+    self_model = build_self_model(state, budget)
 
     lod = lod_override(self_model, _ensure_lod(state))
     context = context_prune(list(state.retrieval_context), self_model)
@@ -333,7 +355,7 @@ def meta_observer_node(state: DAUAgentState) -> dict[str, Any]:
             "drift_state": drift,
         }
     )
-    final_self = build_self_model(updated)
+    final_self = build_self_model(updated, budget)
 
     return {
         "lod_state": lod,

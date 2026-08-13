@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 
 from dau.foundation.state import METRIC_MAX, METRIC_MIN
-from dau.society.environment import POOL_MAX
+from dau.society.extraction import EXTRACTION_DEFECT
 
 # ---------------------------------------------------------------------------
 # Fitness weights, thresholds, and transfer scaling (no magic numbers)
@@ -28,6 +28,7 @@ ENERGY_MAX: float = 1.0
 WARNING_SOMATIC_SCALE: float = 0.3  # inherited warning → 30% somatic weight
 
 MIN_GENERATION_STEPS: int = 1
+MIN_EVENTS_LIVED: int = 1  # divisor floor for the per-event pool rate (K4-b)
 
 FITNESS_LABEL_LOW: str = "low"
 FITNESS_LABEL_HIGH: str = "high"
@@ -47,18 +48,34 @@ def compute_fitness(
     delta_pool: float,
     t_survived: int,
     t_generation: int,
-    pool_max: float = POOL_MAX,
+    per_event_extraction_max: float = EXTRACTION_DEFECT,
 ) -> float:
     """Objective ancestral survival fitness F_agent in [0, 1].
 
-    Biology analogy: how much fuel remained, how gently the commons was used,
-    and what fraction of the generation's event span the organism endured.
+    Biology analogy: how much fuel remained, how gently the commons was used
+    *while it was used*, and what fraction of the generation's event span the
+    organism endured.
 
-    F = w_e·(E/E_max) + w_p·(1 − |Δpool|/P_max) + w_s·(t_survived / t_gen)
+    F = w_e·(E/E_max) + w_p·(1 − (|Δpool|/t_survived)/X_max) + w_s·(t_survived / t_gen)
+
+    K4-b (D-070): the pool term is a RATE, not a lifetime sum. Summing the
+    ledger made the term a lifespan proxy — the pilot's two lineages spread
+    130.8 vs 62.2 (110%), but per event of life that is 6.88 vs 6.22 (10.7%),
+    so nine tenths of the "commons" signal was longevity wearing a second hat.
+    Stearns (1989) names that double counting directly. Longevity is priced
+    once, by the survival term, against the generation's event budget.
+
+    X_max is the largest harvest the deterministic decision→outcome map can
+    yield (EXTRACTION_DEFECT), so the term reads behaviourally: 1.0 never
+    touched the commons, 0.0 defected at every event. Free-text harvests parse
+    above that ceiling and drive the term negative; the final clamp bounds it,
+    as it already did for lifetime sums past P_max.
     """
 
     energy_term = float(energy_final) / ENERGY_MAX
-    pool_term = 1.0 - abs(float(delta_pool)) / float(pool_max)
+    events_lived = max(int(t_survived), MIN_EVENTS_LIVED)
+    pool_per_event = abs(float(delta_pool)) / float(events_lived)
+    pool_term = 1.0 - pool_per_event / float(per_event_extraction_max)
     survival_term = float(t_survived) / float(
         max(int(t_generation), MIN_GENERATION_STEPS)
     )

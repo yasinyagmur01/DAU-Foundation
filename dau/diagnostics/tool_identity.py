@@ -42,6 +42,12 @@ from dau.foundation.constraints import (
     PER_AGENT_LORA_RANK,
 )
 from dau.foundation.lora_update import LORA_ENABLED_DEFAULT, LORA_ENABLED_ENV
+from dau.generation.fitness import (
+    FITNESS_W_ENERGY,
+    FITNESS_W_POOL,
+    FITNESS_W_SURVIVAL,
+)
+from dau.society.extraction import EXTRACTION_DEFECT
 
 # LoRA choice states written into the results JSON.
 LORA_CHOICE_ON: str = "explicit_on"
@@ -241,6 +247,20 @@ def build_tool_identity(
             "grace_events": METABOLIC_GRACE_EVENTS,
             "calibrated": METABOLIC_GAIN_CALIBRATED,
             "death_on_exhaustion": True,
+        },
+        # K4-b/D-070: F_agent's pool term became a per-event RATE, scaled by
+        # the largest harvest the decision→outcome map can yield. Two runs of
+        # this harness can now produce the same f_agent from different physics,
+        # and nothing else in the results file says which formula ran. Read
+        # from the constants the formula reads (CLAUDE.md 2.8); the survival
+        # denominator is not restated here because BirthDriftLog carries
+        # t_survived and t_generation per lineage, where a reader can see
+        # whether they collapsed onto each other.
+        "fitness": {
+            "w_energy": FITNESS_W_ENERGY,
+            "w_pool": FITNESS_W_POOL,
+            "w_survival": FITNESS_W_SURVIVAL,
+            "pool_term_per_event_max": EXTRACTION_DEFECT,
         },
         "sampling": _sampling(),
         "seeds": {

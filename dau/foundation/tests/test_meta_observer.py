@@ -37,7 +37,7 @@ from dau.foundation.self_model import (
     SelfModel,
     build_self_model,
 )
-from dau.foundation.state import DAUAgentState, DeltaRecord, InternalState
+from dau.foundation.state import DAUAgentState, DeltaRecord, Event, InternalState
 
 
 def _snap() -> dict[str, float]:
@@ -47,6 +47,13 @@ def _snap() -> dict[str, float]:
         "uncertainty_load": 0.0,
         "social_load": 0.0,
     }
+
+
+T_GENERATION_UNIT: int = 20  # F_agent's survival denominator (K4-b, D-070)
+EVENTS_LIVED_UNIT: int = 4
+BUDGET_SHORT: int = 8
+BUDGET_LONG: int = 40
+EVENT_TYPE_UNIT: str = "meta-budget-probe"
 
 
 def _delta(magnitude: float, domain: str = "resource") -> DeltaRecord:
@@ -108,7 +115,7 @@ def test_self_model_builds_from_valid_state() -> None:
             magnitudes={"resource": 0.8},
         ),
     )
-    model = build_self_model(state)
+    model = build_self_model(state, T_GENERATION_UNIT)
 
     assert model.delta_current == pytest.approx(0.55)
     assert model.delta_history == pytest.approx([0.4, 0.55])
@@ -402,3 +409,36 @@ def test_meta_observer_node_returns_dict_with_expected_keys() -> None:
     assert isinstance(patch["drift_state"], DriftState)
     assert isinstance(patch["self_model"], SelfModel)
     assert patch["self_model"].delta_current == pytest.approx(0.45)
+
+
+def test_meta_observer_reads_the_live_event_budget(monkeypatch) -> None:
+    """F_agent's survival term follows graph.MAX_EVENTS as the runner sets it.
+
+    The node cannot be handed the budget — LangGraph fixes its signature at
+    (state) -> dict — so it reads the graph global that should_continue ends
+    the life on. Two failure modes this guards: binding MAX_EVENTS at import
+    time (every runner rebinds it around a life, so an import-time read
+    freezes the module default in and scores a 50-event life against 20), and
+    falling back to the agent's own lifespan, which pins the term at 1.0.
+    """
+
+    from dau.foundation import graph as graph_mod
+
+    state = DAUAgentState(
+        agent_id="meta-budget-0",
+        environment=build_default_constraints(),
+        delta_log=[_delta(0.45)],
+        lod_state=LODState(),
+        event_log=[
+            Event(event_type=EVENT_TYPE_UNIT) for _ in range(EVENTS_LIVED_UNIT)
+        ],
+    )
+
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", BUDGET_SHORT)
+    against_short = meta_observer_node(state)["self_model"].f_agent
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", BUDGET_LONG)
+    against_long = meta_observer_node(state)["self_model"].f_agent
+
+    # Same life, same body, same ledger — only the span it is measured
+    # against differs, and surviving 4 of 8 beats surviving 4 of 40.
+    assert against_short > against_long

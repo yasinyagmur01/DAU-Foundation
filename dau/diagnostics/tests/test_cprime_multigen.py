@@ -82,7 +82,12 @@ from dau.foundation.generation import (
     SOMATIC_SCALE_KEY,
 )
 from dau.foundation.state import DAUAgentState, DeltaRecord, Event, InternalState
-from dau.generation.fitness import WARNING_SOMATIC_SCALE
+from dau.generation.fitness import (
+    FITNESS_W_ENERGY,
+    FITNESS_W_POOL,
+    FITNESS_W_SURVIVAL,
+    WARNING_SOMATIC_SCALE,
+)
 from dau.memory.decay import compute_strength_init
 from dau.memory.store import MemoryStore
 from dau.diagnostics.run_protocol_c_prime import _initial_state
@@ -91,9 +96,14 @@ from dau.society.environment import EnvironmentState
 
 SEED_UNIT: int = 9101
 ARM_UNIT: str = "lived"
-# Cumulative extraction past POOL_MAX=100 — the 50-event regime where the
-# F_agent pool term runs negative and clamps the score (D-034).
+# Cumulative extraction far past what a life of this length could sustainably
+# take — the regime where the F_agent pool term runs negative and clamps the
+# score (D-034).
 POOL_EXTRACTED: float = 250.0
+# F_agent's survival denominator: the generation's event budget (K4-b, D-070).
+# Deliberately larger than the unit fixtures' event logs, so a survival term
+# that silently went back to t_survived/t_survived would read 1.0 instead.
+EVENTS_GEN1_UNIT: int = 50
 EVENTS_SMOKE: int = 5
 N_SMOKE: int = 1
 
@@ -186,6 +196,7 @@ def test_gen2_orchestration_applies_inheritance_before_first_invoke(
             memory_store=store,
             seed=SEED_UNIT,
             gen1_arm=ARM_UNIT,
+            events_gen1=EVENTS_GEN1_UNIT,
         )
 
     assert stream_calls == []
@@ -225,6 +236,7 @@ def test_transfer_logs_birth_drift_independent_of_gen2_pe(store: MemoryStore) ->
         memory_store=store,
         seed=SEED_UNIT,
         gen1_arm=ARM_UNIT,
+        events_gen1=EVENTS_GEN1_UNIT,
     )
     assert birth.heir_agent_id == heir.agent_id
     assert birth.gen1_arm == ARM_UNIT
@@ -267,7 +279,7 @@ def test_transfer_records_what_f_agent_was_computed_from(store: MemoryStore) -> 
         ],
     )
     parent = parent.model_copy(update={"env_state": env})
-    expected = f_agent_inputs(parent)
+    expected = f_agent_inputs(parent, EVENTS_GEN1_UNIT)
     assert expected["delta_pool"] == POOL_EXTRACTED, "fixture must extract"
 
     _heir, _record, birth = transfer_to_heir(
@@ -275,10 +287,20 @@ def test_transfer_records_what_f_agent_was_computed_from(store: MemoryStore) -> 
         memory_store=store,
         seed=SEED_UNIT,
         gen1_arm=ARM_UNIT,
+        events_gen1=EVENTS_GEN1_UNIT,
     )
 
     assert birth.f_agent_energy_final == expected["energy_final"]
     assert birth.f_agent_delta_pool == expected["delta_pool"]
+    # K4-b: the pool term is a rate now, so the record has to carry both
+    # halves of it. Reporting delta_pool alone would leave the same number
+    # meaning two different things depending on how long the life ran.
+    assert birth.f_agent_t_survived == expected["t_survived"]
+    assert birth.f_agent_t_generation == expected["t_generation"]
+    assert birth.f_agent_t_generation == float(EVENTS_GEN1_UNIT)
+    # The budget must be the generation's, not the agent's own lifespan —
+    # that identity is what pinned the survival term at 1.0 (D-070).
+    assert birth.f_agent_t_survived < birth.f_agent_t_generation
     # The regime the record exists to expose: score clamped, inputs readable.
     assert birth.f_agent == 0.0
     assert birth.f_agent_delta_pool > 0.0
@@ -295,19 +317,24 @@ def test_f_agent_inputs_is_the_only_reader(store: MemoryStore) -> None:
     from dau.foundation import self_model
 
     parent = _parent_with_transferable_trauma(store, SEED_UNIT)
+    # t_generation deliberately unequal to t_survived: if _resolve_f_agent
+    # ignored the helper and rebuilt the reads, it would land back on the
+    # agent's own lifespan for both and the survival term would be 1.0.
     sentinel = {
         "energy_final": 0.5,
         "delta_pool": 12.5,
         "t_survived": 7.0,
-        "t_generation": 7.0,
+        "t_generation": 20.0,
     }
     original = self_model.f_agent_inputs
     try:
-        self_model.f_agent_inputs = lambda _state: sentinel
+        self_model.f_agent_inputs = lambda _state, _t_generation: sentinel
         from dau.generation.fitness import compute_fitness
 
-        assert self_model._resolve_f_agent(parent) == compute_fitness(
-            energy_final=0.5, delta_pool=12.5, t_survived=7, t_generation=7
+        assert self_model._resolve_f_agent(
+            parent, EVENTS_GEN1_UNIT
+        ) == compute_fitness(
+            energy_final=0.5, delta_pool=12.5, t_survived=7, t_generation=20
         )
     finally:
         self_model.f_agent_inputs = original
@@ -1667,6 +1694,7 @@ def test_transfer_records_what_f_agent_none_would_have_inherited(
         memory_store=store,
         seed=SEED_UNIT,
         gen1_arm=ARM_UNIT,
+        events_gen1=EVENTS_GEN1_UNIT,
     )
 
     assert birth.f_agent_none_n_transfer_candidates == len(
@@ -1697,6 +1725,7 @@ def test_f_agent_none_shadow_does_not_disturb_the_real_transfer(
         memory_store=store,
         seed=SEED_UNIT,
         gen1_arm=ARM_UNIT,
+        events_gen1=EVENTS_GEN1_UNIT,
     )
 
     assert {node.id for node in store.list_nodes(parent.agent_id)} == nodes_before
@@ -1760,6 +1789,35 @@ def test_tool_identity_reports_the_metabolic_loop_and_its_calibration(
     )
     moved = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
     assert moved["metabolism"]["gain_max"] == METABOLIC_GAIN_PROBE
+
+
+EXTRACTION_MAX_PROBE: float = 3.75
+
+
+def test_tool_identity_reports_the_fitness_formulas_scale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The per-event pool scale is invisible in the results file otherwise.
+
+    K4-b (D-070) changed what f_agent means without changing its name or its
+    range, so two runs can report the same score from different physics. Same
+    probe discipline as the metabolic block: the scale is moved rather than
+    compared to itself, because a hard-coded 8.0 agrees with the constant on
+    every run and only disagrees once the constant moves (2.8).
+    """
+
+    identity = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    fitness = identity["fitness"]
+
+    assert fitness["w_energy"] == FITNESS_W_ENERGY
+    assert fitness["w_pool"] == FITNESS_W_POOL
+    assert fitness["w_survival"] == FITNESS_W_SURVIVAL
+
+    monkeypatch.setattr(
+        tool_identity_mod, "EXTRACTION_DEFECT", EXTRACTION_MAX_PROBE
+    )
+    moved = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    assert moved["fitness"]["pool_term_per_event_max"] == EXTRACTION_MAX_PROBE
 
 
 def test_life_seals_the_vault_clock_with_events_actually_lived(

@@ -41,6 +41,24 @@ from dau.generation.fitness import (
     compute_w_transfer,
 )
 from dau.society.environment import POOL_MAX
+from dau.society.extraction import EXTRACTION_DEFECT
+
+# K4-b (D-070): the pool term is a per-event rate. These two lives took the
+# same 6.88 units per event of life — the pilot's two lineages, whose raw
+# ledgers (130.8 vs 62.2) spread 110% while their intensity spread 10.7%.
+RATE_SHORT_LIFE_EVENTS: int = 10
+RATE_LONG_LIFE_EVENTS: int = 20
+RATE_PER_EVENT: float = 6.88
+# Budgets set to twice each lifespan so the SURVIVAL term is equal (0.5) in
+# both, leaving the pool term as the only thing that could differ.
+RATE_SURVIVAL_MULTIPLE: int = 2
+# A separate pair for the survival term: same intensity, same budget, and a
+# lifespan that differs by design.
+SPAN_BUDGET_EVENTS: int = 50
+SPAN_SHORT_EVENTS: int = 10
+SPAN_LONG_EVENTS: int = 40
+SPAN_PER_EVENT: float = 2.0
+NO_ENERGY_LEFT: float = 0.0
 
 
 def _delta(magnitude: float, domain: str = "resource", timestamp: int = 1) -> DeltaRecord:
@@ -85,7 +103,8 @@ def test_compute_fitness_formula() -> None:
 
     expected = (
         FITNESS_W_ENERGY * (energy_final / ENERGY_MAX)
-        + FITNESS_W_POOL * (1.0 - abs(delta_pool) / POOL_MAX)
+        + FITNESS_W_POOL
+        * (1.0 - (abs(delta_pool) / t_survived) / EXTRACTION_DEFECT)
         + FITNESS_W_SURVIVAL * (t_survived / t_generation)
     )
     assert compute_fitness(
@@ -94,6 +113,71 @@ def test_compute_fitness_formula() -> None:
 
     assert compute_fitness(2.0, 0.0, 10, 10) == 1.0
     assert compute_fitness(0.0, POOL_MAX, 0, 0) == 0.0
+
+
+def test_pool_term_is_a_rate_not_a_lifetime_sum() -> None:
+    """Two lives that used the commons equally hard score equally (K4-b).
+
+    The long life took twice as much in total simply by living twice as long.
+    Summing the ledger made that look like twice the greed, which is how
+    nine tenths of the pilot's "commons" signal turned out to be longevity
+    counted a second time (D-070) — the double counting Stearns (1989) warns
+    about. Budgets are set so the survival terms match, leaving the pool term
+    as the only free variable.
+    """
+
+    short = compute_fitness(
+        energy_final=NO_ENERGY_LEFT,
+        delta_pool=RATE_PER_EVENT * RATE_SHORT_LIFE_EVENTS,
+        t_survived=RATE_SHORT_LIFE_EVENTS,
+        t_generation=RATE_SHORT_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
+    )
+    long_life = compute_fitness(
+        energy_final=NO_ENERGY_LEFT,
+        delta_pool=RATE_PER_EVENT * RATE_LONG_LIFE_EVENTS,
+        t_survived=RATE_LONG_LIFE_EVENTS,
+        t_generation=RATE_LONG_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
+    )
+
+    assert short == pytest.approx(long_life)
+    # Not vacuous in the other direction: taking more per event still costs.
+    greedier = compute_fitness(
+        energy_final=NO_ENERGY_LEFT,
+        delta_pool=RATE_PER_EVENT * RATE_SHORT_LIFE_EVENTS * 2.0,
+        t_survived=RATE_SHORT_LIFE_EVENTS,
+        t_generation=RATE_SHORT_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
+    )
+    assert greedier < short
+
+
+def test_survival_term_measures_the_budget_not_the_agents_own_span() -> None:
+    """Living 40 of 50 events beats living 10 of 50 (K4-b, D-070).
+
+    f_agent_inputs used to hand t_generation the agent's own lifespan, making
+    this term t_survived/t_survived ≡ 1.0 — a constant 0.3 added to every
+    lineage the harness has ever scored, which is why the pilot's F_agent
+    spread reproduced exactly from the pool term alone. Since D-066 a life can
+    end early, so the fraction of the span endured is a real measurement.
+    """
+
+    short = compute_fitness(
+        energy_final=NO_ENERGY_LEFT,
+        delta_pool=SPAN_PER_EVENT * SPAN_SHORT_EVENTS,
+        t_survived=SPAN_SHORT_EVENTS,
+        t_generation=SPAN_BUDGET_EVENTS,
+    )
+    long_life = compute_fitness(
+        energy_final=NO_ENERGY_LEFT,
+        delta_pool=SPAN_PER_EVENT * SPAN_LONG_EVENTS,
+        t_survived=SPAN_LONG_EVENTS,
+        t_generation=SPAN_BUDGET_EVENTS,
+    )
+
+    assert long_life > short
+    expected_gap = FITNESS_W_SURVIVAL * (
+        (SPAN_LONG_EVENTS - SPAN_SHORT_EVENTS) / SPAN_BUDGET_EVENTS
+    )
+    assert long_life - short == pytest.approx(expected_gap)
 
 
 def test_classify_fitness_thresholds() -> None:

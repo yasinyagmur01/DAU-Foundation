@@ -142,7 +142,7 @@ def _resolve_memory_retrieval_scores(state: DAUAgentState) -> list[float]:
     return scores[-META_HISTORY_SIZE:]
 
 
-def f_agent_inputs(state: DAUAgentState) -> dict[str, float]:
+def f_agent_inputs(state: DAUAgentState, t_generation: int) -> dict[str, float]:
     """The quantities compute_fitness reads, straight off the state.
 
     Public so a results file can report what F_agent was computed FROM
@@ -150,6 +150,17 @@ def f_agent_inputs(state: DAUAgentState) -> dict[str, float]:
     lineages (D-034) and the score alone cannot distinguish a genuinely
     unfit cohort from a term that clamped. Anything reporting these must
     call this, not rebuild the reads (CLAUDE.md 2.8).
+
+    ``t_generation`` is the generation's event BUDGET and the caller must
+    supply it — there is no default, because the only value this function can
+    reach on its own is the agent's own lifespan, which is what it used to
+    pass. That made the survival term t_survived/t_survived ≡ 1.0 for every
+    lineage ever scored: the pilot's spread came entirely from the pool term
+    (0.3·(1−130.80/100)+0.3 = 0.2076 and 0.3·(1−62.17/100)+0.3 = 0.4135,
+    both exact to seven digits), contradicting compute_fitness's own docstring
+    and D-068's reading of it. Since D-066 a life can end early, so the
+    fraction of the span endured is a real measurement and the budget is
+    genuinely outside information (K4-b, D-070).
     """
 
     env = state.env_state
@@ -162,14 +173,14 @@ def f_agent_inputs(state: DAUAgentState) -> dict[str, float]:
             else DEFAULT_DELTA_POOL
         ),
         "t_survived": float(t_survived),
-        "t_generation": float(max(t_survived, MIN_SURVIVAL_DENOMINATOR)),
+        "t_generation": float(max(int(t_generation), MIN_SURVIVAL_DENOMINATOR)),
     }
 
 
-def _resolve_f_agent(state: DAUAgentState) -> float:
+def _resolve_f_agent(state: DAUAgentState, t_generation: int) -> float:
     """Compute live F_agent from energy, pool extraction, and event survival."""
 
-    inputs = f_agent_inputs(state)
+    inputs = f_agent_inputs(state, t_generation)
     return float(
         compute_fitness(
             energy_final=inputs["energy_final"],
@@ -180,11 +191,14 @@ def _resolve_f_agent(state: DAUAgentState) -> float:
     )
 
 
-def build_self_model(state: DAUAgentState) -> SelfModel:
+def build_self_model(state: DAUAgentState, t_generation: int) -> SelfModel:
     """Assemble S_self from existing DAUAgentState telemetry fields only.
 
     Biology analogy: the Meta-Observer never invents new senses — it only
     binds the instruments already wired into the organism into one map.
+
+    ``t_generation`` is threaded through to F_agent; see f_agent_inputs for
+    why it cannot be defaulted.
     """
 
     magnitudes = [
@@ -199,9 +213,12 @@ def build_self_model(state: DAUAgentState) -> SelfModel:
         emotional_weight=_resolve_emotional_weight(state),
         t_cognitive=_resolve_t_cognitive(state),
         memory_retrieval_scores=_resolve_memory_retrieval_scores(state),
-        f_agent=_resolve_f_agent(state),
+        f_agent=_resolve_f_agent(state, t_generation),
         generation_count=int(state.generation),
     )
+
+
+DEMO_T_GENERATION: int = 10
 
 
 if __name__ == "__main__":
@@ -211,7 +228,7 @@ if __name__ == "__main__":
         agent_id="self-model-demo-0",
         environment=build_default_constraints(),
     )
-    self_model = build_self_model(demo)
+    self_model = build_self_model(demo, DEMO_T_GENERATION)
     print(
         f"OK — SelfModel built; delta_current={self_model.delta_current}, "
         f"m_ratio={self_model.m_ratio}, f_agent={self_model.f_agent}, "
