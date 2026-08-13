@@ -32,6 +32,36 @@ CROSS_AXIS_SPILLOVER: float = 0.20
 METABOLIC_FLOOR: float = 0.05
 MAGNITUDE_PEAK_WEIGHT: float = 0.70
 
+# A4 / D-066 — metabolic loop: harvest becomes energy, and energy runs out.
+#
+# Before this, energy could only fall: decay >= METABOLIC_FLOOR >= recovery for
+# every event, algebraically (D-061), so energy hit the floor on event 2 and
+# stayed there for the remaining 96% of the life. Extraction bought nothing and
+# a collapsed pool killed nobody, which is why every arm played the same
+# dominant strategy and F_agent read 0.000 on 120 of 120 arms (D-060).
+#
+# The return curve is CONCAVE, not proportional. DR #4 / J9 (Dykhuizen, Dean &
+# Hartl 1987, Genetics 115:25-31) measured that flux is a concave-hyperbolic
+# function of activity and that selection goes NEUTRAL at saturation — a linear
+# "harvest = energy" link would leave defect strictly dominant and reproduce
+# the flat landscape in new clothes.
+#
+# gain(x) = METABOLIC_GAIN_MAX * x / (METABOLIC_GAIN_HALF_SATURATION + x)
+METABOLIC_GAIN_MAX: float = 0.50
+METABOLIC_GAIN_HALF_SATURATION: float = 2.0
+# Grace window: energy starts at METRIC_MAX with every load at zero, so the
+# opening events are a birth transient rather than the agent's own regime.
+# Death is suspended until it passes.
+METABOLIC_GRACE_EVENTS: int = 10
+# ⚠ None of the three is calibrated. GAIN_MAX is anchored structurally (half of
+# METRIC_MAX: one event can never refill the tank), HALF_SATURATION to the
+# cooperative harvest (EXTRACTION_COOPERATE), GRACE to one fifth of the phase.
+# The consequence is arithmetic, not tuned: cooperate (2.0) returns 0.25 and
+# defect (8.0) returns 0.40, so 4x the pool damage buys 1.6x the energy. The
+# second pre-registration locks the values; until then the tool identity says
+# out loud that they are declared, not measured (U5 / D-030 pattern).
+METABOLIC_GAIN_CALIBRATED: bool = False
+
 # Signal v2 — NLI polarity gate for preference pairs (CPU cross-encoder)
 NLI_CONTRADICTION_THRESHOLD: float = 0.60
 # D-030 (A5, D-021). A5 was specified as an ABSOLUTE PE floor, but measurement

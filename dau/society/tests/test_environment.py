@@ -20,8 +20,10 @@ from dau.society.environment import (
     agent_delta_pool,
     apply_crisis_trauma,
     get_pool_ratio,
+    realized_extraction_at,
     step_pool,
 )
+from dau.society.extraction import EXTRACTION_COOPERATE, EXTRACTION_DEFECT
 
 
 def _regen(pool: float) -> float:
@@ -50,7 +52,7 @@ def test_step_pool_over_extraction_causes_collapse() -> None:
     """Heavy harvest drives pool to floor and sets collapsed."""
 
     env = EnvironmentState()
-    # regen(80)=2.4 → extract 90 → clamp(-7.6)=0 ≤ 5.0 → collapsed
+    # regen(80)=82.4 → asked 90, pasture holds 82.4 → pool 0 ≤ 5.0 → collapsed
     next_env = step_pool(env, {"a": 90.0})
 
     assert next_env.pool == POOL_MIN
@@ -58,7 +60,10 @@ def test_step_pool_over_extraction_causes_collapse() -> None:
     assert next_env.event_counter == 1
     assert len(next_env.extraction_history) == 1
     assert next_env.extraction_history[0][EXTRACTION_KEY_AGENT_ID] == "a"
-    assert next_env.extraction_history[0][EXTRACTION_KEY_AMOUNT] == 90.0
+    # D-066: the ledger keeps what was DELIVERED, not what was announced. This
+    # assertion said 90.0 until the metabolic loop was closed; recording an
+    # un-harvested 7.6 would have fed the agent out of an empty pasture.
+    assert next_env.extraction_history[0][EXTRACTION_KEY_AMOUNT] == pytest.approx(82.4)
     assert next_env.extraction_history[0][EXTRACTION_KEY_EVENT] == 1
 
 
@@ -171,3 +176,71 @@ def test_crisis_trauma_flows_to_fitness_path() -> None:
         10,
     )
     assert f_crisis < f_baseline
+
+
+# ---------------------------------------------------------------------------
+# D-066 — an empty pasture feeds nobody
+# ---------------------------------------------------------------------------
+
+POOL_NEARLY_EMPTY: float = 1.0
+HUGE_REQUEST: float = 50.0
+
+
+def test_realized_extraction_is_capped_by_what_the_pool_holds() -> None:
+    """Announced 50 from a nearly empty pool → only the stock is delivered."""
+
+    env = EnvironmentState(pool=POOL_NEARLY_EMPTY)
+    regenerated = POOL_NEARLY_EMPTY + POOL_REGEN_RATE * POOL_NEARLY_EMPTY * (
+        1.0 - POOL_NEARLY_EMPTY / POOL_MAX
+    )
+    next_env = step_pool(env, {"a": HUGE_REQUEST})
+
+    granted = next_env.extraction_history[0][EXTRACTION_KEY_AMOUNT]
+    assert granted == pytest.approx(regenerated)
+    assert granted < HUGE_REQUEST
+    assert next_env.pool == pytest.approx(POOL_MIN)
+
+
+def test_realized_extraction_shares_a_short_pool_in_proportion() -> None:
+    """Two agents over-asking split what exists, in proportion to the ask."""
+
+    env = EnvironmentState(pool=POOL_NEARLY_EMPTY)
+    next_env = step_pool(env, {"a": 30.0, "b": 10.0})
+
+    by_agent = {
+        row[EXTRACTION_KEY_AGENT_ID]: row[EXTRACTION_KEY_AMOUNT]
+        for row in next_env.extraction_history
+    }
+    assert by_agent["a"] == pytest.approx(3.0 * by_agent["b"])
+    # Nothing is conjured: the pasture is emptied, not overdrawn.
+    assert next_env.pool == pytest.approx(POOL_MIN)
+
+
+def test_delta_pool_now_counts_harvests_not_announcements() -> None:
+    """F_agent's pool term reads deliveries — the reason it was inert (D-060).
+
+    Announcing 8.0 into a dead pool used to add 8.0 to agent_delta_pool for
+    every event of the life, which is why the term spread only 0.7% across
+    120 arms: it was measuring the decision class, not the commons.
+    """
+
+    env = EnvironmentState(pool=POOL_MIN)
+    for _ in range(3):
+        env = step_pool(env, {"a": EXTRACTION_DEFECT})
+
+    assert agent_delta_pool(env, "a") == pytest.approx(0.0)
+
+
+def test_realized_extraction_at_reads_one_event(
+) -> None:
+    """The metabolic loop needs this event's harvest, not the running total."""
+
+    env = EnvironmentState()
+    env = step_pool(env, {"a": EXTRACTION_COOPERATE})
+    first = realized_extraction_at(env, "a", 1)
+    env = step_pool(env, {"a": EXTRACTION_DEFECT})
+    second = realized_extraction_at(env, "a", 2)
+
+    assert first == pytest.approx(EXTRACTION_COOPERATE)
+    assert second == pytest.approx(EXTRACTION_DEFECT)
+    assert agent_delta_pool(env, "a") == pytest.approx(first + second)

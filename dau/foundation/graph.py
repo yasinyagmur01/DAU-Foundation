@@ -26,13 +26,15 @@ from dau.society.environment import (
     POOL_CRISIS_THRESHOLD,
     EnvironmentState,
     get_pool_ratio,
+    realized_extraction_at,
     step_pool_with_crisis,
 )
-from dau.society.extraction import decision_to_extraction
+from dau.society.extraction import decision_to_extraction, metabolic_gain
 
 from .constraints import (
     CROSS_AXIS_SPILLOVER,
     METABOLIC_FLOOR,
+    METABOLIC_GRACE_EVENTS,
     PRECISION_HISTORY_WINDOW,
     build_default_constraints,
 )
@@ -240,6 +242,7 @@ def _record_pool_event(
     *,
     event_counter: int,
     extraction: float,
+    requested: float,
     pool_ratio: float,
     crisis: bool,
 ) -> None:
@@ -248,12 +251,18 @@ def _record_pool_event(
     ``pool_ratio`` is read after the step, which is the same ratio
     ``apply_crisis_trauma`` gates on — so ``crisis`` records whether that
     event actually scarred the agent, not an approximation of it.
+
+    ``extraction`` is what the pasture delivered and ``requested`` what the
+    agent announced. Both are kept: their gap is the only visible trace of an
+    exhausted pool, and it is what makes over-extraction cost something
+    (D-066).
     """
 
     _pool_event_log.append(
         {
             "event_counter": int(event_counter),
             "extraction": float(extraction),
+            "requested": float(requested),
             "pool_ratio": float(pool_ratio),
             "crisis": bool(crisis),
         }
@@ -1176,15 +1185,36 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
         {state.agent_id: drift},
     )
     pool_ratio = get_pool_ratio(new_env)
+    # What the pasture actually gave, read back from the ledger rather than
+    # re-derived from the announcement: the two differ exactly when the pool
+    # runs dry, which is the case the metabolic cost depends on (D-066).
+    granted = realized_extraction_at(
+        new_env,
+        state.agent_id,
+        int(new_env.event_counter),
+    )
     _record_pool_event(
         event_counter=int(state.event_log[-1].timestamp),
-        extraction=amount,
+        extraction=granted,
+        requested=amount,
         pool_ratio=pool_ratio,
         crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
+    )
+    # Eat now, act on it next event: the evaluator already spent this event's
+    # energy, so crediting here keeps the metabolic loop one tick behind the
+    # act that earned it instead of rewriting the evaluator's own patch.
+    fed = state.internal_state.model_copy(
+        update={
+            "energy": max(
+                METRIC_MIN,
+                min(METRIC_MAX, state.internal_state.energy + metabolic_gain(granted)),
+            )
+        }
     )
     return {
         "env_state": new_env,
         "drift_state": updated_drifts[state.agent_id],
+        "internal_state": fed,
     }
 
 
@@ -1192,15 +1222,24 @@ def should_continue(state: DAUAgentState) -> Literal["agent_node", "__end__"]:
     """Route on residual energy and event budget — keep living or end the run.
 
     Biology analogy: below the viability floor the organism can no longer act;
-    above it, another sense-act cycle begins. AB_ENERGY_FLOOR holds effective
-    energy at a fixed-horizon pad so a single PE shock cannot abort the run
-    before Meta-Observer actuators accumulate history; MAX_EVENTS is the hard cap.
+    above it, another sense-act cycle begins. MAX_EVENTS is the hard cap.
     Pool collapse termination is intentionally unwired (open item §17).
+
+    A4 / D-066: AB_ENERGY_FLOOR used to pad effective energy for the whole run,
+    and since the pad sits above TERMINATION_ENERGY the agent could not die —
+    which is why survival read 1.0 on 120 of 120 arms and carried no
+    information (D-060). The pad now covers only the birth transient: energy
+    starts at METRIC_MAX with every load at zero, so the opening events say
+    more about initial conditions than about how the agent lives. After
+    METABOLIC_GRACE_EVENTS the floor is gone and running out of energy ends
+    the life.
     """
 
     if len(state.event_log) >= MAX_EVENTS:
         return END  # type: ignore[return-value]
-    effective_energy = max(float(state.internal_state.energy), AB_ENERGY_FLOOR)
+    raw_energy = float(state.internal_state.energy)
+    in_grace = len(state.event_log) < METABOLIC_GRACE_EVENTS
+    effective_energy = max(raw_energy, AB_ENERGY_FLOOR) if in_grace else raw_energy
     if effective_energy <= TERMINATION_ENERGY:
         return END  # type: ignore[return-value]
     return NODE_AGENT

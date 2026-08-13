@@ -7,11 +7,15 @@ import pytest
 import dau.foundation.graph as graph_mod
 from dau.foundation.constraints import build_default_constraints
 from dau.foundation.drift import DriftState
+from dau.foundation.constraints import METABOLIC_GRACE_EVENTS
 from dau.foundation.graph import (
+    END,
+    NODE_AGENT,
     NODE_META_OBSERVER,
     NODE_POOL_STEP,
     build_graph,
     pool_step_node,
+    should_continue,
 )
 from dau.foundation.lod import CognitiveMode, LODState, NPC_ACTION_EXTRACT_MODERATE
 from dau.foundation.state import DAUAgentState, Event, InternalState
@@ -21,7 +25,12 @@ from dau.society.environment import (
     get_pool_ratio,
     step_pool,
 )
-from dau.society.extraction import EXTRACTION_DEFECT, decision_to_extraction
+from dau.society.extraction import (
+    EXTRACTION_COOPERATE,
+    EXTRACTION_DEFECT,
+    decision_to_extraction,
+    metabolic_gain,
+)
 
 AGENT_ID: str = "crisis-wire-0"
 POOL_ABOVE_CRISIS: float = 80.0
@@ -31,6 +40,8 @@ PE_STUB: float = 0.1
 # Arbitrary non-zero ordinal: the row must copy the event it describes, not
 # re-derive a counter of its own.
 SEVENTH_EVENT: int = 7
+# Stock too thin to satisfy a DEFECT-sized request even after regeneration.
+POOL_MIN_STOCK: float = 1.0
 
 
 def _decision_event(decision: str) -> Event:
@@ -249,3 +260,101 @@ def test_pool_event_log_stays_empty_without_society_physics() -> None:
     pool_step_node(state)
 
     assert graph_mod.get_pool_event_log() == []
+
+
+# ---------------------------------------------------------------------------
+# A4 / D-066 — the metabolic loop: harvest becomes energy, energy runs out
+# ---------------------------------------------------------------------------
+
+ENERGY_HALF: float = 0.5
+BEYOND_GRACE_EVENTS: int = METABOLIC_GRACE_EVENTS + 1
+
+
+def test_pool_step_credits_energy_from_the_harvest() -> None:
+    """A harvest raises energy — before D-066 energy could only ever fall."""
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(update={"internal_state": InternalState(energy=ENERGY_HALF)})
+
+    patch = pool_step_node(state)
+
+    expected = ENERGY_HALF + metabolic_gain(EXTRACTION_DEFECT)
+    assert patch["internal_state"].energy == pytest.approx(expected)
+    assert patch["internal_state"].energy > ENERGY_HALF
+
+
+def test_energy_credit_follows_the_delivered_harvest_not_the_announcement() -> None:
+    """An exhausted pasture must not feed the agent (the cost of defecting)."""
+
+    graph_mod.reset_pool_event_log()
+    state = _state_with_env(pool=POOL_MIN_STOCK)
+    state = state.model_copy(update={"internal_state": InternalState(energy=ENERGY_HALF)})
+
+    patch = pool_step_node(state)
+    row = graph_mod.get_pool_event_log()[0]
+
+    assert row["requested"] == pytest.approx(EXTRACTION_DEFECT)
+    assert row["extraction"] < row["requested"]
+    assert patch["internal_state"].energy == pytest.approx(
+        ENERGY_HALF + metabolic_gain(row["extraction"])
+    )
+
+
+def test_metabolic_gain_is_concave_not_proportional() -> None:
+    """4x the harvest must not buy 4x the energy (DR #4 / J9).
+
+    A proportional link would leave over-extraction strictly dominant, which
+    is the flat landscape this change exists to break.
+    """
+
+    small = metabolic_gain(EXTRACTION_COOPERATE)
+    large = metabolic_gain(EXTRACTION_DEFECT)
+    harvest_ratio = EXTRACTION_DEFECT / EXTRACTION_COOPERATE
+
+    assert large > small
+    assert large / small < harvest_ratio
+    assert metabolic_gain(0.0) == 0.0
+
+
+def test_agent_survives_zero_energy_during_the_birth_transient() -> None:
+    """Inside the grace window the floor still holds the run open."""
+
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(update={"internal_state": InternalState(energy=0.0)})
+
+    assert should_continue(state) == NODE_AGENT
+
+
+def test_agent_dies_of_exhaustion_once_the_grace_window_passes() -> None:
+    """After the transient, running out of energy ends the life (D-066).
+
+    Survival read 1.0 on 120 of 120 arms because AB_ENERGY_FLOOR sat above
+    TERMINATION_ENERGY for the whole run — death was structurally impossible.
+    """
+
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(
+        update={
+            "internal_state": InternalState(energy=0.0),
+            "event_log": [_decision_event(NPC_ACTION_EXTRACT_MODERATE)]
+            * BEYOND_GRACE_EVENTS,
+        }
+    )
+
+    assert should_continue(state) == END
+
+
+def test_a_fed_agent_past_the_grace_window_keeps_living() -> None:
+    """Death is exhaustion, not age: energy above the floor still routes on."""
+
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(
+        update={
+            "internal_state": InternalState(energy=ENERGY_HALF),
+            "event_log": [_decision_event(NPC_ACTION_EXTRACT_MODERATE)]
+            * BEYOND_GRACE_EVENTS,
+        }
+    )
+
+    assert should_continue(state) == NODE_AGENT

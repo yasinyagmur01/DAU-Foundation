@@ -61,6 +61,36 @@ def _clamp_pool(value: float) -> float:
     return max(POOL_MIN, min(POOL_MAX, value))
 
 
+def realized_extractions(
+    regenerated: float,
+    requested: dict[str, float],
+) -> dict[str, float]:
+    """Split what the commons can actually give (D-066).
+
+    Nobody harvests stock that is not there. The pool was always clamped at
+    POOL_MIN, but the ledger recorded the REQUESTED amount, so an agent could
+    "take 8.0" from an empty pasture and have it written down as taken. That
+    made over-extraction free in exactly the place the cost should appear:
+    agent_delta_pool summed announcements rather than harvests, and with the
+    metabolic loop closed it would have fed energy out of an empty pool
+    forever.
+
+    Short-fall is shared in proportion to what each agent asked for; with one
+    agent this is simply min(requested, available).
+    """
+
+    available = max(POOL_MIN, float(regenerated) - POOL_MIN)
+    total_requested = sum(max(0.0, float(amount)) for amount in requested.values())
+    if total_requested <= available:
+        return {agent: max(0.0, float(amount)) for agent, amount in requested.items()}
+    if total_requested <= POOL_MIN:
+        return {agent: 0.0 for agent in requested}
+    share = available / total_requested
+    return {
+        agent: max(0.0, float(amount)) * share for agent, amount in requested.items()
+    }
+
+
 def step_pool(
     env: EnvironmentState,
     extractions: dict[str, float],
@@ -71,17 +101,21 @@ def step_pool(
     harvests subtract, and if the remainder sits at or below the collapse
     fraction the pasture is treated as collapsed.
 
-    P_next = clamp(P + r·P·(1 − P/P_max) − Σ extractions, POOL_MIN, POOL_MAX)
+    P_next = clamp(P + r·P·(1 − P/P_max) − Σ realized, POOL_MIN, POOL_MAX)
+
+    ``extractions`` is what the agents announced; what the ledger keeps is what
+    the pasture could actually deliver (D-066).
     """
 
     pool = float(env.pool)
     regenerated = pool + POOL_REGEN_RATE * pool * (1.0 - pool / POOL_MAX)
-    total_extraction = sum(float(amount) for amount in extractions.values())
+    granted = realized_extractions(regenerated, extractions)
+    total_extraction = sum(granted.values())
     pool_next = _clamp_pool(regenerated - total_extraction)
 
     event_counter = int(env.event_counter) + 1
     history = list(env.extraction_history)
-    for agent_id, amount in extractions.items():
+    for agent_id, amount in granted.items():
         history.append(
             {
                 EXTRACTION_KEY_AGENT_ID: str(agent_id),
@@ -102,6 +136,27 @@ def get_pool_ratio(env: EnvironmentState) -> float:
     """Return pool / POOL_MAX — scarcity signal for T_cognitive and F_agent."""
 
     return float(env.pool) / POOL_MAX
+
+
+def realized_extraction_at(
+    env: EnvironmentState,
+    agent_id: str,
+    event: int,
+) -> float:
+    """What agent_id actually harvested at one event, read from the ledger.
+
+    The metabolic loop reads this rather than re-deriving the harvest from the
+    decision: the announced amount and the delivered amount separate exactly
+    when the pool runs dry, and that is the case the cost depends on (D-066).
+    """
+
+    target = str(agent_id)
+    return sum(
+        float(entry[EXTRACTION_KEY_AMOUNT])
+        for entry in env.extraction_history
+        if str(entry[EXTRACTION_KEY_AGENT_ID]) == target
+        and int(entry[EXTRACTION_KEY_EVENT]) == int(event)
+    )
 
 
 def agent_delta_pool(env: EnvironmentState, agent_id: str) -> float:

@@ -8,6 +8,10 @@ from __future__ import annotations
 
 import re
 
+from dau.foundation.constraints import (
+    METABOLIC_GAIN_HALF_SATURATION,
+    METABOLIC_GAIN_MAX,
+)
 from dau.foundation.lod import (
     NPC_ACTION_CONSERVE,
     NPC_ACTION_COOPERATE,
@@ -114,3 +118,23 @@ def decision_to_extraction(decision: str) -> float:
         return min(fraction * PERCENT_TO_POOL_SCALE, EXTRACTION_PARSE_MAX)
     outcome = decision_to_outcome(decision)
     return OUTCOME_TO_EXTRACTION.get(outcome, EXTRACTION_DEFAULT)
+
+
+def metabolic_gain(realized_extraction: float) -> float:
+    """Energy returned by a harvest — concave, saturating (A4 / D-066).
+
+    Biology analogy: the first mouthful is worth far more than the tenth. Flux
+    is a concave-hyperbolic function of activity and selection goes neutral at
+    saturation (DR #4 / J9 — Dykhuizen, Dean & Hartl 1987, Genetics 115:25-31),
+    so a proportional "harvest = energy" link would keep over-extraction
+    strictly dominant and rebuild the flat fitness landscape it is meant to
+    break.
+
+    Takes the REALIZED harvest, never the announced one: an empty pasture must
+    not feed anyone (see environment.realized_extractions).
+    """
+
+    harvest = float(realized_extraction)
+    if harvest <= 0.0:
+        return 0.0
+    return METABOLIC_GAIN_MAX * harvest / (METABOLIC_GAIN_HALF_SATURATION + harvest)

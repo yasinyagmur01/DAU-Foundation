@@ -16,6 +16,8 @@ import pytest
 
 import dau.diagnostics.run_cprime_multigen as multigen_mod
 import dau.foundation.graph as graph_mod
+import dau.foundation.constraints as C
+import dau.diagnostics.tool_identity as tool_identity_mod
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
     heir_agent_id,
@@ -68,6 +70,7 @@ from dau.diagnostics.tool_identity import (
     ARM_NULL_NAME,
     LORA_CHOICE_OFF,
     LORA_ENABLED_ENV,
+    build_tool_identity,
 )
 from dau.foundation.drift import DriftState
 from dau.foundation.generation import (
@@ -1720,3 +1723,38 @@ def test_birth_drift_cannot_see_f_agent_at_all(store: MemoryStore) -> None:
     # negative somatic scale, the legacy path transfers it unmarked.
     assert with_gate.inherited_warning_ids != without_gate.inherited_warning_ids
     assert with_gate.inherited_somatic_scales != without_gate.inherited_somatic_scales
+
+
+METABOLIC_GAIN_PROBE: float = 0.123
+
+
+def test_tool_identity_reports_the_metabolic_loop_and_its_calibration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A universe-shaping constant that the results file cannot see is invisible.
+
+    D-066 changed the physics: harvest feeds energy and exhaustion kills. All
+    three constants are declared, not measured, so the block must say so —
+    the U5/D-030 pattern that keeps an uncalibrated threshold from reading as
+    a settled one.
+
+    The gain is probed through a moved constant rather than compared to its own
+    value: a block that hard-codes 0.5 agrees with the real constant on every
+    run and only disagrees once the constant moves. That is exactly the
+    "report repeats the instrument instead of following it" failure (2.8), and
+    an equality check against the constant cannot see it.
+    """
+
+    identity = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    metabolism = identity["metabolism"]
+
+    assert metabolism["gain_half_saturation"] == C.METABOLIC_GAIN_HALF_SATURATION
+    assert metabolism["grace_events"] == C.METABOLIC_GRACE_EVENTS
+    assert metabolism["calibrated"] is False
+    assert metabolism["death_on_exhaustion"] is True
+
+    monkeypatch.setattr(
+        tool_identity_mod, "METABOLIC_GAIN_MAX", METABOLIC_GAIN_PROBE
+    )
+    moved = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED_UNIT])
+    assert moved["metabolism"]["gain_max"] == METABOLIC_GAIN_PROBE

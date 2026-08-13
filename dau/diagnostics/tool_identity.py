@@ -34,6 +34,10 @@ from dau.foundation.constraints import (
     DPO_LEARNING_RATE,
     DPO_MAX_GRAD_NORM,
     DPO_MAX_SEQUENCE_TOKENS,
+    METABOLIC_GAIN_CALIBRATED,
+    METABOLIC_GAIN_HALF_SATURATION,
+    METABOLIC_GAIN_MAX,
+    METABOLIC_GRACE_EVENTS,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
 )
@@ -226,6 +230,17 @@ def build_tool_identity(
             "rank": PER_AGENT_LORA_RANK,
             "alpha": PER_AGENT_LORA_ALPHA,
             "adapter": _adapter_state(),
+        },
+        # A4/D-066: three declared-but-uncalibrated constants now shape the
+        # universe itself. Read straight from constraints so the block cannot
+        # drift from the loop it describes (CLAUDE.md 2.8), and carry the
+        # calibration flag so nobody reads them as measured (U5/D-030).
+        "metabolism": {
+            "gain_max": METABOLIC_GAIN_MAX,
+            "gain_half_saturation": METABOLIC_GAIN_HALF_SATURATION,
+            "grace_events": METABOLIC_GRACE_EVENTS,
+            "calibrated": METABOLIC_GAIN_CALIBRATED,
+            "death_on_exhaustion": True,
         },
         "sampling": _sampling(),
         "seeds": {
