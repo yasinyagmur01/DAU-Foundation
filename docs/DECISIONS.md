@@ -4381,3 +4381,85 @@ genel bir ifade **değil**. CLAUDE.md'nin tarif ettiği *rastgele PE atanmış
 hâlâ daha güçlü tasarım ve açık.
 Koşumda bir `CUDACachingAllocator` OOM **uyarısı** görüldü, istisna yok,
 386 ileri geçişin hepsi tamamlandı.
+
+---
+
+## D-063 · 2026-08-13 · W2: S5 aletlendi, S6 **kol olarak üretilmedi** — birincil `F_agent`'ı göremiyor
+
+**Durum:** karar + aletleme · **Etiket:** saf raporlama eklemesi (§2.10'un
+"hesaplamayı değiştirmeyen" izni) · hesaplama/RNG/digest değişmedi ·
+kod `134073a` (S5) + `deee036` (S6) · suite 356 → **367**
+
+### Soru
+
+L20: B2'de altı ikincilin ikisi koşulamadı. **S5**'in verisi (`decision_to_extraction`,
+travmaya kadar geçen olay) kayıtlı çıktıda yoktu; **S6**'nın (`f_agent=None`)
+kolu üretilmemişti. W2 bu ikisini aletlemek için açıldı.
+
+### S5 — aletlendi
+
+`pool_step_node` zaten iki değeri hesaplıyordu ve ikisini de atıyordu: hasat
+miktarı (`decision_to_extraction`) ve adım sonrası `pool_ratio`. Artık
+`pe_event_log` ile **aynı desende** modül-yerel bir tampona yazılıyorlar
+(`reset_pool_event_log` / `get_pool_event_log`), `run_life_keep_vault` yaşam
+başında sıfırlıyor, `run_gen2_measure` akış bittikten sonra boşaltıyor.
+`Gen2Result` altı yeni alan taşıyor ⇒ `asdict` üzerinden JSON'a giriyor.
+
+- Kriz bayrağı **`apply_crisis_trauma`'nın kapı olarak okuduğu ratio'nun
+  aynısından** üretiliyor. Kendi eşiğini yeniden hesaplayan bir bayrak drift
+  haritasıyla sessizce anlaşmazlığa düşerdi (§2.8).
+- ⚠ **İki travma okuması, bilerek** (§2.11): ön-kayıtın S5 satırı *"ilk travmaya
+  kadar geçen olay"* diyor ama **commons krizi** (`apply_crisis_trauma`) ile PE
+  yolundaki **`TRAUMA` sınıfı imprint** farklı olaylar, ve satır hangisini
+  kastettiğini söylemiyor. Burada seçilmedi; ikisi de kaydediliyor.
+- **Özet istatistik yok.** S5'in hangi istatistiği kullanacağı ön-kayıt kararı,
+  kaydedicinin değil (§2.7). Ham per-olay diziler + iki sıra numarası.
+- Yokluk `EVENT_NEVER_OCCURRED = -1`: krizsiz bir yaşam *"sıfırıncı olayda
+  kriz"* diye okunamaz.
+
+### S6 — **kol üretilmedi, gerekçe yapısal**
+
+Aletlemeden önceki salt-okunur denetim şunu buldu:
+
+```
+birth_drift_magnitudes ← heir.drift_state ← GenerationRecord.inherited_drift
+                       ← consolidate_generation: ebeveyn drift'inin kopyası
+select_for_transfer(candidates, drift, f_agent=...) → drift'i yalnız OKUR
+```
+
+⇒ **Birincil uç nokta `F_agent`'ı hiçbir yoldan göremiyor.** *"`f_agent=None`,
+birincil ile aynı test"* hangi değer verilirse verilsin **bit düzeyinde aynı**
+`a_s`/`b_s` üretir. Dördüncü bir kol, bilinen bir cevabı ~%33 koşum süresiyle
+satın alırdı. Bulgu teste bağlandı: `test_birth_drift_cannot_see_f_agent_at_all`.
+
+**Sunulan üç seçenek ve Yasin'in kararı (§2.3 kapısı):** ① gölge kayıt ·
+② tam dördüncü kol · ③ şimdilik dokunma. **Seçilen: ①.**
+
+Transfer anında, gerçek kayıttan **sonra**, ikinci bir
+`consolidate_generation(..., f_agent=None)` çağrılıyor ve yalnız *ne miras
+kalırdı* kaydediliyor (`f_agent_none_*`, dört alan). Kasa açısından salt-okunur
+olduğu denetlendi (`_candidates_from_store` yalnız `list_nodes` /
+`get_record_payload` / `compute_memory_score` çağırıyor; `compute_memory_score`
+da yalnız `get_node`/`get_edge`) ve **testle korunuyor**.
+
+**Ölçülebilir kanal ölçüldü:** kapının farkı test ebeveyninde id kümesinde
+**değil işaretlemede** — kapılı yolda travma negatif somatik ölçekli
+*inherited warning* olarak geçiyor, legacy yolda işaretsiz geçiyor. Özdeşlik
+bayrağı bu yüzden hem id'lere hem uyarı id'lerine bakıyor.
+
+### Mutasyon kontrolü (§2.4) — on bir testin hepsi için koşuldu
+
+S5: kayıt çağrısını kaldır (**3** kırılma) · sayacı `event.timestamp` yerine
+`len()`'den üret (1) · `crisis`'i sabitle (1) · iki travma okumasını aynı
+kaynağa bağla (2) · yokluğu `0` yap (1) · sırayı 0-tabanlı yap (2) · izi
+`Gen2Result`'a bağlama (1) · yaşam başında tamponu sıfırlama (1).
+S6: gölgeyi gerçek `f_agent` ile çağır (1) · özdeşliği yalnız id kümesine bağla
+(1) · gölge sayacını gerçek kayıttan oku (1). **Hepsi yakalandı.**
+
+### Sınırlar
+
+Aletleme **çalıştırılmadı** — hiçbir koşum yapılmadı, bu kayıt yalnız verinin
+artık üretildiğini söylüyor, ne söylediğini **değil**. S5'in iki okumasından
+hangisinin ön-kayıta gireceği, ve S6'nın gölge kanalının hangi testle
+sınanacağı **ikinci ön-kayıtın işi**. Gölge kaydın maliyeti kasa üzerinde bir
+geçiş; 40 seed × 3 kolda ölçülmedi, tahmin edilmedi.
