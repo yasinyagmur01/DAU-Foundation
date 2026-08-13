@@ -4089,3 +4089,84 @@ D-056 o evrenin ajanları ayırmadığını gösterdi. Tarama *"eğitim öğrene
 mu"* sorusunu cevaplıyor, *"öğrendiği şey yaşama özgü mü"* sorusunu **değil** —
 ikincisi A4'ün arkasında. Bulgu 4 o soruya değiyor ama alternatif açıklaması
 elenmedi.
+
+---
+
+## D-060 · 2026-08-12 · A4 teşhisi: seçilim katmanı formül hatası değil, **girdi yokluğu**
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel** — B2 verisinin post-hoc teşhisi.
+**GPU kullanılmadı**, koda dokunulmadı. 120 kol (40 seed × 3).
+
+### Soru
+
+L1 *"seçilim katmanı atıl, sebep birim uyuşmazlığı"* diyor: `compute_fitness`
+`|Δpool|`'u `POOL_MAX=100`'e bölüyor ama çağıran **kümülatif** çıkarımı
+veriyor (~393), pool terimi −2.9'a düşüyor, `[0,1]` clamp'i sıfıra eziyor.
+Soru şu: **formülü düzeltmek yeter mi?**
+
+### Bulgu 1 — seçilim katmanı tam anlamıyla ölü
+
+| Alan | 120 kolda |
+|---|---|
+| `f_agent` | **0.000**, tek bir farklı değer |
+| `f_agent_energy_final` | **0.000**, tek bir farklı değer |
+| `fitness_class` | **`low`**, 120/120 |
+| `f_agent_delta_pool` | 393.55 ± 2.62 · **6 farklı değer** · yayılım **%0.7** |
+| Aynı seed içinde kollar arası `Δpool` farkı | **40 seed'in 32'sinde tam sıfır** |
+
+Ayrıca `n_transfer_candidates` ile `n_inherited_warnings` **birebir aynı
+dağılım** ⇒ L1'i doğruluyor: varise **yalnız travma uyarısı** geçiyor,
+başka hiçbir şey. **33/120 kol hiçbir şey aktarmıyor** (0 aday).
+
+### Bulgu 2 — **formülü düzeltmek ayrım üretmiyor**
+
+Ağırlıklar: enerji **0.4** · havuz **0.3** · survival **0.3**.
+
+Karşı-olgusal: birim uyuşmazlığı düzeltilip `Δpool` kendi ölçeğinde
+normalize edilse —
+
+| Normalizasyon | `F_agent` | yayılım | sınıf dağılımı |
+|---|---|---|---|
+| gözlenen max (400) | 0.3048 ± 0.0020 | **%0.64** | **120 `low`**, 0 normal, 0 high |
+| olay başına havuz (5000) | 0.5764 ± 0.0002 | **%0.03** | **120 `normal`**, 0 low, 0 high |
+
+⇒ Sayı değişiyor, **ayrım değişmiyor**: hangi normalizasyon seçilirse
+seçilsin **120 kolun hepsi aynı fitness sınıfına** düşüyor. Seçilim yine
+çalışamaz.
+
+**Sebebi aritmetik:** üç girdinin **ikisi sabit** —
+`energy_final` = 0.000 (120/120) ve `t_survived/t_generation` = 1.0
+(kimse ölmüyor) — üçüncüsü %0.7 yayılıyor. Ağırlıklarla birlikte
+**fitness'ın etkin varyansı ≈ %0.2**.
+
+### Bulgu 3 — kıtlık var ama **herkese aynı**
+
+`resource` travması **120/120 kolda** bayraklı ve büyüklüğü **%1.9** yayılıyor
+(D-056). Havuz gerçekten çöküyor (`pool_ratio < POOL_CRISIS_THRESHOLD=0.30`),
+ama **herkes için aynı anda ve aynı şiddette**. Kıtlık bir baskı yaratıyor,
+**ayırt edici** bir baskı yaratmıyor.
+
+### Sonuç: A4 bir formül düzeltmesi değil
+
+L1 *"formül bozuk"* diyordu ve doğruydu; bu kayıt onun **yetersiz** olduğunu
+gösteriyor. A4'ün ajanları ayırmak için üç kaldıraçtan **en az birini**
+değiştirmesi gerekiyor:
+
+| Kaldıraç | Ağırlık | Şu anki durum | Ne gerekir |
+|---|---|---|---|
+| **Enerji** | **0.4** | **daima 0.000** | Enerjinin gerçekten birikip harcanması — en büyük ağırlık, tamamen atıl |
+| **Survival** | 0.3 | **daima 1.0** | Ölüm. Kimse ölmüyorsa seçilim yok (L2) |
+| **Çıkarım** | 0.3 | %0.7 yayılım | Farklı stratejilerin farklı sonuç vermesi |
+
+⚠ **Gizli bağımlılık hatırlatması (D-051/L16):** `F_agent` tek başına
+düzeltilirse GAP-19 canlanır — travma-dışı anılar aktarılabilir hale gelir ve
+tutulmaları kırık sayaçla hesaplanır. **İkisi birlikte ya da hiçbiri.**
+
+### Sınırlar
+
+Post-hoc teşhis, hipotez testi değil. Karşı-olgusal iki normalizasyon
+seçeneğiyle hesaplandı; başka bir normalizasyon başka bir ortalama verir ama
+**yayılımı değiştiremez** — yayılım girdilerden geliyor, bölenden değil.
+Hangi kaldıracın seçileceği **tasarım kararıdır** (D-007) ve bu kayıt onu
+vermiyor, yalnız üçünü ölçüyor. `energy_final`'ın neden 0 olduğu **bu kayıtta
+izlenmedi** — kodda mı yazılmıyor, yoksa gerçekten sıfır mı, ayrı iş.
