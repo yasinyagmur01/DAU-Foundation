@@ -5281,3 +5281,102 @@ kırılan tam olarak orasıydı.
 - Society fiziği olmayan bir yaşamda satır **hiç yazılmıyor** (`pool_step_node`
   erken dönüyor). C′ yolunda `env_state` her zaman var; okuyucu bu durumu
   sessizce doldurmuyor, abort ediyor.
+
+---
+
+## D-073 · 2026-08-13 · LOCF kaldırıldı; `I3.1`'in paydası ve `I3.4`'ün modu düzeltildi
+
+**Durum:** kod değişikliği · **Karar: Yasin'in** (üç soru, §2.3) ·
+**commit `709b2ac`** · **girdi:** D-069 Bulgu 1, D-070/K1 · suite `410 passed`
+
+### 1. LOCF gitti
+
+`_pad_pe_list` diziyi **son gözlemle** bütçeye tamamlıyordu. D-069 bunun adını
+koydu: **LOCF**, ve Lachin 2015 (`10.1177/1740774515602688`) doğrudan
+eleştirisi — muhafazakâr değil, yanlılık iki yöne de olabilir, varyansı küçük
+gösterir. D-068 pilotunda gen1'in **%71'i** pad'di.
+
+⇒ `_clip_pe_trace` yalnızca bütçeye kırpıyor. **Yerine hiçbir şey konmadı**:
+kısa yaşam kısa yaşamdır.
+
+### 2. Karşılaştırılabilirlik sabit yaştan geliyor
+
+| Okuma | Ne | Rol |
+|---|---|---|
+| `pe_before` / `pe_after` / `mean_pe` | yaşanan olay başına **oran** | ikincil |
+| `pe_*_landmark` | ilk `LANDMARK_EVENT` olayın ortalaması | **birincil** |
+| `pe_*_at_landmark` | 10. olayın tek değeri | yalnız kayıt |
+
+**Neden nokta değil pencere (Yasin'in kararı):** drift bir **durum**, PE ise
+olay başına **akış**. Tek olayın PE'si izin sunduğu en gürültülü şey — D-044
+kolların olay bazında 0.065–0.194 ayrıştığını ölçmüştü. Pencerede her kol
+**tam olarak aynı** 10 olayla katılıyor ⇒ ömür farkı bu sayıya giremez.
+
+⚠ Kısa izde **kısmî pencere yok**, `NaN`. *"Ne kadarını becerdiyse onun
+ortalaması"* sabit yaşın kaldırmak için var olduğu confound'u geri getirirdi.
+
+⚠ **Nokta okuması kaydediliyor ama birincil değil**, ve hangisinin birincil
+olduğu **ikisi de görülmeden** sabitlendi (L9).
+
+### 3. `I3.1`'in paydası: bütçe → **yaşanan olay**
+
+Bütçeye karşı ölçerken kapı **bozuk sensör** ile **kısa yaşam**ı ayırt
+edemiyordu, ve D-066'dan beri kısa yaşam kural. 12 olay yaşayıp 12 satır yazan
+ajan **sağlam**; 50 yaşayıp 12 yazan **bozuk**. Payda yoksa (D-073 öncesi
+bölüm) kapı geçmiyor, *"değerlendirilemez"* diyor (§2.9).
+
+### 4. `I3.4` bayrak olmaktan çıktı — yeni `MODE_REPORT`
+
+⚠ **Kapı zaten `_pad_pe_list`'e hiç bakmıyordu** — her zaman
+`bütçe − loga ulaşan satır` idi. Yani LOCF'u kaldırmak onu mekanik olarak
+bozmadı; **anlamını** değiştirdi: artık uç noktadaki pad oranı değil, **erken
+sonlanma oranı**.
+
+`PAD_FRACTION_MAX = 0.0` olduğu için bayrak bırakılsaydı bundan sonraki **her
+koşum** `flagged` olurdu ve `run_quality` bir şey ayırt etmeyi bırakırdı.
+D-070/K7 çöküşün **bulgu olarak** raporlanmasına zaten karar vermişti.
+⇒ Sayı JSON'a yazılmaya devam ediyor (ikinci ön-kayıtta **geçerlilik kriteri**
+adayı), ama `MODE_REPORT` `run_quality`'ye ve `enforce`'a hiç dokunmuyor.
+
+### Raporlama (§2.8)
+
+`describe_pe_window` → **`pe_locf_padding: False`** + `pe_landmark_event`.
+`pe_before`/`pe_after`/`mean_pe` **adlarını koruyor ama anlamları değişti**;
+JSON'da bunu söyleyen tek şey bu bayrak.
+
+Ayrıca `ArmResult.events_lived` → `events_lived_phase1` + `events_lived_phase2`
+(PE denetimi iki fazı birleştiriyor, `I3.1` ikisinin toplamına bölüyor) ve
+`Gen2Result`'a `events_lived` + iki landmark alanı.
+
+### Dur-kontrol (⚠ keşifsel, mock LLM, N=1)
+
+12 olaylık gerçek akışta bütün alanlar doldu, iz uzunluğu **12/12** (pad yok),
+landmark penceresi ile nokta okuması **ayrı** değerler verdi.
+⚠ **Sayıların kendisi okunmadı** — soru *"alan doluyor mu"*ydu (L9).
+
+### Mutasyon kontrolü (§2.4)
+
+| Mutasyon | Kıran test |
+|---|---|
+| LOCF geri geliyor | `test_short_pe_trace_is_not_padded_to_the_budget` + `test_whole_phase_mean_is_now_a_per_event_rate` |
+| landmark penceresi kısmî ortalama alıyor | `test_landmark_window_refuses_a_partial_window` |
+| `I3.1` paydası yine bütçe | `test_i3_1_does_not_call_a_short_life_a_starved_instrument` (+3) |
+| `MODE_REPORT` `run_quality`'yi kirletiyor | `test_report_mode_records_without_touching_run_quality` |
+
+⚠ **Bir test mutasyon altında kırılmadı ve düzeltildi.** `per_event_rate`
+testi **sabit değerli** iz kullanıyordu; sabit bir izin ortalaması son
+değerine eşit olduğu için LOCF hiçbir şeyi oynatmıyor ⇒ test, yasakladığı
+padding'in altında **geçiyordu**. Almaşık desene çevrildi. §2.4'ün tarif
+ettiği boş bekçinin ta kendisi.
+
+### Sınırlar
+
+- **Uç nokta hâlâ ön-kayıtlı değil.** Bu commit aleti hazırladı; hangi
+  okumanın birincil olduğunu **ikinci ön-kayıt** yazacak.
+- **Eski koşumlarla karşılaştırılamaz.** `dau_runs/`'daki her `pe_before` /
+  `pe_after` / `mean_pe` LOCF çıktısı; yenilerinde `pe_locf_padding=False`
+  var, eskilerinde alan **hiç yok**.
+- **`run_protocol_c_prime.py`'nin kendi koşucusu da değişti** — aynı yardımcıyı
+  paylaşıyorlar ve aletin iki yerde farklı davranması daha kötü olurdu.
+- Değişmeyen: `MIN_TRACE_FRACTION = 0.5` ve `PAD_FRACTION_MAX = 0.0` **değer
+  olarak** dokunulmadı (§2.7); değişen paydaları ve modları.
