@@ -31,6 +31,11 @@ from typing import Any, Callable
 
 MODE_ABORT: str = "abort"
 MODE_FLAG: str = "flag"
+# D-073. Measured and written into the results file, but never reaches
+# run_quality. For quantities that are a FINDING about the universe rather
+# than a fact about instrument health — flagging those would stamp every run
+# from here on and leave the stamp meaning nothing.
+MODE_REPORT: str = "report"
 
 RUN_QUALITY_CLEAN: str = "clean"
 RUN_QUALITY_FLAGGED: str = "flagged"
@@ -54,8 +59,10 @@ CUBLAS_WORKSPACE_CONFIG_ENV: str = "CUBLAS_WORKSPACE_CONFIG"
 SATURATION_MAX: float = 0.05  # D-012; uncalibrated (proposal, not locked)
 PI_N_DISTINCT_MIN: int = 8  # D-012; uncalibrated
 GATED_FRACTION_MAX: float = 0.20  # last run measured 3/15; uncalibrated
-# Padding is fabricated data, so any of it earns a label. Not a guessed
-# threshold — the strictest honest reading, and FLAG only.
+# Any shortfall against the budget is reported. Not a guessed threshold: it
+# used to mean "any fabricated data earns a label", and with LOCF gone (D-073)
+# nothing is fabricated — the same 0.0 now means "report every event the
+# cohort did not reach", which is a finding, so MODE_REPORT and not FLAG.
 PAD_FRACTION_MAX: float = 0.0
 
 NOT_APPLICABLE_MOCK: str = "not applicable under mock LLM"
@@ -355,26 +362,52 @@ def _audited(sections: list[dict[str, Any]]) -> int:
     return sum(int(s.get("n_pe_events_audited", 0)) for s in sections)
 
 
+def _lived(sections: list[dict[str, Any]]) -> int:
+    """Events the lives in these sections actually got through (D-073).
+
+    Gen1 sections hold two phases and their PE audit merges both, so both are
+    summed; a gen2 section holds one life. A section written before D-073 has
+    neither key and contributes zero, which the caller sees as an unmeasurable
+    denominator rather than as a pass.
+    """
+
+    return sum(
+        int(section.get("events_lived", 0))
+        + int(section.get("events_lived_phase1", 0))
+        + int(section.get("events_lived_phase2", 0))
+        for section in sections
+    )
+
+
 def check_pe_event_sufficiency(
     sections: list[dict[str, Any]],
     *,
-    expected_per_section: int,
     min_fraction: float,
 ) -> tuple[bool, str]:
     """I3.1 — enough PE events actually reached the log.
 
-    A stream that stops early leaves a mean dominated by padding rather than
-    by measurement (instrument starvation, v1 smoke).
+    Instrument starvation: the PE log should hold a row for every event the
+    agent lived, so a shortfall means the sensor stopped, not that the agent
+    did.
+
+    D-073 changed the denominator from the event BUDGET to events LIVED.
+    Against the budget this check could not tell a broken sensor from a short
+    life, and since D-066 short lives are the norm — so it would have reported
+    the universe working as designed as an instrument fault. 12 rows from a
+    12-event life is healthy; 12 rows from a 50-event life is not, and only
+    the lived count separates them.
     """
 
     if not sections:
         return False, "no sections to audit"
-    expected = expected_per_section * len(sections)
+    lived = _lived(sections)
+    if lived <= 0:
+        return False, "no lived events recorded — sufficiency cannot be assessed"
     actual = _audited(sections)
-    fraction = float(actual) / float(expected) if expected else 0.0
+    fraction = float(actual) / float(lived)
     if fraction < min_fraction:
-        return False, f"{actual}/{expected} PE events ({fraction:.2f} < {min_fraction})"
-    return True, f"{actual}/{expected} PE events ({fraction:.2f})"
+        return False, f"{actual}/{lived} PE events ({fraction:.2f} < {min_fraction})"
+    return True, f"{actual}/{lived} PE events ({fraction:.2f})"
 
 
 def check_precision_saturation(
@@ -420,27 +453,44 @@ def check_gated_fraction(
     return True, f"{n_gated}/{len(sections)} gated ({fraction:.2f})"
 
 
-def check_pad_fraction(
+def check_early_termination_fraction(
     sections: list[dict[str, Any]],
     *,
     expected_per_section: int,
     max_fraction: float,
 ) -> tuple[bool, str]:
-    """I3.4 — how much of the PE trace was padding rather than measurement.
+    """I3.4 — how much of the event budget the cohort never got through.
 
-    Derived from the audit counts rather than from _pad_pe_list: the padded
-    values are indistinguishable from real ones once in the list, but the
-    number of rows that reached the log is not.
+    D-073 renamed this from "pad fraction" and moved it to MODE_REPORT. The
+    arithmetic is unchanged, and it never touched _pad_pe_list in the first
+    place: it has always been budget minus the rows that reached the log.
+
+    What changed is what that number means. It used to say "this much of the
+    endpoint is LOCF output", which was an instrument fault worth flagging.
+    LOCF is gone, and with the endpoints read at a fixed age a short life is
+    still fully measurable — so the same number is now a finding about the
+    universe: how many lineages the metabolic cost killed before the budget
+    ran out. D-070/K7 already decided such collapse is reported, not
+    intervened on, and MAX is 0.0, so leaving it a flag would stamp every run
+    from here on and leave run_quality meaning nothing.
+
+    Still measured, and deliberately so: the fraction is a candidate validity
+    criterion for the second pre-registration, and dropping the measurement
+    would make recovering it cost a new run.
     """
 
     if not sections:
         return False, "no sections to audit"
     expected = expected_per_section * len(sections)
-    padded = max(0, expected - _audited(sections))
-    fraction = float(padded) / float(expected) if expected else 0.0
+    unreached = max(0, expected - _audited(sections))
+    fraction = float(unreached) / float(expected) if expected else 0.0
     if fraction > max_fraction:
-        return False, f"{padded}/{expected} padded ({fraction:.2f} > {max_fraction})"
-    return True, f"{padded}/{expected} padded ({fraction:.2f})"
+        return (
+            False,
+            f"{unreached}/{expected} events not reached ({fraction:.2f} > "
+            f"{max_fraction})",
+        )
+    return True, f"{unreached}/{expected} events not reached ({fraction:.2f})"
 
 
 def check_nli_active() -> tuple[bool, str]:
@@ -488,6 +538,28 @@ def _both_generations(
     gen2_passed, gen2_detail = check(
         gen2, expected_per_section=expected_gen2, **kwargs
     )
+    return (
+        bool(gen1_passed and gen2_passed),
+        f"gen1: {gen1_detail} | gen2: {gen2_detail}",
+    )
+
+
+def _both_generations_self_scaled(
+    check: Callable[..., tuple[bool, str]],
+    gen1: list[dict[str, Any]],
+    gen2: list[dict[str, Any]],
+    **kwargs: Any,
+) -> tuple[bool, str]:
+    """Same combine, for a check that carries its own denominator (D-073).
+
+    I3.1 divides by events lived, which is in the sections themselves, so it
+    takes no per-section budget. Kept separate rather than making the budget
+    optional: an ignored argument is how a check ends up silently measuring
+    something other than what its caller thinks.
+    """
+
+    gen1_passed, gen1_detail = check(gen1, **kwargs)
+    gen2_passed, gen2_detail = check(gen2, **kwargs)
     return (
         bool(gen1_passed and gen2_passed),
         f"gen1: {gen1_detail} | gen2: {gen2_detail}",
@@ -1068,18 +1140,17 @@ def run_phase3(
     gen1_audit: dict[str, Any],
     gen2_audit: dict[str, Any],
 ) -> Preflight:
-    """Record I3.1–I3.4 and I5.2. All FLAG — the run continues, labelled."""
+    """Record I3.1–I3.4 and I5.2. The run continues either way — I3.1/I3.2/
+    I3.3 and I5.2 label it, I3.4 only reports (D-073)."""
 
     from dau.diagnostics.run_protocol_c_prime import MIN_TRACE_FRACTION
 
     preflight.check(
         "I3.1",
-        lambda: _both_generations(
+        lambda: _both_generations_self_scaled(
             check_pe_event_sufficiency,
             gen1_sections,
             gen2_sections,
-            expected_gen1,
-            expected_gen2,
             min_fraction=MIN_TRACE_FRACTION,
         ),
         mode=MODE_FLAG,
@@ -1102,14 +1173,14 @@ def run_phase3(
     preflight.check(
         "I3.4",
         lambda: _both_generations(
-            check_pad_fraction,
+            check_early_termination_fraction,
             gen1_sections,
             gen2_sections,
             expected_gen1,
             expected_gen2,
             max_fraction=PAD_FRACTION_MAX,
         ),
-        mode=MODE_FLAG,
+        mode=MODE_REPORT,
         calibrated=False,
     )
     preflight.check("I5.2", check_nli_active, mode=MODE_FLAG)

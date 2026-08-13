@@ -38,6 +38,7 @@ from dau.diagnostics.run_protocol_c_prime import (
 from dau.diagnostics.preflight import (
     MODE_ABORT,
     MODE_FLAG,
+    MODE_REPORT,
     RUN_QUALITY_CLEAN,
     RUN_QUALITY_FLAGGED,
     RUN_QUALITY_MOCK,
@@ -60,7 +61,7 @@ from dau.diagnostics.preflight import (
     check_ppr_active,
     check_somatic_scale_applied,
     check_lora_choice,
-    check_pad_fraction,
+    check_early_termination_fraction,
     check_pe_event_sufficiency,
     check_precision_saturation,
     check_pythonhashseed,
@@ -686,17 +687,72 @@ def test_broken_check_counts_as_failure() -> None:
 
 
 def test_i3_1_detects_starved_pe_log() -> None:
-    full = [{"n_pe_events_audited": 10}, {"n_pe_events_audited": 10}]
-    assert check_pe_event_sufficiency(
-        full, expected_per_section=10, min_fraction=0.5
-    )[0] is True
+    """A row per event LIVED, not per event budgeted (D-073)."""
 
-    starved = [{"n_pe_events_audited": 2}, {"n_pe_events_audited": 2}]
-    passed, detail = check_pe_event_sufficiency(
-        starved, expected_per_section=10, min_fraction=0.5
-    )
+    full = [
+        {"n_pe_events_audited": 10, "events_lived": 10},
+        {"n_pe_events_audited": 10, "events_lived": 10},
+    ]
+    assert check_pe_event_sufficiency(full, min_fraction=0.5)[0] is True
+
+    starved = [
+        {"n_pe_events_audited": 2, "events_lived": 10},
+        {"n_pe_events_audited": 2, "events_lived": 10},
+    ]
+    passed, detail = check_pe_event_sufficiency(starved, min_fraction=0.5)
     assert passed is False
     assert "4/20" in detail
+
+
+def test_i3_1_does_not_call_a_short_life_a_starved_instrument() -> None:
+    """The whole point of the D-073 denominator change.
+
+    Since D-066 lineages die early by design, and against the event BUDGET
+    this check reported the universe working as intended as an instrument
+    fault. Same rows, same budget, different denominators: an agent that lived
+    12 events and logged 12 of them has a healthy sensor.
+    """
+
+    short_lives = [
+        {"n_pe_events_audited": 12, "events_lived": 12},
+        {"n_pe_events_audited": 11, "events_lived": 11},
+    ]
+    passed, detail = check_pe_event_sufficiency(short_lives, min_fraction=0.5)
+    assert passed is True
+    assert "23/23" in detail
+
+    # And the fault it does exist to catch is still caught: same short rows,
+    # but the lives ran to the full budget.
+    broken = [
+        {"n_pe_events_audited": 12, "events_lived": 50},
+        {"n_pe_events_audited": 11, "events_lived": 50},
+    ]
+    assert check_pe_event_sufficiency(broken, min_fraction=0.5)[0] is False
+
+
+def test_i3_1_sums_both_gen1_phases() -> None:
+    """A gen1 section holds two lives and its PE audit merges both."""
+
+    two_phases = [
+        {
+            "n_pe_events_audited": 24,
+            "events_lived_phase1": 12,
+            "events_lived_phase2": 12,
+        }
+    ]
+    passed, detail = check_pe_event_sufficiency(two_phases, min_fraction=0.5)
+    assert passed is True
+    assert "24/24" in detail
+
+
+def test_i3_1_cannot_be_assessed_without_a_lived_count() -> None:
+    """No denominator is not a pass (§2.9) — a pre-D-073 section has none."""
+
+    passed, detail = check_pe_event_sufficiency(
+        [{"n_pe_events_audited": 10}], min_fraction=0.5
+    )
+    assert passed is False
+    assert "cannot be assessed" in detail
 
 
 def test_i3_2_detects_saturated_sensor() -> None:
@@ -740,18 +796,24 @@ def test_i3_3_detects_too_many_gated_arms() -> None:
     assert "3/5" in detail
 
 
-def test_i3_4_flags_any_padding() -> None:
-    unpadded = [{"n_pe_events_audited": 10}]
-    assert check_pad_fraction(
-        unpadded, expected_per_section=10, max_fraction=0.0
+def test_i3_4_reports_events_the_cohort_never_reached() -> None:
+    """Same arithmetic, renamed to what it measures (D-073).
+
+    LOCF is gone, so nothing is padded any more; the number is now how much of
+    the budget the cohort did not live to see.
+    """
+
+    whole_budget = [{"n_pe_events_audited": 10}]
+    assert check_early_termination_fraction(
+        whole_budget, expected_per_section=10, max_fraction=0.0
     )[0] is True
 
-    padded = [{"n_pe_events_audited": 7}]
-    passed, detail = check_pad_fraction(
-        padded, expected_per_section=10, max_fraction=0.0
+    died_early = [{"n_pe_events_audited": 7}]
+    passed, detail = check_early_termination_fraction(
+        died_early, expected_per_section=10, max_fraction=0.0
     )
     assert passed is False
-    assert "3/10 padded" in detail
+    assert "3/10 events not reached" in detail
 
 
 def test_i2_1_detects_identical_arms() -> None:
@@ -2036,7 +2098,8 @@ def test_arm_result_carries_the_landmark_of_phase_two(
     )
 
     assert len(lives) == 2, "both phases must run, or 'phase 2' means nothing"
-    assert arm_result.events_lived == EVENTS_GEN1_UNIT
+    assert arm_result.events_lived_phase1 == EVENTS_GEN1_UNIT
+    assert arm_result.events_lived_phase2 == EVENTS_GEN1_UNIT
     assert arm_result.landmark_reached is True
     assert arm_result.landmark_energy == pytest.approx(LANDMARK_ENERGY)
     assert arm_result.landmark_drift_magnitudes == pytest.approx(
@@ -2080,7 +2143,8 @@ def test_landmark_survives_a_real_graph_stream(
         multigen_mod.restore_llm_builder(previous)
 
     try:
-        assert arm_result.events_lived == LANDMARK_E2E_EVENTS
+        assert arm_result.events_lived_phase1 == LANDMARK_E2E_EVENTS
+        assert arm_result.events_lived_phase2 == LANDMARK_E2E_EVENTS
         assert arm_result.landmark_reached is True
         # A real body, so the values are whatever the life produced — what is
         # under test is that they were READ, not what they are.
@@ -2096,3 +2160,132 @@ def test_landmark_survives_a_real_graph_stream(
     finally:
         if tmp is not None:
             tmp.cleanup()
+
+
+# ---------------------------------------------------------------------------
+# K1 / D-073 — LOCF is gone; the comparable endpoint is read at a fixed age
+# ---------------------------------------------------------------------------
+
+PE_LIVED_VALUE: float = 0.20
+PE_TAIL_VALUE: float = 0.90
+SHORT_PE_LIFE: int = C.LANDMARK_EVENT - 4
+PE_BUDGET: int = C.LANDMARK_EVENT * 3
+
+
+def _pe_trace(n_events: int) -> list[float]:
+    """A trace whose landmark window and whose tail disagree on purpose."""
+
+    return [
+        PE_LIVED_VALUE if i < C.LANDMARK_EVENT else PE_TAIL_VALUE
+        for i in range(n_events)
+    ]
+
+
+def test_short_pe_trace_is_not_padded_to_the_budget() -> None:
+    """LOCF is gone (D-073). A short life returns a short trace.
+
+    Lachin (Clinical Trials 2015) on carrying the last observation forward:
+    not conservative, biased either way, and it understates variance. In the
+    D-066 pilot 71% of gen1's slots were padding, so most of the endpoint was
+    LOCF output rather than measurement.
+    """
+
+    trace = multigen_mod._clip_pe_trace(_pe_trace(SHORT_PE_LIFE), PE_BUDGET)
+
+    assert len(trace) == SHORT_PE_LIFE
+    assert trace == _pe_trace(SHORT_PE_LIFE)
+
+
+def test_whole_phase_mean_is_now_a_per_event_rate() -> None:
+    """The mean divides by what was lived, so it cannot inherit lifespan.
+
+    Under padding these two lives returned different means from identical
+    per-event behaviour, because the shorter one had its last value repeated
+    into every empty slot.
+
+    The pattern alternates deliberately: a constant trace has its own mean as
+    its last value, so LOCF moves nothing and this test would pass under the
+    very padding it exists to forbid. The first version did exactly that and
+    the mutation check caught it (§2.4).
+    """
+
+    cycle = [PE_LIVED_VALUE, PE_TAIL_VALUE]
+    repeats = PE_BUDGET // len(cycle)
+    short_life = multigen_mod._clip_pe_trace(cycle * (repeats // 3), PE_BUDGET)
+    long_life = multigen_mod._clip_pe_trace(cycle * repeats, PE_BUDGET)
+
+    assert len(short_life) * 3 == len(long_life), "lifespans must differ"
+    assert multigen_mod._window_mean(short_life) == pytest.approx(
+        multigen_mod._window_mean(long_life)
+    )
+
+
+def test_landmark_window_takes_exactly_the_first_landmark_events() -> None:
+    """Every arm contributes the same events, so lifespan cannot enter."""
+
+    short_budget_life = _pe_trace(C.LANDMARK_EVENT)
+    long_life = _pe_trace(PE_BUDGET)
+
+    assert multigen_mod._landmark_window_mean(long_life) == pytest.approx(
+        PE_LIVED_VALUE
+    )
+    # The tail is louder and much longer, and the fixed window ignores it.
+    assert multigen_mod._landmark_window_mean(long_life) == pytest.approx(
+        multigen_mod._landmark_window_mean(short_budget_life)
+    )
+    assert multigen_mod._window_mean(long_life) > multigen_mod._landmark_window_mean(
+        long_life
+    )
+
+
+def test_landmark_window_refuses_a_partial_window() -> None:
+    """A window over "however many it managed" is the confound being removed.
+
+    Structurally unreachable while grace covers the landmark; written because
+    §2.9 forbids the silent fallback, not because it is expected to fire.
+    """
+
+    assert math.isnan(multigen_mod._landmark_window_mean(_pe_trace(SHORT_PE_LIFE)))
+    assert math.isnan(multigen_mod._pe_at_landmark(_pe_trace(SHORT_PE_LIFE)))
+
+
+def test_pe_at_landmark_is_the_point_read_not_the_window() -> None:
+    """Recorded alongside, so the point read costs no extra run (D-073)."""
+
+    trace = _pe_trace(PE_BUDGET)
+    trace[C.LANDMARK_EVENT - 1] = PE_TAIL_VALUE
+
+    assert multigen_mod._pe_at_landmark(trace) == pytest.approx(PE_TAIL_VALUE)
+    # One event out of the window moved; the window mean barely notices, which
+    # is exactly why the window is the primary and the point read is not.
+    assert multigen_mod._landmark_window_mean(trace) < PE_TAIL_VALUE
+
+
+def test_pe_window_report_says_padding_is_off() -> None:
+    """Same field names before and after D-073 — this is what disambiguates."""
+
+    described = multigen_mod.describe_pe_window()
+
+    assert described["pe_locf_padding"] is False
+    assert described["pe_landmark_event"] == C.LANDMARK_EVENT
+
+
+def test_report_mode_records_without_touching_run_quality() -> None:
+    """I3.4 became a finding, not a fault (D-073 / K7).
+
+    PAD_FRACTION_MAX is 0.0 and since D-066 lineages die early by design, so a
+    flag here would fire on every run from now on and run_quality would stop
+    separating anything. The number still has to reach the results file.
+    """
+
+    gate = Preflight()
+    gate.check("I3.4", lambda: (False, "9/30 events not reached"), mode=MODE_REPORT)
+
+    assert gate.run_quality() == RUN_QUALITY_CLEAN
+    assert gate.invariants()["I3.4"] is False
+    assert "not reached" in gate.details()["I3.4"]["detail"]
+    gate.enforce()  # must not raise
+
+    # And the modes that do label a run still do.
+    gate.check("I3.1", lambda: (False, "starved"), mode=MODE_FLAG)
+    assert gate.run_quality() == RUN_QUALITY_FLAGGED

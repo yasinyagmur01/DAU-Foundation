@@ -55,12 +55,14 @@ from dau.diagnostics.run_protocol_c_prime import (
     STREAM_RECURSION_HEADROOM,
     ArmResult,
     _build_lived_examples,
+    _clip_pe_trace,
     _diversity_gate_reason,
     _initial_state,
     _json_sanitize,
+    _landmark_window_mean,
     _lock_seeds,
     _merge_pe_rows,
-    _pad_pe_list,
+    _pe_at_landmark,
     _phase1_diversity,
     _pair_filter_report,
     _precision_audit_from_pe_rows,
@@ -265,6 +267,13 @@ class Gen2Result:
     # chosen here.
     events_to_first_crisis: int = EVENT_NEVER_OCCURRED
     events_to_first_delta_trauma: int = EVENT_NEVER_OCCURRED
+    # D-073 / K1, same treatment as gen1. mean_pe above is now the per-event
+    # rate over the life the heir actually got (LOCF padding is gone), and the
+    # fixed-age reading is the one arms may be compared on. events_lived is
+    # what I3.1 divides by: the heir lives once, so this is its whole life.
+    events_lived: int = EMPTY_COUNT
+    mean_pe_landmark: float = float("nan")
+    mean_pe_at_landmark: float = float("nan")
 
 
 @dataclass
@@ -415,7 +424,7 @@ def run_life_keep_vault(
         state = _state_from_stream(result)
         pe_rows = list(get_pe_event_log())
         pe_list = [float(row["prediction_error"]) for row in pe_rows]
-        pe_list = _pad_pe_list(pe_list, n_events)
+        pe_list = _clip_pe_trace(pe_list, n_events)
         lived_examples = _build_lived_examples(state, pe_rows)
         # GAP-19 / D-067: this life is over, so the vault's clock moves past it
         # and the next life on the same vault counts on top. Sealed with the
@@ -830,6 +839,14 @@ def run_gen1_arm_lineage(
     )
     pe_after = _window_mean(pe_after_list)
     delta_pe = NAN_DELTA if gated else (pe_after - pe_before)
+    # D-073: the fixed-age contrast, alongside the per-event one above. Gated
+    # arms get NaN here for the same reason they do there — the training step
+    # the contrast is about never ran.
+    pe_before_landmark = _landmark_window_mean(pe_before_list)
+    pe_after_landmark = _landmark_window_mean(pe_after_list)
+    delta_pe_landmark = (
+        NAN_DELTA if gated else (pe_after_landmark - pe_before_landmark)
+    )
 
     # GAP-13: Protocol C′ audits both phases (run_protocol_c_prime.py:874);
     # multigen dropped the rows on the floor and shipped default zeros, which
@@ -857,7 +874,13 @@ def run_gen1_arm_lineage(
         n_pe_events_audited=n_aud,
         n_saturated=n_sat,
         pi_values=list(pi_vals),
-        events_lived=len(state_2.event_log),
+        events_lived_phase1=len(state_1.event_log),
+        events_lived_phase2=len(state_2.event_log),
+        pe_before_landmark=pe_before_landmark,
+        pe_after_landmark=pe_after_landmark,
+        delta_pe_landmark=delta_pe_landmark,
+        pe_before_at_landmark=_pe_at_landmark(pe_before_list),
+        pe_after_at_landmark=_pe_at_landmark(pe_after_list),
         **landmark,
         arm_digest=arm_digest(
             _decisions(state_1) + _decisions(state_2),
@@ -993,7 +1016,7 @@ def run_gen2_measure(
     _lock_seeds(seed)
     rng_digest = rng_state_digest()
     # 3A: do not load parent adapter; heir agent_id has no trained adapter.
-    pe_list, lived_examples, pe_rows, _final = run_life_keep_vault(
+    pe_list, lived_examples, pe_rows, final_state = run_life_keep_vault(
         agent_id=heir.agent_id,
         seed=seed,
         n_events=events_gen2,
@@ -1026,6 +1049,9 @@ def run_gen2_measure(
         n_saturated=n_sat,
         pi_values=list(pi_vals),
         rng_digest=rng_digest,
+        events_lived=len(final_state.event_log),
+        mean_pe_landmark=_landmark_window_mean(pe_list),
+        mean_pe_at_landmark=_pe_at_landmark(pe_list),
         **behaviour,
     )
 

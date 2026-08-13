@@ -83,21 +83,31 @@ gereği aynı olur. Mock'ta I2.1 **FLAG**'e düşer, ABORT'a değil.
 
 | id | Değişmez | Mod | Yakaladığı | Kodda |
 |---|---|---|---|---|
-| I3.1 | **PE olayı yeterli.** `n_pe_events ≥ MIN_TRACE_FRACTION × beklenen`. Şu an yalnızca WARN basıyor. | FLAG | instrument starvation (v1 smoke) | ✅ |
+| I3.1 | **PE olayı yeterli.** `n_pe_events ≥ MIN_TRACE_FRACTION ×` **yaşanan olay** (D-073; eskiden bütçe). | FLAG | instrument starvation (v1 smoke) | ✅ |
 | I3.2 | **Precision doygunluğu düşük.** `saturation_rate ≤ eşik`, `pi_n_distinct ≥ eşik`. Alanların multigen'de doldurulması şart. | FLAG | GAP-13 + precision regresyonu | ✅ |
 | I3.3 | **Diversity.** Mevcut kapı korunur; ek olarak `n_gated / N > eşik` ise **tüm koşum** INCONCLUSIVE damgalanır. | FLAG | `n_eff < N` (geçen sefer 12/15) | ✅ |
-| I3.4 | **PE listesi pad edilmedi.** Pad oranı > eşikse işaretle. | FLAG | erken biten stream'in `0.0`'larla dolması (K6) | ✅ |
+| I3.4 | **Erken sonlanma oranı.** Kohortun bütçenin ne kadarına ulaşamadığı. **Ölçülür ve raporlanır, bayrak yok** (D-073). | REPORT | *(artık bir arıza değil, evren hakkında bir bulgu)* | ✅ |
 
-⚠ **I3.1 ve I3.4'ün anlamı D-066'dan sonra değişti — kapılar değişmedi.**
-Ölüm mümkün olmadan önce erken biten bir yaşam bir **anormallikti** ve iki
-kapı da onu yakalamak için vardı. Artık erken ölüm **tasarımın kendisidir**:
-D-068 pilotunda yaşamlar 50 olaylık bütçeye karşı 19 ve 10 olayda bitti,
-I3.4 gen1'de **%71 pad** bastı ve I3.1 kapsamayı **0.29** raporladı.
+✅ **I3.1 ve I3.4 D-073'te düzeltildi.** Uzun süre şu not duruyordu: ölüm
+mümkün olmadan önce erken biten bir yaşam bir **anormallikti** ve iki kapı da
+onu yakalamak için vardı; D-066'dan sonra erken ölüm **tasarımın kendisi**
+oldu (D-068 pilotunda yaşamlar 50 olaylık bütçeye karşı 19 ve 10 olayda bitti,
+I3.4 gen1'de **%71 pad** bastı, I3.1 kapsamayı **0.29** raporladı) ama kapılar
+hâlâ bunu arıza gibi okuyordu. Uç nokta yeniden tanımlanınca ikisi de ayrıldı:
 
-⇒ Bu iki kapı şu an *"bir şey bozuldu"* demiyor; *"uç nokta tanımı bu evrene
-uymuyor"* diyor. **Yorumu değişti, eşiği değil** — eşik ön-kayıtlı ve
-değiştirilmedi (§2.10). Uç noktanın yeniden tanımlanması **ikinci ön-kayıtın**
-işi ve DR brief #5 tam olarak bunu soruyor.
+- **I3.1'in paydası artık yaşanan olay sayısı.** Kapı ilan edilmiş işine
+  döndü — *"alet aç kaldı mı"*. 12 olay yaşayıp 12 satır yazan ajan sağlam;
+  50 yaşayıp 12 satır yazan **bozuk**, ve ikisini yalnız bu payda ayırıyor.
+  Payda yoksa (D-073 öncesi bölüm) kapı **geçmiyor**, *"değerlendirilemez"*
+  diyor (§2.9).
+- **I3.4 bayrak olmaktan çıktı, `MODE_REPORT`'a geçti.** Aynı aritmetik, yeni
+  ad: bütçeye göre **erken sonlanma oranı**. `PAD_FRACTION_MAX = 0.0` olduğu
+  ve LOCF kalktığı için bayrak bırakılsaydı bundan sonraki **her koşum**
+  `flagged` olurdu ve `run_quality` bir şey ayırt etmeyi bırakırdı. Sayı yine
+  JSON'a yazılıyor — ikinci ön-kayıtta **geçerlilik kriteri** adayı.
+
+⚠ **Kapı sayısı değişti:** `MODE_FLAG` bir azaldı, `MODE_REPORT` (yeni mod)
+bir arttı. `run_quality` yalnız `abort` ve `flag`'e bakıyor.
 
 ⚠ Bir kapının tasarım gereği sürekli bayrak basması, onu **okunmaz** hale
 getirir. İkinci ön-kayıt ya eşiği yeni uç noktaya göre yeniden tanımlamalı ya

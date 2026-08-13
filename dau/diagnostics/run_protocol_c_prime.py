@@ -44,6 +44,7 @@ from dau.diagnostics.training_artifacts import dump_training_artifacts
 from dau.foundation.constraints import (
     ADAPTER_BASE_DIR,
     GRAD_NORM_UNREAD,
+    LANDMARK_EVENT,
     LORA_B_ABS_SUM_UNREAD,
     MIN_PAIRS,
     NLI_CONTRADICTION_THRESHOLD,
@@ -108,7 +109,9 @@ HEARTBEAT_PATH: Path = Path(
 # Must stay strictly above graph.TERMINATION_ENERGY, otherwise the floor never
 # protects the run and a single max-PE trauma ends the life at event 1.
 AB_ENERGY_FLOOR: float = 0.15
-# Below this fraction of EVENTS_PER_ARM a padded PE trace is not measurable.
+# I3.1's floor: how much of the life the PE log has to have captured. Measured
+# against events LIVED since D-073 — against the budget it was really asking
+# "did the agent live long?", which since D-066 is a finding, not a defect.
 MIN_TRACE_FRACTION: float = 0.5
 
 ALPHA: float = 0.05
@@ -353,12 +356,32 @@ class ArmResult:
     # death rule itself (a life that ends by exhaustion reports 0.000 by
     # definition — six arms of six in the pilot), so it measures the ending,
     # not the living.
-    events_lived: int = EMPTY_COUNT
+    # Both phases, because the PE audit merges both and I3.1 divides by what
+    # was lived. The landmark fields below are phase 2 only.
+    events_lived_phase1: int = EMPTY_COUNT
+    events_lived_phase2: int = EMPTY_COUNT
     landmark_reached: bool = False
     landmark_energy: float = float("nan")
     landmark_drift_flags: dict[str, bool] = field(default_factory=dict)
     landmark_drift_magnitudes: dict[str, float] = field(default_factory=dict)
     energy_mean_over_life: float = float("nan")
+    # D-073 / K1. pe_before, pe_after and delta_pe above are now means over
+    # what each life actually produced — a per-event RATE, and the secondary
+    # reading. They used to be means over an LOCF-padded 50 slots, so the same
+    # three field names mean something different before and after this run;
+    # tool_identity.endpoints carries the flag that says which.
+    #
+    # The primary PE reading is the fixed-age one: the same LANDMARK_EVENT
+    # events from every arm, so no lifespan difference can enter it. NaN when
+    # the trace is shorter than the landmark — never a partial window.
+    pe_before_landmark: float = float("nan")
+    pe_after_landmark: float = float("nan")
+    delta_pe_landmark: float = float("nan")
+    # The literal point read at the landmark, recorded so "what would the
+    # single value have said" does not cost a run. Not the endpoint: which of
+    # the two is primary was fixed before either was seen (L9).
+    pe_before_at_landmark: float = float("nan")
+    pe_after_at_landmark: float = float("nan")
 
 
 @dataclass
@@ -419,6 +442,13 @@ def describe_pe_window(window: int = PE_WINDOW_EVENTS) -> dict[str, Any]:
     return {
         "pe_window_events": int(window),
         "pe_window_mode": "all_events" if whole else "prefix",
+        # D-073. "All events" used to mean all BUDGETED events, with the short
+        # ones carried forward from the last observation; it now means all
+        # events the life produced. pe_before / pe_after / mean_pe keep their
+        # names across that change, so this flag is the only thing in the
+        # results file that says which of the two a number came from.
+        "pe_locf_padding": False,
+        "pe_landmark_event": int(LANDMARK_EVENT),
     }
 
 
@@ -712,25 +742,62 @@ def _run_system1_fallback(original: Any, state: DAUAgentState) -> dict[str, Any]
         graph_mod.should_run_llm = prior
 
 
-def _pad_pe_list(pe_list: list[float], n_events: int) -> list[float]:
-    """Pad short PE traces with last value (energy-floor early stop).
+def _clip_pe_trace(pe_list: list[float], n_events: int) -> list[float]:
+    """Return the PE trace the life actually produced, capped at the budget.
 
-    A trace shorter than MIN_TRACE_FRACTION is dominated by padding, so its
-    mean is an artifact rather than a measurement — surface it loudly.
+    D-073 / K1. This used to carry the last observation forward to n_events —
+    LOCF, and Lachin (Clinical Trials 2015, 10.1177/1740774515602688) is a
+    direct critique of it: not conservative, biased in either direction, and
+    it understates variance. The D-066 pilot made that the majority case, with
+    71% of gen1's slots padded, so most of the endpoint was LOCF output rather
+    than measurement.
+
+    Nothing replaces the padding. A short life is a short life; the endpoints
+    that have to stay comparable across arms are read at a fixed AGE instead
+    (_landmark_window_mean), and the whole-phase mean becomes an explicit
+    per-event rate over what was lived.
     """
 
-    if len(pe_list) >= n_events:
-        return pe_list[:n_events]
-    if len(pe_list) < n_events * MIN_TRACE_FRACTION:
+    if len(pe_list) < LANDMARK_EVENT:
         print(
             f"[PROTOCOL_C_PRIME][WARN] PE trace {len(pe_list)}/{n_events} events "
-            f"— mean is padding-dominated, arm not measurable",
+            f"— shorter than the landmark at {LANDMARK_EVENT}, no fixed-age "
+            f"reading for this arm",
             flush=True,
         )
-    if not pe_list:
-        return [EMPTY_MEAN] * n_events
-    last = pe_list[-1]
-    return pe_list + [last] * (n_events - len(pe_list))
+    return pe_list[:n_events]
+
+
+def _landmark_window_mean(pe_list: list[float]) -> float:
+    """Mean PE over the first LANDMARK_EVENT events — the fixed-age reading.
+
+    D-070/K1 with D-073's form. Drift is a state, so its landmark is a point
+    read; PE is a per-event flow, and a single event of it is the noisiest
+    thing the trace has to offer (D-044 measured arms separating by 0.065–0.194
+    event-by-event). Every arm contributes exactly the same LANDMARK_EVENT
+    events here, so no lifespan difference can reach this number.
+
+    Shorter than the landmark → NaN, never a partial window: averaging over
+    however many events a lineage managed is the confound the fixed age exists
+    to remove (§2.9, no silent fallback).
+    """
+
+    if len(pe_list) < LANDMARK_EVENT:
+        return NAN_DELTA
+    return _mean(pe_list[:LANDMARK_EVENT])
+
+
+def _pe_at_landmark(pe_list: list[float]) -> float:
+    """The single PE value at LANDMARK_EVENT — recorded, not the endpoint.
+
+    The literal form of landmark analysis, kept so the question "what would
+    the point read have said" does not cost a new run. Which of the two is
+    primary was fixed before either was seen (D-073).
+    """
+
+    if len(pe_list) < LANDMARK_EVENT:
+        return NAN_DELTA
+    return float(pe_list[LANDMARK_EVENT - 1])
 
 
 def _seed_from_agent_id(agent_id: str) -> int:
@@ -838,7 +905,7 @@ def _collect_pe_events(
         state = _state_from_stream(result)
         pe_rows = list(get_pe_event_log())
         pe_list = [float(row["prediction_error"]) for row in pe_rows]
-        pe_list = _pad_pe_list(pe_list, n_events)
+        pe_list = _clip_pe_trace(pe_list, n_events)
         lived_examples = _build_lived_examples(state, pe_rows)
         return pe_list, lived_examples, pe_rows
     finally:
