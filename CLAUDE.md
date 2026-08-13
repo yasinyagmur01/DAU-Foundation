@@ -19,53 +19,71 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-13) — ✅ **ÜÇ KOD DEĞİŞİKLİĞİ DE BİTTİ**
+# 1. Şu An Neredeyiz (2026-08-13) — ✅ **ALET HAZIR, SIRA POPÜLASYONDA**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **Bugünün altı commit'i henüz push edilmedi.**
-- **Suite:** `410 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-073.** Sıradaki kayıt **D-074** olarak açılır.
+  etiketinde. `origin/main` ile senkron (`c571e35`).
+- **Suite:** `410 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
+- **Son D-kaydı: D-074.** Sıradaki kayıt **D-075** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
-  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)**.
+  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — **ikinci ön-kayıt taslağı**
+## ▶▶ SIRADAKİ İŞ — **A4-② popülasyon** (kilitten ÖNCE, D-074)
 
-Üç kod değişikliğinin üçü de bitti, her biri kendi commit'i ve mutasyon
-kontrolüyle. **Kod tarafında koşumdan önce yapılacak zorunlu iş kalmadı.**
+Üç kod değişikliğinin üçü de bitti (D-071/072/073). **Ön-kayıt taslağı
+ertelendi** — Yasin ② popülasyonun kilitten önce gelmesine karar verdi
+(**D-074**).
 
-Sıradaki iş **ikinci ön-kayıt taslağı** (~1–2 sa, GPU'suz). İçermesi gerekenler:
+**Neden:** her fizik değişikliği kilidi geçersizleştiriyor ⇒ şimdi kilitleyip
+koşmak, ② sonrası **üçüncü** bir ön-kayıt demek. D-014'ün hedefi zaten N
+nesil, ve D-065/J20 *"önce bedel, sonra popülasyon"* demişti — bedel D-066'da
+bitti.
 
-1. **Yedi kararın metne dökülmesi** (D-070) — kilitli hâlleriyle.
-2. **K5'in sınırının ilanı:** *"birincil uç nokta, aktarılan drift'in kendisi
-   değil, sabit yaşta okunan karşılaştırılabilir kesitidir."*
-3. **Hangi okumanın birincil olduğu.** Alet ikisini de üretiyor ama ön-kayıt
-   **seçmek zorunda** (D-073 bunu bilerek açık bıraktı):
-   - birincil: `landmark_drift_magnitudes` (K5)
-   - PE ikincilleri: `delta_pe_landmark` (sabit yaş) **ve** `delta_pe`
-     (olay başına oran) — hangisi S3/S4'ün ön-kayıtlı hâli?
-   - enerji: `landmark_energy` **ve** `energy_mean_over_life` (K2 ikisini de
-     istedi — ikisi de birincil olamaz)
-4. **Geçerlilik kriterleri.** ⚠ **`I3.4` artık bayrak basmıyor** (D-073) ⇒
-   erken sonlanma oranının **eşiği ön-kayıtta** belirlenmeli, yoksa hiçbir
-   yerde belirlenmemiş olur.
-5. **N'in K3'e göre yeniden hesabı** (Schoenfeld 1983: güç olay sayısına
-   dayanır, sansür yok ⇒ olay = soy sayısı).
+### Sıradaki adım: ② için **read-only denetim + tasarım önerisi**
 
-**Ondan sonra koşum.** ⚠ **Kilit yazılmadan koşum başlamaz.**
+⚠ **Kod yazılmaz** (§2.3). Denetimin cevaplaması gerekenler:
+
+1. Bugünkü orkestrasyonun **tek-ajan varsayımları nerede gömülü**
+   (`run_cprime_multigen`, `graph._memory_stores`, adapter dizinleri,
+   `_lock_seeds`, I0.7).
+2. **Üremenin biçimi:** kim kopyalanır, kaç varis, seçilim `F_agent`'tan mı
+   (⚠ `F_agent` D-071'de değişti — havuz terimi oran, survival gerçek).
+3. **Ortak havuz N ajanla nasıl paylaşılır** — `realized_extractions` zaten
+   oransal bölüşüm yapıyor (D-066), yani altyapı kısmen hazır.
+4. **Maliyet:** N ajan × nesil × GPU. B2 tek soy için 13.1 saatti.
+
+### Ondan sonra, sırayla
+
+1. **Pilot** — ② yerleştikten sonra, yeni seed'lerle. ⚠ İşi ön-kaydın
+   girdisini üretmek: **K3'ün N hesabı yeni aletten varyans istiyor ve
+   elimizde yok** (D-068 pilotu D-071/072/073'ten önce, N=2, kırık pencere).
+   ⚠ Yalnız **dağılım** okunur, **kol farkı mühürlü** (L9).
+2. **İkinci ön-kayıt taslağı.** Çözmesi gereken üç seçim — alet üçünü de
+   üretiyor ama ön-kayıt **seçmek zorunda** (D-073 bilerek açık bıraktı):
+   - **PE ikincilleri:** `delta_pe_landmark` (sabit yaş) mı `delta_pe`
+     (olay başına oran) mı S3/S4'ün ön-kayıtlı hâli?
+   - **Enerji:** K2 hem `landmark_energy` hem `energy_mean_over_life` istedi
+     — ikisi de birincil olamaz.
+   - **Erken sonlanma eşiği:** `I3.4` artık bayrak basmıyor (D-073) ⇒ eşik
+     ön-kayıtta belirlenmezse **hiçbir yerde** belirlenmemiş olur.
+   Ayrıca: yedi kararın metne dökülmesi (D-070), K5'in sınır ilanı
+   (*"birincil, aktarılan drift'in kendisi değil, sabit yaşta okunan
+   kesiti"*), ve **K7'nin ilan edilmiş sınırı** (D-074: davranış çökük
+   kaldığı sürece seçilim görünmeyebilir).
+3. **Koşum.** ⚠ **Kilit yazılmadan başlamaz.**
+
 ⚠ Yeni koşum **yeni seed'lerden** başlamalı: **2001–2043 · 3001–3004 ·
 4001–4002** diskte adapter bıraktı (`dau_runs/adapters/`, 102 dizin) ⇒ bu
-seed'lerle başlanırsa **I0.7 abort eder**.
-⚠ Ayrıca 7777 (D-072/D-073 dur-kontrolleri) ve 9101 (`SEED_UNIT`, testler)
-**adapter yazmadı** — `null` kolu, LoRA kapalı — yani I0.7'yi tetiklemezler,
-ama karışıklık olmaması için deneyde kullanılmamalı.
+seed'lerle başlanırsa **I0.7 abort eder**. 7777 (dur-kontroller) ve 9101
+(`SEED_UNIT`, testler) adapter **yazmadı** ama deneyde kullanılmamalı.
 
 ### ⚠ Ön-kayıt yazılırken elde olan yeni alanlar
 
@@ -80,15 +98,19 @@ ama karışıklık olmaması için deneyde kullanılmamalı.
 ### ⚠ Bu iş sırasında geçerli olan sınırlar
 
 - **Hiçbir sabit sonuca bakılarak ayarlanmaz** (§2.7). Üç metabolik sabit
-  D-070'te *"olduğu gibi"* kilitlendi ve `METABOLIC_GAIN_CALIBRATED = False`
+  D-070'te *"olduğu gibi"* kilitlendi, `METABOLIC_GAIN_CALIBRATED = False`
   **kalıyor**.
 - **Uç nokta etkiye bakılarak seçilmez** (L9). Pilotun `pe_after` sayıları
-  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'li. D-072/D-073'ün
+  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'liydi. D-072/D-073'ün
   dur-kontrollerinde de yalnız *"alan doluyor mu"* soruldu.
-- **DR brief #5 gönderilemedi** (teknik sorun). Dosya duruyor:
+- ⚠ **Davranış hâlâ çökük** (D-068): D-066'dan sonra bile olayların
+  %94–100'ünde DEFECT. K7 bilişsel önseli aksiyom gerekçesiyle kapattı;
+  D-074 bunu **açık risk** olarak kayda geçirdi — hangi fizik eklenirse
+  eklensin seçilim görünmeyebilir.
+- **DR brief #5 gönderilemedi** (teknik sorun):
   `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md`.
   D-069'un yerel taraması K1–K3'ü karara bağlanabilir hale getirdi ama
-  **kapatmadı**; taramanın cevaplayamadığı üç şey §K.2'de.
+  **kapatmadı**; cevaplanamayan üç şey §K.2'de.
 
 ---
 

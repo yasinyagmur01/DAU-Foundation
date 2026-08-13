@@ -5380,3 +5380,83 @@ ettiği boş bekçinin ta kendisi.
   paylaşıyorlar ve aletin iki yerde farklı davranması daha kötü olurdu.
 - Değişmeyen: `MIN_TRACE_FRACTION = 0.5` ve `PAD_FRACTION_MAX = 0.0` **değer
   olarak** dokunulmadı (§2.7); değişen paydaları ve modları.
+
+---
+
+## D-074 · 2026-08-13 · Sıralama: **② popülasyon kilitten önce** — ve alet işinin muhasebesi
+
+**Durum:** sıralama kararı · **Karar: Yasin'in** (D-007) · **kod değişmedi** ·
+**tetikleyen:** Yasin'in sorusu — *"biz bir süredir optimizasyon yapıyoruz,
+alete değil mi?"*
+
+### Muhasebe — soru haklıydı
+
+B2'den (tek gerçek koşum) bu yana:
+
+| Ne | Kayıtlar |
+|---|---|
+| Alet / ölçüm / kapı | D-055…D-064, D-071…D-073 (~15) |
+| **Evrenin fiziği** | **D-066** (metabolik döngü), D-067 (kasa saati) |
+| Gerçek ölçüm | **B2** (13.1 sa) + D-068 pilotu (N=2, `flagged`) |
+
+**Alet işinin savunması var ama tam değil.** B2 *alet null'ı* olarak sınıflandı
+(D-053) ⇒ hipotez değil aletin kendisi test edilmişti. D-066 ömrü değişken
+hâle getirdi, ve **değişken ömür sabit pencereli uç noktayı fiziksel olarak
+bozar** ⇒ D-071/072/073 keyfi değil, D-066'nın mecbur bıraktığı işti. Onlar
+olmadan koşum kolları **farklı yaşlarda** okuyup aradaki farkı kol etkisi diye
+raporlardı.
+
+⚠ **Savunma burada bitiyor.** D-068 kalan darboğazın **davranışsal** olduğunu
+zaten ölçmüştü: D-066'dan *sonra* bile ajanlar olayların **%94–100'ünde**
+DEFECT çekiyor, bedeli ödüyor, ölüyor ve **değişmiyor**. Bugünkü iş, düz
+olduğu zaten ölçülmüş bir evreni daha hassas ölçen bir cetvel üretti.
+
+### Karar
+
+**② (popülasyon) kilitten önce gelir.** Ön-kayıt taslağı ② yerleştikten sonra
+yazılır, koşum ondan sonra.
+
+**Gerekçe:**
+1. **Her fizik değişikliği kilidi geçersizleştirir.** Şimdi kilitleyip koşmak,
+   ② sonrası **üçüncü** bir ön-kayıt demek.
+2. **D-014'ün hedefi zaten N nesil**, gen1→gen2 en kısa koşulabilir biçim.
+3. **D-065/J20 sıralamayı bağımsız olarak doğrulamıştı:** *önce bedel, sonra
+   popülasyon*. Bedel D-066'da bitti ⇒ sıra ②'de.
+4. **Farklı üreme olmadan seçilim iddiası kurulamaz** — ve tek başına ② de
+   yetmez: N ajanın hepsi aynı baskın stratejiyi oynarsa fitness'ları yine
+   özdeş olur (D-060'ın kökü).
+
+### Reddedilenler
+
+- **Şimdi kilitle ve koş.** *"Bedel var, adaptasyon yok"* temiz bir null olarak
+  gerçek bir sonuç olurdu ve B2'nin alet null'ından farklıdır. Reddedilme
+  sebebi sonucun değeri değil, **iki kilit maliyeti**.
+- **Önce K7'yi yeniden aç.** Davranışsal önsel (J4/GovSim'in ölçtüğü tek
+  kaldıraç) hâlâ aksiyom gerekçesiyle kapalı. ⚠ **Açık risk olarak kayda
+  geçiyor:** davranış çökük kaldığı sürece hangi fizik eklenirse eklensin
+  seçilim görünmeyebilir. K7 değişmedi; bu satır onu sorgulamıyor, **ilan
+  edilmiş bir sınır** olarak duruyor ve ikinci ön-kayıta geçecek.
+
+### ⚠ Pilot ön-kaydın zorunlu girdisi
+
+**K3'ün N hesabı yeni aletten bir varyans tahmini istiyor** (D-052 B2 için tam
+bunu yapmıştı) ve **elimizde yok**: D-068 pilotu D-071/072/073'ten önce, N=2 ve
+kırık pencereyle koştu. ⇒ Pilot **② yerleştikten sonra** koşar; şimdi koşulan
+varyans ölçülecek evrene ait olmaz.
+⚠ Pilotta yalnız **dağılım** okunur; **kol farkı mühürlü kalır** (L9).
+
+### Bugünkü alet işi ②'den etkilenmiyor
+
+`LANDMARK_EVENT` yapısal çapası `METABOLIC_GRACE_EVENTS`'e bağlı, popülasyon
+ona dokunmuyor; `F_agent`'ın oran terimi, LOCF'un kalkması ve `I3.1`/`I3.4`'ün
+ayrılması popülasyondan bağımsız. ⇒ D-071…D-073 **② seçildiği için boşa
+gitmedi**; hangi yol seçilse gerekliydi.
+
+### Sıradaki iş
+
+**② için read-only denetim + tasarım önerisi** (§2.3, kod yazılmadan).
+Denetimin cevaplaması gerekenler: bugünkü orkestrasyonun tek-ajan
+varsayımlarının **nerede** gömülü olduğu · üremenin biçimi (kim kopyalanır,
+kaç varis, seçilim `F_agent`'tan mı) · ortak havuzun N ajanla nasıl
+paylaşılacağı (`realized_extractions` zaten oransal bölüşüm yapıyor) ·
+maliyet (N ajan × nesil × GPU).
