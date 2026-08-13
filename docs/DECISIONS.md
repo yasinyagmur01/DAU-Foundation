@@ -4170,3 +4170,79 @@ seçeneğiyle hesaplandı; başka bir normalizasyon başka bir ortalama verir am
 Hangi kaldıracın seçileceği **tasarım kararıdır** (D-007) ve bu kayıt onu
 vermiyor, yalnız üçünü ölçüyor. `energy_final`'ın neden 0 olduğu **bu kayıtta
 izlenmedi** — kodda mı yazılmıyor, yoksa gerçekten sıfır mı, ayrı iş.
+
+---
+
+## D-061 · 2026-08-12 · `energy_final = 0` bir raporlama boşluğu değil: enerji **yapı gereği** asla artamıyor
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel**, koda dokunulmadı, GPU yok ·
+**Açtığı:** D-060'ın bilerek açık bıraktığı soru
+
+### Soru
+
+D-060, `energy_final`'ın 120 kolun 120'sinde **0.000** olduğunu ve fitness'ın
+**en büyük ağırlıklı** teriminin (0.4) böylece atıl kaldığını ölçtü, ama
+sebebini izlemedi: kodda hiç mi yazılmıyor, yoksa gerçekten sıfıra mı iniyor?
+
+### Cevap: yazılıyor — ve **matematiksel olarak** sıfıra iniyor
+
+`graph.py:665-670`:
+
+```
+energy_decay    = max(max_pe, METABOLIC_FLOOR)
+energy_recovery = METABOLIC_FLOOR * (1.0 - mean_load)
+new_energy      = clamp(before.energy - energy_decay + energy_recovery, 0.0, 1.0)
+```
+
+`METABOLIC_FLOOR = 0.05`.
+
+**Kanıt (ampirik değil, cebirsel):**
+
+- `energy_decay = max(max_pe, 0.05) ≥ 0.05`
+- `energy_recovery = 0.05 · (1 − mean_load) ≤ 0.05`, çünkü `mean_load ≥ 0`
+  (load'lar `[setpoint, METRIC_MAX]`'a clamp'li ve `setpoint ≥ 0`)
+- ⇒ **`decay ≥ recovery` her zaman** ⇒ **`new_energy ≤ before.energy` her zaman**
+
+⇒ **Enerji asla artamaz.** Ajan ne yaparsa yapsın, hangi kararı verirse
+versin. En iyi durumda (`max_pe = 0.05`, `mean_load = 0`) net değişim tam
+sıfır; her diğer durumda negatif.
+
+`METABOLIC_FLOOR` **aynı anda** hem asgari tüketim hem azami toparlanma
+olarak kullanılıyor. Tüketim PE ile ölçekleniyor (`[0,1]`), toparlanma
+0.05'te sabit tavanlı ⇒ toparlanma tüketimin en fazla **%12'si** olabiliyor.
+
+### Ne kadar hızlı
+
+Ölçülen PE ortalaması **0.425** ⇒ olay başına net **−0.400**.
+`DEFAULT_ENERGY = 1.0`'dan başlayıp **~2.5 olayda** tabana vuruyor.
+
+Seed 2004 `lived`'in gerçek PE dizisiyle: olay 1 → 0.3498, **olay 2 → 0.0000**,
+kalan **48 olay boyunca 0**.
+
+### Sonuç
+
+`energy` bir **durum değişkeni değil, tek yönlü bir sayaç**: iki olayda
+tükeniyor ve yaşamın %96'sında sıfırda kalıyor. Dolayısıyla:
+
+- Fitness'ın **%40'ı** hiçbir bilgi taşımıyor (D-060).
+- `compute_endogenous_recovery_rate` ve `get_allostatic_setpoints` enerjiyi
+  okuyorsa, onlar da yaşamın %96'sında aynı girdiyi görüyor.
+- **A4 için doğrudan sonuç:** enerjiyi ayrım üretir hale getirmek bir sabit
+  ayarı değil, **toparlanma teriminin yeniden tasarlanmasıdır** — mevcut
+  biçimiyle tavanı yükseltmek bile yetmez, çünkü sorun tavanın değeri değil
+  `recovery ≤ decay` eşitsizliğinin **yapısal** olması.
+
+⚠ Bu, aksiyoma da dokunuyor. `state.py` enerjiyi *"metabolik kıtlık — madde
+ve enerji sonlu, açlık seçilimi sürükler"* diye tanımlıyor. Açlık seçilimi
+sürükleyebilmesi için **bazı ajanların daha aç olması** gerekir; şu an hepsi
+ikinci olayda eşit derecede aç.
+
+### Sınırlar
+
+Kanıt `_advance_internal_state`'in okunmasından ve iki sabitten çıkıyor;
+`mean_load ≥ 0` varsayımı load alanlarının clamp'ine dayanıyor ve o clamp
+kodda görüldü, **ayrı bir testle doğrulanmadı**. Enerjinin başka bir yolla
+(ör. `run_meta_ab.py:437`'deki `AB_ENERGY_FLOOR`) yazıldığı yollar
+**deney yolunda değil** — bu kayıt yalnız C′/multigen yolu için geçerli.
+Düzeltme önerilmedi: hangi toparlanma tasarımının seçileceği **tasarım
+kararı** (D-007).
