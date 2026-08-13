@@ -156,25 +156,43 @@ ki bir şey aktarılıyor"* (**`shuffle` de aynı ölçüde değiştiriyor**: 26
 `dpo_loss ≈ ln 2`, bir sonraki koşumun neyi düzelteceğini tahminle değil
 sayıyla söylüyor.
 
-## ▶ İKİNCİ ÖN-KAYIT — kilitten sonra biriken her şey buraya
+## ▶ İKİNCİ ÖN-KAYIT — önümüzdeki tablo
 
-Kilit kapandığı için aşağıdakilerin **hiçbiri** bu koşuma giremez.
+⚠ İki liste ayrı: **birincisi olmadan koşum başlayamaz**, ikincisi koşuma
+girip girmeyeceği tartışılacak adaylar.
 
-| İş | Nereden geldi |
+### A. Kilitlenmeden koşum başlayamaz — yedi karar
+
+| # | Karar | Durum | Nereden |
+|---|---|---|---|
+| **K1** | **Uç nokta tanımı** — yaşam uzunluğu değişkenken sabit 50 slotluk pencere çalışmıyor (gen1'de %71 pad, alet *"arm not measurable"* diyor) | ⏳ **DR #5 bekliyor** | D-068 |
+| **K2** | **Enerji okuma anı** — `E_final` ölüm kuralının kendisi yüzünden 6/6 kolda 0.000; `F_agent`'ın 0.4 ağırlığı hâlâ bilgisiz | ⏳ **DR #5 bekliyor** | D-068 |
+| **K3** | **N ve güç** — ölüm mümkün olduğu için yaşam başına veri değişken; eski güç hesabı geçersiz | ⏳ K1'e bağlı (DR #5 / S6) | D-068 |
+| **K4** | **Üç metabolik sabitin kilitlenmesi** — `GAIN_MAX` 0.50 · `HALF_SAT` 2.0 · `GRACE` 10, üçü de `CALIBRATED=False` | ⚠ **Yasin'in.** Değer sonuca bakarak seçilemez (§2.7) | D-066 |
+| **K5** | **Birincil uç nokta seçimi** + `social` kanalının varlığı **geçerlilik ön-koşulu** mu olacak | ⚠ **Yasin'in.** Etkiye bakılarak seçilemez (L9) | D-064 |
+| **K6** | **S5'in hangi travma okuması** — commons krizi mi `TRAUMA` sınıfı imprint mi (ikisi de kaydediliyor, seçilmedi) | ⚠ **Yasin'in** | D-063 |
+| **K7** | **Davranış müdahalesi (③)** — karar kuralı önseli verilecek mi | ⚠ **Aksiyom kararı**, DR veremez. J4 lehte, J6 sınırı çiziyor | D-065/D-068 |
+
+### B. Adaylar — koşuma girip girmeyeceği ayrıca tartışılır
+
+| Aday | Nereden geldi |
 |---|---|
-| **A2 — kanal ayrımı, plasebo anı enjeksiyonu ile** | ⚠ Eski tasarım ("getirimi tamamen kapat") **kusurluydu**: OOD şoku ölçer, parametrik kapasiteyi değil (D-049/I12) |
+| **A2 — kanal ayrımı, plasebo anı enjeksiyonu ile** | ⚠ Eski tasarım ("getirimi tamamen kapat") **kusurluydu**: OOD şoku ölçer (D-049/I12) |
 | **Çifte ayrışma protokolü** (`ΔE_ağırlık + ΔE_bellek ≈ ΔE_toplam`) | DR #3 / I15 — kanal ayrımı iddiasının literatürdeki çıtası |
-| ~~**`F_agent` + GAP-19 birlikte**~~ | ✅ **ikisi de yapıldı** — D-066 (`F_agent` girdileri) + D-067 (kasa saati), aynı gün, D-051'in şartına uyularak |
-| **A4 — environment'ı ayrım üretir hale getirme** | Faz A'da bilerek ertelendi |
-| **KTO'ya geçiş** | DR #2 baş tavsiyesi. ⚠ Doğrulanmamış premise dayanıyordu; **B2'nin `uniq_rejected` sayısı** karar verir |
-| **Zaman × kol etkileşimi (LMM/FDA)** — **genel form** | DR #3 / I17. ⚠ "ikinci yarı AUC" **özel formu alınmaz** — o D-045'te gözlediğimiz şey, post-hoc olur |
-| **`W_SEM` 0.0 → 0.3–0.4** · negation sarmalayıcı · asimetrik spillover | GAP-10, üçü de L8'de sınır olarak duruyor |
-| **Precision-PE `VAR_REF`** | L13 — π tavanda takılı, mekanizma atıl |
-| **`SYSTEM_PROMPT` lexicon** | L14 — davranışsal sınıflandırıcıyı besliyor |
-| **Popülasyon / N nesil** | **D-014**: hedef N nesil, gen1→gen2 en kısa çalışabilir biçim |
-| **`DPO_MAX_SEQUENCE_TOKENS` yeniden değerlendirmesi** | **D-062** Bulgu 4: dizilerin **%85.5'i** 512'de kesiliyor (tam uzunluk medyan 894), ve kesme prompt'un başından olduğu için **sohbet şablonu başlığı + BOS gidiyor** ⇒ D-027'nin *"eğitim=çıkarım biçimi"* gerekçesi o dizilerde geçersiz. ⚠ Kilitli sabit, bu koşumda dokunulmadı |
-| **Uzunluk kontrolü (çift kurma)** | **D-062** Bulgu 2: `chosen` ort. 57.2 vs `rejected` 38.7 token, seed'e göre fark −4.6 … +42.1. DPO **toplam** logp kullandığı için uzunluk doğrudan marja giriyor; taban marjın seed'ler arası %100↔%7 salınımının açıklaması bu |
+| **`DPO_MAX_SEQUENCE_TOKENS`** | **D-062**: dizilerin **%85.5'i** 512'de kesiliyor ve sohbet şablonu başlığı gidiyor ⇒ D-027'nin gerekçesi o dizilerde geçersiz |
+| **Uzunluk kontrolü (çift kurma)** | **D-062**: `chosen` 57.2 vs `rejected` 38.7 token; DPO **toplam** logp kullandığı için uzunluk doğrudan marja giriyor |
+| **KTO'ya geçiş** | DR #2 baş tavsiyesi. `uniq_rejected` 100/94 ölçüldü (GAP-18) |
+| **Zaman × kol etkileşimi (LMM/FDA)** — **genel form** | DR #3 / I17. ⚠ "ikinci yarı AUC" özel formu **alınmaz** |
+| **DTW / Fréchet yörünge ölçütü** | DR #4 / J18–J19. ⚠ **Etkiye bakmadan** kilitlenmeli |
+| **MAP-Elites / davranışsal tanımlayıcı ızgarası** | DR #4 / J16 — ⚠ popülasyonu (aşağıdaki madde) önkoşul kılıyor |
+| **Popülasyon / N nesil** | **D-014**: hedef N nesil. DR #4 / J20 sıralamayı doğruladı: **önce bedel, sonra popülasyon** |
+| **`W_SEM` 0.0 → 0.3–0.4** · negation sarmalayıcı · asimetrik spillover | GAP-10, üçü de L8'de sınır |
+| **Precision-PE `VAR_REF`** | L13 — π tavanda takılı, mekanizma atıl (pilotta `pi_n_distinct=2`, hâlâ atıl) |
+| **`SYSTEM_PROMPT` lexicon** | L14 — davranışsal sınıflandırıcıyı besliyor. ⚠ K7 ile aynı yeri tutuyor |
 | **Magic number kalıntıları** | `time.sleep(10)`, bare `0.5`, `k: int = 5`. **Cursor'a uygun** |
+
+⚠ **Kapananlar bu listeden çıktı:** `F_agent` + GAP-19 birlikte (D-066+D-067),
+A4 (D-066).
 
 ## ⚠ Bugün öğleden önce dört alet değişikliği daha girdi
 
