@@ -5013,3 +5013,78 @@ kuralı yok — bu yüzden yapısal çapa öneriliyor) · küçük-N simülasyon
 örneklem gerekçelendirme standardı. ⇒ **DR brief #5 geçerliliğini koruyor**;
 bu tarama K1/K2'yi karara bağlanabilir hale getirdi, **kapatmadı**.
 Hiçbir kod değişmedi, hiçbir sabit seçilmedi.
+
+---
+
+## D-070 · 2026-08-13 · İkinci ön-kaydın yedi kilit kararı — **Yasin'in**
+
+**Durum:** tasarım kararları · **Karar: Yasin'in** (D-007) · **kod henüz
+değişmedi** — bu kayıt kararları sabitliyor, uygulaması ayrı commit'lerde ·
+**girdiler:** D-064, D-068, D-069 (yerel tarama, §K)
+
+### Kararlar
+
+| # | Karar | Seçilen | Gerekçe |
+|---|---|---|---|
+| **K1** | PE tabanlı uç noktaların penceresi | **Landmark + olay-başına oran** | LOCF bırakılıyor (D-069/V1). Landmark yöntemi V3; oran ikincil |
+| **K2** | Enerji okuma anı | **Landmark değeri + zaman-integre ortalama**; `E_final` **bırakılıyor** | `E_final`'i ölüm kuralının kendisi belirliyor (D-068) |
+| **K3** | N ve güç | **Olay sayısı üzerinden** (V6, Schoenfeld 1983) | Sansür yok ⇒ olay = soy sayısı |
+| **K4** | Üç metabolik sabit | **Olduğu gibi kilitlenir**, `CALIBRATED = False` **kalır** | Üçü de yapısal çapadan; pilota bakarak ayarlamak post-hoc olurdu (§2.7) |
+| **K4-b** | `F_agent`'ın havuz terimi | **Olay başına normalize** | ⚠ aşağıdaki düzeltme |
+| **K5** | Birincil uç nokta | **Landmark drift** (sabit yaşta okunan drift) | Ömür karışmasını keser |
+| **K5-b** | `social` geçerlilik ön-koşulu | **Hayır** | D-064'ün kanal dağılımı **eski fiziğe** ait; yeni fizikte hangi kanalın taşıdığını bilmiyoruz (pilotta `energy` ilk kez bayraklandı) |
+| **K6** | S5'in "ilk travma"sı | **Commons krizi** | S5 *"kriz anında davranış"* diyor; ölçü ajanın eylemine bağlı |
+| **K7** | Davranış müdahalesi | **Hayır** | Aksiyomun ruhu: evrenin kısıtı şekillendirir, verilen kural değil. Çöküş **bulgu olarak** raporlanır |
+
+### ⚠ D-068'in bir cümlesi düzeltiliyor
+
+D-068 *"`Δhavuz` ayrışıyor mu → ✅ 130.8 vs 62.2"* diye yazdı. **Yayılımın
+onda dokuzu ömürmüş:**
+
+| seed | ham `\|Δhavuz\|` | yaşam | olay başına |
+|---|---|---|---|
+| 4001 | 130.8 | 19 olay | **6.88** |
+| 4002 | 62.2 | 10 olay | **6.22** |
+| | yayılım **%110** | | yayılım **%10.7** |
+
+⇒ Bugünkü `F_agent` = 0.4·enerji (**ölü**) + 0.3·havuz (**≈ ömür vekili**) +
+0.3·hayatta kalma (**ömür**) ⇒ skorun ~**%60'ı ömrü iki kez sayıyor**.
+Stearns'in (D-069/V8) uyardığı çift sayımın ta kendisi. **K4-b bunu kesiyor.**
+
+⚠ Terim normalize edilince **zayıflıyor** (%110 → %10.7). Kabul edildi:
+*zayıf ve dürüst, güçlü ve yanıltıcıdan iyidir.*
+
+### K5'in bedeli — ilan edilen sınır
+
+Landmark drift, varise **aktarılan** şey **değildir**: varis yaşam sonundaki
+drift'i miras almaya devam ediyor, ölçüm mekanizması değişmiyor. Değişen
+yalnız **neyi birincil saydığımız**.
+
+⇒ İkinci ön-kayıtta **ilan edilmiş sınır** olarak yazılacak: *"birincil uç
+nokta, aktarılan drift'in kendisi değil, sabit yaşta okunan karşılaştırılabilir
+kesitidir."* İddia cümlesi buna göre **daralır**.
+
+### Yapısal tutarlılık (ölçümden seçilmedi)
+
+Landmark = **10. olay** ve `METABOLIC_GRACE_EVENTS = 10`. Ölüm zaten grace
+bitene kadar askıda olduğu için **her soy landmark'ta yapısal olarak
+hayatta** ⇒ *"landmark'tan önce ölen"* kuralı hiç ateşlemez. Bu bir uyum
+ayarı değil, iki sabitin aynı yapısal ana bağlı olmasının sonucu.
+
+⚠ Yine de kural **yazılacak** (§2.9, sessiz fallback yasağı): grace ileride
+değişirse kural sessizce boşa düşmemeli.
+
+### Reddedilenler
+
+- **`social` ön-koşulu** — eski ölçümle yeni evrene tasarım yapmak olurdu.
+- **Havuz terimini kaldırmak** — commons tasarımının ruhuna aykırı.
+- **Davranış önseli vermek** (her iki biçimde de) — aksiyom.
+- **Kalibrasyon taraması** — taramadan değer seçmek post-hoc tuning.
+
+### Sınırlar
+
+**Hiçbiri uygulanmadı.** Bu kayıt yalnız kararları sabitliyor; kod
+değişiklikleri (K4-b'nin normalizasyonu, landmark aletlemesi, LOCF'un
+kaldırılması) ayrı commit'lerde ve her biri kendi mutasyon kontrolüyle
+gelecek. Kararların **hiçbiri ölçüm sonucuna bakılarak** verilmedi; K4-b'nin
+girdisi olan %10.7 rakamı bir **çift sayım teşhisi**, etki büyüklüğü değil.

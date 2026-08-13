@@ -25,7 +25,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `384 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-069.** Sıradaki kayıt **D-070** olarak açılır.
+- **Son D-kaydı: D-070.** Sıradaki kayıt **D-071** olarak açılır.
 - **A yolu bitti (W1 ✅ · W2 ✅ · W3 ✅).** **B yolu da bitti:** DR #4
   cevaplandı, mutabakat §J yazıldı, kaynak kimlikleri denetlendi (D-065).
 - ✅ **A4-① uygulandı (D-066):** hasat enerjiye dönüyor (içbükey kazanç),
@@ -161,17 +161,29 @@ sayıyla söylüyor.
 ⚠ İki liste ayrı: **birincisi olmadan koşum başlayamaz**, ikincisi koşuma
 girip girmeyeceği tartışılacak adaylar.
 
-### A. Kilitlenmeden koşum başlayamaz — yedi karar
+### A. Yedi kilit kararı — ✅ **HEPSİ VERİLDİ (D-070)**
 
-| # | Karar | Durum | Nereden |
-|---|---|---|---|
-| **K1** | **Uç nokta tanımı** — yaşam uzunluğu değişkenken sabit 50 slotluk pencere çalışmıyor (gen1'de %71 pad) | 🟡 **Karara hazır (D-069):** yaptığımız şeyin adı **LOCF** ve eleştirisi yazılı (Lachin 2015). Öneri: **landmark** (Anderson ve ark. 1983), indeks yapısal çapadan | D-068 |
-| **K2** | **Enerji okuma anı** — `E_final` ölüm kuralının kendisi yüzünden 6/6 kolda 0.000 | 🟡 **Karara hazır (D-069):** landmark değeri + zaman-integre ortalama; `E_final` bırakılır | D-068 |
-| **K3** | **N ve güç** — eski güç hesabı geçersiz | 🟢 **Cevap lehimize (D-069):** güç **olay** sayısına dayanır (Schoenfeld 1983) ve bizde sansür yok ⇒ olay = soy sayısı. Hesap yeniden yapılabilir | D-068 |
-| **K4** | **Üç metabolik sabitin kilitlenmesi** — `GAIN_MAX` 0.50 · `HALF_SAT` 2.0 · `GRACE` 10, üçü de `CALIBRATED=False` | ⚠ **Yasin'in.** Değer sonuca bakarak seçilemez (§2.7) | D-066 |
-| **K5** | **Birincil uç nokta seçimi** + `social` kanalının varlığı **geçerlilik ön-koşulu** mu olacak | ⚠ **Yasin'in.** Etkiye bakılarak seçilemez (L9) | D-064 |
-| **K6** | **S5'in hangi travma okuması** — commons krizi mi `TRAUMA` sınıfı imprint mi (ikisi de kaydediliyor, seçilmedi) | ⚠ **Yasin'in** | D-063 |
-| **K7** | **Davranış müdahalesi (③)** — karar kuralı önseli verilecek mi | ⚠ **Aksiyom kararı**, DR veremez. J4 lehte, J6 sınırı çiziyor | D-065/D-068 |
+| # | Karar | Seçilen |
+|---|---|---|
+| **K1** | PE uç noktalarının penceresi | **Landmark + olay-başına oran.** LOCF bırakılıyor (D-069/V1) |
+| **K2** | Enerji okuma anı | **Landmark değeri + zaman-integre ortalama**; `E_final` bırakılıyor |
+| **K3** | N ve güç | **Olay sayısı üzerinden** (Schoenfeld 1983); sansür yok ⇒ olay = soy |
+| **K4** | Üç metabolik sabit | **Olduğu gibi kilitlenir**, `CALIBRATED = False` **kalır** |
+| **K4-b** | `F_agent` havuz terimi | **Olay başına normalize** — ⚠ D-068'in *"Δhavuz canlandı"*sının %90'ı ömürmüş (%110 → %10.7) |
+| **K5** | Birincil uç nokta | **Landmark drift.** ⚠ Aktarılan şey değil, karşılaştırılabilir kesiti — iddia daralır, sınır ilan edilecek |
+| **K5-b** | `social` ön-koşulu | **Hayır** — D-064'ün kanal dağılımı eski fiziğe ait |
+| **K6** | S5'in "ilk travma"sı | **Commons krizi** |
+| **K7** | Davranış müdahalesi | **Hayır** — aksiyom. Çöküş **bulgu olarak** raporlanır |
+
+⇒ **SIRADAKİ İŞ: uygulama.** Üç kod değişikliği, her biri ayrı commit ve
+kendi mutasyon kontrolüyle:
+1. **K4-b** — `F_agent`'ın havuz terimi olay başına normalize.
+2. **Landmark aletlemesi** — 10. olaydaki drift + enerji, ve zaman-integre
+   enerji kaydedilir.
+3. **LOCF kaldırılır** — uç nokta pad edilmiş dizinin ortalaması olmaktan
+   çıkar; olay-başına oran ikincil olarak yazılır.
+
+Sonra: ikinci ön-kayıt taslağı, ve **ondan sonra** koşum.
 
 ### B. Adaylar — koşuma girip girmeyeceği ayrıca tartışılır
 
