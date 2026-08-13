@@ -88,6 +88,22 @@ gereği aynı olur. Mock'ta I2.1 **FLAG**'e düşer, ABORT'a değil.
 | I3.3 | **Diversity.** Mevcut kapı korunur; ek olarak `n_gated / N > eşik` ise **tüm koşum** INCONCLUSIVE damgalanır. | FLAG | `n_eff < N` (geçen sefer 12/15) | ✅ |
 | I3.4 | **PE listesi pad edilmedi.** Pad oranı > eşikse işaretle. | FLAG | erken biten stream'in `0.0`'larla dolması (K6) | ✅ |
 
+⚠ **I3.1 ve I3.4'ün anlamı D-066'dan sonra değişti — kapılar değişmedi.**
+Ölüm mümkün olmadan önce erken biten bir yaşam bir **anormallikti** ve iki
+kapı da onu yakalamak için vardı. Artık erken ölüm **tasarımın kendisidir**:
+D-068 pilotunda yaşamlar 50 olaylık bütçeye karşı 19 ve 10 olayda bitti,
+I3.4 gen1'de **%71 pad** bastı ve I3.1 kapsamayı **0.29** raporladı.
+
+⇒ Bu iki kapı şu an *"bir şey bozuldu"* demiyor; *"uç nokta tanımı bu evrene
+uymuyor"* diyor. **Yorumu değişti, eşiği değil** — eşik ön-kayıtlı ve
+değiştirilmedi (§2.10). Uç noktanın yeniden tanımlanması **ikinci ön-kayıtın**
+işi ve DR brief #5 tam olarak bunu soruyor.
+
+⚠ Bir kapının tasarım gereği sürekli bayrak basması, onu **okunmaz** hale
+getirir. İkinci ön-kayıt ya eşiği yeni uç noktaya göre yeniden tanımlamalı ya
+da bu iki kapıyı *"ölçülebilirlik ön-koşulu"* olarak açıkça yeniden
+konumlandırmalı. Sessizce görmezden gelinmesi **yasak**.
+
 ## Faz 4 — Determinizm kanıtı
 
 | id | Değişmez | Mod | Yakaladığı | Kodda |

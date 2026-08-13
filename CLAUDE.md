@@ -95,8 +95,8 @@ dayanağı var: kendi ölçümümüz (② tek başına çalışmaz — N ajanın
 baskın stratejiyi oynarsa fitness'ları yine özdeş olur) ve **DR'nin bağımsız
 aynı sıralaması** (D-065/J20).
 
-⚠ ① `F_agent`'a dokunuyor ⇒ **GAP-19 de aynı anda düzeltilmeli**
-(D-051/L16), yoksa canlanır.
+✅ ① `F_agent`'a dokundu ve **GAP-19 aynı gün düzeltildi** (D-067) —
+D-051/L16'nın şartı ödendi.
 
 ⚠ **①'in içinde üç alt karar var, üçü de sessizce alınmayacak (§2.3):**
 kazanç eğrisinin **biçimi** (içbükey — hangi aile?) · **ölüm eşiği** olacak mı
@@ -164,7 +164,7 @@ Kilit kapandığı için aşağıdakilerin **hiçbiri** bu koşuma giremez.
 |---|---|
 | **A2 — kanal ayrımı, plasebo anı enjeksiyonu ile** | ⚠ Eski tasarım ("getirimi tamamen kapat") **kusurluydu**: OOD şoku ölçer, parametrik kapasiteyi değil (D-049/I12) |
 | **Çifte ayrışma protokolü** (`ΔE_ağırlık + ΔE_bellek ≈ ΔE_toplam`) | DR #3 / I15 — kanal ayrımı iddiasının literatürdeki çıtası |
-| **`F_agent` + GAP-19 birlikte** | ⚠ **Ayrı ayrı düzeltilirse GAP-19 canlanır** (D-051). L1 ve L16 |
+| ~~**`F_agent` + GAP-19 birlikte**~~ | ✅ **ikisi de yapıldı** — D-066 (`F_agent` girdileri) + D-067 (kasa saati), aynı gün, D-051'in şartına uyularak |
 | **A4 — environment'ı ayrım üretir hale getirme** | Faz A'da bilerek ertelendi |
 | **KTO'ya geçiş** | DR #2 baş tavsiyesi. ⚠ Doğrulanmamış premise dayanıyordu; **B2'nin `uniq_rejected` sayısı** karar verir |
 | **Zaman × kol etkileşimi (LMM/FDA)** — **genel form** | DR #3 / I17. ⚠ "ikinci yarı AUC" **özel formu alınmaz** — o D-045'te gözlediğimiz şey, post-hoc olur |
@@ -233,6 +233,7 @@ karşıtlığın **beşinde** yaşamın ikinci yarısı daha pozitif (kayma
 kaynak: iki seed'de **`null` varisinin PE'si ikinci yarıda çöküyor**
 (−0.254 / −0.143), `lived`'inki çökmüyor (+0.032 / +0.059).
 Adaylar **GAP-19** (paylaşılan sayaç uzayı ⇒ Ebbinghaus) ve **GAP-3**.
+⚠ GAP-19 o gözlemden sonra **kapandı** (D-067) — gözlem tekrar ölçülmedi.
 **Gözlem, iddia değil** — N=3, koda dokunulmadı, A6/A7'ye girdi.
 
 Yan bulgu: seed 2001'de `baseline_d037.shuffle`'ın gen2 `pe_list`'i
@@ -427,7 +428,8 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 
 **Kilitte sınıra çevrilenler** — yeniden açılmaz, `PREREGISTRATION.md` §8'de:
 GAP-3 → **L17** · GAP-4 → **L15** · GAP-5 → **L14** · GAP-10 → **L8** ·
-GAP-19 → **L16**. GAP-9 **kapandı** (D-052).
+GAP-19 → **L16**. GAP-9 **kapandı** (D-052). ⚠ **L16 artık tarihçedir:**
+GAP-19'un kendisi D-067'de kapandı; sınır ilk ön-kayıt için geçerliydi.
 
 ---
 
@@ -749,6 +751,7 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
 | GAP-15 | `TEMPERATURE` çağrı anında okunuyor (`ab30f9c`) |
 | GAP-16 | Quantization NF4 + double_quant (D-020) — uygulandı `70edeba` |
 | GAP-20 | Koşumlar arası adapter sızıntısı — **D-033**, I0.7 ABORT kapısı (`782ca33`). Açıldığı gün kapandı |
+| GAP-19 | **D-067** (`7c76a8c`) — kasa `counter_base` tutuyor; kasaya giren her sayaç faz-yerel, çeviriyi yalnız kasa yapıyor, yaşam bitince **yaşanan** olay sayısıyla mühürleniyor. D-051'in *"ikisi birlikte ya da hiçbiri"* şartı **D-066 ile aynı gün** ödendi |
 
 > ⚠ **Her açık GAP'in bir tetiği var — §1'deki GAP TETİK TABLOSU'na bak.**
 > Aşağısı GAP'in *ne olduğu*; *ne zaman ele alınacağı* orada.
@@ -779,13 +782,6 @@ alınamaz: ya etki büyüklüğü gerekçelendirilip N hesaplanır, ya da D-002'
 yüksek güçlü uç noktası (doğum-drift, tamsayı sayımlar) kullanılır.
 → **Pilot çözer.**
 
-### GAP-19: faz-1 ve faz-2 anıları aynı sayaç uzayını paylaşıyor (D-031)
-Faz-2 taze gövdeyle başlıyor (`initial=None`), `event_log` sıfırdan sayıyor —
-faz-1 anıları faz-2'ninkiler kadar taze görünüyor. Ebbinghaus decay
-`now_counter − last_activated_counter`'a dayandığından **unutma kararını
-doğrudan** etkiliyor. U6'nın getirdiği sorun değil; ama consolidation
-bağlandığı için **ilk kez etkisi olacak**.
-
 ## Açık — bloke etmeyenler
 
 ### GAP-17: üretim çeşitliliği açıklanamayan biçimde 3–4 kat arttı (D-026)
@@ -804,12 +800,22 @@ belgelenmiş kapı, hata değil.
 ### GAP-3: Gen2 event-1 somatic scale boşluğu
 `apply_inherited_somatic_scale` sadece `delta_log` dolu olunca çalışıyor;
 heir'ler boş `delta_log` ile doğuyor, ilk karar ata verisini kaçırıyor.
-Gate I5.4 bunu koşumda raporluyor.
+Gate I5.4 bunu koşumda raporluyor — D-068 pilotunda **16 kez** uygulandı.
+⚠ Durumu D-066/D-067'den **etkilenmedi**; ama gen2 yaşamları artık kısaldığı
+için kaçırılan ilk kararın **payı büyüdü** (11–20 olaylık bir yaşamda 1 olay,
+20 olaylıkta olduğundan daha ağır).
 
 ### GAP-4: Memory-vault ↔ LoRA senkron kopukluğu (kodda doğrulanmadı)
 Ebbinghaus ile kasadan silinen anının yarattığı drift LoRA'da kalıcı
 kalabilir. ⚠ **U6 bunu canlı hale getirdi** — deney yolunda unutma artık
 gerçekten çalışıyor, yani bu risk teorik olmaktan çıktı.
+
+⚠ **D-067 riski BÜYÜTTÜ, küçültmedi.** Kırık saat faz-1 anılarını olduğundan
+taze gösteriyordu, yani onları **silinmekten koruyordu**. Saat düzeldiğine
+göre faz-1 anıları artık gerçek yaşlarıyla yargılanıyor ve daha fazlası
+siliniyor — ama o anıların LoRA'ya işlenmiş izi silinmiyor. **Ölçülmedi**
+(pilotun `deleted_count` sayıları kısa yaşamlardan geldiği için D-031'in
+24.90'ıyla karşılaştırılamaz).
 
 ### GAP-5: SYSTEM_PROMPT lexicon priming (metodolojik, bug değil)
 SYSTEM_PROMPT, `decision_to_outcome`'ın eşlediği kelimelere yönlendiriyor

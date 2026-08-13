@@ -1,11 +1,33 @@
 # DAU — Master Reference
 
-**Versiyon 2.4.3** · 2026-08-12
+**Versiyon 2.4.4** · 2026-08-13
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
-*(`.md` kaynaktır. `.html` ve `.pdf` **v2.4.3'te yeniden üretildi** —
+*(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.4.3'te kaldı** — v2.4.4'ün
+§26'sı orada **yok**. `.md` tek güncel kaynaktır.
+Önceki üretim v2.4.3'te yapılmıştı —
 pandoc; PDF'te emoji'ler metin karşılığına çevrildi (`✅` → `[OK]` vb.)
 çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF'in görüntüsü
 md'den farklıdır.)*
+
+---
+
+## 🔔 v2.4.4 — EVRENİN FİZİĞİ DEĞİŞTİ (2026-08-13)
+
+**v2.4.3 bir null sonuçla kapanmıştı. Ondan sonra o null'ın sebebi ölçüldü
+ve evren değiştirildi.**
+
+| | |
+|---|---|
+| Sebep | Seçilim katmanı atıldı: `f_agent`=0.000 · `energy`=0.000 · `fitness_class`=`low`, **120/120 kolda** (D-060); enerji **yapı gereği** artamıyordu (D-061) |
+| Değişiklik | Hasat enerjiye dönüyor (**içbükey** kazanç), havuz defteri **gerçekleşeni** yazıyor, tükenmek **öldürüyor** (D-066); kasa saati fazlar arasında sürüyor (D-067) |
+| İlk pilot | Sınıf bariyeri **kırıldı** (`low` 0.208 vs `normal` 0.413), yaşamlar 19 ve 10 olayda bitti, varis ömrü kola göre değişti (D-068) |
+| ⚠ Yeni sorun | Uç nokta **%71 padding**'e boğuldu; `E_final` hâlâ 0.000 (ölüm kuralının kendisi yüzünden) |
+
+⚠ **`dau_runs/`'daki hiçbir koşum bugünün aletiyle karşılaştırılamaz** — bu,
+D-036/D-037/D-042'den **daha büyük** bir kırılmadır: onlar aletin nasıl
+ölçtüğünü, bu ölçülen evreni değiştirdi.
+
+Ayrıntı **§26'da**. Aşağıdaki v2.4.3 kutusu **tarihçe olarak** duruyor.
 
 ---
 
@@ -27,6 +49,8 @@ ifade: *"`d_z ≥ 0.465` büyüklüğünde etki yok; altındaki için veri bilgi
 ⚠ **Mekanizma hakkında hüküm verilemez** — sonuç alet null'ı sınıfında.
 
 Ayrıntı §23'te (yeniden yazıldı) ve §25'te (D-045…D-053).
+⚠ **§23 v2.4.3'te yazıldı ve D-066 sonrası eskidi** — *"sıradaki iş"* dediği
+şeylerin çoğu yapıldı; güncel durum §26'da ve `CLAUDE.md` §1'de.
 
 ---
 
@@ -267,6 +291,13 @@ L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)
 Sabitler: `ALLOSTATIC_SETPOINT_MAX=0.75`, `CROSS_AXIS_SPILLOVER=0.20`,
 `METABOLIC_FLOOR=0.05`.
 
+⚠ **v2.4.3'ten sonra eksik (D-066):** bu denklem enerjinin **yalnız düşen**
+tarafını anlatıyor ve o haliyle `decay ≥ recovery` yapısal olarak her zaman
+doğruydu (D-061'in cebirsel kanıtı) — enerji 2. olayda tabana vurup yaşamın
+%96'sında sıfırda kalıyordu. Artık **üçüncü bir terim** var: hasat enerjiye
+dönüyor (`gain = 0.50·x/(2.0+x)`, `x` = **gerçekleşen** hasat) ve enerji
+tükenince yaşam **biter**. Bkz. §26.
+
 ### ADIM 5 — Precision-weighted PE (kodlandı; v2.4 adaptif)
 
 `semantic_similarity.compute_precision_weight` / `apply_precision_weighting`
@@ -413,6 +444,9 @@ adapter'dan bağımsız çalışıyor.
   `EventClock`'u sıfırdan sayıyor ⇒ faz-1 anıları bir faz daha taze
   görünüyor (GAP-19). Etkisi şu an **bloke** ama **gizli**: `F_agent` tek
   başına düzeltilirse canlanır (D-051).
+  ✅ **KAPANDI (D-067).** Kasa `counter_base` tutuyor; `F_agent` D-066'da
+  canlandığı için düzeltme **aynı gün** yapıldı, D-051'in *"ikisi birlikte ya
+  da hiçbiri"* şartına uyularak. L16 artık tarihçedir.
 
 ---
 
@@ -454,6 +488,13 @@ social_load = 0.5·cooperation_stress + 0.5·coordination_friction
 T_cognitive = 0.35·(δ/0.7) + 0.25·max_drift + 0.20·coord_friction + 0.20·(1-pool_ratio)
 F_agent = 0.4·(E/E_max) + 0.3·(1-|ΔP|/P_max) + 0.3·(t_surv/T_gen)
 ```
+
+⚠ **Formül değişmedi, girdileri değişti (D-066/D-068).** B2'de üç girdinin
+ikisi sabitti (`E`=0.000 ve `t_surv/T_gen`=1.0, 120/120 kolda) ve skor
+120/120 `low` okuyordu. Metabolik döngü kapandıktan sonra `t_surv` ve `ΔP`
+canlandı — pilotta sınıf bariyeri **ilk kez kırıldı** (`low` 0.208 vs
+`normal` 0.413). ⚠ Ama `E` **hâlâ 0.000**, çünkü artık ajanlar tükenerek
+ölüyor ve tükenerek ölenin son enerjisi tanımı gereği sıfır. Bkz. §26.
 
 NPC conserve kuralı: `NPC_POOL_RATIO_CONSERVE=0.3` (crisis eşiği ile hizalı).
 
@@ -1320,3 +1361,98 @@ birer birer `lived` ve `shuffle` kollarında.
 o tanım "§5'ten biri düştü" diyor ve düştü. **Sınıflandırma sonucu görmeden
 yazılmış bir kuraldan geliyor, yorumdan değil.**
 
+
+---
+
+## 26. D-054…D-068: evrenin fiziği değişti (v2.4.4 — yeni)
+
+⚠ **Bu bölüm, belgenin geri kalanının hangi kısımlarının artık geçersiz
+olduğunu söyler.** v2.4.3 doğrulayıcı koşumla (B2) kapanmıştı; ondan sonra
+on beş karar alındı ve son üçü **evrenin fiziğini** değiştirdi. §7'nin DAERM
+denklemi, §10'un `F_agent` formülü ve §18'in empirik tablosu bu yüzden yerinde
+işaretlendi.
+
+### 26.1 Neden değiştirildi — üç ölçüm
+
+| Kayıt | Bulgu |
+|---|---|
+| **D-060** | Seçilim katmanı atıl: `f_agent`=0.000 · `energy`=0.000 · `fitness_class`=`low`, **120/120 kolda**. Formül düzeltilse bile hepsi aynı sınıfa düşüyor |
+| **D-061** | Enerji **yapı gereği** asla artamıyor: `decay ≥ recovery` cebirsel olarak her zaman. 2. olayda tabana vuruyor, yaşamın %96'sı sıfırda |
+| **D-056 / D-064** | Birincil uç noktanın çözünürlüğü: `resource` kanalı 120/120 kolda var ama **38/40 seed'de kollar özdeş**; ayırt etme gücünü taşıyan `social` kanalı kolların **%42.5'inde hiç yok** |
+
+**Kök neden (D-060 §2.3):** ajanlar olayların %94–100'ünde en yüksek çıkarımı
+seçiyordu, çünkü **defect'in bedeli yoktu** — çıkarım enerjiye dönmüyor, havuz
+çökünce kimse ölmüyordu.
+
+### 26.2 Ne değişti (D-066, `a7b157f`)
+
+Üç parça, biri olmadan diğerleri anlamsız:
+
+1. **Havuz defteri gerçekleşen hasatı yazıyor.** `step_pool` havuzu `POOL_MIN`'de
+   clamp'liyor ama deftere **istenen** miktarı yazıyordu ⇒ boş meradan
+   *"8.0 aldım"* fiziksel olarak olmamış bir olaydı. `agent_delta_pool`
+   bu yüzden kararın **sınıfını** topluyordu, ortak kaynağı değil.
+2. **Kazanç içbükey:** `gain(x) = METABOLIC_GAIN_MAX · x / (HALF_SAT + x)`,
+   `x` = gerçekleşen hasat. Dayanak DR #4 / J9 (Dykhuizen, Dean & Hartl 1987,
+   *Metabolic flux and fitness*, Genetics 115:25–31): akı, aktivitenin içbükey
+   fonksiyonudur ve **doyumda seçilim nötrleşir**. Doğrusul bir bağ defect'i
+   kesin baskın bırakırdı. Sonuç aritmetik: COOPERATE→0.25, DEFECT→0.40 ⇒
+   **4× havuz hasarı 1.6× enerji**.
+3. **Ölüm açıldı.** `AB_ENERGY_FLOOR` yastığı `TERMINATION_ENERGY`'nin üstünde
+   oturduğu için ölüm **yapısal olarak imkânsızdı**; artık yalnız doğum
+   geçişini (`METABOLIC_GRACE_EVENTS`) kapsıyor.
+
+⚠ Üç sabit de **kalibre değil** (`METABOLIC_GAIN_CALIBRATED = False`) ve alet
+kimliği bunu `metabolism` bloğunda raporluyor. Değerleri **ikinci ön-kayıt**
+kilitler; sonuca bakarak ayarlamak post-hoc tuning olur.
+
+### 26.3 Ve borcu ödendi (D-067, `7c76a8c`)
+
+D-051 gizli bağımlılığı yazmıştı: *"`F_agent` tek başına düzeltilirse GAP-19
+canlanır."* D-066 `F_agent`'ı canlandırdı ⇒ GAP-19 **aynı gün** kapatıldı.
+Kasa artık `counter_base` tutuyor; kasaya giren her sayaç **faz-yereldir** ve
+çeviriyi yalnız kasa yapar. Yaşam bitince **yaşanan** olay sayısıyla
+mühürlenir — bütçeyle değil, çünkü artık yaşam erken bitebiliyor.
+
+### 26.4 İlk pilot ne gösterdi (D-068, N=2, keşifsel)
+
+| | B2 (eski fizik) | Pilot |
+|---|---|---|
+| Ölüm | imkânsız | yaşamlar **19** ve **10** olay (50 bütçesine karşı) |
+| `fitness_class` | 120/120 `low` | `low` 0.208 **vs `normal` 0.413** |
+| `\|Δhavuz\|` | 393.55 ± 2.62 (%0.7) | **130.8 vs 62.2** |
+| Varis ömrü | her kolda eşit | `lived` **17**, `null`/`shuffle` **20** |
+
+Bedel zinciri canlıda ateşledi: havuz 8. olayda tabana vurunca gerçekleşen
+hasat **8.0 → 6.17 → 0** düştü.
+
+⚠ **İki yeni sorun, ikisi de bu koşumun ürettiği:**
+
+- **Uç nokta padding'e boğuldu** — gen1'de %71 pad, alet *"arm not
+  measurable"* bastı. Sabit 50 olaylık pencere, ölümün mümkün olduğu bir
+  evrende çalışmıyor.
+- **Enerji terimi hâlâ ölü, başka sebeple** — `E_final = 0.000` altı kolun
+  altısında, çünkü tükenerek ölenin son enerjisi tanımı gereği sıfırdır.
+
+Her ikisi de **DR brief #5**'in konusu
+(`docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md`).
+
+⚠ **Davranış hâlâ çökmüş:** hasat neredeyse her olayda 8.0. Evren bedeli
+kesiyor, ajan davranışını değiştirmiyor — DR #4 / J4'ün (GovSim, Piatti vd.
+2024) rapor ettiği olgunun aynısı.
+
+### 26.5 ⚠ Karşılaştırılabilirlik kesildi
+
+**`dau_runs/` altındaki hiçbir koşum bugünün aletiyle karşılaştırılamaz.**
+D-036 (ölçüm penceresi), D-037 (determinizm) ve D-042 (konum bağımsızlığı)
+aletin nasıl ölçtüğünü değiştirmişti; D-066/D-067 **ölçülen evreni**
+değiştirdi. Bu daha büyük bir kırılmadır.
+
+### 26.6 Bu turda kapanan diğer kayıtlar
+
+| Kayıt | Ne |
+|---|---|
+| **D-062** | W1 sahte-PE kontrolü: confound *tarif edildiği biçimiyle* **yok** (PE ↔ token başı olabilirlik ρ=+0.06, p=0.37). Ama D-059'un *"`lived` daha kolay öğreniliyor"* bulgusu **seed-kararlı değil**. Yan bulgu: eğitim dizilerinin **%85.5'i** 512 token tavanında kesiliyor ve sohbet şablonu başlığı kayboluyor |
+| **D-063** | S5 aletlendi (hasat + `pool_ratio` + kriz bayrağı `Gen2Result`'a giriyor). **S6 kol olarak üretilmedi:** denetim birincilin `F_agent`'ı **hiçbir yoldan göremediğini** gösterdi ⇒ gölge kayıt |
+| **D-064** | Uç nokta çözünürlük envanteri (21 aday). Dördü **yapı gereği kör** |
+| **D-065** | DR #4 mutabakatı (§J). Bir DOI yanlış makaleye atıflı (yedinci kimlik hatası), bir "kimlik" dergi ISSN'i, *"N=20–50"* kaynaksız ⇒ kullanılmadı |
