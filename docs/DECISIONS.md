@@ -4246,3 +4246,138 @@ kodda görüldü, **ayrı bir testle doğrulanmadı**. Enerjinin başka bir yoll
 **deney yolunda değil** — bu kayıt yalnız C′/multigen yolu için geçerli.
 Düzeltme önerilmedi: hangi toparlanma tasarımının seçileceği **tasarım
 kararı** (D-007).
+
+---
+
+## D-062 · 2026-08-13 · W1 sahte-PE kontrolü: confound **bu biçimiyle yok**, ama D-059 Bulgu 4 **seed-kararlı değil**
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** · adapter kaydedilmedi ·
+`constraints.py` değiştirilmedi · ön-kayıtlı harness'a dokunulmadı ·
+korpus: `dau_runs/training_artifacts/`, seed 3001–3004 · ham çıktı
+`dau_runs/w1_pe_loglik_confound.json`
+
+### Soru
+
+D-059 Bulgu 4: `lived` kolu dört `lr` değerinin dördünde de `shuffle`'dan daha
+düşük kayıpla eğitiliyor. Kayıt alternatifi kendisi yazmıştı: *"`lived`'in
+`chosen`'ı daima düşük-PE completion; taban model kısa/sık kalıpları zaten daha
+olası buluyorsa `lived` yönü **taban önseldan** dolayı da kolay olabilir."*
+CLAUDE.md bunu **W1** olarak kuyruğa aldı ve ölçümü tarif etti: korpustaki
+completion'ların taban model log-olabilirliği ile PE'si arasındaki korelasyon.
+
+### Yöntem
+
+Taban model (`meta-llama/Meta-Llama-3.1-8B-Instruct`, NF4 + double_quant,
+adapter **yok**, peft sarmalayıcı **yok**) altında öğretmen-zorlamalı skorlama.
+Kodlama eğitimin kullandığı `_encode_pair_side` + `_sequence_logprob`
+fonksiyonlarının **aynısı** — yani ölçüm eğitimin gördüğü diziyi görüyor.
+386 ileri geçiş, üretim yok.
+
+İki katman: **M1** olay düzeyi (4 seed × 50 yaşanmış karar, her biri kendi
+gerçek karar prompt'u altında; pseudo-replikasyon yok) · **M2** çift düzeyi
+(186 çift). `shuffle` ayrıca skorlanmadı: korpusta `shuffle` `lived`'in
+**birebir rol takası** olduğu programla doğrulandı (4/4 seed) ⇒ Δ_shuffle = −Δ_lived.
+
+**Karar kuralı sonuçlara bakılmadan önce yazıldı** (scratchpad `w1_analyze.py`):
+confound *güçlü* = çiftlerin ≥%70'inde taban `chosen`'ı zaten tercih ediyor **ve**
+|ρ(PE, logp)| ≥ 0.30 · *zayıf* = oran %50 ± %10 **ve** |ρ| < 0.15 · arası = kısmi.
+
+### Bulgu 1 — **PE ile token başına olabilirlik arasında ilişki yok**
+
+| İlişki (Spearman, n=200) | ρ | p |
+|---|---|---|
+| PE ~ `logp_sum` | **+0.165** | 0.020 |
+| PE ~ `logp_mean` (token başı) | **+0.063** | 0.37 |
+| PE ~ `n_tokens` | **−0.190** | 0.007 |
+| PE ~ `logp_mean` \| uzunluk (kısmi) | **+0.044** | — |
+| PE ~ `logp_sum` \| uzunluk (kısmi) | **+0.059** | — |
+
+⇒ Confound'un tarif edildiği biçimi — *"düşük PE'li metin taban modelce daha
+olası"* — **desteklenmiyor**: token başına olabilirlik PE hakkında bilgi
+taşımıyor, ve zayıf toplam-logp ilişkisinin **işareti ters** (yüksek PE = daha
+yüksek toplam logp). O ilişki de uzunluk kontrol edilince kayboluyor: PE ile
+korele olan şey **uzunluk** (yüksek PE = daha kısa completion).
+
+### Bulgu 2 — çift düzeyinde taban tercih **yazı-tura**, ama seed'e göre uçuyor
+
+| Ölçü (n=186) | Değer |
+|---|---|
+| toplam logp marjı > 0 (DPO'nun kullandığı ölçü) | **%52.2** (97/186) |
+| token başı marj > 0 | **%89.8** (167/186) |
+| `chosen` token başı logp | **−1.389** |
+| `rejected` token başı logp | **−2.584** |
+| uzunluk | `chosen` 57.2 vs `rejected` 38.7 token |
+
+Token başına `chosen` tarafı çok daha olası, ama bu **PE'nin değil paylaşılan
+negatifin** özelliği (GAP-18: seed başına 1–2 benzersiz `rejected`). Toplam
+marjda avantaj kayboluyor çünkü `chosen` daha uzun. Seed bazında oran
+**%100 / %33 / %65 / %7** ve sırası uzunluk farkını (−4.6 / +23.2 / +15.1 /
++42.1 token) birebir izliyor.
+
+⚠ Kayıp **referans-göreli** (`logits = policy marjı − reference marjı`, ve
+referans aynı modelin adapter'sız hali) ⇒ taban marjı başlangıç kaybında
+**cebirsel olarak sadeleşiyor**. Taban önseli kaybı doğrudan açıklayamaz;
+ancak optimizasyon geometrisiyle etki edebilir.
+
+### Bulgu 3 — **asıl bulgu: D-059 Bulgu 4 seed-kararlı değil**
+
+D-059'un tablosu seed'ler üzerinden ortalamaydı. `sweep_dpo_hyperparams.jsonl`
+seed bazında açıldığında:
+
+| seed | taban toplam marj | marj>0 | `lived − shuffle` kayıp farkı (lr 1e-6 → 2e-5) |
+|---|---|---|---|
+| 3001 | **+56.3** | %100 | −0.0088 · −0.0082 · −0.0083 · −0.0065 |
+| 3002 | **−17.7** | %33 | **+0.0037 · +0.0038 · +0.0027 · +0.0025** |
+| 3003 | +4.1 | %65 | −0.0094 · −0.0106 · −0.0110 · −0.0079 |
+| 3004 | **−31.3** | %7 | −0.0001 · −0.0003 · −0.0023 · **+0.0013** |
+
+⇒ *"Dört `lr` değerinin dördünde de aynı yön"* **dört bağımsız olgu değil**:
+aynı dört seed'lik havuzun dört tekrarı. Seed düzeyinde yön **2 seed'de
+`lived` lehine, 1 seed'de tersine, 1 seed'de sıfır**. Seed'ler arası oynaklık
+etkiden büyük.
+
+Ve yönü açıklayan aday, seed'in **taban marjı**: taban toplam marj ile kayıp
+farkı arasındaki sıra korelasyonu dört `lr` değerinin dördünde de **ρ = −0.6**
+(n=4 — p verilmiyor, verilemez).
+
+⇒ Confound *reddedilmedi*, **yeri değişti**: PE ile olabilirlik arasında değil,
+**uzunluk → taban marj → kayıp farkı** zincirinde.
+
+### Bulgu 4 (yan) — eğitim dizilerinin **%85.5'i 512 token tavanında kesiliyor**
+
+Tokenizer ile ölçüldü, GPU yok (scratchpad `w1_truncation.py`, n=372 dizi):
+
+- kesilen dizi **318/372 = %85.5** · tam uzunluk medyan **894** token (tavanın 1.75 katı)
+- kesilenlerde atılan prompt tokenı medyan **444**, maks 908
+- `_encode_pair_side` taşmayı prompt'un **başından** attığı için, kesilen her
+  dizide **sohbet şablonu başlığı + BOS kayboluyor**: 318/372 = **%85.5**
+
+⚠ D-027'nin gerekçesi *"eğitim ile çıkarım aynı sohbet biçiminde olsun"*du.
+Dizilerin %85.5'inde o biçim **eğitim tarafında bozuluyor** — model sistem
+prompt'unun ortasından, başlıksız bir metin görüyor. `DPO_MAX_SEQUENCE_TOKENS`
+**kilitli** (§2.10) ⇒ bu koşumda değiştirilmedi, yalnız raporlandı.
+
+### Ne değişti, ne değişmedi
+
+⇒ **İkinci ön-kayıta *"lived öğrenilebilir yapı taşıyor"* girmiyor.** CLAUDE.md
+bunu "confound elenmeden tehlikeli" diye işaretlemişti; ölçüm tehlikeyi
+doğruladı ama **başka bir sebeple**: etki seed-kararlı değil.
+⇒ `lr` bandı (D-059) etkilenmiyor — Bulgu 1–3 kayıp **seviyesine** değil kollar
+**arası farka** dair.
+⇒ **İkinci ön-kayıt kuyruğuna iki madde eklendi:** (a) `DPO_MAX_SEQUENCE_TOKENS`
+yeniden değerlendirmesi (Bulgu 4) · (b) uzunluk kontrolü — çift kurma
+`chosen`/`rejected` uzunluk farkını dengelemiyor, ve DPO toplam logp kullandığı
+için bu doğrudan marja giriyor.
+
+### Sınırlar
+
+**N=4 seed**, tek evren (D-056: bu evren ajanları ayırmıyor), hipotez testi yok,
+çoklu karşılaştırma düzeltmesi yok, n=4 üzerindeki ρ = −0.6 **yön göstergesi
+bile sayılmaz**, kanıt değil. Skorlama eğitimin kesme davranışını **birebir**
+taşıyor ⇒ log-olabilirlikler başlıksız prompt'lar altında; bu eğitim koşulu
+olduğu için istenen davranış, ama "modelin bu metne verdiği olabilirlik"
+genel bir ifade **değil**. CLAUDE.md'nin tarif ettiği *rastgele PE atanmış
+çiftler* kolu **koşulmadı** — bu ölçüm korelasyonel biçimdi; randomize kol
+hâlâ daha güçlü tasarım ve açık.
+Koşumda bir `CUDACachingAllocator` OOM **uyarısı** görüldü, istisna yok,
+386 ileri geçişin hepsi tamamlandı.

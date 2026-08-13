@@ -56,7 +56,10 @@ sütunu içeriğe göre verildi, tarihe göre değil.**
 | repro_d_strict_seed2001.json | 2026-08-11 00:42 | ESKİ ALET | repro d strict; seed 2001 |
 | smoke_d032_local.json | 2026-08-10 14:51 | ESKİ ALET | D-032 smoke; local |
 | step0_d035_n3_local.json | 2026-08-10 20:18 | ESKİ ALET | D-035 Adım 0; N=3; local |
+| sweep_dpo_hyperparams.json / .jsonl | 2026-08-12 | KEŞİFSEL | **D-058/D-059** — `lr` × kırpma taraması, 96 hücre. `.jsonl` devam ettirilebilirlik kaydı; seed bazında `dpo_loss` burada |
+| training_artifacts/ (dizin, 8 dosya) | 2026-08-12 | KEŞİFSEL | **D-057** — eğitim girdilerinin diske dökümü (`DAU_DUMP_TRAINING_ARTIFACTS`), seed 3001–3004 × iki kol. D-059 ve **D-062**'nin korpusu |
 | u3_model_diversity_Qwen__Qwen2.5-7B-Instruct.json | 2026-08-10 03:32 | ESKİ ALET | U3 model diversity; Qwen2.5-7B |
 | u3_model_diversity_meta-llama__Meta-Llama-3.1-8B-Instruct.json | 2026-08-10 03:31 | ESKİ ALET | U3 model diversity; Llama-3.1-8B |
 | vram_spike_results.json | 2026-08-06 19:17 | ESKİ ALET | VRAM spike |
 | vram_train_peak_nf4.json | 2026-08-10 04:07 | ESKİ ALET | VRAM train peak; NF4 |
+| w1_pe_loglik_confound.json | 2026-08-13 10:31 | KEŞİFSEL | W1 / **D-062** — taban model log-olabilirliği vs PE; 200 olay + 186 çift + seed bazında özet |
