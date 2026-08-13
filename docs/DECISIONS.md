@@ -5460,3 +5460,96 @@ varsayımlarının **nerede** gömülü olduğu · üremenin biçimi (kim kopyal
 kaç varis, seçilim `F_agent`'tan mı) · ortak havuzun N ajanla nasıl
 paylaşılacağı (`realized_extractions` zaten oransal bölüşüm yapıyor) ·
 maliyet (N ajan × nesil × GPU).
+
+---
+
+## D-075 · 2026-08-13 · Popülasyon için yerel tarama: `null` çapamız bir **referans suş**muş
+
+**Durum:** literatür taraması · **Etiket:** ⚠ **DR raporu değil** — Deep
+Research bu turda da çalışmadı · **kod değişmedi** · mutabakat
+`docs/research/RECONCILIATION.md` **§L**
+
+### Neden burada
+
+D-074 ②'yi (popülasyon) kilitten öne aldı ve brief #6 yazıldı. DR **dört
+farklı cihaz ve ağdan** denendi; hepsinde *"size yardımcı olamıyorum, ben
+sadece metin tabanlıyım"* dönüp kota **çıktısız** tükendi.
+
+⚠ **Teşhis (kanıt değil, gözlem):** bu cümle Deep Research'ün değil, **düz
+modelin** yetenek reddi. Muhtemelen DR modu devreye girmiyor, prompt düz
+modele düşüyor. Not edilmeye değer bir yan etki: brief *"her iddia için DOI
+ver, emin değilsen doğrulanamadı yaz"* dediği için model uyduramıyor ve
+reddediyor. **Bu şart olmasaydı muhtemelen kaynak uydurup akıcı bir cevap
+verirdi ve bozuk olduğunu fark etmezdik.**
+
+**Yöntem:** D-069'un aynısı — dokuz kimlik Crossref/arXiv'den **açılarak**
+doğrulandı. ⚠ İçerik yalnız açık erişimlilerde okundu; ikisinin bulgusu
+alınamadı.
+
+⚠ **Tarama yine kendi hatasını yakaladı:** V3'ün yazarını *"Vallinder &
+Hubinger"* diye aradım, doğrulama **Hughes** olduğunu gösterdi. D-069'daki
+Schoenfeld hatasının aynısı ⇒ doğrulama döngüsü **bize de** gerekiyor.
+
+### ⭐ Ana bulgu — S3'ün cevabı var ve tasarımımızı doğrudan bağlıyor
+
+**Xiao ve ark. 2023** (`10.1002/ece3.10713`, ölçülmüş): referans suşlu
+rekabetçi uygunluk ölçümü, genotipler arasında **etkileşim olmaması**
+varsayımına dayanır — ve bu varsayım ihlal edilince uygunluk **sıralaması**
+ölçüm anına ve rakibin kimliğine göre **tersine dönebiliyor**.
+
+⇒ **Bizim `null` kolumuz tam olarak bir referans suş.** Birincil karşıtlık
+`‖lived−null‖` vs `‖shuffle−null‖`. Brief #6'nın (b) seçeneği — tek havuz,
+karışık kollar — o varsayımı **tükenen bir ortak kaynak üzerinden yapı
+gereği** ihlal eder: bir kolun aşırı hasadı, diğerinin ortamıdır.
+
+⚠ Böcek popülasyonlarından bize taşınması **analoji**; ama ihlal edilen
+varsayım aynı varsayım.
+
+### İkinci bulgu — tekrar sayısı popülasyon boyutundan önemli
+
+**Kofler & Schlötterer 2013** (`10.1093/molbev/mst221`, birebir alıntı):
+*"replication of E&R is more important for detecting the targets of selection
+than increasing the population size."* Bizim eşleştirmemiz: **tekrar =
+tohum**, **popülasyon boyutu = N ajan** ⇒ yön: **daha çok tohum, daha küçük
+popülasyon**. GPU bütçesiyle de uyumlu.
+
+⚠ **Ölçek uyuşmuyor:** onların rejimi 60 nesil, yüzlerce-binlerce birey.
+**Yön alınır, sayı alınmaz.**
+
+### ⚠ Üçüncü bulgu — D-071 bir tasarım borcu yarattı
+
+**Mills & Beatty 1979** (`10.1086/288865`): uygunluk **gerçekleşmiş** sonuçla
+tanımlanırsa o sonucu açıklayamaz (*tautology problem*); yerleşik çözüm
+**propensity** yorumu — bağımsız ölçülebilir özelliklerden **tahmin edilen**
+üreme eğilimi.
+
+D-071'den sonra `F_agent`'ın %30'u **gerçekten** hayatta kalma ölçüyor (önce
+sabit 1.0'dı). Popülasyonda o skor **kimin üreyeceğini** belirlerse,
+gerçekleşmiş hayatta kalma aynı anda **girdi + seçilim ölçütü + raporlanan
+sonuç** olur. ⇒ Seçilim ölçütü ile raporlanan sonucun **ayrılması** gerekebilir.
+**Ön-kayıt kararı, kod kararı değil** (D-007).
+
+### Dördüncü bulgu — en yakın analog bizim kapattığımız kanalı kullanıyor
+
+**Vallinder & Hughes 2024** (`arXiv:2412.10270`): LLM ajanları, nesiller boyu,
+**kesme seçilimi** (üst %50). ⚠ Nesiller arası aktarılan şey **strateji
+metni** — yani doğrudan **davranışsal önsel**, bizim aksiyomumuzun kapattığı
+kanal.
+
+⇒ **K7'nin bedelinin üçüncü bağımsız teyidi** (D-065/J4 ve D-068'den sonra).
+İddia değil, ilan edilmiş sınır olarak ön-kayıta geçecek.
+
+### Cevaplanamayanlar
+
+**Kaç nesil = birikimli kalıtım** (Kirby ve ark. 2008 paradigmayı veriyor,
+çıtayı değil; tasarım sayıları birincil kaynakta doğrulanamadı) ·
+**Briesch ve ark. 2023'ün bulgusu** (403) · **bizim ölçeğimiz için
+tekrar/popülasyon dengesi** · **ALife geleneğinin kendi yaklaşımı**.
+
+### Sınırlar
+
+**Sistematik derleme değil, hedefli tarama.** Kimlikler doğrulandı, **içerik
+yalnız açık erişimlilerde okundu**. Bulunamamış bir alt literatür olabilir.
+⇒ **Brief #6 geçerliliğini koruyor**; DR düzelirse aynen sorulur ve iki
+bağımsız kaynak mutabakata bağlanır. **Hiçbir kod değişmedi, hiçbir sabit
+seçilmedi, hiçbir tasarım kararı verilmedi.**

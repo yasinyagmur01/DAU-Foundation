@@ -25,11 +25,11 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`c571e35`).
 - **Suite:** `410 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-074.** Sıradaki kayıt **D-075** olarak açılır.
+- **Son D-kaydı: D-075.** Sıradaki kayıt **D-076** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
-  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)**.
+  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -535,7 +535,7 @@ GAP-19'un kendisi D-067'de kapandı; sınır ilk ön-kayıt için geçerliydi.
 
 | # | Brief | Durum |
 |---|---|---|
-| **6** | **Tek soy yerine popülasyon: seçilim şeması ve ortak havuz** — `docs/research/2026-08-13_population-selection-and-shared-commons.md` (⚠ **Gemini'ye giden sürüm `..._PLAIN.txt`** — markdown tablolar DR'yi bozuyor) | ⏳ **yazıldı, gönderilmedi.** D-074'ün açtığı iş. Altı soru: S1 küçük N'de üreme/seçilim şeması · S2 sürüklenme mi seçilim mi · **S3 ortak havuzda kol kirlenmesi** (en kritik: müdahale bireye, ortam paylaşılıyor) · S4 uygunluk hem seçilim girdisi hem sonuçken · S5 kaç nesil = birikimli kalıtım · S6 sabit bütçede birey mi nesil mi. ⚠ **Etki sorulmuyor** (L9). Kısıtlar §1.1'de listelendi ki DR yasak bir şey önermesin; ihlal ederse **işaretlemesi** isteniyor |
+| **6** | **Tek soy yerine popülasyon: seçilim şeması ve ortak havuz** — `docs/research/2026-08-13_population-selection-and-shared-commons.md` (⚠ **Gemini'ye giden sürüm `..._PLAIN.txt`**) | ⏳ **gönderilemedi — DR dört cihazda da çıktısız kota tüketti.** ⇒ **D-075: yerel tarama yapıldı** (§L, dokuz kimlik doğrulandı). S3 karara bağlanabilir hale geldi, S5 gelmedi. D-074'ün açtığı iş. Altı soru: S1 küçük N'de üreme/seçilim şeması · S2 sürüklenme mi seçilim mi · **S3 ortak havuzda kol kirlenmesi** (en kritik: müdahale bireye, ortam paylaşılıyor) · S4 uygunluk hem seçilim girdisi hem sonuçken · S5 kaç nesil = birikimli kalıtım · S6 sabit bütçede birey mi nesil mi. ⚠ **Etki sorulmuyor** (L9). Kısıtlar §1.1'de listelendi ki DR yasak bir şey önermesin; ihlal ederse **işaretlemesi** isteniyor |
 | **5** | **Yaşam uzunluğu değişkenken uç nokta nasıl tanımlanır** — `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` | ⏳ **gönderilemedi — DR'de teknik sorun.** ⇒ **D-069: yerel tarama yapıldı** (§K, sekiz kimlik Crossref'ten doğrulandı), K1–K3 karara hazır hale geldi. ⚠ Tarama **sistematik derleme değil**; brief geçerliliğini koruyor, DR düzelince aynen sorulabilir. Altı soru: S1 bilgilendirici sansürleme · S2 landmark vs yaşam boyu özet · S3 ölümün belirlediği durum değişkeni · S4 hayatta kalma hem girdi hem sonuçken · S5 farklı uzunluklu dizilerde eşleştirilmiş karşılaştırma · S6 küçük N'de zaman-olay gücü. ⚠ **Etki sorulmuyor, bilerek** (D-064/L9 disiplini) |
 | **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ✅ **cevaplandı ve mutabakata bağlandı (D-065, §J).** Ham cevap: `2026-08-13_DR4-answer-raw.md`. **İçeriği dört brief'in en isabetlisi, kaynak disiplini en kötüsü:** 12 kimlikten 5'i eksiksiz, biri **yanlış makaleye** atıflı (yedinci kimlik hatası), biri dergi ISSN'i, ve *"N=20–50"* kaynaksız ⇒ kullanılmadı |
 

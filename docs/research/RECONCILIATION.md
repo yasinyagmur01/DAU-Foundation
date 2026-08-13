@@ -593,3 +593,143 @@ karara bağlanabilir hale getirdi, kapatmadı.
    kendisi belirliyor.
 6. **Güç (K3):** sansürsüz olduğumuz için olay sayısı = soy sayısı; hesap V6
    ile yeniden yapılır.
+
+---
+
+# §L — Popülasyon, seçilim şeması ve ortak havuz (yerel tarama, 2026-08-13)
+
+⚠ **DR raporu DEĞİL.** Deep Research bu turda da çalışmadı: dört farklı
+cihaz/ağdan denendi, hepsinde *"size yardımcı olamıyorum, ben sadece metin
+tabanlıyım"* dönüp kota çıktısız tükendi. Tarama **Claude Code** tarafından
+yapıldı; brief #6
+(`docs/research/2026-08-13_population-selection-and-shared-commons.md`)
+geçerliliğini korur ve DR düzelirse aynen sorulur.
+
+**Yöntem:** D-069'un yöntemi — her kimlik Crossref/arXiv üzerinden **açılarak**
+doğrulandı. ⚠ İçerik yalnız **açık erişimli** olanlarda okundu; iki kaynağın
+bulgusu alınamadı (aşağıda işaretli).
+
+## L.0 Doğrulanan kimlikler
+
+| # | Kaynak | Kimlik | Durum |
+|---|---|---|---|
+| V1 | Goldberg & Deb 1991, *A Comparative Analysis of Selection Schemes Used in Genetic Algorithms*, Foundations of Genetic Algorithms 1 | `10.1016/b978-0-08-050684-5.50008-2` | ✅ kimlik |
+| V2 | Miller & Goldberg 1996, *Genetic Algorithms, Selection Schemes, and the Varying Effects of Noise*, Evolutionary Computation 4(2) | `10.1162/evco.1996.4.2.113` | ✅ kimlik |
+| V3 | Vallinder & Hughes 2024, *Cultural Evolution of Cooperation among LLM Agents* | `arXiv:2412.10270` (13 Ara 2024) | ✅ kimlik + özet |
+| V4 | Kofler & Schlötterer 2013, *A Guide for the Design of Evolve and Resequencing Studies*, Mol Biol Evol 31(2):474–483 | `10.1093/molbev/mst221` | ✅ kimlik + **bulgu** |
+| V5 | Xiao, Duarri-Redondo, Thorhölludottir, Chen & Schlötterer 2023, *Non-additive effects between genotypes: Implications for competitive fitness assays*, Ecology and Evolution 13(11):e10713 | `10.1002/ece3.10713` | ✅ kimlik + **bulgu** |
+| V6 | Mills & Beatty 1979, *The Propensity Interpretation of Fitness*, Philosophy of Science 46:263–286 | `10.1086/288865` | ✅ kimlik |
+| V7 | Lehman & Stanley 2011, *Abandoning Objectives: Evolution Through the Search for Novelty Alone*, Evolutionary Computation 19(2):189–223 | `10.1162/evco_a_00025` | ✅ kimlik |
+| V8 | Kirby, Cornish & Smith 2008, *Cumulative cultural evolution in the laboratory*, PNAS 105(31):10681–10686 | `10.1073/pnas.0707835105` | ✅ kimlik · ⚠ **tasarım sayıları doğrulanamadı** |
+| V9 | Briesch, Sobania & Rothlauf 2023, *On the Trade-Off between Population Size and Number of Generations in GP for Program Synthesis*, GECCO Companion | `10.1145/3583133.3590681` | ✅ kimlik · ⚠ **bulgu alınamadı (403)** |
+
+⚠ **Tarama yine kendi hatasını yakaladı.** V3'ü ararken yazarı *"Vallinder &
+**Hubinger**"* diye yazdım; doğrulama **Hughes** olduğunu gösterdi (Hubinger
+başka biri). D-069'daki Schoenfeld hatasının aynısı — **doğrulama döngüsü
+bize de gerekiyor**, yalnız DR'ye değil.
+
+## L.1 Soru bazında bulgular
+
+### ⭐ S3 — ortak havuzda kol kirlenmesi: **literatürde adı ve ölçülmüş kusuru var**
+
+**Bulgu (V5, ölçülmüş):** Referans suş kullanan rekabetçi uygunluk ölçümü,
+genotipler arasında **etkileşim olmaması** varsayımına dayanır. Xiao ve ark.
+bu varsayımın ihlal edildiğini gösteriyor: frekansa bağlı seçilim rakibin
+kimliğine göre değişiyor, ölçüm **zamanına** göre uygunluk sıralaması
+değişebiliyor, ve odak popülasyon **ortamı değiştirerek** referans suşun
+gelişimini etkiliyor.
+
+⇒ **Bu bizim tasarımımızın doğrudan tarifi.** Bizim `null` kolumuz bir
+**referans suş** — iki mesafe ona göre ölçülüyor (`‖lived−null‖` vs
+`‖shuffle−null‖`). Brief #6'nın (b) seçeneği (tek havuz, karışık kollar), o
+varsayımı **tükenen bir ortak kaynak üzerinden yapı gereği** ihlal eder: bir
+kolun aşırı hasadı diğerinin ortamıdır.
+
+⚠ V5 böcek popülasyonlarında; bizim ajanlarımıza taşınması **analoji**.
+Ama ihlal edilen varsayım aynı varsayım.
+
+### S1 — üreme/seçilim şeması
+
+- **V1:** seçilim baskısının ölçüsü **devralma süresi** (takeover time);
+  orantılı, sıralama, turnuva ve durağan-durum şemaları bu eksende
+  karşılaştırılıyor. Turnuva baskısı turnuva boyutuyla **ayarlanabiliyor**.
+- **V2:** aynı şemalar **gürültülü uygunluk** altında farklı davranıyor.
+  ⚠ Bizde uygunluk **tek yaşamdan** geliyor ⇒ gürültülü. Bu, şema seçiminin
+  bizde teknik bir ayrıntı **olmadığını** gösteriyor.
+- **V3 (en yakın analog):** LLM ajanları, nesiller boyu, **kesme seçilimi**
+  (üst %50 hayatta kalır). ⚠ Tasarım sayıları (12 ajan / 12 tur) yalnız
+  ikincil özetten geldi, **birincil kaynakta doğrulanmadı**.
+
+⚠ **V3'ün bizim için kritik kısıtı:** aktarılan şey **strateji metni** —
+yani doğrudan **davranışsal önsel**. Bu bizim aksiyomumuzun (§1.1) yasakladığı
+kanalın ta kendisi. ⇒ **En yakın yayımlanmış analog, bizim kapattığımız
+kanalı kullanıyor.**
+
+### S2 / S6 — sürüklenme, tekrar sayısı ve bütçe
+
+**Bulgu (V4, ölçülmüş, birebir alıntı):** *"replication of E&R is more
+important for detecting the targets of selection than increasing the
+population size"* ve *"We advise to prioritizing replication over population
+size for species such as Drosophila, where maintenance of large population
+sizes is resource intensive."* Sabit 8.000 bireylik bütçede tekrar sayısını
+artırmak gücü artırıyor; güçlü seçilim için **beş tekrar** yetiyor.
+
+⇒ **Bizim eşleştirmemiz:** *tekrar* = tohum, *popülasyon boyutu* = N ajan.
+Literatürün yönü: **daha çok tohum, daha küçük popülasyon.**
+
+⚠ **Ama ölçek uyuşmuyor ve bu dürüstçe söylenmeli.** V4'ün rejimi 60 nesil ve
+yüzlerce-binlerce birey; bizim tartıştığımız N=5–20 ve G=3–5. Yön alınabilir,
+**sayı alınamaz**. V9 (evrimsel hesaplamada aynı takas) **bulgusu
+alınamadı** (403).
+
+### S4 — uygunluk hem seçilim girdisi hem sonuç
+
+**Bulgu (V6):** *tautology problem* — uygunluk **gerçekleşmiş** sonuçla
+tanımlanırsa o sonucu açıklayamaz; *"en uygunun hayatta kalması"*, *"hayatta
+kalanların hayatta kalması"*na indirgenir. Yerleşik çözüm **propensity
+(eğilim) yorumu**: uygunluk, bağımsız ölçülebilir özelliklerden **tahmin
+edilen** üreme eğilimidir, gerçekleşmiş hayatta kalma değil.
+
+⇒ **Bizde doğrudan karşılığı var ve D-071 bunu hem yarı düzeltti hem yarı
+büyüttü.** `F_agent`'ın %30'u artık **gerçekten** hayatta kalma ölçüyor
+(D-071 öncesi sabit 1.0'dı). Popülasyonda o skor **kimin üreyeceğini**
+belirlerse, gerçekleşmiş hayatta kalma hem girdi hem seçilim ölçütü hem
+raporlanan sonuç olur — V6'nın tarif ettiği döngü.
+
+**V7:** seçilim ölçütünü sonuç ölçüsünden **ayırmak** incelenmiş bir strateji
+(novelty search); amaç fonksiyonunun kendisi aramayı yanlış yöne
+sürükleyebiliyor.
+
+### S5 — kaç nesil
+
+**V8** bizim ata→varis zincirimizin **birebir paradigması** (iterated
+learning / aktarım zinciri) ve iddiası **birikimli** yapının nesiller boyunca
+ortaya çıkması. ⚠ **Kaç nesil / kaç zincir olduğu birincil kaynakta
+doğrulanamadı** (sayfa vermedi). ⇒ *"kaç nesil yeter"* sorusuna bu taramadan
+**sayı çıkmadı**.
+
+## L.2 Bu taramanın **cevaplayamadığı**
+
+1. **Kaç nesil = birikimli kalıtım.** V8 paradigmayı veriyor, çıtayı değil.
+2. **V9'un bulgusu** (403) — evrimsel hesaplama tarafındaki popülasyon/nesil
+   takasının sayısı.
+3. **Bizim ölçeğimiz için tekrar/popülasyon dengesi.** V4 yön veriyor, ama
+   rejimi bizimkinin çok üstünde.
+4. **ALife geleneğinin kendi yaklaşımı** — hedefli tarama bunu kapsamadı.
+
+## L.3 Claude Code'un okuması (literatür değil, okuma — karar Yasin'in)
+
+1. **S3 cevabı (a) yönünde güçlü:** kol başına ayrı havuz. Gerekçe literatür:
+   `null` çapamız bir referans suş tasarımıdır ve V5 tam da o tasarımın ortak
+   ortamda nasıl bozulduğunu **ölçmüş**. Tek havuzda karışık kollar,
+   birincil karşıtlığın anlamını değiştirir.
+2. **Tohum sayısını popülasyon boyutuna tercih et** (V4'ün yönü) — bu, GPU
+   bütçesiyle de uyumlu.
+3. **⚠ S4 açık bir tasarım borcu yarattı:** `F_agent` şu an gerçekleşmiş
+   hayatta kalmayı içeriyor. Popülasyonda seçilim ölçütü yapılırsa V6'nın
+   döngüsüne girer. Seçilim ölçütü ile raporlanan sonucun **ayrılması**
+   gerekebilir — bu bir ön-kayıt kararıdır, kod kararı değil.
+4. **V3 bir uyarı olarak okunmalı:** en yakın yayımlanmış analog, sonucu
+   **strateji metni aktararak** alıyor. Bizim aksiyomumuz o kanalı kapatıyor.
+   Bu, K7'nin bedelinin literatürdeki üçüncü bağımsız teyidi (J4 ve D-068'den
+   sonra).
