@@ -25,7 +25,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   senkron, push edildi. Eski main `archive/main-pre-c116` etiketinde.
   B2'nin koştuğu kod **`prereg/b2-code`** etiketinde.
 - **Suite:** `367 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-063.** Sıradaki kayıt **D-064** olarak açılır.
+- **Son D-kaydı: D-064.** Sıradaki kayıt **D-065** olarak açılır.
+- **A yolunun üçü de bitti (W1 ✅ · W2 ✅ · W3 ✅).** DR raporu gelene kadar
+  başlatılacak yeni iş **yok**; gelince **B yolu** (aşağıda) koşulur.
 
 ## ▶▶ SIRADAKİ İŞ — iki dal, hangisi geçerliyse
 
@@ -44,7 +46,7 @@ ayrı iştir ve **A4 = environment ayrımı**, karıştırma.
 |---|---|---|---|
 | ~~W1~~ | ✅ **D-062** — confound *tarif edildiği biçimiyle* **yok** (PE ↔ token başı olabilirlik ρ=+0.063, p=0.37; uzunluk kontrollü kısmi +0.044). **Ama D-059 Bulgu 4 seed-kararlı değil:** seed bazında 2 seed `lived` lehine, 1 seed **tersine**, 1 seed sıfır. Confound'un yeri değişti: **uzunluk → taban marj → kayıp farkı**. Yan bulgu: eğitim dizilerinin **%85.5'i 512 tavanında kesiliyor** ve sohbet şablonu başlığı kayboluyor (D-027'nin gerekçesi o dizilerde bozuluyor) | — | ✅ |
 | ~~W2~~ | ✅ **D-063** — S5 aletlendi (`pool_step_node` hasat + `pool_ratio` + kriz bayrağını `pe_event_log` desenine yazıyor; `Gen2Result` altı yeni alan). ⚠ **İki travma okuması bilerek** (§2.11): commons krizi ≠ `TRAUMA` sınıfı imprint, ön-kayıt hangisi olduğunu söylemiyor. **S6 kol olarak üretilmedi:** denetim birincilin `F_agent`'ı **hiçbir yoldan göremediğini** gösterdi (birth-drift ebeveyn drift'inin kopyası, `select_for_transfer` drift'i yalnız okur) ⇒ Yasin **gölge kayıt** seçti | — | ✅ |
-| **W3** | **Uç nokta çözünürlük envanteri.** D-056: birincilin **%99'u sabit**. Alternatif uç noktaların **çözünürlüğü** ölçülür (kaç farklı değer, kaç seed'de kollar özdeş) | ~45 dk, **GPU yok** | ⚠ **Yalnız çözünürlük, ETKİ DEĞİL.** Hangi uç noktanın büyük `lived−shuffle` farkı verdiğine bakıp seçmek post-hoc tuning olur (§2.7, L9 yasakladı) |
+| ~~W3~~ | ✅ **D-064** — 21 aday sıralandı. **Dördü yapı gereği kör:** `gen1 n_unique`/`pe_gap_max` faz-1'den geliyor (adapter'dan önce) ⇒ 40/40 seed'de üç kol özdeş; `f_agent`/`fitness_class` 120 kolda tek değer. **Birincilin dökümü:** `resource` 120/120 kolda ama 38/40 seed'de kollar özdeş, ayırt etme gücünü **`social`** taşıyor ve `social` kolların **%42.5'inde hiç yok** — `lived`=`shuffle` olan 11 seed'in 7'si tam da `social`'ın hiç açılmadığı seed'ler. En yüksek çözünürlük: `arm_digest`/`delta_pe`/yörüngeler (120/120 farklı) ⚠ **ama çözünürlük ≠ duyarlılık** (D-044) | — | ✅ |
 
 ### ▸ B yolu — Yasin raporu sunup "devam et" dediğinde
 
@@ -93,7 +95,7 @@ havuz çökünce kimse ölmüyor. Ayrım üretmeyen evrenin sebebi bu.
 | İş | Not |
 |---|---|
 | ~~Sahte-PE kontrolü~~ | ⇒ **W1 oldu**, yukarıdaki A yolunda |
-| **İkinci ön-kayıt** | A4 kararından sonra. Girdiler: `lr` bandı (D-059), KTO kararı (GAP-18: `uniq_rejected` 100/94), uç nokta seçimi (D-056). ⚠ **S5/S6 artık aletli (D-063)** ama iki karar açık: S5'in **hangi travma okuması** (kriz mi `TRAUMA` imprint mi) ve S6'nın gölge kanalı **hangi testle** sınanacak |
+| **İkinci ön-kayıt** | A4 kararından sonra. Girdiler: `lr` bandı (D-059), KTO kararı (GAP-18: `uniq_rejected` 100/94), uç nokta seçimi (D-056 + **D-064 envanteri**). ⚠ **S5/S6 artık aletli (D-063)** ama iki karar açık: S5'in **hangi travma okuması** (kriz mi `TRAUMA` imprint mi) ve S6'nın gölge kanalı **hangi testle** sınanacak. ⚠ **D-064'ün açtığı üçüncü karar:** birincil vektör olarak mı kalsın, yoksa taşıyıcı kanalın (`social`) varlığı **geçerlilik ön-koşulu** mu olsun — tasarım kararı (D-007), B2 verisine bakarak verilemez |
 | **13.3 saatlik doğrulayıcı koşum** | ⚠ **Kilit yazılmadan başlanmaz** |
 
 ## ✅ B2/B3/B4 BİTTİ — sonuç `docs/B2_RESULTS.md`'de

@@ -4463,3 +4463,91 @@ artık üretildiğini söylüyor, ne söylediğini **değil**. S5'in iki okumas�
 hangisinin ön-kayıta gireceği, ve S6'nın gölge kanalının hangi testle
 sınanacağı **ikinci ön-kayıtın işi**. Gölge kaydın maliyeti kasa üzerinde bir
 geçiş; 40 seed × 3 kolda ölçülmedi, tahmin edilmedi.
+
+---
+
+## D-064 · 2026-08-13 · W3 çözünürlük envanteri: birincilin ayırt etme gücünü **51/120 kolda var olan** bir kanal taşıyor
+
+**Durum:** ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** · GPU yok · koda
+dokunulmadı · kaynak: B2'nin iki batch'i (40 seed × 3 kol) · ham çıktı
+`dau_runs/w3_endpoint_resolution.json`
+
+### Soru ve sınır
+
+D-056 birincilin *"%99'unun sabit"* olduğunu ölçtü. W3 alternatif uç noktaların
+**çözünürlüğünü** sorar: kaç farklı değer alıyorlar, kaç seed'de kollar özdeş?
+
+⚠ **Yalnız çözünürlük, ETKİ DEĞİL.** Script hiçbir kol karşıtlığı hesaplamıyor —
+kolların farklı olup olmadığını sayıyor, **hangi yönde** farklı olduğunu değil.
+Hangi uç noktanın büyük `lived−shuffle` farkı verdiğine bakıp seçmek post-hoc
+tuning olurdu (§2.7, L9). Ölçüler sonuçlara bakılmadan önce sabitlendi.
+
+⚠ **Çözünürlük ≠ duyarlılık.** D-044/D-045 tam da yüksek çözünürlüklü ΔPE uç
+noktasının ayrımın **%80–86'sını attığını** ölçtü. Aşağıdaki tablo *"ölçebilir
+mi"* sorusunu cevaplıyor, *"iyi mi"* sorusunu **değil**.
+
+### Envanter (120 kol; `n_dist` = farklı değer, `modal%` = en sık değerin payı)
+
+| Uç nokta | n_dist | modal% | 3 kol özdeş | `lived`=`shuffle` |
+|---|---|---|---|---|
+| `arm_digest` · `gen1 delta_pe` (S3) · `pe_after` · faz-2 yörüngeleri | **120** | 0.8% | 0/40 | **0/40** |
+| `gen2 mean_pe` (S4) · `gen2 pe_list` | 96 | 2.5% | 5/40 | 10/40 |
+| `gen2 pe_gap_max` | 89 | 3.3% | 5/40 | 11/40 |
+| **`birth_drift_magnitudes` (BİRİNCİL)** | **73** | 10.8% | 5/40 | **11/40** |
+| `consolidation deleted_count` | 31 | 8.3% | 1/40 | 4/40 |
+| `consolidation edges_created` | 27 | 17.5% | 3/40 | 6/40 |
+| `gen2 n_unique` | 14 | 21.7% | 11/40 | 17/40 |
+| `n_transfer_candidates` · `n_inherited_warnings` (S2) · `n_retrieval_context` | 8 | 38.3% | 13/40 | 19/40 |
+| `f_agent_delta_pool` | 6 | 86.7% | 32/40 | 34/40 |
+| `birth_drift_flags` (S1) | 4 | 47.5% | 11/40 | 18/40 |
+| **`gen1 n_unique` · `gen1 pe_gap_max`** | 39 / 17 | — | **40/40** | **40/40** |
+| **`f_agent` · `fitness_class`** | **1** | 100% | 40/40 | 40/40 |
+
+### Bulgu 1 — dört uç nokta **yapı gereği kör**, gürültüden değil
+
+`gen1` bloğundaki `n_unique` ve `pe_gap_max` `_phase1_diversity`'den geliyor ve
+**faz-1** adapter yüklenmeden önce koşuyor (`run_gen1_arm_lineage`, grep ile
+doğrulandı) ⇒ üç kolda özdeş olmaları **zorunlu**, 40/40 ölçümü bunun teyidi.
+`f_agent`/`fitness_class` 120 kolda tek değer (D-060). Bu dördü aday listesinden
+**ölçümle değil yapıyla** düşüyor.
+
+### Bulgu 2 — birincilin çözünürlüğünü taşıyan kanal, kolların **çoğunda yok**
+
+Birincil üç alanlı bir vektör. Alan alan:
+
+| Alan | kaç kolda var | n_dist | 3 kol özdeş |
+|---|---|---|---|
+| `resource` | **120/120** | 12 | **38/40** |
+| `social` | **51/120** | 51 | 9/40 |
+| `uncertainty` | 16/120 | 14 | 29/40 |
+
+Kol başına alan kümesi: yalnız `resource` **51**, `resource+social` 53,
+`resource+uncertainty` 11, üçü birden 5.
+
+⇒ D-056'nın *"%99 sabit"* cümlesi **`resource` kanalına aitmiş**: her kolda var
+ve 38/40 seed'de kollar arasında özdeş. Birincilin ayırt etme gücünün neredeyse
+tamamını **`social`** taşıyor — ve `social` kolların **%42.5'inde hiç yok**.
+
+**Mekanizma sayıyla:** `social`'ın üç kolda da bulunmadığı **9** seed var;
+`lived`=`shuffle` olan **11** seed'in **7'si** bu dokuzun içinde. Yani birincilin
+"göremediği" seed'lerin çoğunluğu, taşıyıcı kanalın hiç açılmadığı seed'ler.
+Kalan 4'te (2013, 2014, 2032, 2043) `social` var ama kollar yine de özdeş.
+
+### Ne değişti, ne değişmedi
+
+⇒ **Uç nokta seçilmedi.** Bu kayıt aday havuzunu *ölçebilirlik* ekseninde
+sıralıyor; seçim ikinci ön-kayıtın işi ve **etkiye bakılarak yapılmayacak** (L9).
+⇒ **İkinci ön-kayıta yeni bir soru girdi:** birincil bir vektör olarak mı kalsın,
+yoksa taşıyıcı kanalın varlığı bir **geçerlilik ön-koşulu** mu olsun (ör.
+*"`social` üç kolda da kapalıysa o seed birincil için ölçülemez"*)? ⚠ Bu bir
+**tasarım kararı** (D-007) — B2 verisine bakarak karara bağlanamaz, çünkü hangi
+seed'lerin düşeceği zaten biliniyor.
+
+### Sınırlar
+
+Tek koşum (B2, 40 seed), tek evren — D-056 o evrenin ajanları ayırmadığını
+gösterdi, yani buradaki çözünürlük sayıları **bu evrene özgü** olabilir. Tam
+eşitlik (float) kullanıldı: "özdeş" bit düzeyinde demek. Yörünge uç noktaları
+(120 farklı değer) yüksek çözünürlüklü görünüyor ama **hiçbiri test edilmedi**;
+D-044'ün iptal bulgusu tam da yüksek çözünürlüğün duyarlılık anlamına
+gelmediğini gösteriyor. Hiçbir kol karşıtlığı hesaplanmadı, bilerek.

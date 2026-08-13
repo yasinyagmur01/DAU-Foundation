@@ -63,3 +63,4 @@ sütunu içeriğe göre verildi, tarihe göre değil.**
 | vram_spike_results.json | 2026-08-06 19:17 | ESKİ ALET | VRAM spike |
 | vram_train_peak_nf4.json | 2026-08-10 04:07 | ESKİ ALET | VRAM train peak; NF4 |
 | w1_pe_loglik_confound.json | 2026-08-13 10:31 | KEŞİFSEL | W1 / **D-062** — taban model log-olabilirliği vs PE; 200 olay + 186 çift + seed bazında özet |
+| w3_endpoint_resolution.json | 2026-08-13 | KEŞİFSEL | W3 / **D-064** — uç nokta çözünürlük envanteri (21 aday) + birincilin alan-alan dökümü. ⚠ **Etki içermez**, bilerek |
