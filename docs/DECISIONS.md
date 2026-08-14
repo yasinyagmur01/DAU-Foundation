@@ -6502,3 +6502,95 @@ bütçe 50 ⇒ rapor modu, **D-073 tasarlandığı gibi**) · `I5.4` yalnız N=1
 bedeli, popülasyon: hiçbiri yok. Bulgular aletin **kendi** özellikleri, ve
 popülasyon katmanı bunların üstüne kurulursa **hepsi miras alınır**.
 Hiçbir sabit değişmedi, hiçbir karar verilmedi.
+
+---
+
+## D-086 · 2026-08-14 · `F_agent`'in enerji terimi **yaşamı** okuyor, ölümü değil
+
+**Durum:** kod değişikliği · **Etiket:** ⚠ **formül değişikliği** — ikinci
+ön-kayıtta ilan edilmeli · commit `f3a132d` · suite **417 passed** (414 + 3)
+· Yasin onayladı (§2.3)
+
+### Sorun — D-085'in ölçtüğü
+
+`F = 0.4·E + 0.3·havuz + 0.3·hayatta` formülünde enerji terimi, dört tohumun
+**on iki soyunun onunda tam olarak 0.0000** katkı yapıyordu.
+
+Sebep bir ayar değil, **tanım**: D-066'dan beri tek ölüm biçimi enerji
+tükenmesi ⇒ `E_final` **ölüm kuralının kendisi tarafından** sıfıra çakılıyor.
+Terim yaşamayı değil **ölmeyi** ölçüyordu.
+
+⚠ **Teşhis yeniydi ama gözlem değildi.** `run_protocol_c_prime.py:355` zaten
+*"it measures the ending, not the living"* diye yazıyordu — ama bunu **yalnız
+K2'nin uç nokta okumasına** uygulamış, `F_agent`'ı ölü terimin üzerinde
+bırakmıştı. D-071'in hayatta kalma teriminde bulduğu kusurun
+(`t_survived/t_survived ≡ 1.0`) **aynı sınıfı**: adının söylediği şeyi
+ölçmeyen bir terim.
+
+### Üç seçenek, aynı on iki soyda ölçüldü
+
+| | `F_agent` | sınıf dağılımı | 0.6 kapısı |
+|---|---|---|---|
+| `E_final` (eski) | 0.083 – 0.184 | **12/12 low** | 0/12 |
+| ⭐ **ömür-boyu ortalama** | **0.334 – 0.490** | 1 low, **11 normal** | 0/12 |
+| landmark enerjisi | 0.171 – 0.568 | 4 low, 8 normal | 0/12 |
+
+### Reddedilen alternatif — ve **neden yayılıma bakılarak seçilmedi**
+
+Landmark enerjisinin **yayılımı en büyüktü (0.398)** ve tam da bu yüzden
+**alınmadı**:
+
+1. ⛔ **Döngüsel.** Landmark enerjisi **K2'nin uç noktası**. Fitness'a koymak
+   `F_agent` ile sonucu **aynı sayıyı paylaştırır** ⇒ D-075'in işaretlediği
+   Mills & Beatty totolojisi geri gelir. Üç katman ayrı kalmalı:
+   **`F_agent` (girdi) → `w` (varis) → `z` (landmark drift, sonuç)**.
+2. Girdisi **12'nin 5'inde tavanda**; ömür-boyu ortalama hiç tavana değmiyor.
+
+⚠ §2.7 gereği: seçim **sonuca bakılarak yapılmadı**. Yayılımı en büyük olan
+seçenek reddedildi, gerekçe **yapısal** (döngüsellik + doygunluk).
+
+### Uygulama
+
+`self_model.f_agent_inputs` artık olay kaydındaki enerjilerin ortalamasını
+veriyor. **Yeni boru hattı gerekmedi** — enerji zaten her karar satırında
+vardı (iki yazıcı da koyuyor).
+
+**Adlandırma:** `energy_final` → `energy_lived`, JSON alanı
+`f_agent_energy_lived`. Eski ad artık taşıdığı şeyi söylemiyordu (§2.8'in
+tekrar eden hata deseni). ⇒ eski ve yeni koşumlar **alan adından** ayırt
+edilebiliyor.
+
+**Alet kimliği:** `tool_identity.fitness.energy_reading` eklendi
+(`FITNESS_ENERGY_READING = "mean_over_life"`). Bloğun kendi yorumu
+*"nothing else in the results file says which formula ran"* diyordu; artık
+diyor. U5/D-030 deseni.
+
+### Test ve mutasyon kontrolü (§2.4)
+
+**Bekçi:** aynı `E_final`'e sahip ama enerji yörüngeleri farklı iki yaşam
+**farklı `F_agent`** almalı. **Mutasyon uygulandı** (`energy_lived` = son
+enerji) → test **kırıldı** → geri alındı. ✅
+
+İki bekçi daha: enerji anahtarı olmayan bir olay **`ValueError` fırlatıyor**
+(§2.9, sessiz fallback yok) · sıfır olaylı yaşam **mevcut enerjisini** alıyor
+— bu bir boşluk değil, o yaşamın tek okuması.
+
+⚠ **Kasıtlı test kırılması** (§2.5): `test_meta_observer`'ın bütçe sondası
+payload'sız sentetik `Event` üretiyordu. Gerçek sistemde böyle bir olay yok;
+sonda olayları **sabit** bir enerji taşıyacak biçimde güncellendi — sabit
+olduğu için testin asıl konusu olan **survival paydasını** etkilemiyor.
+
+### ⚠ Neyi ÇÖZMÜYOR
+
+**Üç seçeneğin hiçbiri 0.6 aktarım eşiğini açmıyor.** `F_agent` 0.14'ten
+0.45'e çıkıyor, eşik hâlâ 0.6 ⇒ **kalıtım hâlâ akmıyor**. Aktarım eşiği
+kararı (D-085'in 1 numaralı maddesi) ayrı duruyor, ama artık **yeni ölçeğe
+göre** türetilebilir — önerilen sıralamanın gerekçesi buydu.
+
+### Sınırlar
+
+Değişiklik **kalıtımı etkiliyor** (F_agent aktarım kapısına giriyor) ⇒
+**D-085'in dört doğrulama koşumu artık karşılaştırılamaz**. Kabul edilebilir:
+onlar alet denetimiydi, hipotez ölçümü değil.
+⚠ `_resolve_f_agent` yaşam **sırasında** da çağrılıyor ⇒ `F_agent` artık
+yaşam boyunca **yürüyen ortalama**. Yasin'e söylendi ve onayla girdi.
