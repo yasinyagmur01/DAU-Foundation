@@ -1,0 +1,46 @@
+Methodology question about experimental design. Do not predict my results
+and do not write code.
+
+SETUP. An agent-based evolution experiment. Every lineage is measured at the
+same fixed event ordinal L=10, chosen so that it falls at the end of a grace
+window during which death is suspended - so every lineage reaches the
+measurement point and nothing is censored. Observed lifespans are 11 to 20
+events. The mechanism I want to observe (competition for a depleting shared
+resource) does not engage until ordinal 17 under current constants. I can
+move the mechanism earlier only by changing one environment constant.
+
+Q1. Fixed-age versus fixed-state measurement. In experimental evolution and
+life-history studies, how is it handled when the mechanism of interest
+engages after the standard measurement age? What is the accepted vocabulary
+for measuring at a fixed age versus at a fixed physiological state or event?
+If measuring later means some individuals have died, what is the standard
+treatment when that death is INFORMATIVE, i.e. correlated with the very
+quantity being measured? Is there a defensible way to keep a fixed-age
+primary endpoint and still capture a mechanism that engages after it - for
+example a fixed-age primary plus a post-onset rate as a declared secondary?
+
+Q2. Choosing a parameter so a mechanism is in range, without it counting as
+tuning. I would set the environment constant so that the mechanism engages
+inside the observation window. The value follows from an inequality over
+constants declared before any run, with no data entering - but it is still
+chosen so the mechanism fires. Is there an accepted term and practice for
+this: operating point selection, design for detectability, manipulation
+check, positive control? Where do reporting guidelines draw the line between
+"parameter set so the mechanism is active" and "parameter fitted to the
+outcome"? Are there worked examples of a pre-registration or simulation
+protocol that declares such a choice explicitly, and how is it justified?
+
+Q3. For a selection differential written as a covariance between relative
+reproductive success and a trait (Price equation form), what is known about
+estimability and bias at small population size and few episodes of
+selection? Is there measured guidance on the minimum number of selection
+episodes before the estimate is interpretable? I am NOT asking what effect
+size I will get - I am asking what makes the estimate defined rather than
+degenerate.
+
+FORMAT, per claim: the claim in one sentence; author, year, DOI or arXiv id;
+the section name AND a short verbatim quotation - NOT line numbers, they do
+not survive between copies; and whether the evidence is measured, simulated
+or theoretical. Attach a bibliography for every reference marker you use. If
+you cannot locate a claim in its source, write "cannot show where this
+appears": I open every DOI through Crossref and discard unlocatable claims.

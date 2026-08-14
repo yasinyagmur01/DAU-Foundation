@@ -1,0 +1,39 @@
+Check a derivation, then find literature. Do not predict my results; no code.
+
+MODEL. Discrete-time common pool, per agent: capacity K=100, renewal r=0.15,
+initial stock P0=0.8K. N agents each harvest a FIXED d=8.0 per event. Each
+event: regenerated = P + r*P*(1-P/K); agents take min(demand, available),
+sharing any shortfall; P_next = clamp(regenerated - taken, 0, K).
+
+MY DERIVATION - verify or refute.
+1. Max sustainable yield r*K/4 = 3.75 per agent per event, versus demand 8.0.
+2. r*P*(1-P/K) = d has real roots iff K >= 4d/r = 213.33 per agent. Below:
+   monotone decline to zero. Above: two equilibria, and from 0.8K the stock
+   settles on the upper stable one.
+3. So below the threshold the pool collapses, above it scarcity never
+   happens. Neither region has a GRADED scarcity regime.
+4. Zero is absorbing, and in the first event where demand exceeds supply the
+   agents take everything available, emptying the pool that same event.
+5. Hence exactly ONE partially-satisfied event per run, whatever P0.
+   Changing K moves only WHEN it happens, not how long it lasts.
+
+Q1. Is step 2 the standard bioeconomic threshold, under what name? Any
+parameter region I missed? Specifically: if d sits just barely above r*K/4,
+does the stock crawl for many events through the bottleneck near P=K/2
+(saddle-node ghost, critical slowing down), giving a long graded regime in
+practice? How many events, how does it scale with the excess, how fragile?
+
+Q2. My harvest is a fixed quantity, independent of stock. In fisheries and
+resource ecology, which alternatives produce a PROLONGED partial-satisfaction
+interval: stock-proportional catch, Holling functional responses, escapement
+or refuge rules, stock-dependent search efficiency? For each, measured or
+only asserted? And critically: which can be stated as a property of the
+ENVIRONMENT rather than of the harvester's decision rule? I cannot modify
+agent behaviour.
+
+FORMAT, per claim: claim in one sentence; author, year, DOI/arXiv; section
+name AND a short verbatim quotation (NOT line numbers, they do not survive
+between copies); evidence type. Bibliography for every marker. If you cannot
+locate a claim in its source, write "cannot show where this appears" - I open
+every DOI through Crossref and discard unlocatable claims. If my derivation
+is wrong, say so and show the correction.
