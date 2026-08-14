@@ -1,0 +1,184 @@
+ARASTIRMA TALEBI — DAVRANISSAL OLARAK OZDES AJANLAR ARASINDA HETEROJENLIK
+NEREDEN GELIR
+
+Tarih: 2026-08-14
+
+
+0. BU TALEBI OKUYAN ICIN
+
+Ihtiyacimiz olan: ajan tabanli / yapay yasam modellerinde, ajanlar yapisi
+geregi ayni davrandiginda bireyler arasi farkin nasil dogdugu konusunda
+yerlesik yontem bilgisi. Adlari, tuzaklari, ve olculmus karsilastirmalar.
+
+Ihtiyacimiz olmayan:
+
+- Bizim proje gecmisimiz. Erisimin yok.
+- "Sizin kurulumunuz hangi sonucu verir" tahmini. Etkiyi ongorup tasarim
+  secmek post-hoc olur.
+- Kod onerisi. Uygulamayi biz yaziyoruz.
+
+KAYNAK DISIPLINI — SICILIMIZ KOTU VE BU TUR YENI BIR HATA GORDUK
+
+Onceki alti talepte kaynak kimligi sorunlari cikti: yanlis makaleye atifli
+DOI'ler, dergi ISSN'i ile "kaynaklandirilmis" iddialar, ve bir kirik DOI
+(10.1162/artl.1998.4.4.431, cozulmuyor).
+
+EN SON TURDA YENI BIR KUSUR TURU CIKTI: kaynaklar GERCEKTI ama uc iddia o
+kaynaklarda olmayan seyler soyluyordu. Ornek: bir secilim semasi
+karsilastirmasi makalesine (devralma suresi analizi) "istatistiksel tespit
+gucu populasyon boyutuna ustel duyarlidir" iddiasi yuklenmisti. DOI dogru,
+iddia o makalede yok. DOI dogrulamasi bu kusuru YAKALAMIYOR.
+
+BU YUZDEN BU TURDA EK OLARAK SUNU ISTIYORUZ: her iddia icin kaynagin
+NERESINDE gectigini yaz — bolum adi, sekil/tablo numarasi, veya kisa birebir
+alinti. Bulamiyorsan "kaynakta yerini gosteremiyorum" yaz. Biz her kimligi
+Crossref/arXiv uzerinden aciyoruz ve yerini gosteremeyen iddiayi
+kullanmiyoruz.
+
+Bu bir suclama degil: ayni hatayi biz de yaptik. Kendi yerel taramamizda bir
+orneklem makalesi icin yanlis DOI yazdik ve acinca baska bir makale cikti;
+duzelttik.
+
+
+1. SISTEMIN TARIFI
+
+Ajan: yerel calisan Llama-3.1-8B-Instruct, 4-bit, ajan basina ayri bir LoRA
+adapter. Olay basina bir karar. Zaman olay sirali, duvar saati yok.
+
+Ortam: lojistik yenilenen ortak kaynak havuzu. Karar, deterministik bir
+eslemeyle hasat miktarina cevriliyor (LLM yargic yok). Hasat enerjiye donuyor,
+bos havuz hicbir sey vermiyor, enerji tukenince yasam biter.
+
+Nesil: ata bir varis uretiyor; varis anilari ve drift durumunu miras aliyor,
+atanin adapterini almiyor.
+
+Uc nokta: varisin sabit bir yasta okunan drift durumunun buyukluk vektoru
+(kaynak, sosyal, belirsizlik alanlari). Bir agirlik vektoru veya model
+parametresi DEGILDIR.
+
+1.1 DEGISTIREMEYECEGIMIZ KISITLAR
+
+- Trait enjeksiyonu yok. Ajana hicbir kisilik/egilim degeri atanamaz. Her sey
+  yasanandan cikmali. Bu bir aksiyom.
+- Davranissal onsel yok. Karar kurali turu bilissel onseller kapali.
+- LLM yargic yok. Butun metrikler deterministik Python.
+- Duvar saati yok. Zaman olay sirasindan ibaret.
+- TEKRARLANABILIRLIK ZORUNLU. Ayni tohum + ayni kod ayni sonucu vermek
+  zorunda ve bunu bir kapi denetliyor. Bu kisit pahaliya mal olarak kazanildi:
+  daha once cozumleme deterministik degilken ayni tohumdan iki kosum farkli
+  adapter ve 50 olayin 21'inde farkli karar uretiyordu; kosumdan kosuma
+  gurultu olculen etkiden BUYUKTU.
+
+
+2. SORUN: IKI AJAN BIRBIRINDEN AYRISAMIYOR (OLCULDU)
+
+Tek soydan populasyona gecmeye hazirlanirken sunu olctuk: ayni nis, iki ajan,
+12 olay, gercek model, egitim yok.
+
+Olculen dokuz niceligin dokuzu da BIREBIR AYNI cikti: karar dizisi ve tahmin
+hatasi dizisinin ozeti (sha256), her iki fazin tahmin hatasi listeleri,
+yasanan olay sayilari, sabit yastaki enerji ve drift, yasam boyu ortalama
+enerji, ve faz-2 kararlarinin hash listesi.
+
+Sebebi uc yerde birlikte:
+- Nis tohumdan cekiliyor ve ajan kimligine bakmiyor => ayni tohumdaki her
+  ajan ayni niste doguyor.
+- Cozumleme greedy (orneklemesiz) ve tekrarlanabilirlik kisiti bunu zorunlu
+  kiliyor.
+- Kaynak bolusumu esit talebe esit pay veriyor.
+
+SONUCU POPULASYON ICIN OLDURUCU: N ajan kurarsak N tane AYNI ajan olur.
+Uygunluk skorlari ozdes olur, secilim sadece yazi-tura olur, ve secilim ile
+sonuc arasindaki kovaryans YAPI GEREGI sifir cikar. Bu, evren duz oldugu icin
+degil, ajanlar ayni ajan oldugu icin sifirdir -- yani bir bulgu degil, bir
+olcum hatasi olurdu.
+
+
+3. ASIL SORU
+
+Ajanlar yapisi geregi ayni davrandiginda ve tekrarlanabilirlik korunmak
+zorundayken, bireyler arasi fark evrene nereden girer -- ve girdigi yer
+secilim cikarimini nasil etkiler?
+
+
+4. SORULAR
+
+SORU 1 — Ozdes ajanlar arasinda heterojenlik nasil dogar
+
+Ajan tabanli ve yapay yasam modellerinde, ajanlar ayni karar kuralini
+paylastiginda bireyler arasi fark hangi mekanizmalarla uretiliyor?
+
+Aklimiza gelen adaylar ve bilmek istediklerimiz:
+- Uzamsal gomme (ajanlar konum isgal eder, kaynak yereldir): standart cozum
+  bu mu? Uzayi olmayan modellerde ne yapiliyor?
+- Kaynaga sirali/asenkron erisim (ayni olayda kim once hasat eder)
+- Baslangic kosullarinin farklilastirilmasi
+- Stokastik karar (bizde tekrarlanabilirlik kisiti yuzunden kapali)
+
+Bunlar arasinda OLCULMUS karsilastirma var mi? Hangisi "fark yasanandan
+dogdu" iddiasini korur, hangisi farki disaridan vermis olur?
+
+SORU 2 — Sirali erisim secilirse konum bir confound mudur
+
+Ajanlar tukenen ortak bir kaynaga sirayla erisirse, once gelen sistematik
+avantaj kazanir ve bu avantaj davranistan degil siradaki konumdan gelir.
+
+- Bu, deney tasarimi literaturunde nasil adlandiriliyor ve nasil ele
+  aliniyor: sirayi dondurmek, rastgelelemek, yoksa konumu bir ortak degisken
+  olarak modellemek mi?
+- Sirayi dondurmek (her nesilde kaydirmak) yeterli sayiliyor mu, yoksa
+  kalintili bir etki birakiyor mu?
+- Ortak havuz oyunlarinda erisim sirasinin sonuca etkisi OLCULMUS mu?
+
+SORU 3 — Kac nesil "birikimli kalitim" demeye yeter
+
+Onceki turda bu soruldu ve sayi gelmedi; paradigmalar geldi (aktarim
+zinciri / iterated learning), cita gelmedi.
+
+- Tek adimlik aktarim ile birikimli/kalitsal etki iddiasi arasindaki fark
+  nasil konuyor, ve OLCULMUS bir asgari nesil sayisi var mi?
+- Yoksa cita her zaman etki buyuklugune mi bagli? Oyleyse bunu acikca yaz --
+  "yerlesik bir cita yok" bizim icin kullanilabilir bir cevaptir.
+
+SORU 4 — Kucuk olcekte birey / nesil / tekrar dengesi
+
+Onceki turda iki farkli eksen karisti: bir kaynak "tekrar sayisi populasyon
+boyutundan onemli" diyordu, bir digeri "populasyon boyutu nesil sayisindan
+onemli". Uc eksenimiz var: bagimsiz tekrar sayisi, populasyon boyutu, nesil
+sayisi.
+
+- Sabit hesap butcesi altinda bu UC eksenin dengesi icin olculmus bir rehber
+  var mi?
+- Bizim olcegimiz kucuk (onlarca birey, tek haneli nesil). Bu rejim icin
+  ozel bir uyari var mi -- hangi eksende kisinti hangi cikarimi gecersiz
+  kilar?
+
+
+5. CEVABIN BICIMI
+
+Her iddia icin bes sey:
+
+1. Ne soyleniyor. Tek cumle.
+2. Kaynak. Yazar, yil, DOI veya arXiv numarasi. Emin degilsen
+   "dogrulanamadi" yaz.
+3. KAYNAGIN NERESINDE. Bolum adi, sekil/tablo numarasi veya kisa birebir
+   alinti. Gosteremiyorsan "kaynakta yerini gosteremiyorum" yaz.
+4. Kanit turu. Olculmus deney mi, simulasyon mu, teorik oneri mi?
+5. Bizim kurulumumuza uyarlanabilirligi. Hangi varsayimi ihlal ediyor?
+
+Bir oneri bolum 1.1'deki kisitlardan birini ihlal ediyorsa yine de yaz, ama
+hangi kisiti ihlal ettigini ISARETLE. Kisiti gevsetmenin bedelini bilmek,
+oneriyi hic gormemekten iyidir.
+
+Bir oneri bizim olctugumuz bir sayiyla celisiyorsa celiskiyi goster; biz o
+sayiyi yeniden olceriz. Gecmis turlarda en degerli cikti, bizim
+varsayimimizi curuten satir oldu.
+
+
+6. BILEREK DISARIDA BIRAKILANLAR
+
+- Kol kirlenmesi ve ortak havuz izolasyonu. Onceki turda cevaplandi.
+- Uygunlukta donguselligin kirilmasi. Onceki turda cevaplandi.
+- Uc nokta tanimi ve sansurleme. Daha onceki turda kapandi.
+- Davranis cokusunu cozmek. Aksiyom geregi kapali.
+- Ogrenme orani, model secimi, nicemleme. Olculdu, donduruldu.
