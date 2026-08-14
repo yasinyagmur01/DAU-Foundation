@@ -5,9 +5,11 @@ passes to the next generation. Trauma scars transfer only if they reshaped
 the organism enough to matter. Packaging inheritance is not birth — the
 new agent is created elsewhere and then receives this package.
 
-Layer 4 adds F_agent / W_transfer: low-fitness lives keep trauma as cautionary
-inherited warnings; high-fitness lives convert trauma into inherited warnings
-with scaled somatic weight.
+Layer 4 adds F_agent: low-fitness lives keep trauma as cautionary inherited
+warnings; high-fitness lives convert trauma into inherited warnings with scaled
+somatic weight. Fitness shapes WHICH traces carry forward, not whether any do
+(D-088) — whether is the salience bar's job, and how many heirs a life gets is
+w's, which is where selection is priced.
 """
 
 from __future__ import annotations
@@ -32,9 +34,17 @@ from .state import DAUAgentState, DeltaRecord
 # Generation transfer thresholds (no magic numbers in logic)
 # ---------------------------------------------------------------------------
 
+# The salience bar a durable memory clears to be worth carrying forward. It
+# gates memory_score — the quantity it was calibrated for in Layer-3 — on BOTH
+# selection paths since D-088; before that the F_agent path compared it against
+# memory_score·F_agent·valence and so never opened.
 GENERATION_TRANSFER_THRESHOLD: float = 0.6
 GENERATION_MIN_RECALL: int = 1
 DRIFT_TRANSFER_MIN: float = 1.5
+# w_transfer on a candidate that was never scored against F_agent (the legacy
+# path supplies no fitness). Not zero: zero is a real fitness-weighted salience
+# and a reader must be able to tell "unfit" from "never asked".
+W_TRANSFER_UNSCORED: float = -1.0
 
 RETRIEVAL_CONTEXT_ATTR: str = "retrieval_context"
 GENERATION_INHERITED_KEY: str = "generation_inherited"
@@ -67,6 +77,12 @@ class TransferCandidate:
     transfer_kind: str = TRANSFER_KIND_STANDARD
     inherited_warning: bool = False
     somatic_scale: float = 0.0
+    # Fitness-weighted salience, filled in by select_for_transfer when F_agent
+    # is supplied. It stopped gating transfer in D-088 (it was compared against
+    # a threshold calibrated for memory_score alone), but it is still the only
+    # place F_agent and salience are combined, so it travels with the candidate
+    # rather than being recomputed by a reader (CLAUDE.md 2.8).
+    w_transfer: float = W_TRANSFER_UNSCORED
 
 
 @dataclass
@@ -121,7 +137,13 @@ def select_for_transfer(
 
     Biology analogy: natural selection over engrams. When F_agent is omitted,
     Layer-3 salience / rehearsal / drift rules apply. When F_agent is given,
-    W_transfer gates transfer and fitness bands reshape trauma handling.
+    the same salience bar applies and fitness bands reshape trauma handling.
+
+    D-088: this used to say "W_transfer gates transfer", and it did — against a
+    threshold calibrated for memory_score alone, which no lineage could reach.
+    W_transfer is still computed and attached to the candidate, but it no
+    longer decides. See the comment on the gate below for why fitness belongs
+    on which-memories rather than whether-any.
     """
 
     if f_agent is None:
@@ -140,13 +162,38 @@ def select_for_transfer(
             selected.append(candidate)
             continue
 
+        # D-088: the salience bar is tested on the quantity it was calibrated
+        # for. GENERATION_TRANSFER_THRESHOLD was born in Layer-3 (cf400eb,
+        # 2026-08-01) gating memory_score alone, and Layer-4 (da6880b, two days
+        # later) reused the same constant against the PRODUCT
+        # memory_score·F_agent·valence. Since memory_score ≤ 1 that product can
+        # never exceed F_agent·valence, so the gate silently became an
+        # undeclared "F_agent ≥ 0.6" requirement: it passed zero memories in
+        # all twelve D-085 lineages, and at the F_agent those lives could reach
+        # (0.139) no valence in range could have opened it. It also made the
+        # low/normal band policies below unreachable — dead code the design
+        # clearly meant to run, since it writes a distinct transfer rule for
+        # each band.
+        #
+        # Fitness has NOT been dropped; it moved off the on/off switch. Gating
+        # transmission on absolute fitness double-counts selection, because
+        # F_agent is also what will set w, the heir count (D-076 / Price). That
+        # is the same error K4-b (D-070) removed from the pool term, where
+        # longevity was priced twice. F_agent now shapes WHICH memories
+        # transfer — the three band rules below — not WHETHER any do.
+        #
+        # w_transfer stays computed and rides along on the candidate so the
+        # fitness-weighted salience is still visible in the results file; a
+        # later decision can re-gate on it with a threshold derived for a
+        # product rather than transplanted from a score.
         w_transfer = compute_w_transfer(
             candidate.memory_score,
             f_value,
             reward_marker,
             threat_marker,
         )
-        if w_transfer < GENERATION_TRANSFER_THRESHOLD:
+        candidate = replace(candidate, w_transfer=w_transfer)
+        if candidate.memory_score < GENERATION_TRANSFER_THRESHOLD:
             continue
 
         if trauma and f_value >= FITNESS_HIGH_THRESHOLD:

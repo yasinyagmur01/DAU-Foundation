@@ -17,6 +17,7 @@ from dau.foundation.generation import (
     SOMATIC_SCALE_KEY,
     TRANSFER_KIND_INHERITED_WARNING,
     TRANSFER_KIND_STANDARD,
+    W_TRANSFER_UNSCORED,
     GenerationRecord,
     TransferCandidate,
     apply_generation,
@@ -290,8 +291,16 @@ def test_high_fitness_trauma_becomes_inherited_warning() -> None:
     ]
 
 
-def test_normal_fitness_uses_w_transfer_and_drift_gate() -> None:
-    """Normal F: W_transfer threshold + trauma still needs high drift."""
+def test_normal_fitness_uses_salience_and_drift_gate() -> None:
+    """Normal F: the salience bar + trauma still needs high drift.
+
+    D-088 renamed this from ..._uses_w_transfer_...: it never tested the
+    w_transfer gate. Both of its candidates put memory_score and w_transfer on
+    the SAME side of the threshold (0.95 clears both, 0.1 fails both), so it
+    passed identically whichever quantity was being gated and could not have
+    caught the transplanted-constant defect. The case that discriminates is
+    below, in test_salience_bar_is_tested_on_memory_score_not_the_product.
+    """
 
     f_normal = (FITNESS_LOW_THRESHOLD + FITNESS_HIGH_THRESHOLD) / 2.0
     trauma = _candidate(
@@ -329,7 +338,7 @@ def test_normal_fitness_uses_w_transfer_and_drift_gate() -> None:
     assert len(selected) == 1
     assert selected[0].transfer_kind == TRANSFER_KIND_STANDARD
 
-    # Below W_transfer threshold even with high drift.
+    # Below the salience bar even with high drift.
     weak = _candidate(
         0.55,
         memory_score=0.1,
@@ -455,3 +464,76 @@ def test_life_of_zero_events_scores_its_present_energy() -> None:
     inputs = f_agent_inputs(newborn, ENERGY_TRACE_BUDGET)
     assert inputs["energy_lived"] == pytest.approx(ENERGY_MAX)
     assert inputs["t_survived"] == 0.0
+
+
+# D-088: the discriminating case the old test could not reach — a memory that
+# clears the salience bar while the fitness-weighted product does not. Every
+# memory that failed to transfer in the D-085 validation run was of this shape.
+SALIENT_SCORE: float = 0.9
+NEUTRAL_MARKER: float = 0.0
+
+
+def test_salience_bar_is_tested_on_memory_score_not_the_product() -> None:
+    """A salient memory from a normal-fitness life transfers.
+
+    Mutation control (§2.4): restore `if w_transfer < THRESHOLD: continue` and
+    this must fail. The candidate is built so the two readings DISAGREE —
+    memory_score 0.9 clears 0.6, while w_transfer = 0.9·F·1.0 does not — which
+    is exactly the region the transplanted constant was silently rejecting, and
+    exactly what the old test's candidates could not express.
+    """
+
+    f_normal = (FITNESS_LOW_THRESHOLD + FITNESS_HIGH_THRESHOLD) / 2.0
+    salient = _candidate(
+        DELTA_THRESHOLD_DEEP - 0.1,  # below trauma: no drift gate in the way
+        memory_score=SALIENT_SCORE,
+        recall_count=GENERATION_MIN_RECALL,
+        record_id="salient-normal",
+    )
+
+    # The premise: the two readings disagree about this candidate.
+    assert salient.memory_score >= GENERATION_TRANSFER_THRESHOLD
+    product = compute_w_transfer(
+        SALIENT_SCORE, f_normal, NEUTRAL_MARKER, NEUTRAL_MARKER
+    )
+    assert product < GENERATION_TRANSFER_THRESHOLD
+
+    selected = select_for_transfer(
+        [salient],
+        DriftState(),
+        f_agent=f_normal,
+        reward_marker=NEUTRAL_MARKER,
+        threat_marker=NEUTRAL_MARKER,
+    )
+    assert len(selected) == 1
+    assert selected[0].transfer_kind == TRANSFER_KIND_STANDARD
+    # F_agent did not vanish from the decision — it rode along as the
+    # fitness-weighted salience, so a reader can still see it.
+    assert selected[0].w_transfer == pytest.approx(product)
+
+
+def test_legacy_and_fitness_paths_agree_on_the_salience_bar() -> None:
+    """The same memory is judged the same by both paths (D-088).
+
+    Before D-088 the F_agent path was strictly stricter than the legacy path by
+    a factor of F_agent·valence, without that ever being declared.
+    """
+
+    salient = _candidate(
+        DELTA_THRESHOLD_DEEP - 0.1,
+        memory_score=SALIENT_SCORE,
+        recall_count=GENERATION_MIN_RECALL,
+        record_id="salient-both",
+    )
+    legacy = select_for_transfer([salient], DriftState(), f_agent=None)
+    fitness = select_for_transfer(
+        [salient],
+        DriftState(),
+        f_agent=(FITNESS_LOW_THRESHOLD + FITNESS_HIGH_THRESHOLD) / 2.0,
+        reward_marker=NEUTRAL_MARKER,
+        threat_marker=NEUTRAL_MARKER,
+    )
+    assert len(legacy) == len(fitness) == 1
+    # Only the legacy path leaves w_transfer unscored — it was never asked.
+    assert legacy[0].w_transfer == W_TRANSFER_UNSCORED
+    assert fitness[0].w_transfer > W_TRANSFER_UNSCORED
