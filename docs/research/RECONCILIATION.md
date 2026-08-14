@@ -839,3 +839,109 @@ eşitliğinin `w`/`z` ayrımı · turnuva vs kesme tartışmasının çerçevesi
 **Karara hazır DEĞİL:** N/G/tohum dengesi (M.3+M.4) · birikimli kalıtım çıtası
 (hâlâ sayı yok; D-075 de verememişti) · Bedau atfı kırık olduğu için
 çeşitlilik/aktivite ölçütleri.
+
+---
+
+# §N — Özdeş ajanlar arasında heterojenlik (yerel tarama, 2026-08-14)
+
+⚠ **DR raporu DEĞİL.** Brief #7
+(`2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt`) gönderilemedi:
+Gemini *"ben bir dil modeliyim, bu beceriye sahip değilim"* deyip kotayı
+çıktısız tüketti. ⚠ **#6 cevaplanmıştı** ⇒ artık kontrollü bir karşılaştırma
+var; farklar §N.3'te.
+
+**Yöntem:** D-069/D-075'in aynısı — her kimlik Crossref/arXiv'den **açılarak**
+doğrulandı. ⚠ Bu turda **yeni bir işaret** kullanılıyor: bir iddianın kaynağın
+**neresinde** geçtiğini gösteremediysem öyle yazıyorum (D-076'nın yakaladığı
+*"doğru kimlik, yanlış iddia"* kusuru için).
+
+## N.0 Doğrulanan kimlikler
+
+| # | Kaynak | Kimlik | Durum |
+|---|---|---|---|
+| W1 | Schönfisch & de Roos 1999, *Synchronous and asynchronous updating in cellular automata*, BioSystems 51:123–143 | `10.1016/s0303-2647(99)00025-8` | ✅ kimlik |
+| W2 | Fatès 2014, *A guided tour of asynchronous cellular automata* | `arXiv:1406.0792` | ✅ kimlik + özet |
+| W3 | Suleiman, Rapoport & Budescu 1996, *Fixed position and property rights in sequential resource dilemmas under uncertainty*, Acta Psychologica 93:229–245 | `10.1016/0001-6918(96)00008-x` | ✅ kimlik |
+| W4 | Bru, Cabrera, Capra & Gomez 2003, *A Common Pool Resource Game with Sequential Decisions and Experimental Evidence*, Experimental Economics 6:91–114 | `10.1023/A:1024209010570` | ✅ kimlik |
+
+## N.1 ⭐ S2 — sıralı erişimde konum etkisi **ölçülmüş**, ve önerimi zorluyor
+
+**W3 (insan deneyi):** sıralı kaynak ikilemlerinde bir **konum etkisi** var —
+talep ile sıradaki konum ters orantılı (*"erken davranan avantajı, geç kalan
+dezavantajı"*). Suleiman ve ark. konumun **nasıl dağıtıldığını** manipüle
+ediyor: hak edilmişlik yüksekken (açık artırma / sınav puanı) konum etkisi
+**dönen konumlardakiyle aynı biçimde** görülüyor; konumlar **rastgele**
+dağıtıldığında etki **belirgin biçimde azalıyor**.
+
+⚠ **Bu, P0(d) önerimi olduğu gibi bırakmıyor.** Ben *"sıra dönsün, konum
+kalıcı avantaja dönüşmesin"* demiştim. W3'e göre **dönen konumlarda da** etki
+gözleniyor.
+
+⚠ **Aşağıdaki benim çıkarımım, W3'ün bulgusu değil:** dönen sırada her ajan
+her konumu işgal ettiği için **birikimli** maruziyet eşitlenir; geriye kalan,
+durumun (enerji, drift, anı) **doğrusal olmayan** biriktiği için ortaya çıkan
+yörünge ayrışmasıdır — ki aradığımız simetri kırılması **tam olarak budur**.
+Yani konum etkisi bizde bir kusur değil, **mekanizmanın kendisi** olabilir;
+kusur olan, onun **kalıcı** hâle gelmesi.
+
+**W4:** sıralı CPR oyununda stratejik olarak **ilgisiz** parametreler bile
+davranışı değiştiriyor, ve tahminden fazla işbirliği gözleniyor.
+
+⚠ **İkisi de insan deneyi.** LLM ajanlarına taşınması **analoji**; ve W3'ün
+mekanizması *"hak edilmişlik algısı"* — bizim ajanlarımızda böyle bir algının
+karşılığı olup olmadığı **bilinmiyor**.
+
+## N.2 S1 — güncelleme sırası nötr bir uygulama ayrıntısı **değil**
+
+**W1/W2:** hücresel otomatlarda eşzamanlı (synchronous) ve eşzamansız
+(asynchronous) güncelleme **temelde farklı** dinamikler üretiyor; eşzamansız
+güncelleme literatürü bunun için ayrı bir alan.
+
+⇒ **Bu, önerimin çerçevesini düzeltiyor.** Sıralı erişimi *"aksiyoma uygun,
+hafif bir mekanizma"* diye sunmuştum. Literatür güncelleme sırasını **birinci
+sınıf bir modelleme kararı** sayıyor — yani P0(d) bir uygulama detayı değil,
+**fizik kararı**dır ve ön-kayıtta öyle ilan edilmeli.
+
+⚠ *"Sabit süpürme (fixed sweep) düzeni dinamiğe istenmeyen yapı sokar"*
+iddiası ikincil bir özetten geldi; **birincil kaynakta yerini gösteremedim**
+⇒ **kullanılmıyor**, yalnız not ediliyor.
+
+⚠ **Uzamsal gömme** (ALife'ın muhtemel standart cevabı): arama bunu
+destekleyen genel ifadeler döndürdü ama **tek bir doğrulanmış kaynağa
+bağlayamadım** ⇒ bu turda **cevapsız**.
+
+## N.3 ⚠ #6 cevaplandı, #7 cevaplanmadı — fark ne
+
+Kontrollü karşılaştırma: aynı hesap, aynı düz metin biçimi, aynı uzunluk
+mertebesi.
+
+| #6 (cevaplandı) | #7 (reddedildi) |
+|---|---|
+| Kaynak + kanıt türü + uyum istiyordu | ⭐ ek olarak **iddianın kaynağın neresinde geçtiğini** istiyor |
+| Sicil bölümü kısa | Sicil bölümü **daha uzun ve daha sert** (*"kaynak uydurma"*, *"yeni kusur türü"*) |
+
+⇒ **Hipotez (kanıt değil):** #7'nin doğrulama şartı tarayıcısız bir modelin
+karşılayamayacağı bir şart, ve dürüst cevabı *"yapamam"* oluyor. ⚠ Sınanabilir:
+sicil bölümü ve *"neresinde geçtiğini yaz"* şartı çıkarılıp gönderilir; cevap
+gelirse sorun içerikte, gelmezse ürün/hesap tarafında.
+
+## N.4 Cevapsızlar
+
+1. **Uzamsal gömme** — doğrulanmış kaynağa bağlanamadı.
+2. **S3: birikimli kalıtım çıtası.** ⚠ **İkinci bağımsız denemede de sayı
+   çıkmadı** (DR #6 ve bu tarama). ⇒ Artık bunu bir **bulgu** saymak makul:
+   *yerleşik bir çıta yok*, ve G bizim kendi gerekçemizle seçilip ön-kayıtta
+   **ilan edilmiş bir seçim** olarak yazılmalı.
+3. **S4: üç eksenli denge.** Simülasyon deney tasarımı literatürü *"tekrar mı
+   koşu uzunluğu mu"* çerçevesini ve ortak rastgele sayı gibi varyans azaltma
+   tekniklerini veriyor; **bizim ölçeğimiz için sayı vermiyor**.
+
+## N.5 Claude Code'un okuması (karar Yasin'in)
+
+1. **P0(d) hâlâ en iyi aday ama çerçevesi değişti:** bir uygulama ayrıntısı
+   değil, **ilan edilmesi gereken bir fizik kararı** (N.2).
+2. **Sıra dönmeli** — ama gerekçe *"konum etkisini yok etmek"* değil (W3 onu
+   yok etmiyor), **kalıcı olmasını engellemek**.
+3. **Konum etkisinin kendisi ölçülmeli**, bastırılmaya çalışılmamalı: pilotta
+   konum ile `F_agent` arasındaki ilişkiye bakılır. ⚠ Kol farkına değil —
+   L9 sınırı geçerli.

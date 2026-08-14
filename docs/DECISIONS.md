@@ -5762,3 +5762,85 @@ okuyucu onları **doğru şekilde reddetti**. Fikstür düzeltildi.
   tetiklemez, ama deneyde kullanılmamalı.
 - E3 popülasyonu **kurmuyor**; onun sessiz kusurunu önceden kapatıyor.
 - **P0–P7'nin hiçbiri karara bağlanmadı.**
+
+---
+
+## D-079 · 2026-08-14 · P0 için yerel tarama: sıralı erişim **fizik kararı**ymış, ve konum etkisi ölçülmüş
+
+**Durum:** literatür taraması · **Etiket:** ⚠ **DR raporu değil** · **kod
+değişmedi** · mutabakat `RECONCILIATION.md` **§N** · dört kimlik doğrulandı
+
+### Neden burada
+
+Brief #7 gönderilemedi: Gemini *"ben bir dil modeliyim, bu beceriye sahip
+değilim"* deyip kotayı **çıktısız** tüketti. D-069/D-075'in yöntemi üçüncü kez
+uygulandı.
+
+⚠ **Bu turda yeni bir işaret kullanıldı:** bir iddianın kaynağın **neresinde**
+geçtiğini gösteremediysem **kullanılmıyor**, yalnız not ediliyor. D-076'nın
+*"doğru kimlik, yanlış iddia"* kusuruna karşı eklenen adım — ve bu turda
+**iki kez işe yaradı** (§N.2'deki iki iddia bu yüzden alınmadı).
+
+### ⭐ Bulgu 1 — konum etkisi ölçülmüş, ve **önerimi olduğu gibi bırakmıyor**
+
+**Suleiman, Rapoport & Budescu 1996** (`10.1016/0001-6918(96)00008-x`, Acta
+Psychologica 93:229–245): sıralı kaynak ikilemlerinde **konum etkisi** var —
+talep ile sıradaki konum ters orantılı. Konumun **nasıl dağıtıldığı** etkiyi
+değiştiriyor: rastgele dağıtım etkiyi azaltıyor, hak edilmiş dağıtım
+**dönen konumlardakiyle aynı** etkiyi veriyor.
+
+⚠ **D-077/P0'da *"sıra dönsün"* demiştim; W3'e göre dönen konumlarda da etki
+görülüyor.** Yani rotasyon konum etkisini **yok etmiyor**.
+
+⚠ **Şu benim çıkarımım, kaynağın bulgusu değil:** dönen sırada her ajan her
+konumu işgal ettiği için **birikimli** maruziyet eşitlenir; geriye kalan,
+durumun (enerji, drift, anı) doğrusal olmayan biriktiği için oluşan yörünge
+ayrışmasıdır — **aradığımız simetri kırılması tam olarak bu**. ⇒ Konum etkisi
+bizde bir kusur değil, **mekanizmanın kendisi** olabilir; kusur olan onun
+**kalıcı** hâle gelmesi.
+
+⚠ İkisi de **insan deneyi**; LLM ajanına taşınması analoji. Üstelik W3'ün
+mekanizması *"hak edilmişlik algısı"* — ajanlarımızda karşılığı bilinmiyor.
+
+### ⭐ Bulgu 2 — güncelleme sırası **birinci sınıf bir modelleme kararı**
+
+**Schönfisch & de Roos 1999** (`10.1016/s0303-2647(99)00025-8`) ve **Fatès
+2014** (`arXiv:1406.0792`): eşzamanlı ve eşzamansız güncelleme **temelde
+farklı** dinamikler üretiyor; eşzamansız güncelleme kendi başına bir
+literatür.
+
+⇒ **Önerimin çerçevesi düzeliyor.** Sıralı erişimi *"aksiyoma uygun, hafif bir
+mekanizma"* diye sunmuştum. Değil: **fizik kararıdır** ve ön-kayıtta öyle ilan
+edilmeli — tıpkı metabolik döngü (D-066) gibi.
+
+### Bulgu 3 — birikimli kalıtım çıtası: **ikinci kez sayı çıkmadı**
+
+DR #6 ve bu tarama, **bağımsız olarak**, kaç neslin *"birikimli kalıtım"*
+demeye yettiğine dair yerleşik bir çıta bulamadı. ⇒ Bunu artık bir **bulgu**
+saymak makul: **yerleşik çıta yok**, ve G bizim kendi gerekçemizle seçilip
+ön-kayıtta **ilan edilmiş bir seçim** olarak yazılmalı — literatürden
+türetilmiş gibi değil.
+
+### Cevapsızlar
+
+**Uzamsal gömme** (ALife'ın muhtemel standart cevabı) doğrulanmış kaynağa
+bağlanamadı · **üç eksenli (tekrar/N/nesil) denge** bizim ölçeğimiz için sayı
+vermiyor.
+
+### ⚠ #6 cevaplandı, #7 reddedildi — kontrollü fark
+
+Aynı hesap, aynı düz metin, aynı uzunluk mertebesi. İki fark: #7 ek olarak
+**iddianın kaynağın neresinde geçtiğini** istiyor, ve sicil bölümü daha uzun
+ve daha sert.
+
+⚠ **Hipotez, kanıt değil:** #7'nin doğrulama şartı tarayıcısız bir modelin
+karşılayamayacağı bir şart ve dürüst cevabı *"yapamam"* oluyor. **Sınanabilir**
+— sicil bölümü ve *"neresinde"* şartı çıkarılıp gönderilir.
+
+### Sınırlar
+
+**Sistematik derleme değil, hedefli tarama.** Dört kimlik doğrulandı, **içerik
+yalnız açık erişimlilerde** okundu. İki iddia *"kaynakta yerini
+gösteremedim"* diye **alınmadı**. **Hiçbir karar verilmedi, hiçbir kod
+değişmedi.** P0 **hâlâ Yasin'in** ve tarama onu kapatmadı — çerçevesini
+değiştirdi.
