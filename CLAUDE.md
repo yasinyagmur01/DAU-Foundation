@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-080.** Sıradaki kayıt **D-081** olarak açılır.
+- **Son D-kaydı: D-081.** Sıradaki kayıt **D-082** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -91,14 +91,20 @@ yazı-turaya döner ve `Cov(w, z) = 0` **yapı gereği** olur. Bu bir bulgu değ
 | ④ Örneklemeli çözümleme | Rastgele sayı üretecinden | ⛔ **D-037'yi ve I0.6'yı kırar** — `warn_only` altında aynı tohum farklı adapter + 21/50 farklı karar üretiyordu, **gürültü etkiden büyüktü** |
 | ⑤ **Uzamsal gömme** (yeni, D-080) | Başlangıçtaki konumdan | Mekanizma gerçek (Schelling 1971, `10.1080/0022250X.1971.9989794`) ve §N.4'ün cevapsızını doldurdu. ⚠ Ama **②'nin yanına düşüyor**: Schelling'de farkı yaratan başlangıç yerleşimidir ⇒ **fark yaşamaktan önce gelir**. ⚠ DR *"kısıt ihlal etmiyor"* dedi, **eksik**: ızgara boyutu + komşuluk yarıçapı + kaynağın uzamsal dağılımı = **en az üç yeni sabit** |
 
-⚠ **①'in ilan edilmiş zayıflığı:** yalnız **kıtlık varken** çalışır. Kaba
-hesap: havuz 80 → yenilenmeyle ~89; 8 ajan × 8.0 = **64 talep < 89** ⇒ ilk
-olaylarda herkes tam alır, **fark yok**. Ayrışma ancak havuz azalınca başlar.
-D-068 çöküşün geldiğini gösteriyor (8.0 → 6.17 → 0) ama **landmark 10. olayda**
-ve ayrışmanın ondan önce başlayıp başlamadığı **bilinmiyor**.
-⇒ ① seçilirse **pilotun ilk sorusu:** *"ajanlar kaçıncı olayda ayrışıyor, ve
-bu landmark'tan önce mi?"* Cevap "sonra" ise ya landmark kayar ya havuz
-başlangıcı kısılır. ②/③/④'te bu risk yok — onlar doğumdan itibaren farklı.
+⚠ **①'in ilan edilmiş zayıflığı — D-081 bunu yeniden yazdı.** Eski metin
+*"havuz 80 → yenilenmeyle ~89"* diyordu; **yanlıştı**, yenilenme +2.40, stok
+**82.40**, ve olay 1'den sonra havuz **18.40**'a düşüyor. Zayıflık *"ayrışma
+geç başlar"* değil:
+
+> **Bu evrende kademeli kıtlık yok, kıtlık *anı* var.** Kişi başı azami
+> yenilenme `r·K/4 = 3.75`/olay, DEFECT'in talebi **8.0**/olay ve olayların
+> %94–100'ü DEFECT ⇒ yenilenme **hiçbir başlangıç stoğunda** yetişemez.
+> Havuz *"herkese yeter"* ile *"ölü"* arasında **tek adımda** geçer ⇒ bir
+> yaşamda **tam olarak bir** kısmen karşılanan olay olur. Başlangıç stoğu bir
+> çalışma noktası değil, **geri sayım sayacı**dır.
+
+⚠ **①'e özgü değil:** ②/③ de havuza dokunmuyor. Havuzun çalışma kuralı
+**hangi P0 seçilirse seçilsin** ilan edilmek zorunda.
 
 ⚠ **D-079 ①'in çerçevesini değiştirdi:** bu bir uygulama ayrıntısı değil,
 **ilan edilmesi gereken bir fizik kararı** (Schönfisch & de Roos 1999;
@@ -111,6 +117,46 @@ rotasyonun gerekçesi §N'deki hâliyle kalıyor: *"konum etkisini yok etmek"*
 değil — **kalıcı olmasını engellemek**. (DR'nin rotasyon dayanağı Bru 2003
 idi; o alıntı **koşulların sunuluş sırasından** bahsediyor, ajan sırasından
 değil ⇒ **alınmadı**.)
+
+### ⛔ P0-b — **havuzun çalışma noktası**, karar Yasin'in (D-081)
+
+P0 ①'i seçse bile ayrı bir sayı kararı kalıyor, ve **ikisi birlikte** ilan
+edilmeli.
+
+✅ **Karara bağlandı (Yasin, D-081):** havuz **N ile ölçeklenecek**, kişi başı
+kapasite/başlangıç **bugünkü sayılarda** (100 / 80) ⇒ **sıfır yeni sabit**,
+ve kişi başı yörünge N=1 evreninin **birebir aynısı** kalıyor.
+
+⛔ **Claude Code kendi önerisini geri çekti:** *"landmark yapısal
+tanımlansın (= kıtlık anı)"* demiştim, Yasin onaylamıştı, **uygulamaya
+geçerken çöktü.** `LANDMARK_EVENT = 10` keyfi değil —
+`constraints.py:64–77` onu `METABOLIC_GRACE_EVENTS`'e bağlıyor ki **ölüm
+landmark'ta hâlâ askıda** olsun ve **her soy oraya ulaşsın**. Kıtlık anına
+(17) taşımak 11–16'da ölen soyları **okumasız** bırakır ⇒ K1–K3'ün ve DR #5'in
+konusu olan **bilgilendirici sansürleme** geri gelir. ⇒ **landmark 10'da
+kalıyor.**
+
+⏳ **Açık kalan tek sayı — kişi başı kapasite.** Bugünkü 100 ile kıtlık anı
+**olay 17**, yani landmark'tan (10) **sonra** ⇒ ölçüm anında ajanlar
+**özdeş**, ① hiçbir şey ölçmez.
+
+| kişi başı kapasite | kıtlık anı |
+|---|---|
+| 50 | 7 |
+| 60 | 8 |
+| **67** ⭐ | **9** — kıtlığı landmark'tan önce düşüren **en büyük** değer |
+| 70 | 10 |
+| 100 (bugünkü) | **17** ⛔ landmark'tan sonra |
+
+⭐ Kapasite 67 (başlangıç 54) seçilirse: olay 1–8 herkes tam alır ve
+**özdeştir** · olay 9 **tek ayrışma olayı** · olay 10'da havuz ölü ama
+**enerjiler farklı**, landmark tam orayı okur · ölüm askıda olduğu için
+**her soy landmark'a ulaşır**.
+⚠ **Bu bir sabit seçimidir ve §2.7'nin sınırındadır.** Savunulabilir biçimi:
+değer **etkiye bakılarak değil**, yalnız sabitlerden türetilen bir
+eşitsizlikle seçilir (*"kıtlık anı < `LANDMARK_EVENT`, ve bunu sağlayan en
+büyük kapasite"*) — hiçbir pilot verisi girmez, tıpkı `LANDMARK_EVENT`'in
+`GRACE`'e bağlanması gibi. ⚠ **Karar Yasin'in** (D-007).
 
 ### 3. P0 verildikten sonra, sırayla
 

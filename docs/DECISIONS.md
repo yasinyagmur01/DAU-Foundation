@@ -5969,3 +5969,131 @@ Gilbert 2002) **açılamadı** — biri ödemeli, biri konferans bildirisi.
 Schelling 1971'in kendisini de açamadım; kimliği doğrulandı, **iddianın yeri
 birincil kaynakta gösterilmedi**. **P0 hâlâ Yasin'in** ve DR #7 onu
 kapatmadı — ①'i **zayıflatmadı**, tabloya **⑤**'i ekledi.
+
+---
+
+## D-081 · 2026-08-14 · Havuzun aritmetiği: **kademeli kıtlık diye bir şey yok**, ve landmark önerimi geri çekiliyor
+
+**Durum:** ölçüm (saf aritmetik, mevcut sabitler) · **Etiket:** ⚠ **keşifsel,
+ön-kayıtlı değil** · **kod değişmedi, sabit değişmedi, koşum yapılmadı** ·
+tetikleyen soru Yasin'den
+
+### Neden burada
+
+Yasin sordu: *"P0'ı sonradan değiştirmek çileli olur mu; ajanlar geç tepki
+veriyorsa tepki verecekleri aralıktan başlatsak runlar boşa gitmez mi?"*
+Sorunun ilk yarısı koda bakmayı, ikinci yarısı havuzun yörüngesini
+hesaplamayı gerektirdi. §2.6 gereği ölçüm kaydediliyor — **sonucu önerimi
+çürüttü.**
+
+### Bulgu 1 — `CLAUDE.md`'deki hesap yanlıştı
+
+Belge *"havuz 80 → yenilenmeyle ~89"* diyordu. Lojistik yenilenme 80'de
+**+2.40** veriyor (`0.15·80·(1−0.8)`), stok **82.40**. Olay 1'in sonucu
+değişmiyor (64 < 82.40) ama yörünge ileri taşınmamıştı: olay 1'den sonra
+havuz **18.40**'a düşüyor.
+
+⚠ Ve belgenin çıkarımı (*"ilk olaylarda herkes tam alır, ayrışma geç
+başlar"*) **N=8 için terstir**. Bugünkü kodda havuz N ile ölçeklenmiyor
+(`POOL_MAX=100` sabit):
+
+| N | kıtlığın başladığı olay |
+|---|---|
+| 1 | 17 |
+| 2 | 7 |
+| 4 | 3 |
+| **8** | **2** |
+
+⇒ Landmark'a (10) gelindiğinde havuz **sekiz olaydır sıfır**, herkes sıfır
+alıyor, ajanlar ölçüm anında **yine özdeş**. Riskin yönü belgede yazdığının
+tersiymiş.
+
+### ⭐ Bulgu 2 — bu bir ayar sorunu değil, **cebirsel bir sonuç**
+
+Kişi başı azami yenilenme, lojistik eğrinin tepesinde
+`r·K/4 = 0.0375·K` = kapasite 100'de **3.75/olay**. DEFECT'in talebi
+**8.0/olay**, ve olayların **%94–100'ü DEFECT** (D-068).
+
+⇒ **Yenilenme bedavacılığa hiçbir başlangıç stoğunda yetişemez.** Havuz
+tekdüze düşer ve *"herkese yeter"* ile *"ölü"* arasında **tek adımda** geçer.
+
+⚠ **Sonuç:** bir yaşamda **tam olarak bir tane** kısmen karşılanan olay
+vardır — başlangıç stoğu ne olursa olsun. Yani **kıtlık bandı yok, kıtlık
+anı var.** Başlangıç stoğu bir çalışma noktası değil, yalnız bir **geri
+sayım sayacı**dır: hangi olayda öleceğini belirler, biçimini değiştirmez.
+
+⚠ Bu **①'e özgü değil**: ②/③ de havuza dokunmuyor. Havuzun çalışma kuralı
+hangi P0 seçilirse seçilsin ilan edilmek zorunda.
+
+### Bulgu 3 — kişi başı ölçekleme N'den bağımsız, **birebir**
+
+Havuz kapasitesi ve başlangıcı N ile ölçeklenirse (kişi başı 100 / 80 —
+*bugünkü sayılar*), lojistik denklem doğrusal ölçeklendiği için kişi başı
+yörünge **N=1 evreninin aynısı** oluyor: N = 1, 4, 8, 16 için kıtlık anı
+**hepsinde olay 17**. **Sıfır yeni sabit** girer.
+
+### ⛔ Bulgu 4 — **kendi önerimi geri çekiyorum**
+
+Yasin'e *"landmark yapısal tanımlansın: kıtlığın başladığı olay"* önermiştim
+ve onayını almıştım. **Uygulamaya geçerken çöktü.**
+
+`LANDMARK_EVENT = 10` keyfi bir sayı değil. `constraints.py:64–77` onu
+`METABOLIC_GRACE_EVENTS = 10`'a bağlıyor ve gerekçesini yazıyor: grace
+doğum geçicisini örtüyor, **ölüm landmark'ta hâlâ askıda**
+(`should_continue` yalnız `len(event_log) >= GRACE` olunca yaşamı
+bitiriyor) ⇒ **her soy landmark'a ulaşıyor, sansür yok.**
+
+⇒ Landmark'ı kıtlık anına (17) taşımak onu grace'in **dışına** çıkarır:
+11–16 arasında ölen soyların **okuması olmaz**. Bu, tam da K1–K3'ün (D-070)
+ve DR brief #5'in konusu olan **bilgilendirici sansürlemeyi** geri getirir.
+
+⚠ **§2.2'nin dersi bir kez daha:** öneriyi belge düzeyindeki resimden
+kurdum, sabitin kendi yorumunu okumadan. *"Hafızaya ve belgeye değil,
+dosyaya güven."*
+
+### Bulgu 5 — geriye kalan tek kaldıraç ve sınırı
+
+Landmark 10'da kalmak zorundaysa ve kıtlık anı ondan **önce** düşmeliyse,
+oynayabilecek tek şey kişi başı kapasite:
+
+| kişi başı kapasite | kıtlık anı |
+|---|---|
+| 40 | 5 |
+| 50 | 7 |
+| 60 | 8 |
+| **67** | **9** ⭐ en büyük değer |
+| 70 | 10 |
+| 100 (bugünkü) | 17 |
+
+⭐ **Kıtlık anını landmark'tan önce düşüren en büyük kapasite = 67**
+(başlangıç 54, kıtlık olay 9'da). O yapılandırmada: olay 1–8 herkes tam alır
+ve **özdeştir**; olay 9 **tek ayrışma olayıdır** ve sırayı kim aldıysa payı
+o alır; olay 10'da havuz ölüdür ama **enerjiler artık farklıdır** ve
+landmark tam orayı okur; ölüm hâlâ askıda olduğu için **her soy oraya
+ulaşır**.
+
+⚠ **Ama bu bir sabit seçimidir ve §2.7'nin sınırındadır.** Savunulabilir
+biçimi: değer **etkiye bakılarak** değil, **yalnız sabitlerden türetilen bir
+eşitsizlikle** seçilir (*"kıtlık anı < LANDMARK_EVENT olsun, ve bunu
+sağlayan en büyük kapasite alınsın"*) — hiçbir pilot verisi girmez, tıpkı
+`LANDMARK_EVENT`'in `GRACE`'e bağlanması gibi. ⚠ Yine de **bu bir karardır
+ve Yasin'indir** (D-007); Claude Code tek başına almaz.
+
+### Ne karara bağlandı, ne bağlanmadı
+
+| | Durum |
+|---|---|
+| **Havuz N ile ölçeklensin, kişi başı sayılar bugünkü değerinde** | ✅ Yasin onayladı, **ayakta** — sıfır yeni sabit |
+| **Landmark yapısal tanımlansın (= kıtlık anı)** | ⛔ **Claude Code geri çekti** (Bulgu 4). `LANDMARK_EVENT = 10` **kalıyor** |
+| Kişi başı kapasite değeri | ⏳ **açık, Yasin'in** — Bulgu 5 |
+| P0 = ① | ⏳ ⚠ Yasin *"önerdiğin olsun"* dedi; bunu ①'i de kapsıyor diye okuyorum ama **açıkça teyit edilmedi** — yanlışsa D-082 düzeltir |
+
+### Sınırlar
+
+**Saf aritmetik.** Model koşulmadı, ajan yaşamadı, adapter yazılmadı.
+Hesap üç varsayıma dayanıyor: (i) her ajan her olayda DEFECT ediyor (D-068:
+%94–100), (ii) `EXTRACTION_DEFECT = 8.0` sabit, (iii) havuzdan başka enerji
+kaynağı yok. Gerçek koşumda davranış karışırsa talep düşer ve kıtlık anı
+**gecikir** — yani yukarıdaki tablo **en erken** durumu verir. ⚠ Ölüm
+modelinin (`should_continue` + grace) etkisi hesaba **katılmadı**;
+landmark'tan sonra ömürlerin ne olacağı **ölçülmedi**.
