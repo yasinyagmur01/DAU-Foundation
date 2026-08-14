@@ -25,38 +25,53 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-079.** Sıradaki kayıt **D-080** olarak açılır.
+- **Son D-kaydı: D-080.** Sıradaki kayıt **D-081** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — **iki şey: P0 kararı (Yasin'in) + DR #7 cevabının mutabakatı**
+## ▶▶ SIRADAKİ İŞ — **tek şey kaldı: ⛔ P0 kararı (Yasin'in)**
 
-### 1. ⏳ DR brief #7'nin cevabı geldi — **önce mutabakat**
+### 1. ✅ DR #7 mutabakata bağlandı (**D-080**, §O) — **P0'ı kapatmadı**
 
-Yasin cevabı yapıştıracak. Yapılacaklar (§9 / D-006):
+Ham cevap `docs/research/2026-08-14_DR7-answer-raw.md`. Altı iddia, altı
+kimlik açıldı. **Sonuç P0'ı değiştirmedi ama tabloya ⑤'i ekledi.**
 
-1. Ham cevabı **değiştirmeden** `docs/research/2026-08-1X_DR7-answer-raw.md`
-   olarak kaydet.
-2. **İki aşamalı doğrulama** — bu turda kural değişti:
-   - **Kimlik:** her DOI/arXiv Crossref'ten **açılarak** doğrulanır (D-069'dan
-     beri standart).
-   - ⭐ **Yer:** iddianın kaynağın **neresinde** geçtiği (bölüm/şekil/alıntı).
-     **D-076'nın yakaladığı kusur bu:** kaynaklar gerçekti, DOI'ler doğruydu,
-     ama üç iddia o kaynaklarda **yoktu**. DOI doğrulaması bunu yakalamıyor.
-     ⚠ D-079'da bu kuralı kendime uyguladım ve **iki iddiayı elemek zorunda
-     kaldım** — kural işliyor.
-3. Mutabakat `RECONCILIATION.md` **§O** olarak eklenir · kayıt **D-080**.
-4. ⚠ **D-079 (§N) ile karşılaştır.** Aynı dört soruyu ben de taradım. İki
-   bağımsız kaynak aynı yere çıkarsa delil değeri taşır (D-065/J20 deseni);
-   çelişirse **çelişki en değerli çıktıdır**.
+⭐ **Turun asıl çıktısı süreçte:** *"iddia kaynağın neresinde geçiyor"* şartı
+**işe yaradı** — yerini gösterebildiğim iddia **6'nın 4'ü** (#6'da 13/13
+*"Tam Uyumlu"* çıkıp **sıfır** ayırt etme vardı). Şart hataları engellemedi,
+**yakalanabilir** yaptı: **altı iddianın üçü kendi alıntısının söylemediği bir
+şey söylüyor**, ve ⚠ **yalnız DOI doğrulamasıyla üçü de geçerdi.**
+
+- ❌ **İki kimlik hatası daha** (sekizinci ve dokuzuncu): `arXiv:2308.00179`
+  *"Nishimura ve ark."* değil **Anwar & Georgalos** · `arXiv:0810.3070` ise
+  **bambaşka bir makale** (alfa-Wiener köprüleri) ⇒ doğrusu **Rafferty,
+  Griffiths & Klein 2014**, `10.1111/cogs.12112`. İkisi de **tamir edildi**.
+- ❌ **①'i zayıflatacak gibi görünen tek iddia — *"birinci hamle avantajı"* —
+  kaynağında yoktu.** DR iki **ters yönlü** bulguyu (Varian'ın kuramsal
+  bedavacılığı + leading-by-example'ın **maliyetli** katkısı) tek cümlede
+  birleştirmiş, üstüne *"ya da daha çok hasat eder"* eklemişti — o ifade
+  kaynakta **hiç geçmiyor**.
+- ⭐ **İki bağımsız yol aynı yere çıktı** (D-065/J20): DR'nin kaynağı
+  **Suleiman 1996**'ya atıf veriyor (= §N'in W3'ü) ve **Bru 2003** = §N'in
+  W4'ü.
+- ⭐ **Konum etkisinin stratejik bileşeni bizde yapı gereği kapalı** — ajan
+  sıradaki konumunu görmüyor (prompt'ta yok). Geriye **mekanik** bileşen
+  kalıyor, ki aradığımız simetri kırılması odur.
+- ⚠ *"Tohum değiştiremezsiniz"* uyarısı **bizim kısıtımızın yanlış
+  okunması** — I0.6/D-037 aynı tohumun aynı sonucu vermesini istiyor, farklı
+  tohumları yasaklamıyor (B2 **40 tohumla** koşuldu). ⚠ Kısmen bizim brief
+  tarifimizden; **§9'un dersi dördüncü kez**.
+- **Brief #8 için iki süreç düzeltmesi:** *kaynakça* istenecek (`[56]` hiçbir
+  makaleye bağlanamadı) · *satır numarası değil* **birebir alıntı** istenecek
+  (satır numaraları hiçbir kopyada tutmuyor; bulmayı sağlayan alıntıydı).
 
 ### 2. ⛔ P0 — **karar Yasin'in**, ve her şey buna bağlı
 
@@ -74,6 +89,7 @@ yazı-turaya döner ve `Cov(w, z) = 0` **yapı gereği** olur. Bu bir bulgu değ
 | ② Ajan başına ayrı niş | Doğduğu dünyadan | Fark yaşamaktan **önce** gelir; "ortak havuz" iddiası zayıflar. Yeni sabit ister (*nişler ne kadar farklı?*) |
 | ③ Asimetrik doğum koşulları | Doğrudan bizim elimizden | Aksiyomun sınırında. Yeni sabit ister |
 | ④ Örneklemeli çözümleme | Rastgele sayı üretecinden | ⛔ **D-037'yi ve I0.6'yı kırar** — `warn_only` altında aynı tohum farklı adapter + 21/50 farklı karar üretiyordu, **gürültü etkiden büyüktü** |
+| ⑤ **Uzamsal gömme** (yeni, D-080) | Başlangıçtaki konumdan | Mekanizma gerçek (Schelling 1971, `10.1080/0022250X.1971.9989794`) ve §N.4'ün cevapsızını doldurdu. ⚠ Ama **②'nin yanına düşüyor**: Schelling'de farkı yaratan başlangıç yerleşimidir ⇒ **fark yaşamaktan önce gelir**. ⚠ DR *"kısıt ihlal etmiyor"* dedi, **eksik**: ızgara boyutu + komşuluk yarıçapı + kaynağın uzamsal dağılımı = **en az üç yeni sabit** |
 
 ⚠ **①'in ilan edilmiş zayıflığı:** yalnız **kıtlık varken** çalışır. Kaba
 hesap: havuz 80 → yenilenmeyle ~89; 8 ajan × 8.0 = **64 talep < 89** ⇒ ilk
@@ -88,6 +104,13 @@ başlangıcı kısılır. ②/③/④'te bu risk yok — onlar doğumdan itibare
 **ilan edilmesi gereken bir fizik kararı** (Schönfisch & de Roos 1999;
 Fatès 2014). Ve konum etkisi **ölçülmüş** bir olgu (Suleiman ve ark. 1996) —
 rotasyon onu **yok etmiyor**, yalnız **kalıcı olmasını** engelliyor.
+
+⚠ **D-080 ①'i sınadı ve zayıflatmadı.** DR #7'nin *"birinci hamle eden
+davranıştan bağımsız avantajlıdır"* iddiası **kaynağında yoktu** (§O.2). Ve
+rotasyonun gerekçesi §N'deki hâliyle kalıyor: *"konum etkisini yok etmek"*
+değil — **kalıcı olmasını engellemek**. (DR'nin rotasyon dayanağı Bru 2003
+idi; o alıntı **koşulların sunuluş sırasından** bahsediyor, ajan sırasından
+değil ⇒ **alınmadı**.)
 
 ### 3. P0 verildikten sonra, sırayla
 
@@ -554,11 +577,11 @@ GAP-19'un kendisi D-067'de kapandı; sınır ilk ön-kayıt için geçerliydi.
 
 ---
 
-## ▶ DR KANALI — ⏳ **#7 sırada (P0)** · ✅ **#6 cevaplandı (D-076)** · ⏳ **#5 hâlâ gönderilmedi**
+## ▶ DR KANALI — ✅ **#7 cevaplandı (D-080)** · ✅ **#6 cevaplandı (D-076)** · ⏳ **#5 hâlâ gönderilmedi**
 
 | # | Brief | Durum |
 |---|---|---|
-| **7** | **Davranışsal olarak özdeş ajanlar arasında heterojenlik nereden gelir** — `docs/research/2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt` (baştan düz metin) | ⏳ **gönderilemedi — Gemini kotayı çıktısız tüketti.** ⇒ **D-079: yerel tarama** (§N, dört kimlik). P0'ı açan brief. Dört soru: S1 özdeş ajanlarda heterojenlik mekanizmaları (⚠ **uzamsal gömme** bizim listemizde yoktu) · S2 sıralı erişimde konum confound mu · S3 kaç nesil = birikimli kalıtım (#6 cevaplayamadı) · S4 birey/nesil/tekrar üç eksenli denge (#6'da iki eksen karıştı). ⭐ **Süreç eklemesi:** D-076'nın *"doğru kimlik, yanlış iddia"* kusuru için artık **iddianın kaynağın neresinde geçtiği** de isteniyor — bölüm/şekil/alıntı. ⚠ **P0'ı kapatamaz**, seçenek ekleyebilir: elenen seçenekleri bizim kendi kısıtlarımız eliyor |
+| **7** | **Davranışsal olarak özdeş ajanlar arasında heterojenlik nereden gelir** — `docs/research/2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt` (baştan düz metin) | ✅ **cevaplandı ve mutabakata bağlandı (D-080, §O).** Ham: `2026-08-14_DR7-answer-raw.md`. ⭐ **Süreç eklemesi işe yaradı:** *"iddia kaynağın neresinde"* şartı sayesinde yerini gösterebildiğim iddia **6/4** oldu (#6'da 13/13 *"Tam Uyumlu"*, sıfır ayırt etme) ve **altı iddianın üçü kendi alıntısını taşımıyor** çıktı — ⚠ **yalnız DOI ile üçü de geçerdi**. ❌ **İki kimlik hatası daha** (8. ve 9.), ikisi de tamir edildi: `arXiv:2308.00179` = **Anwar & Georgalos** (*"Nishimura"* uydurma) · `arXiv:0810.3070` **bambaşka makale** ⇒ doğrusu **Rafferty ve ark. 2014** `10.1111/cogs.12112`. ⭐ **①'i zayıflatacak tek iddia (*birinci hamle avantajı*) kaynağında yoktu** · **⑤ uzamsal gömme** tabloya eklendi (ama ②'nin yanına) · **iki bağımsız yol** Suleiman 1996 ve Bru 2003'te §N ile kesişti. ⚠ **§N.3'ün hipotezi düştü** — cevap geldi. **Brief #8:** kaynakça iste, satır numarası değil **birebir alıntı** iste |
 | **6** | **Tek soy yerine popülasyon: seçilim şeması ve ortak havuz** — `docs/research/2026-08-13_population-selection-and-shared-commons.md` (⚠ **Gemini'ye giden sürüm `..._PLAIN.txt`**) | ✅ **cevaplandı ve mutabakata bağlandı (D-076, §M).** Ham: `2026-08-14_DR6-answer-raw.md`. ⚠ **Yeni kusur türü: doğru kimlik, yanlış iddia** — üç iddia gerçek kaynaklara yüklenmiş ama o kaynaklarda yok; DOI doğrulaması bunu yakalamıyor. Bir DOI kırık (Bedau 1998, 404). 13/13 satır *"Tam Uyumlu"* ⇒ ayırt etme yok. ⚠ **İçsel çelişki:** §5 birikimli iz için G=5–10 diyor, §6 sentezi G=3 öneriyor. ⭐ **Değerli:** Price eşitliği D-075'in totoloji borcunu ödüyor · ayrı havuz iki bağımsız kaynakta aynı yerde. Önce: **D-075 yerel taraması** (§L, dokuz kimlik) D-074'ün açtığı iş. Altı soru: S1 küçük N'de üreme/seçilim şeması · S2 sürüklenme mi seçilim mi · **S3 ortak havuzda kol kirlenmesi** (en kritik: müdahale bireye, ortam paylaşılıyor) · S4 uygunluk hem seçilim girdisi hem sonuçken · S5 kaç nesil = birikimli kalıtım · S6 sabit bütçede birey mi nesil mi. ⚠ **Etki sorulmuyor** (L9). Kısıtlar §1.1'de listelendi ki DR yasak bir şey önermesin; ihlal ederse **işaretlemesi** isteniyor |
 | **5** | **Yaşam uzunluğu değişkenken uç nokta nasıl tanımlanır** — `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` | ⏳ **gönderilemedi — DR'de teknik sorun.** ⇒ **D-069: yerel tarama yapıldı** (§K, sekiz kimlik Crossref'ten doğrulandı), K1–K3 karara hazır hale geldi. ⚠ Tarama **sistematik derleme değil**; brief geçerliliğini koruyor, DR düzelince aynen sorulabilir. Altı soru: S1 bilgilendirici sansürleme · S2 landmark vs yaşam boyu özet · S3 ölümün belirlediği durum değişkeni · S4 hayatta kalma hem girdi hem sonuçken · S5 farklı uzunluklu dizilerde eşleştirilmiş karşılaştırma · S6 küçük N'de zaman-olay gücü. ⚠ **Etki sorulmuyor, bilerek** (D-064/L9 disiplini) |
 | **4** | **Ayrım üretmeyen bir evrende seçilim kurulabilir mi** — `docs/research/2026-08-12_environment-differentiation-and-selection.md` | ✅ **cevaplandı ve mutabakata bağlandı (D-065, §J).** Ham cevap: `2026-08-13_DR4-answer-raw.md`. **İçeriği dört brief'in en isabetlisi, kaynak disiplini en kötüsü:** 12 kimlikten 5'i eksiksiz, biri **yanlış makaleye** atıflı (yedinci kimlik hatası), biri dergi ISSN'i, ve *"N=20–50"* kaynaksız ⇒ kullanılmadı |
