@@ -6695,3 +6695,70 @@ Doğrulama koşumu **tek tohum, üç soy**. Bant geçişi hesabı D-085'in
 **aynı** verisi üzerinde yeniden hesaptır, yeni ölçüm değil. Valans için
 gerçek ödül/tehdit değerleri koşum çıktısında **yok** — ulaşılabilirlik
 tablosu bu yüzden `memory_score = 1.0` en iyi durumunu varsayıyor.
+
+---
+
+## D-089 · 2026-08-14 · D-088 doğrulandı: **kalıtım akıyor**, ve iki yan kapı da açıldı
+
+**Durum:** doğrulama koşumu · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** ·
+N=2 (seed 5006–5007), üç kol, `--lora` · ham
+`dau_runs/validate_d088_n2.json` · `run_quality = flagged` · **kod değişmedi**
+
+### ⭐ Bulgu 1 — kalıtım akıyor, ve gölge kolla **örtüşüyor**
+
+| | D-085 (D-086/088 öncesi) | **D-089 (şimdi)** |
+|---|---|---|
+| aktarılan anı | **4 / 12 soy** — hepsi travma baypasından | **23 / 6 soy** (3–5 her soya) |
+| hiç almayan soy | **8 / 12** | **0 / 6** |
+| gölge kol (`f_agent=None`) | 39 / 12 soy | 22 / 6 soy |
+
+⭐ **F_agent yolu 23, gölge yol 22.** D-088'in tam beklentisi buydu: kapı
+kalibre edildiği niceliğe döndüğü için F_agent yolu artık Layer-3'ün salience
+oranına oturuyor, üstüne bant politikaları biniyor. Aradaki **+1**, seed
+5007/`lived`'in travma baypasından gelen uyarısı.
+
+⚠ **İddia daraltılıyor:** *"kalıtım akıyor"* denebilir; *"doğru miktarda
+akıyor"* **denemez** — doğru miktarın ölçüsü yok. N=2.
+
+### ⭐ Bulgu 2 — `I5.4` ilk kez **geçti**: somatik miras uygulanıyor
+
+D-085'te `I5.4` *"never applied (skipped=111)"* diye bayrak basıyordu.
+Şimdi: **`applied 14x`**, ve `n_retrieval_context` her soyda 3–5.
+
+⇒ Kanal 1 yalnız *seçilmiyor*, **varise gerçekten ulaşıyor** ve somatik
+ölçek uygulanıyor. ⚠ GAP-3'ün *"gen2 ilk olay ata verisini kaçırıyor"*
+sorunu bundan **ayrı**; bu bulgu onu kapatmıyor.
+
+### ⭐ Bulgu 3 — `fitness_class` **ilk kez ayrım taşıyor**
+
+`F_agent` 0.334 – 0.544 · sınıflar **4 `normal`, 2 `low`**.
+
+D-085'te 12/12 `low`, D-087'de 3/3 `normal` idi — yani dejenerasyon iki kez
+**yer değiştirmişti**. İlk kez **iki bant birden** doluyor.
+⚠ **`high` bandı (≥0.70) hâlâ boş.** Açık madde A tamamen kapanmadı, ama
+aciliyeti düştü.
+
+### Bulgu 4 — landmark doygunluğu **azaldı ama sürüyor**
+
+`landmark_energy`: 0.685 · 0.408 · **1.000** · 0.400 · 0.556 · 0.400
+⇒ tavanda **1/6** (D-085'te 5/12). Ömürler uzadığı için enerji landmark'a
+kadar daha çok düşüyor. ⚠ Risk **azaldı, kalkmadı** — açık madde B duruyor.
+
+### Bulgu 5 — ömürler uzadı
+
+Faz-1: **19 · 19 · 19 · 16 · 16 · 16** (D-085: 11–20). Gen2: 19 · 18 · 20 ·
+15 · 15 · 15. ⚠ Seed 5006'da gen2 ömrü **kola göre farklı** (19/18/20) —
+gözlem, hücre başına N=1.
+
+### Bayraklar
+
+`I3.2` ⚠ **kısmen düzeldi**: gen1 `pi_n_distinct=9 ≥ 8` (ilk kez geçiyor),
+gen2 hâlâ 3 ⇒ bayrak gen2'den geliyor. L13 gen1 için **artık geçerli
+olmayabilir**, ölçülmeli. · `I1.3b` kırpma 14/14 doygun ⇒ **L18 sürüyor** ·
+`I3.4` rapor modu.
+
+### Sınırlar
+
+**İki tohum, altı soy.** Alet denetimi, hipotez testi değil. Aktarım
+sayılarının *"doğru"* olduğu iddia edilmiyor — yalnız **sıfır olmadığı** ve
+gölge kolla tutarlı olduğu. Üç OOM uyarısı, çökme yok.

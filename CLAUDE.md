@@ -24,13 +24,13 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
-- **Suite:** `417 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi.**
-- **Son D-kaydı: D-087.** Sıradaki kayıt **D-088** olarak açılır.
+- **Suite:** `419 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi (17 commit).**
+- **Son D-kaydı: D-089.** Sıradaki kayıt **D-090** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -57,30 +57,30 @@ alınır:**
 **önce aletin kendi kanalları açılmalı** — yoksa popülasyon kurulduğunda
 kalıtım akmıyor, uygunluk tek sınıfta toplanıyor ve seçilim yine ölçülemiyor.
 
-### ⛔ Sıradaki karar — **aktarım eşiği** (D-085 madde 1, ölçüldü: D-087)
+### ✅ Alet kanalları AÇILDI — D-086 → D-088 → D-089 zinciri kapandı
 
-**D-087 üç şey ölçtü:**
+| | ne yapıldı |
+|---|---|
+| **D-086** | `F_agent`'ın enerji terimi ölüm anı yerine **ömür-boyu ortalamayı** okuyor ⇒ `F_agent` 0.14 → 0.45 |
+| **D-087** | ⛔ Ölçtü: `w_transfer` kapısı 12 soyda **0 anı** geçirmiş; eşik `memory_score` için kalibre edilip **çarpıma** uygulanmış (Layer-3 → Layer-4 kayması) |
+| **D-088** | Salience çıtası **kalibre edildiği niceliğe** geri verildi. `0.6` **değişmedi**, uygulandığı nicelik düzeldi. `w_transfer` hesaplanıp raporlanıyor ama kapı değil |
+| **D-089** | ⭐ **Doğrulandı:** aktarım **4/12 soy → 23/6 soy**, hiç almayan soy **8/12 → 0/6**, ve gölge kolla örtüşüyor (23 vs 22) |
 
-1. ⛔ **`w_transfer` kapısı 12 soyda 0 anı geçirdi.** Aktarılan 4 anının
-   **4'ü de** düşük-uygunluk **travma baypasından** geldi.
-2. ⛔ **D-086 o baypası kapattı** — baypas `F_agent < 0.35` istiyor, D-086
-   `F_agent`'ı 0.45'e çıkardı. Eşiğin altında kalan soy: **12/12 → 1/12**.
-   Doğrulama koşumu (seed 5005): `F_agent` 0.49–0.54, **aktarılan 0/0/0**.
-   ⚠ Benim açtığım hasar.
-3. ⭐ **Eşik kalibre edildiği nicelikten başkasına uygulanmış.** `0.6`
-   Layer-3'te (`cf400eb`, 08-01) **`memory_score`** için doğdu; Layer-4
-   (`da6880b`, 08-03) aynı sabiti **çarpıma** uyguladı. `memory_score ≤ 1`
-   olduğundan kapı fiilen **ilan edilmemiş bir `F_agent ≥ 0.6` şartına**
-   dönüşmüş — ve `low`/`normal` bant politikalarını **ölü koda** çeviriyor.
+⭐ **Yan kapılar da açıldı:** `I5.4` ilk kez **geçti** (*"applied 14x"*) ⇒
+somatik miras varise gerçekten ulaşıyor · `fitness_class` **ilk kez ayrım
+taşıyor** (4 `normal`, 2 `low`) · `I3.2` gen1'de **ilk kez geçti**
+(`pi_n_distinct=9`), bayrak artık yalnız gen2'den geliyor.
 
-⭐ **Yapısal çerçeve:** aktarımı mutlak uygunluğa kapılamak **seçilimi iki kez
-saymaktır** — uygunluk zaten `w`'yi belirleyecek (D-076/Price). K4-b/D-070'in
-havuz teriminde bulduğu çifte sayımın aynısı. ⇒ Savunulabilir yön:
-**`F_agent` hangi anıların aktarılacağını biçimlendirir, hiç aktarılıp
-aktarılmayacağını değil.**
+### ⬜ Alette kalan iki küçük madde
 
-⚠ **Tasarım kararı, Yasin'in** (D-007). Sayıyı *"geçsin diye"* düşürmek
-§2.7 ihlali olurdu.
+| | İş | Aciliyet |
+|---|---|---|
+| **A** | `fitness_class`'ın **`high` bandı (≥0.70) hâlâ boş** | ⚠ düştü — iki bant artık dolu |
+| **B** | `landmark_energy` tavanda **1/6** (D-085'te 5/12) | ⚠ azaldı, kalkmadı · **ön-kayıt kararı**, kod değil |
+
+⇒ ⭐ **Önerilen durma kuralı:** alet işi burada **kapanır**. A ve B ikinci
+ön-kayıt tartışmasına gider; bundan sonrası **evrenin fiziği** (C/D/E) ve
+**popülasyon katmanı**.
 
 ---
 
