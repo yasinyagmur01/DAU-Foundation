@@ -6,7 +6,7 @@ yazılmadı** (§2.3)
 **Girdiler:** read-only denetim (bu belge §1) · **D-075** (yerel tarama, §L) ·
 **D-076** (DR #6 mutabakatı, §M) · **D-074** (sıralama kararı)
 
-⚠ **Bu belge karar vermiyor.** Yedi karar noktası (**P1–P7**) çıkarıyor,
+⚠ **Bu belge karar vermiyor.** Sekiz karar noktası (**P0–P7**) çıkarıyor,
 her birine kanıtı ve önerisiyle. Kararlar Yasin'in (D-007), ve verildiklerinde
 `DECISIONS.md`'ye D-077 olarak geçerler.
 
@@ -57,6 +57,41 @@ oturuyor** — D-070/D-072'de verilen karar bağımsız gerekçeyle desteklendi.
 
 ⇒ **②'nin asıl işi popülasyon eklemek değil, `w`'yi değişken yapmaktır.**
 Diğer her şey bunun altyapısı.
+
+---
+
+## 2.5 ⛔ P0 — ÖNCE BU: bugün iki ajan birbirinden **ayrışamaz**
+
+⚠ **Bu bölüm öneri ilk yazıldıktan sonra eklendi.** İlk sürüm popülasyonu
+"N ajan" diye ele aldı ve ajanların **birbirinden farklı olacağını varsaydı**.
+Kod bunu desteklemiyor.
+
+| Doğrulanan | Nerede |
+|---|---|
+| `_seed_niche(seed)` — **`agent_id` parametresi yok** ⇒ aynı tohumdaki her ajan **aynı nişte** doğar | `run_protocol_c_prime.py:662` |
+| Çözümleme **greedy** (`LLM_DO_SAMPLE_DEFAULT = "0"`), üstelik D-037 determinizmi **zorunlu** kılıyor (I0.6) | `local_llm.py:64` |
+| `realized_extractions` — **eşit talep, eşit pay** | `environment.py:88` |
+| Beden doğum varsayılanlarından başlar; yalnız niş değişir | `_initial_state` docstring'i |
+
+⇒ **Aynı nişte doğan N ajan, aynı bedenle, aynı kararı verip aynı payı alır ve
+yaşam boyunca özdeş kalır.** Popülasyon kurulursa N tane **aynı** ajan olur:
+`F_agent`'lar özdeş, turnuva yazı-turaya döner, `Cov(w, z) = 0` **yapı gereği**
+— evren düz olduğu için değil, **ajanlar aynı ajan olduğu için**.
+
+⚠ **Bu, §5'teki geçerlilik kapısından farklı bir şeydir.** Orada risk
+*"davranış çökük olabilir"*di; burada sorun **ölçüm bile kurulamıyor**.
+
+### P0 — heterojenlik evrene nereden girer
+
+| Seçenek | Değerlendirme |
+|---|---|
+| **(d) Sıralı erişim** — ajanlar olay içinde **sırayla** hasat eder; havuz tükenirken sıradaki daha azını bulur | ⭐ **Öneri.** Farkı **evrenin kendisi** üretiyor (tükenen ortak kaynak için çekişme), ajana atanan bir etiket değil ⇒ aksiyoma uygun. Deterministik kalır ⇒ D-037 korunur. ⚠ Sıra **kimin** önce geleceği bir tasarım kararı (sabit mi, nesil başına döner mi) |
+| (a) Ajan başına ayrı niş | Ajanlar farklı **ortamlarda** olur; ortak havuz iddiası zayıflar. Fark ortamdan gelir, yaşanandan değil |
+| (b) Örneklemeli çözümleme (`do_sample=1`) | ⛔ **D-037'yi ve I0.6'yı kırar.** Tekrarlanabilirlik ön-kaydın önündeki en büyük engeldi ve çözülmüştü |
+| (c) Asimetrik doğum koşulları (farklı başlangıç enerjisi) | ⚠ Aksiyoma yakın duruyor: verilen bir başlangıç farkı, "trait" olmasa da **atanmış** bir fark |
+
+⚠ **P0 çözülmeden P1–P7 anlamsızdır.** Sıralı erişim seçilirse P1 (ayrı havuz)
+ve P3 (üreme) doğrudan onun üstüne oturur.
 
 ---
 

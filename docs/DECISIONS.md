@@ -5636,3 +5636,57 @@ seçilim iddiasını birey düzeyinden **grup düzeyine** kaydırır.
 Beş kimlik doğrulanmadı. `N=16, G=3, 35 olay` önerisi **alınmadı**: dayanağı
 yanlış atıf (M.1), kendi §5'iyle çelişiyor (M.3), ve sayı seçimi §2.7 gereği
 ölçümle gerekçelendirilmeli.
+
+---
+
+## D-077 · 2026-08-14 · ⛔ Popülasyonun önündeki asıl engel: iki ajan bugün **ayrışamıyor**
+
+**Durum:** kod denetimi (bulgu) · **kod değişmedi** · **karar bekliyor** ·
+tasarım önerisi `docs/POPULATION_DESIGN_PROPOSAL.md` **§2.5**
+
+### Bulgu
+
+`POPULATION_DESIGN_PROPOSAL.md`'nin ilk sürümü popülasyonu *"N ajan"* diye ele
+aldı ve ajanların birbirinden **farklı olacağını varsaydı**. Kod bunu
+desteklemiyor. Üç yer birlikte:
+
+| Doğrulanan | Nerede |
+|---|---|
+| `_seed_niche(seed)` — **`agent_id` parametresi yok** ⇒ aynı tohumdaki her ajan **aynı nişte** doğar | `run_protocol_c_prime.py:662` |
+| Çözümleme **greedy** (`LLM_DO_SAMPLE_DEFAULT = "0"`); D-037 determinizmi I0.6 ile **zorunlu** | `local_llm.py:64` |
+| `realized_extractions` — **eşit talep, eşit pay** | `environment.py:88` |
+
+⇒ **Aynı nişte doğan N ajan, aynı bedenle, aynı kararı verip aynı payı alır ve
+yaşam boyunca bit düzeyinde özdeş kalır.**
+
+### Neden bu, projenin en önemli engeli
+
+Popülasyon bugünkü kodun üstüne kurulursa N tane **aynı** ajan olur:
+`F_agent`'lar özdeş ⇒ turnuva yazı-tura ⇒ **`Cov(w, z) = 0` yapı gereği**.
+Ve bu sıfır, D-076'nın Price eşitliğiyle kurduğumuz bütün seçilim iddiasının
+tam olarak ölçtüğü şey.
+
+⚠ **D-060'ın tekrarı değil, daha kötüsü.** D-060'ta 120 kol aynı sınıfa
+düşüyordu çünkü **evren ayrım üretmiyordu**; burada ajanlar ayrışamıyor çünkü
+**aynı ajanlar**. Birincisi bir bulgu, ikincisi bir ölçüm hatası olurdu.
+
+⚠ **§5'in geçerlilik kapısından da farklı:** orada risk *"davranış çökük
+olabilir, seçilim görünmeyebilir"*di. Burada **ölçüm kurulamıyor**.
+
+### ⇒ Yeni karar noktası: P0 — heterojenlik evrene nereden girer
+
+| Seçenek | Değerlendirme |
+|---|---|
+| **(d) Sıralı erişim** — ajanlar olay içinde sırayla hasat eder; havuz tükenirken sıradaki daha azını bulur | ⭐ **Claude Code'un önerisi.** Farkı **evrenin kendisi** üretiyor (tükenen kaynak için çekişme), atanan bir etiket değil ⇒ **aksiyoma uygun**. Deterministik kalır ⇒ **D-037 korunur** |
+| (a) Ajan başına ayrı niş | Ajanlar farklı **ortamlarda** olur; "ortak havuz" iddiası zayıflar |
+| (b) Örneklemeli çözümleme | ⛔ **D-037'yi ve I0.6'yı kırar** — tekrarlanabilirlik ön-kaydın önündeki en büyük engeldi (D-037: gürültü etkiden büyüktü) ve çözülmüştü |
+| (c) Asimetrik doğum koşulları | ⚠ Aksiyoma yakın: "trait" olmasa da **atanmış** bir fark |
+
+⚠ **P0 çözülmeden P1–P7 anlamsızdır.**
+
+### Sınırlar
+
+**Kod okumasıyla bulundu, ölçümle değil.** Doğrulanması ucuz ve P0 kararından
+sonra yapılacak: aynı tohumda iki ajan koşulur, `arm_digest`'leri
+karşılaştırılır. ⚠ Bugün beklenen sonuç **birebir aynı**; farklıysa bu kayıt
+yanlıştır ve düzeltilir.
