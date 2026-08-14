@@ -6594,3 +6594,104 @@ Değişiklik **kalıtımı etkiliyor** (F_agent aktarım kapısına giriyor) ⇒
 onlar alet denetimiydi, hipotez ölçümü değil.
 ⚠ `_resolve_f_agent` yaşam **sırasında** da çağrılıyor ⇒ `F_agent` artık
 yaşam boyunca **yürüyen ortalama**. Yasin'e söylendi ve onayla girdi.
+
+---
+
+## D-087 · 2026-08-14 · Aktarım eşiği **yanlış niceliğe** uygulanmış — ve D-086'nın yan hasarı ölçüldü
+
+**Durum:** ölçüm + yapısal denetim · **Etiket:** ⚠ **keşifsel** · **kod
+değişmedi** · ham `dau_runs/validate_d087_postfix_n1.json` (seed 5005, N=1,
+~6 dk) · D-085 verisi üzerinde yeniden hesap
+
+### ⛔ Bulgu 1 — `w_transfer` kapısı **hiçbir zaman hiçbir şey geçirmedi**
+
+D-085'in on iki soyunda aktarılan **4 anının 4'ü de `inherited_warning`**
+(`n_transfer` = `n_inherited_warnings`, üçü de seed 5002'de). Yani hepsi
+**düşük-uygunluk travma baypasından** geçmiş:
+
+```
+if f_value < FITNESS_LOW_THRESHOLD and trauma:   → aktar (baypas)
+w_transfer = memory_score × F_agent × valans
+if w_transfer < GENERATION_TRANSFER_THRESHOLD: continue   ← 12/12 burada
+```
+
+⇒ **`w_transfer` yolu 12 soyda 0 anı geçirdi.** Çalışan tek kalıtım yolu
+baypastı.
+
+### ⛔ Bulgu 2 — **D-086 o tek yolu kapattı** (benim açtığım hasar)
+
+Baypas `F_agent < 0.35` istiyor. D-086 `F_agent`'ı 0.14'ten 0.45'e çıkardı.
+Aynı on iki soy, yeni formülle yeniden hesaplandı:
+
+| | eski `F_agent` | yeni `F_agent` |
+|---|---|---|
+| `FITNESS_LOW_THRESHOLD = 0.35` altında | **12 / 12** | **1 / 12** |
+
+**Doğrulama koşumu (seed 5005, yeni kod):** `F_agent` 0.485 / 0.516 / 0.540,
+sınıf **üçü de `normal`**, **aktarılan anı 0 / 0 / 0**, uyarı 0. Gölge kol
+(`f_agent=None`) aynı yaşamlardan **3'er** anı aktarıyor.
+
+⚠ **Bu tek koşum kanıt değil** — D-085'te de dört tohumun üçü sıfır vermişti.
+**Kanıt aritmetiktir:** 4 aktarımın hepsini üreten baypas, artık on iki soyun
+**en fazla birinde** ateşlenebilir.
+
+⇒ **D-086 ölü bir terimi düzeltti ve tek canlı kalıtım yolunu kapattı.**
+
+### ⭐ Bulgu 3 — eşik, kalibre edildiği nicelikten **başkasına** uygulanmış
+
+Aynı `0.6` sabiti iki farklı şeyi kapılıyor:
+
+```
+_legacy_select_for_transfer:   memory_score           < 0.6
+select_for_transfer (F_agent): memory_score × F × v   < 0.6
+```
+
+**Git sırayı gösteriyor:**
+
+| commit | tarih | ne |
+|---|---|---|
+| `cf400eb` | 2026-08-01 | **Layer-3** — eşik doğuyor, `memory_score`'u kapılıyor |
+| `da6880b` | 2026-08-03 | **Layer-4** — `F_agent`/`w_transfer` geliyor, **aynı sabit çarpıma uygulanıyor** |
+
+`memory_score ≤ 1` olduğu için `w_transfer ≤ F_agent × valans` ⇒ kapı fiilen
+**ilan edilmemiş bir *"F_agent ≥ 0.6"* şartına** dönüşmüş.
+
+**Ulaşılabilirlik** (valans = `1 + tanh(ödül − tehdit)`, tavan 2):
+
+| `F_agent` | gereken |
+|---|---|
+| 0.139 (D-086 öncesi) | valans ≥ 4.32 ⇒ ⛔ **matematiksel olarak imkânsız** |
+| 0.446 (D-086 sonrası) | valans ≥ 1.35 ⇒ **ödül − tehdit ≥ 0.36** |
+| 0.6 | nötr valans yeter |
+
+⇒ D-086 kapıyı **imkânsızdan koşullu-mümkün**e taşıdı; tek başına yetmedi.
+
+### ⚠ Bulgu 4 — iç tutarsızlık: bantlar ölü kod olurdu
+
+Kod üç uygunluk bandı (`low` <0.35 · `normal` · `high` ≥0.70) ve **her birine
+ayrı aktarım politikası** tanımlıyor. Kapı fiilen `F_agent ≥ 0.6` istiyorsa
+`low` ve `normal` bantlarının politika makinesi **ölü koddur**. ⇒ Tasarım,
+düşük ve orta uygunluktaki ajanların bir şey aktarmasını **bekliyordu**.
+
+### ⭐ Yapısal çerçeve — neden bu bir *"sayıyı düşür"* sorunu değil
+
+Aktarımı **mutlak uygunluğa** kapılamak, seçilimi **iki kez** saymaktır:
+uygunluk zaten `w`'yi (varis sayısını) belirleyecek (D-076/Price). Aynı
+uygunluğun ayrıca *"hiçbir şey aktarılsın mı"* anahtarını da çevirmesi,
+**K4-b/D-070'in havuz teriminde bulduğu çifte sayımın** aynısı
+(*"longevity wearing a second hat"*, Stearns 1989).
+
+⇒ Savunulabilir yön: **`F_agent` hangi anıların aktarılacağını biçimlendirir,
+hiç aktarılıp aktarılmayacağını değil.** Salience çıtası (`memory_score`)
+kalibre edildiği yerde kalır; uygunluk zaten var olan **bant politikalarından**
+girer.
+
+⚠ **Bu bir tasarım kararıdır ve Yasin'indir (D-007).** Claude Code önermiştir,
+uygulamamıştır. **Hiçbir sabit değişmedi.**
+
+### Sınırlar
+
+Doğrulama koşumu **tek tohum, üç soy**. Bant geçişi hesabı D-085'in
+**aynı** verisi üzerinde yeniden hesaptır, yeni ölçüm değil. Valans için
+gerçek ödül/tehdit değerleri koşum çıktısında **yok** — ulaşılabilirlik
+tablosu bu yüzden `memory_score = 1.0` en iyi durumunu varsayıyor.

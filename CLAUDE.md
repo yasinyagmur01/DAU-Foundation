@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `417 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi.**
-- **Son D-kaydı: D-086.** Sıradaki kayıt **D-087** olarak açılır.
+- **Son D-kaydı: D-087.** Sıradaki kayıt **D-088** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -57,16 +57,30 @@ alınır:**
 **önce aletin kendi kanalları açılmalı** — yoksa popülasyon kurulduğunda
 kalıtım akmıyor, uygunluk tek sınıfta toplanıyor ve seçilim yine ölçülemiyor.
 
-### ▶ Sıradaki karar — **aktarım eşiği** (D-085'in 1 numaralı maddesi)
+### ⛔ Sıradaki karar — **aktarım eşiği** (D-085 madde 1, ölçüldü: D-087)
 
-⚠ **D-086 kalıtımı hâlâ açmadı.** `F_agent` 0.14'ten **0.45**'e çıktı ama
-eşik **0.6** ve `w_transfer = memory_score × F_agent × valans` yapısı gereği
-`F_agent`'ı aşamıyor ⇒ **kalıtım hâlâ akmıyor**.
+**D-087 üç şey ölçtü:**
 
-⭐ Ama artık eşik **yeni ölçeğe göre** türetilebilir — D-086'nın sıralama
-gerekçesi tam olarak buydu. ⚠ Eşiğin de, `fitness_class` eşiklerinin de
-(0.35/0.70) **eski fizikten kaldığı** unutulmamalı: ajanların ölmediği,
-hayatta kalmanın 12/12 kolda 1.0 okunduğu evrende belirlenmişlerdi.
+1. ⛔ **`w_transfer` kapısı 12 soyda 0 anı geçirdi.** Aktarılan 4 anının
+   **4'ü de** düşük-uygunluk **travma baypasından** geldi.
+2. ⛔ **D-086 o baypası kapattı** — baypas `F_agent < 0.35` istiyor, D-086
+   `F_agent`'ı 0.45'e çıkardı. Eşiğin altında kalan soy: **12/12 → 1/12**.
+   Doğrulama koşumu (seed 5005): `F_agent` 0.49–0.54, **aktarılan 0/0/0**.
+   ⚠ Benim açtığım hasar.
+3. ⭐ **Eşik kalibre edildiği nicelikten başkasına uygulanmış.** `0.6`
+   Layer-3'te (`cf400eb`, 08-01) **`memory_score`** için doğdu; Layer-4
+   (`da6880b`, 08-03) aynı sabiti **çarpıma** uyguladı. `memory_score ≤ 1`
+   olduğundan kapı fiilen **ilan edilmemiş bir `F_agent ≥ 0.6` şartına**
+   dönüşmüş — ve `low`/`normal` bant politikalarını **ölü koda** çeviriyor.
+
+⭐ **Yapısal çerçeve:** aktarımı mutlak uygunluğa kapılamak **seçilimi iki kez
+saymaktır** — uygunluk zaten `w`'yi belirleyecek (D-076/Price). K4-b/D-070'in
+havuz teriminde bulduğu çifte sayımın aynısı. ⇒ Savunulabilir yön:
+**`F_agent` hangi anıların aktarılacağını biçimlendirir, hiç aktarılıp
+aktarılmayacağını değil.**
+
+⚠ **Tasarım kararı, Yasin'in** (D-007). Sayıyı *"geçsin diye"* düşürmek
+§2.7 ihlali olurdu.
 
 ---
 
