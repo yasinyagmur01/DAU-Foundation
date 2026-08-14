@@ -1,0 +1,294 @@
+RESEARCH REQUEST: CAN A COMMON-POOL RESOURCE HAVE A GRADED SCARCITY REGIME,
+AND HOW IS A MEASUREMENT POINT CHOSEN WITHOUT TUNING TO THE OUTCOME
+
+Date: 2026-08-14
+
+
+0. HOW TO READ THIS REQUEST
+
+What we need:
+(a) a check of a short piece of mathematics we did ourselves,
+(b) established mechanisms from bioeconomics, resource ecology or
+    agent-based modelling that produce a regime we cannot produce,
+(c) established methodology for choosing WHEN to measure and WHAT parameter
+    value to run at, when both choices could be accused of being fitted to
+    the result.
+
+What we do NOT need:
+- Our project history. You have no access to it.
+- A prediction of what our setup will produce. Choosing a design by
+  anticipating its effect is post-hoc.
+- Code. We write the implementation ourselves.
+
+SOURCE DISCIPLINE - OUR RECORD IS POOR AND WE NOW KNOW WHY
+
+Across seven previous requests we hit two distinct failure modes.
+
+Failure mode 1, wrong identity. Nine citations turned out to be
+misattributed: DOIs pointing at a different paper, a journal ISSN used as a
+"source", an invented author list attached to a real arXiv number, and one
+dead DOI.
+
+Failure mode 2, right source but wrong claim. The sources were real and the
+DOIs resolved, but the claim was not in them. Verifying the DOI does NOT
+catch this.
+
+So from the last round we additionally ask WHERE in the source each claim
+appears. That change worked: we could finally place each claim next to its
+own quotation, and three of six claims turned out to say something their own
+quotation did not. Two refinements this round:
+
+1. Give a bibliography. Last time the answer used internal reference numbers
+   such as [56] and [58] with no bibliography attached, so one claim could
+   not be traced to any paper at all and was discarded.
+
+2. Quote verbatim, and do not give line numbers. Last time "lines 249-253"
+   pointed at nothing; the same sentence sat at line 313 of our own
+   extraction. Line numbers do not survive between copies of a document. The
+   verbatim quotation is what made verification possible. Section name plus
+   a short quotation, please.
+
+This is not an accusation. We made the same class of error ourselves: in one
+of our own local scans we wrote the wrong DOI for a sampling paper, opened
+it, found a different article, and corrected it.
+
+We open every DOI and arXiv identifier through Crossref, and we do not use a
+claim whose location cannot be shown.
+
+
+1. THE SYSTEM
+
+A population of software agents shares one renewable resource pool. Time is
+event-ordered: an integer counter, no wall clock. At each event every agent
+announces an action, and a deterministic mapping (no LLM judge) turns that
+action into a harvest quantity.
+
+1.1 THE POOL
+
+Logistic renewal, then harvest, then clamp:
+
+    regenerated_t = P_t + r * P_t * (1 - P_t / K)
+    granted_t     = allocation_rule( regenerated_t , demands )
+    P_next        = clamp( regenerated_t - sum of granted , 0 , K )
+
+Per-agent values:
+
+    r    = 0.15     renewal rate per event
+    K    = 100.0    carrying capacity, per agent (see 1.4)
+    P_0  = 80.0     initial stock, equal to 0.8 * K
+    d    = 8.0      harvest demanded by the dominant action
+
+Other actions demand 2.0, 1.0 or 0.0, but 94 to 100 percent of all observed
+events take the 8.0 action (measured in our own pilot), so the analysis in
+section 2 treats demand as 8.0 per agent per event.
+
+The allocation rule is currently proportional sharing of any shortfall. We
+are considering replacing it with sequential access in a rotating order.
+That design question is what started this request.
+
+1.2 THE HARVEST-TO-ENERGY LINK
+
+    gain(x) = G_max * x / (H + x),  with G_max = 0.50 and H = 2.0
+
+Concave and saturating, deliberately: a proportional link would leave
+over-extraction strictly dominant. The input is the realized harvest, never
+the announced amount, so an empty pool feeds nobody. Energy also falls each
+event by a fixed metabolic cost, and when it reaches zero the agent's life
+ends.
+
+1.3 THE MEASUREMENT POINT
+
+The primary endpoint is read at a fixed event ordinal L = 10, identical for
+every lineage. L is not free. Death is suspended for the first 10 events (a
+birth-transient grace window), and L is anchored to the end of that window
+precisely so that every lineage reaches the measurement point and nothing is
+censored. Observed lifespans are 11 to 20 events.
+
+1.4 POPULATION
+
+We are moving from a single lineage to N agents: tens of individuals,
+single-digit numbers of generations. We intend to scale K and P_0 linearly
+with N, holding the per-agent numbers above fixed.
+
+1.5 CONSTRAINTS WE CANNOT RELAX
+
+- No trait injection. No personality or tendency value may be assigned to an
+  agent. Every difference must arise from what the agent lived. This is an
+  axiom of the project.
+- No behavioural priors. We may not instruct agents toward any decision
+  rule, and we may not intervene to fix the observed over-extraction. The
+  collapse is reported as a finding, not corrected.
+- No LLM judge. All metrics are deterministic Python.
+- Reproducibility is enforced by a gate: the same seed with the same code
+  must produce the same result. NOTE: this does not mean one seed. We run
+  many independent seeds; the last confirmatory run used 40 of them. A
+  previous answer misread this constraint, so please do not repeat that
+  reading.
+- Event-ordered time only. No wall clock.
+
+If a proposal violates one of these, still give it, but mark which one.
+Knowing the price of relaxing a constraint is better than not seeing the
+option at all.
+
+
+2. THE MATHEMATICS WE DID - PLEASE CHECK IT
+
+We need heterogeneity between agents to arise from competition for a
+depleting resource. That requires a scarcity regime: a stretch of events in
+which the pool cannot satisfy everyone but is not yet dead, so that who
+harvests first matters repeatedly. We derived that no such stretch exists.
+Please verify or refute each step.
+
+(a) Maximum sustainable yield. For the logistic map above, renewal is
+    maximised at P = K/2 and equals r*K/4 = 3.75 per agent per event. Demand
+    is 8.0. Demand exceeds maximum renewal by a factor of 2.13.
+
+(b) Sustainability threshold. Setting r*P*(1 - P/K) = d gives
+    P = (K/2) * (1 +/- sqrt(1 - 4d/(r*K))). Real roots exist if and only if
+    K >= 4d/r = 213.33 per agent. Therefore:
+      - K below 213.33: no equilibrium, the stock declines monotonically to
+        zero.
+      - K above 213.33: two equilibria, the upper one stable and the lower
+        one unstable. Starting from 0.8*K the stock converges to the upper
+        stable level and stays there.
+
+(c) The consequence we cannot get around. Below the threshold the pool
+    collapses; above it, scarcity never occurs at all. Neither region
+    contains a graded scarcity regime.
+
+(d) Zero is absorbing. Logistic growth from P = 0 is 0. In the single event
+    where demand first exceeds availability, the agents jointly take
+    everything available, whatever the allocation rule, so the pool is
+    emptied in that same event and never recovers.
+
+(e) Therefore there is exactly one partially satisfied event per life,
+    whatever the initial stock. Changing P_0 or K only moves WHEN that event
+    happens, not how long it lasts. Worked values, with P_0 = 0.8*K, giving
+    the ordinal of the single partial event:
+
+        K per agent  =  40   50   60   67   70   80   100
+        partial event at 5    7    8    9   10   12    17
+
+    With today's K = 100 the single partial event falls at ordinal 17, that
+    is AFTER the measurement point L = 10, so at the moment we measure, all
+    agents are still identical by construction.
+
+(f) The bind. L = 10 cannot move later without losing the no-censoring
+    guarantee described in 1.3. The scarcity event cannot be made to last
+    longer, by (d). So the only remaining lever is K, and choosing K = 67
+    because it puts the scarcity event at ordinal 9 is uncomfortably close
+    to selecting a constant so that the measurement lands where the
+    mechanism fires.
+
+
+3. QUESTIONS
+
+QUESTION 1. Is section 2 correct, and is there a parameter region we have
+missed?
+
+Check steps (a) through (e). Specifically:
+- Is the threshold K >= 4d/r the standard bioeconomic result, and under what
+  name?
+- Near-critical slowing: if demand is set just barely above maximum renewal,
+  does the stock spend many events crawling through the bottleneck near
+  P = K/2, the delay associated with a saddle-node or fold, producing in
+  effect a long graded regime? If so, how many events, how does that scale
+  with the excess d - r*K/4, and how fragile is it to perturbation?
+- Does the discrete-time formulation change any of this relative to the
+  continuous-time one?
+
+QUESTION 2. What produces graded scarcity WITHOUT changing agent behaviour?
+
+Our harvest is a fixed quantity, independent of stock. We suspect this is
+what makes collapse a cliff rather than a slope.
+- In fisheries and resource ecology, what are the standard alternatives:
+  stock-proportional catch, Holling-type functional responses, escapement or
+  refuge rules, stock-dependent search efficiency?
+- For each: does it produce a PROLONGED interval of partial satisfaction,
+  and has that been MEASURED, by simulation or empirically, rather than
+  asserted?
+- Which of these can be stated as a property of the ENVIRONMENT rather than
+  of the agent's decision rule? That distinction decides whether we may use
+  it at all, given the no-behavioural-priors constraint in 1.5.
+
+QUESTION 3. Measuring at a fixed age when the mechanism turns on later.
+
+We measure every lineage at the same ordinal so that arms are comparable and
+nothing is censored by death. But the mechanism of interest may not have
+engaged by then.
+- How is this handled in experimental evolution and life-history studies:
+  fixed-age measurement versus measurement at a fixed physiological state or
+  event, and what is the accepted vocabulary for each?
+- If measuring later means some individuals have died, what is the standard
+  treatment when that death is INFORMATIVE, that is, correlated with the
+  very quantity being measured?
+- Is there a defensible way to hold a fixed-age endpoint AND capture a
+  mechanism that engages after it, for example a fixed-age primary endpoint
+  plus a post-onset rate as a declared secondary?
+
+QUESTION 4. Choosing a parameter so a mechanism is in range, without it
+being tuning.
+
+We would set K so that scarcity occurs inside the observation window. The
+value would be derived from an inequality over constants declared before any
+run, with no data entering, but it is still chosen so that the mechanism
+fires.
+- Is there an accepted term and practice for this: operating point
+  selection, design for detectability, manipulation check, positive control?
+- Where do reporting guidelines draw the line between "parameter set so the
+  mechanism is active" and "parameter fitted to the outcome"?
+- Are there worked examples of a pre-registration or a simulation-study
+  protocol that declares such a choice explicitly, and how is it justified
+  in the text?
+
+QUESTION 5. How many competition events does a selection estimate need?
+
+If differentiation arises only in a small number of events, we want to know
+the floor.
+- For a selection differential expressed as a covariance between relative
+  reproductive success and a trait, in the Price equation form, what is
+  known about estimability and bias at small population size and few
+  episodes of selection?
+- Is there measured guidance on the minimum number of selection episodes
+  before such an estimate is interpretable?
+- We are NOT asking what effect size we will get. We are asking what makes
+  the estimate defined rather than degenerate.
+
+
+4. FORMAT OF THE ANSWER
+
+For every claim, five things:
+
+1. What is claimed. One sentence.
+2. Source. Author, year, DOI or arXiv identifier. If unsure, write
+   "identity not verified".
+3. Where in the source. Section name, figure or table number, AND a short
+   verbatim quotation. Do NOT give line numbers, they do not survive between
+   copies. If you cannot locate it, write "cannot show where this appears in
+   the source". We will not use a claim without this.
+4. Type of evidence. Measured experiment, simulation, or theoretical
+   proposal.
+5. Applicability to our setup. Which assumption does it break?
+
+Attach a bibliography mapping every reference marker you use to a full
+citation. Last round an internal marker with no bibliography entry cost us
+an entire claim.
+
+If a proposal violates one of the constraints in section 1.5, still give it
+and mark which one.
+
+If anything in section 2 is wrong, say so plainly and show the correction.
+In previous rounds the single most valuable line we received was the one
+that refuted an assumption of ours. A clean "your derivation is right and
+there is no way around it" is also a usable answer: it tells us the
+constraint is structural rather than a gap in our reading.
+
+
+5. DELIBERATELY OUT OF SCOPE
+
+- Where between-agent heterogeneity comes from in general. Answered in a
+  previous round.
+- Arm contamination and isolation of a shared pool. Answered.
+- Endpoint definition and censoring in the general case. Answered.
+- Fixing the agents' over-extraction. Closed by axiom.
+- Learning rate, model choice, quantization. Measured and frozen.
