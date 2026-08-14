@@ -108,6 +108,10 @@ POOL_EXTRACTED: float = 250.0
 # that silently went back to t_survived/t_survived would read 1.0 instead.
 EVENTS_GEN1_UNIT: int = 50
 EVENT_TYPE_LANDMARK: str = "landmark-probe"
+# E3: two agents whose event rows land in the same buffer. Every reader has to
+# say whose rows it wants, so the fixtures carry an owner.
+AGENT_A: str = "cprime-unit-agentA"
+AGENT_B: str = "cprime-unit-agentB"
 EVENTS_SMOKE: int = 5
 N_SMOKE: int = 1
 
@@ -1604,11 +1608,14 @@ STALE_POOL_ROW_COUNTER: int = 99
 SHORT_LIFE_EVENTS: int = 3
 
 
-def _pool_rows(crisis_flags: list[bool]) -> list[dict[str, Any]]:
+def _pool_rows(
+    crisis_flags: list[bool], agent_id: str = AGENT_A
+) -> list[dict[str, Any]]:
     """Commons rows shaped like graph._record_pool_event writes them."""
 
     return [
         {
+            graph_mod.EVENT_ROW_AGENT_ID: agent_id,
             "event_counter": index + 1,
             "extraction": float(index),
             "pool_ratio": 0.1 if crisis else 0.9,
@@ -1618,11 +1625,14 @@ def _pool_rows(crisis_flags: list[bool]) -> list[dict[str, Any]]:
     ]
 
 
-def _delta_class_rows(trauma_positions: set[int]) -> list[dict[str, Any]]:
+def _delta_class_rows(
+    trauma_positions: set[int], agent_id: str = AGENT_A
+) -> list[dict[str, Any]]:
     """PE audit rows carrying delta_class, the second reading of 'trauma'."""
 
     return [
         {
+            graph_mod.EVENT_ROW_AGENT_ID: agent_id,
             "event_counter": index + 1,
             "prediction_error": 0.5,
             "raw_pe": 0.5,
@@ -1643,6 +1653,7 @@ def test_s5_behaviour_keeps_both_readings_of_first_trauma() -> None:
     behaviour = multigen_mod._s5_behaviour(
         _pool_rows([False, False, True, False]),
         _delta_class_rows({TRAUMA_AT_SECOND_EVENT}),
+        AGENT_A,
     )
 
     assert behaviour["events_to_first_crisis"] == CRISIS_AT_THIRD_EVENT
@@ -1655,7 +1666,9 @@ def test_s5_behaviour_keeps_both_readings_of_first_trauma() -> None:
 def test_s5_behaviour_reports_absence_as_never_not_as_event_zero() -> None:
     """A life with no crisis must not read as 'crisis on the zeroth event'."""
 
-    behaviour = multigen_mod._s5_behaviour(_pool_rows([False, False]), _delta_class_rows(set()))
+    behaviour = multigen_mod._s5_behaviour(
+        _pool_rows([False, False]), _delta_class_rows(set()), AGENT_A
+    )
 
     assert behaviour["events_to_first_crisis"] == multigen_mod.EVENT_NEVER_OCCURRED
     assert behaviour["events_to_first_delta_trauma"] == multigen_mod.EVENT_NEVER_OCCURRED
@@ -1672,9 +1685,17 @@ def test_gen2_result_carries_the_commons_trace(
 
     def _fake_life(*, agent_id, seed, n_events, store, initial):
         graph_mod.reset_pool_event_log()
-        for row in _pool_rows([False, False, True]):
+        # Rows are written under the heir's own id: run_gen2_measure filters
+        # the shared buffer to the agent it is reporting on (E3), so rows
+        # owned by anyone else are correctly invisible to it.
+        for row in _pool_rows([False, False, True], agent_id):
             graph_mod._pool_event_log.append(row)
-        return [0.25] * n_events, [], _delta_class_rows({TRAUMA_AT_SECOND_EVENT}), initial
+        return (
+            [0.25] * n_events,
+            [],
+            _delta_class_rows({TRAUMA_AT_SECOND_EVENT}, agent_id),
+            initial,
+        )
 
     monkeypatch.setattr(multigen_mod, "run_life_keep_vault", _fake_life)
 
@@ -1957,6 +1978,7 @@ SHORT_LIFE_BEFORE_LANDMARK: int = C.LANDMARK_EVENT - 3
 def _body_rows(
     n_events: int,
     *,
+    agent_id: str = AGENT_A,
     landmark_energy: float = LANDMARK_ENERGY,
     late_energy: float = LATE_ENERGY,
 ) -> list[dict[str, object]]:
@@ -1967,6 +1989,7 @@ def _body_rows(
         at_landmark = counter == C.LANDMARK_EVENT
         rows.append(
             {
+                graph_mod.EVENT_ROW_AGENT_ID: agent_id,
                 "event_counter": counter,
                 "energy": landmark_energy if at_landmark else late_energy,
                 "drift_flags": {"resource": True} if at_landmark else {"energy": True},
@@ -1989,7 +2012,7 @@ def test_landmark_reading_reads_the_fixed_ordinal_not_the_last_event() -> None:
     """
 
     rows = _body_rows(C.LANDMARK_EVENT * 2)
-    reading = multigen_mod._landmark_reading(rows, len(rows))
+    reading = multigen_mod._landmark_reading(rows, len(rows), AGENT_A)
 
     assert reading["landmark_reached"] is True
     assert reading["landmark_energy"] == pytest.approx(LANDMARK_ENERGY)
@@ -2007,7 +2030,7 @@ def test_energy_mean_covers_the_whole_life_not_just_the_landmark() -> None:
     """
 
     rows = _body_rows(C.LANDMARK_EVENT * 2)
-    reading = multigen_mod._landmark_reading(rows, len(rows))
+    reading = multigen_mod._landmark_reading(rows, len(rows), AGENT_A)
 
     expected = statistics.fmean(float(row["energy"]) for row in rows)
     assert reading["energy_mean_over_life"] == pytest.approx(expected)
@@ -2025,7 +2048,7 @@ def test_landmark_not_reached_is_reported_never_imputed() -> None:
     """
 
     rows = _body_rows(SHORT_LIFE_BEFORE_LANDMARK)
-    reading = multigen_mod._landmark_reading(rows, len(rows))
+    reading = multigen_mod._landmark_reading(rows, len(rows), AGENT_A)
 
     assert reading["landmark_reached"] is False
     assert math.isnan(float(reading["landmark_energy"]))
@@ -2049,7 +2072,7 @@ def test_missing_landmark_row_on_a_long_life_aborts() -> None:
     ]
 
     with pytest.raises(SystemExit, match=str(C.LANDMARK_EVENT)):
-        multigen_mod._landmark_reading(rows, C.LANDMARK_EVENT * 2)
+        multigen_mod._landmark_reading(rows, C.LANDMARK_EVENT * 2, AGENT_A)
 
 
 def test_arm_result_carries_the_landmark_of_phase_two(
@@ -2068,6 +2091,7 @@ def test_arm_result_carries_the_landmark_of_phase_two(
         graph_mod.reset_body_event_log()
         for row in _body_rows(n_events):
             graph_mod._record_body_event(
+                agent_id=agent_id,
                 event_counter=int(row["event_counter"]),
                 energy=float(row["energy"]),
                 drift_flags=dict(row["drift_flags"]),
@@ -2289,3 +2313,129 @@ def test_report_mode_records_without_touching_run_quality() -> None:
     # And the modes that do label a run still do.
     gate.check("I3.1", lambda: (False, "starved"), mode=MODE_FLAG)
     assert gate.run_quality() == RUN_QUALITY_FLAGGED
+
+
+# ---------------------------------------------------------------------------
+# E3 — event rows carry their owner, and every reader says whose it wants
+# ---------------------------------------------------------------------------
+
+OTHER_LANDMARK_ENERGY: float = 0.13
+OTHER_LANDMARK_SCAR: float = 0.77
+
+
+def _interleaved_body_rows() -> list[dict[str, object]]:
+    """Two agents' rows in one buffer, alternating — the population case.
+
+    Interleaved rather than concatenated on purpose: a reader that takes the
+    first matching event_counter looks correct on concatenated rows for the
+    agent that happens to come first.
+    """
+
+    a_rows = _body_rows(C.LANDMARK_EVENT * 2, agent_id=AGENT_A)
+    b_rows = _body_rows(
+        C.LANDMARK_EVENT * 2,
+        agent_id=AGENT_B,
+        landmark_energy=OTHER_LANDMARK_ENERGY,
+    )
+    mixed: list[dict[str, object]] = []
+    for a_row, b_row in zip(a_rows, b_rows):
+        mixed.append(b_row)
+        mixed.append(a_row)
+    return mixed
+
+
+def test_landmark_reading_reads_the_agent_it_was_asked_for() -> None:
+    """The silent failure E3 exists to prevent (POPULATION_DESIGN_PROPOSAL).
+
+    With N agents alive the buffer holds N rows per ordinal. An unfiltered
+    lookup returns one of them — a real number, from the wrong agent, with no
+    error and no warning. Every other population blocker stops the code from
+    running; this one lets it run and lie.
+    """
+
+    mixed = _interleaved_body_rows()
+
+    reading_a = multigen_mod._landmark_reading(mixed, C.LANDMARK_EVENT * 2, AGENT_A)
+    reading_b = multigen_mod._landmark_reading(mixed, C.LANDMARK_EVENT * 2, AGENT_B)
+
+    assert reading_a["landmark_energy"] == pytest.approx(LANDMARK_ENERGY)
+    assert reading_b["landmark_energy"] == pytest.approx(OTHER_LANDMARK_ENERGY)
+    assert reading_a["landmark_energy"] != reading_b["landmark_energy"]
+    # B's rows come first in the buffer, so an unfiltered reader would hand
+    # B's landmark to A — the exact swap this test forbids.
+    assert reading_a["landmark_energy"] != pytest.approx(OTHER_LANDMARK_ENERGY)
+
+
+def test_energy_mean_is_over_one_agents_life_not_the_population() -> None:
+    """Averaging the buffer would report the cohort under one agent's name."""
+
+    mixed = _interleaved_body_rows()
+    own_only = _body_rows(C.LANDMARK_EVENT * 2, agent_id=AGENT_A)
+
+    mixed_reading = multigen_mod._landmark_reading(mixed, C.LANDMARK_EVENT * 2, AGENT_A)
+    alone_reading = multigen_mod._landmark_reading(
+        own_only, C.LANDMARK_EVENT * 2, AGENT_A
+    )
+
+    assert mixed_reading["energy_mean_over_life"] == pytest.approx(
+        alone_reading["energy_mean_over_life"]
+    )
+
+
+def test_s5_behaviour_describes_one_heir_not_the_commons() -> None:
+    """The commons buffer is shared by construction — the trace is not."""
+
+    mixed_pool = _pool_rows([False, True, True], AGENT_B) + _pool_rows(
+        [False, False, True], AGENT_A
+    )
+    mixed_pe = _delta_class_rows({TRAUMA_AT_SECOND_EVENT}, AGENT_A) + _delta_class_rows(
+        set(), AGENT_B
+    )
+
+    behaviour = multigen_mod._s5_behaviour(mixed_pool, mixed_pe, AGENT_A)
+
+    assert behaviour["crisis_by_event"] == [False, False, True]
+    assert behaviour["n_crisis_events"] == 1
+    assert behaviour["events_to_first_crisis"] == CRISIS_AT_THIRD_EVENT
+
+
+def test_graph_writes_the_owner_onto_every_event_row() -> None:
+    """Filtering is only as good as the column it filters on."""
+
+    graph_mod.reset_body_event_log()
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_pe_event_log()
+
+    graph_mod._record_body_event(
+        agent_id=AGENT_A,
+        event_counter=1,
+        energy=LANDMARK_ENERGY,
+        drift_flags={},
+        drift_magnitudes={},
+    )
+    graph_mod._record_pool_event(
+        agent_id=AGENT_A,
+        event_counter=1,
+        extraction=1.0,
+        requested=1.0,
+        pool_ratio=0.5,
+        crisis=False,
+    )
+    graph_mod._record_pe_event(
+        agent_id=AGENT_A,
+        event_counter=1,
+        prediction_error=0.5,
+        raw_pe=0.5,
+        precision_weight=1.0,
+        delta_magnitude=0.1,
+        delta_class="SHALLOW",
+    )
+
+    for rows in (
+        graph_mod.get_body_event_log(),
+        graph_mod.get_pool_event_log(),
+        graph_mod.get_pe_event_log(),
+    ):
+        assert rows[0][graph_mod.EVENT_ROW_AGENT_ID] == AGENT_A
+        assert graph_mod.rows_for_agent(rows, AGENT_B) == []
+        assert graph_mod.rows_for_agent(rows, AGENT_A) == rows

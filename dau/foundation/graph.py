@@ -202,6 +202,31 @@ DRIFT_WARNING_TEMPLATE: str = (
 _memory_stores: dict[str, MemoryStore] = {}
 _memory_written: dict[str, int] = {}
 
+# Every event row carries the agent it describes. With one life at a time this
+# is redundant — the buffer is drained per life, so every row belongs to the
+# only agent alive. With N agents sharing a commons the rows interleave in one
+# list, and a reader looking up "the row at event 10" would find N of them and
+# take whichever came first: a number, from the wrong agent, with no error.
+# Adding the column costs nothing today and is a precondition for every
+# population design under consideration (POPULATION_DESIGN_PROPOSAL.md, E3).
+EVENT_ROW_AGENT_ID: str = "agent_id"
+
+
+def rows_for_agent(
+    rows: list[dict[str, Any]],
+    agent_id: str,
+) -> list[dict[str, Any]]:
+    """Keep only the rows belonging to one agent, in order.
+
+    Filtering is done at the call site rather than inside get_*_event_log so
+    that reading a shared buffer without saying whose rows you want is not
+    something a caller can do by accident (§2.9).
+    """
+
+    target = str(agent_id)
+    return [row for row in rows if str(row.get(EVENT_ROW_AGENT_ID, "")) == target]
+
+
 # Event-level PE audit buffer — drained by run_demo / overnight writers.
 # Audit JSON uses NOISE for the NO_TRACE imprint class (histogram schema).
 AUDIT_DELTA_CLASS_NOISE: str = "NOISE"
@@ -260,6 +285,7 @@ def get_body_event_log() -> list[dict[str, Any]]:
 
 def _record_body_event(
     *,
+    agent_id: str,
     event_counter: int,
     energy: float,
     drift_flags: dict[str, bool],
@@ -277,6 +303,7 @@ def _record_body_event(
 
     _body_event_log.append(
         {
+            EVENT_ROW_AGENT_ID: str(agent_id),
             "event_counter": int(event_counter),
             "energy": float(energy),
             "drift_flags": dict(drift_flags),
@@ -287,6 +314,7 @@ def _record_body_event(
 
 def _record_pool_event(
     *,
+    agent_id: str,
     event_counter: int,
     extraction: float,
     requested: float,
@@ -307,6 +335,7 @@ def _record_pool_event(
 
     _pool_event_log.append(
         {
+            EVENT_ROW_AGENT_ID: str(agent_id),
             "event_counter": int(event_counter),
             "extraction": float(extraction),
             "requested": float(requested),
@@ -318,6 +347,7 @@ def _record_pool_event(
 
 def _record_pe_event(
     *,
+    agent_id: str,
     event_counter: int,
     prediction_error: float,
     raw_pe: float,
@@ -333,6 +363,7 @@ def _record_pe_event(
 
     _pe_event_log.append(
         {
+            EVENT_ROW_AGENT_ID: str(agent_id),
             "event_counter": int(event_counter),
             "prediction_error": float(prediction_error),
             "raw_pe": float(raw_pe),
@@ -1143,6 +1174,7 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         f"mag={float(record.magnitude):.3f}"
     )
     _record_pe_event(
+        agent_id=state.agent_id,
         event_counter=int(last_event.timestamp),
         prediction_error=float(prediction_error),
         raw_pe=float(raw_pe),
@@ -1241,6 +1273,7 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
         int(new_env.event_counter),
     )
     _record_pool_event(
+        agent_id=state.agent_id,
         event_counter=int(state.event_log[-1].timestamp),
         extraction=granted,
         requested=amount,
@@ -1271,6 +1304,7 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
     # abort, not as a default.
     fed_drift = updated_drifts[state.agent_id]
     _record_body_event(
+        agent_id=state.agent_id,
         event_counter=int(state.event_log[-1].timestamp),
         energy=float(fed.energy),
         drift_flags=dict(fed_drift.flags),

@@ -422,7 +422,10 @@ def run_life_keep_vault(
             result = values
 
         state = _state_from_stream(result)
-        pe_rows = list(get_pe_event_log())
+        # E3: the buffer is per-run, not per-agent. With one life at a time
+        # these are the same set; with a shared commons they are not, and the
+        # PE trace has to be this agent's or the endpoint describes the crowd.
+        pe_rows = graph_mod.rows_for_agent(get_pe_event_log(), agent_id)
         pe_list = [float(row["prediction_error"]) for row in pe_rows]
         pe_list = _clip_pe_trace(pe_list, n_events)
         lived_examples = _build_lived_examples(state, pe_rows)
@@ -836,6 +839,7 @@ def run_gen1_arm_lineage(
     landmark = _landmark_reading(
         graph_mod.get_body_event_log(),
         len(state_2.event_log),
+        agent_id,
     )
     pe_after = _window_mean(pe_after_list)
     delta_pe = NAN_DELTA if gated else (pe_after - pe_before)
@@ -919,6 +923,7 @@ def _first_ordinal(flags: list[bool]) -> int:
 def _landmark_reading(
     body_rows: list[dict[str, Any]],
     events_lived: int,
+    agent_id: str,
 ) -> dict[str, Any]:
     """Read one life at a fixed AGE, plus its energy averaged over that life.
 
@@ -944,9 +949,10 @@ def _landmark_reading(
       substituted value from another ordinal.
     """
 
-    by_counter = {int(row["event_counter"]): row for row in body_rows}
+    own_rows = graph_mod.rows_for_agent(body_rows, agent_id)
+    by_counter = {int(row["event_counter"]): row for row in own_rows}
     row = by_counter.get(LANDMARK_EVENT)
-    energies = [float(row["energy"]) for row in body_rows]
+    energies = [float(row["energy"]) for row in own_rows]
     energy_mean = float(statistics.fmean(energies)) if energies else NAN_DELTA
 
     if row is None:
@@ -981,9 +987,17 @@ def _landmark_reading(
 def _s5_behaviour(
     pool_rows: list[dict[str, Any]],
     pe_rows: list[dict[str, Any]],
+    agent_id: str,
 ) -> dict[str, Any]:
-    """S5's raw behavioural trace for one life — recording only, no statistic."""
+    """S5's raw behavioural trace for one life — recording only, no statistic.
 
+    Both buffers are filtered to this agent (E3): with a shared commons the
+    rows of every agent land in the same list, and an unfiltered read would
+    describe the population while claiming to describe one heir.
+    """
+
+    pool_rows = graph_mod.rows_for_agent(pool_rows, agent_id)
+    pe_rows = graph_mod.rows_for_agent(pe_rows, agent_id)
     crisis = [bool(row["crisis"]) for row in pool_rows]
     trauma = [str(row.get("delta_class", "")) == DELTA_CLASS_TRAUMA for row in pe_rows]
     return {
@@ -1025,7 +1039,9 @@ def run_gen2_measure(
     )
     # Drained after the stream, before anything else can start a life and
     # reset the buffer (S5, L20).
-    behaviour = _s5_behaviour(graph_mod.get_pool_event_log(), pe_rows)
+    behaviour = _s5_behaviour(
+        graph_mod.get_pool_event_log(), pe_rows, heir.agent_id
+    )
     mean_pe = _window_mean(pe_list, window=pe_window)
     n_unique, pe_gap_max = _phase1_diversity(lived_examples)
     gate_reason = _gen2_diversity_gate_reason(n_unique, pe_gap_max, k_gen2)
