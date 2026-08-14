@@ -47,18 +47,33 @@ koşmak, ② sonrası **üçüncü** bir ön-kayıt demek. D-014'ün hedefi zate
 nesil, ve D-065/J20 *"önce bedel, sonra popülasyon"* demişti — bedel D-066'da
 bitti.
 
-### Sıradaki adım: ② için **read-only denetim + tasarım önerisi**
+### ✅ Denetim + tasarım önerisi **BİTTİ** ⇒ sıra **Yasin'in yedi kararında**
 
-⚠ **Kod yazılmaz** (§2.3). Denetimin cevaplaması gerekenler:
+**`docs/POPULATION_DESIGN_PROPOSAL.md`** — denetim, yedi karar noktası
+(**P1–P7**), maliyet zarfı, kod iş sırası. ⚠ **Kod yazılmadı** (§2.3).
 
-1. Bugünkü orkestrasyonun **tek-ajan varsayımları nerede gömülü**
-   (`run_cprime_multigen`, `graph._memory_stores`, adapter dizinleri,
-   `_lock_seeds`, I0.7).
-2. **Üremenin biçimi:** kim kopyalanır, kaç varis, seçilim `F_agent`'tan mı
-   (⚠ `F_agent` D-071'de değişti — havuz terimi oran, survival gerçek).
-3. **Ortak havuz N ajanla nasıl paylaşılır** — `realized_extractions` zaten
-   oransal bölüşüm yapıyor (D-066), yani altyapı kısmen hazır.
-4. **Maliyet:** N ajan × nesil × GPU. B2 tek soy için 13.1 saatti.
+**⭐ Denetimin linçpini:** Price eşitliği (D-076) `Cov(wᵢ, zᵢ)` istiyor ve bu
+ancak `w` **değişkense** tanımlı. Bugün her ebeveynin **tam olarak bir**
+varisi var ⇒ `w` sabit ⇒ **seçilim ölçülemez.** ⇒ ②'nin asıl işi popülasyon
+eklemek değil, **`w`'yi değişken yapmak**; gerisi altyapı.
+
+**Karar bekleyen yedi nokta** (ayrıntı ve kanıt önerinin içinde):
+
+| # | Karar | Öneri |
+|---|---|---|
+| **P1** | Havuz paylaşımı | **Kol başına ayrı havuz** — iki bağımsız literatür aynı yerde (D-075 + D-076). ⚠ Bedeli: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
+| **P2** | Seçilim şeması | **Turnuva k=2** — orantılı şema dar uygunluk dağılımımızda baskı üretmez, kesme N=8'de iki nesilde tek soya iner |
+| **P3** | Üreme | Sabit N; ölenin yerine turnuvayla seçilen ebeveynden bir varis ⇒ `w` = turnuva kazanımı ⇒ **değişken** |
+| **P4** | `w` ne olsun | ⚠ **`F_agent`'ı doğrudan `w` yapma** — D-071'den beri içinde gerçekleşmiş hayatta kalma var, totoloji geri gelir. Üç katman ayrı: `F_agent` (girdi) → `w` (varis sayısı) → `z` (landmark drift, **sonuç**) |
+| **P5** | Kol yapısı | Kol = **popülasyonun tamamına uygulanan eğitim kuralı**; üç popülasyon, üç havuz |
+| **P6** | İki faz korunsun mu | **Tek faz** — maliyeti yarıya indirir. ⚠ Bedeli: `delta_pe` (nesil içi) uç noktası kaybolur |
+| **P7** | N / G / tohum | ⚠ **Literatür sayı vermedi.** `G ≥ 5` taban (birikimli kalıtım ②'nin gerekçesi). Zarf: tohum=10 · N=8 · G=5 · E=30 ⇒ **32.7 sa** |
+
+⚠ **Ön-kayıta girmesi gereken geçerlilik kapısı:** `F_agent` dağılımının
+yayılımı ve `w`'nin varyansı **ön-koşul**. Yayılım yoksa turnuva yazı-turaya
+döner, `Cov(w,z) ≈ 0` olur ve koşum **seçilim hakkında bilgisizdir**.
+Bu **etkiye bakmak değil** (L9): kol farkına değil, dağılımın **var olup
+olmadığına** bakılıyor ve kural koşumdan önce yazılıyor.
 
 ### Ondan sonra, sırayla
 
