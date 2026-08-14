@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`6201dd5`).
 - **Suite:** `419 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi** (`6201dd5`).
-- **Son D-kaydı: D-089.** Sıradaki kayıt **D-090** olarak açılır.
+- **Son D-kaydı: D-090.** Sıradaki kayıt **D-091** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -78,9 +78,37 @@ taşıyor** (4 `normal`, 2 `low`) · `I3.2` gen1'de **ilk kez geçti**
 | **A** | `fitness_class`'ın **`high` bandı (≥0.70) hâlâ boş** | ⚠ düştü — iki bant artık dolu |
 | **B** | `landmark_energy` tavanda **1/6** (D-085'te 5/12) | ⚠ azaldı, kalkmadı · **ön-kayıt kararı**, kod değil |
 
-⇒ ⭐ **Önerilen durma kuralı:** alet işi burada **kapanır**. A ve B ikinci
-ön-kayıt tartışmasına gider; bundan sonrası **evrenin fiziği** (C/D/E) ve
-**popülasyon katmanı**.
+⇒ ⭐ **Alet işi burada kapandı.** A ve B ikinci ön-kayıt tartışmasına gider.
+
+---
+
+## ⭐⭐ D-090 — **karar kanalı ölü değil**, ve bu C/D/E'yi yeniden sıraladı
+
+D-084 *"kanal doygun"* demişti ve **C/D/E'nin üçü de o tek ölçüme
+dayanıyordu**. ⚠ Ama o **dar bir sondaydı**: çıplak `SYSTEM_PROMPT`, tek
+durum, yalnız enerji. Gerçek prompt katmanlarıyla yeniden tarandı (57 çağrı):
+
+- Geniş tarama: **35/36 `defect`** — ama **biri `cooperate`**.
+- İstisna **tekil nokta değil**: aynı girdi 3/3 aynı (deterministik), ve
+  enerji ekseninde **E ≈ [0.04, 0.08]** aralığında dört ardışık `cooperate`.
+- ⭐⭐ **Drift ekseni temiz ve tekdüze:** `(1.0, 1.5]` arasında eşik, üstünde
+  **dört ardışık `cooperate`**, tırtık yok. Gürültü değil **kaldıraç**.
+
+⇒ **Doğru okuma:** davranış ölü değil — **ajanlar o bölgeye nadiren giriyor**.
+`cooperate` *travma-bilgili + düşük enerjili* durumda çıkıyor ve bugünkü fizik
+ajanları oraya sokmuyor.
+
+### ⇒ Sıra değişti: **D önce**
+
+| | Karar | Yeni durumu |
+|---|---|---|
+| **D** ⭐ | **Çıkarımın bedeli olsun mu** | *"Muhtemelen anlamsız"*dan **en umut verici kaldıraç**a döndü: bedel ajanları tam o bölgeye sokar (hızlı düşen enerji + artan drift). ⚠ **Dünyanın özelliği, davranışsal önsel değil ⇒ K7'yi açmıyor** |
+| **C** | Hasat kuralı (sabit kota / Holling II) | ⚠ Bütün hesabım *"her ajan hep 8.0 alır"* varsayımına dayanıyordu; D bunu değiştirirse **yeniden hesaplanmalı** |
+| **E** | P0 = ① ve aksiyom sorusu | ⚠ *"Özdeş karar veren ama farklı yaşayan ajanlar"* çerçevesi **zorunlu değilmiş** — davranış hareket edebiliyor |
+
+⭐ **Ve D-089 bunu zaten genişletmiş olabilir:** kalıtım aktığı için varisler
+**doğuştan** miras drift + anı taşıyor ⇒ bu bölgeye daha yakın başlıyorlar.
+⚠ **Ölçülmedi, çıkarım.**
 
 ---
 

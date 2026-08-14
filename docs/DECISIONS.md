@@ -6762,3 +6762,79 @@ olmayabilir**, ölçülmeli. · `I1.3b` kırpma 14/14 doygun ⇒ **L18 sürüyor
 **İki tohum, altı soy.** Alet denetimi, hipotez testi değil. Aktarım
 sayılarının *"doğru"* olduğu iddia edilmiyor — yalnız **sıfır olmadığı** ve
 gölge kolla tutarlı olduğu. Üç OOM uyarısı, çökme yok.
+
+---
+
+## D-090 · 2026-08-14 · Karar kanalı **ölü değil** — drift ekseninde temiz bir eşik var
+
+**Durum:** ölçüm (gerçek model, greedy) · **Etiket:** ⚠ **keşifsel** ·
+`DAU_LORA_ENABLED=0`, **adapter yazılmadı, sabit değişmedi** · 36 + 21 çağrı,
+**83.5 sn + 53.9 sn** · ham `scratchpad/sweep_d090.json`
+
+### Neden
+
+D-084 *"karar kanalı doygun"* demişti — ama **dar bir sondaydı**: çıplak
+`SYSTEM_PROMPT`, tek durum vektörü, yalnız enerji. Ve C/D/E kararlarının
+**üçü de** o tek ölçüme dayanıyordu. Bu tarama gerçek prompt katmanlarını
+kuruyor (`_format_memory_context`, `STRATEGIC_EXPECTATION_TEMPLATE`,
+`DRIFT_WARNING_TEMPLATE` — kodun kendi fonksiyonları, yeniden üretilmedi).
+
+### Bulgu 1 — geniş tarama: **35/36 `defect`**, ama biri değil
+
+Enerji × yük × bağlam (36 kombinasyon): **35 `defect` (8.0)**, **1
+`cooperate` (2.0)**. Tek istisna: **anı + drift uyarısı + ölüme yakın enerji**.
+⇒ D-068'in sahada ölçtüğü %94–100 DEFECT ile tutarlı, **ama mutlak değil**.
+
+### ⭐ Bulgu 2 — istisna **tekil nokta değil, havza**
+
+Aynı girdi **3 kez** koşuldu, **3 kez aynı** ⇒ deterministik, D-037 tutuyor.
+
+**Enerji ekseni** (anı + drift 2.4, yük 0.05):
+
+| E | 0.0 | 0.02 | 0.03 | 0.04 | 0.05 | 0.06 | 0.08 | 0.1 | 0.15 | 0.2 | 0.3 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| | D | **C** | D | **C** | **C** | **C** | **C** | D | D | D | D |
+
+⇒ **E ≈ [0.04, 0.08]** aralığında **dört ardışık `cooperate`** — havza var, ama
+**dar** ve kenarları tırtıklı (0.02'de C, 0.03'te D). Tırtıklılık D-084'ün
+bulduğu kaotik duyarlılıkla uyumlu.
+
+### ⭐⭐ Bulgu 3 — **drift ekseni temiz ve tekdüze**
+
+**Drift ekseni** (E=0.05, yük 0.05):
+
+| drift | 0.0 | 0.5 | 1.0 | 1.5 | 2.0 | 2.4 | 3.0 |
+|---|---|---|---|---|---|---|---|
+| | D | D | D | **C** | **C** | **C** | **C** |
+
+⇒ **Tırtık yok.** `(1.0, 1.5]` arasında bir eşik ve üstünde **dört ardışık
+`cooperate`**. Bu, gürültü değil **kaldıraç**.
+
+### ⭐ Ne değişti — C/D/E'nin çerçevesi
+
+D-084'ün *"kanal doygun"*u **çok geniş okunmuştu**. Doğrusu:
+
+> **Davranış ölü değil; ajanlar o bölgeye nadiren giriyor.** Cooperate,
+> *travma-bilgili + düşük enerjili* durumda çıkıyor, ve bugünkü fizik
+> ajanları oraya sokmuyor.
+
+⇒ ⭐ **D (çıkarımın bedeli) *"muhtemelen anlamsız"*dan *"en umut verici
+kaldıraç"*a döndü.** Bedel, ajanları tam da bu bölgeye — daha hızlı düşen
+enerji ve daha çok drift — sokar. ⚠ Ve bu bir **davranışsal önsel değil**,
+dünyanın özelliği ⇒ **K7'yi açmıyor**.
+
+⭐ **Ve D-089 bunu zaten genişletmiş olabilir:** kalıtım artık aktığı için
+varisler **doğuştan** miras drift ve anı taşıyor — yani bu bölgeye eskisinden
+**yakın** başlıyorlar. ⚠ Ölçülmedi, çıkarım.
+
+### Sınırlar — ⚠ ağır
+
+- **Prompt sentetik.** Katman fonksiyonları gerçek, ama içlerine koyduğum
+  **değerler benim** (anı seti, beklenti, drift). Canlı koşumun ürettiği
+  prompt bu değil.
+- **Tek karar bağlamı**, tek anı seti, tek `resource_scarcity`.
+- **Drift eşiği `(1.0, 1.5]` aralığında**; gerçek sınır ölçülmedi.
+  ⚠ 1.5'in `DRIFT_TRANSFER_MIN` ile aynı olması **örnekleme ızgaramın
+  eseri**, bir bulgu değil.
+- Enerji havzasının kenarları tırtıklı ⇒ bir kısmı kaotik duyarlılık olabilir.
+- **Hiçbir karar verilmedi, hiçbir kod değişmedi.**
