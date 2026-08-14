@@ -945,3 +945,193 @@ gelirse sorun içerikte, gelmezse ürün/hesap tarafında.
 3. **Konum etkisinin kendisi ölçülmeli**, bastırılmaya çalışılmamalı: pilotta
    konum ile `F_agent` arasındaki ilişkiye bakılır. ⚠ Kol farkına değil —
    L9 sınırı geçerli.
+
+---
+
+# §O — DR brief #7 mutabakatı: özdeş ajanlar arasında heterojenlik (2026-08-14)
+
+**Ham cevap:** `docs/research/2026-08-14_DR7-answer-raw.md` (değiştirilmeden).
+**Brief:** `2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt`.
+**Kayıt:** D-080. **Karşılaştırma:** aynı dört soruyu ben de taradım → **§N**.
+
+⚠ **§N.3'ün hipotezi düştü.** Orada *"#7'nin 'neresinde geçtiğini yaz' şartı
+tarayıcısız bir modelin karşılayamayacağı bir şart"* diye yazmıştım ve cevap
+gelmemesini buna bağlamıştım. **Cevap geldi ve şartı karşılamaya çalıştı.**
+⇒ hipotez **desteklenmedi**. (Cevabı hangi hesabın/aracın ürettiğini
+bilmiyorum; iç kaynak indeksi `[22] [39] [51] [56] [58] [63] [69]` biçiminde
+geldiği için erişimli bir derleme koştuğu anlaşılıyor.)
+
+---
+
+## O.0 Kimlik doğrulaması — **iki hata**, ikisi de tamir edildi
+
+Her kimlik Crossref/arXiv'den **açılarak** kontrol edildi.
+
+| # | DR ne yazdı | Açınca ne çıktı | Durum |
+|---|---|---|---|
+| 1 | Schelling (1971), J. Math. Sociol., **"no DOI"** | ✅ var: `10.1080/0022250X.1971.9989794` · *Dynamic models of segregation* · 1(2):143–186 | ⚠ **kimlik doğru, "DOI yok" yanlış** |
+| 1b | `[56]` *"via JASSS"* · `[22]` Gilbert (2002, Agent 2002) | `[56]` **hangi makale olduğu belirsiz** (kaynakça verilmedi) · Gilbert 2002 Crossref'te yok (konferans bildirisi), **açamadım** | ❌ **kimliksiz** |
+| 2 | **Nishimura ve ark. (2024)**, `arXiv:2308.00179` | **Anwar & Georgalos**, *Position Uncertainty in a Sequential Public Goods Game: An Experiment* · Exp. Econ. 27:820–853 · `10.1007/s10683-024-09831-3` | ❌ **yanlış yazar**, arXiv no doğru ⇒ **tamir edildi** |
+| 3 | Bru ve ark. (2003), `10.1023/A:1024209010570` | ✅ *A Common Pool Resource Game with Sequential Decisions…* · Exp. Econ. 6(1):91–114 | ✅ (= §N'in **W4**'ü) |
+| 4 | **Rafferty ve ark. (2009)**, *CogSci/J. AI Research*, `arXiv:0810.3070` | **Barczy & Pap**, *alpha-Wiener bridges…*, Stochastic Analysis and Applications 28:447–466 — **konuyla hiçbir ilgisi yok** | ❌ **tamamen yanlış makale** ⇒ doğrusu bulundu: **Rafferty, Griffiths & Klein (2014)**, *Analyzing the Rate at Which Languages Lose the Influence of a Common Ancestor*, Cognitive Science 38(7):1406–1431, `10.1111/cogs.12112` |
+| 5/6 | Lee ve ark. (2015), JASSS 18(4):4, `10.18564/jasss.2897` | ✅ *The Complexities of Agent-Based Modeling Output Analysis* · Lee, Filatova, Ligmann-Zielinska ve ark. | ✅ |
+
+⇒ **Sekizinci ve dokuzuncu kimlik hatası** projenin sicilinde. ⚠ Ama ikisi de
+**tamir edilebilir** çıktı: birinde numara doğru yazar uydurma, diğerinde
+numara başka bir makaleyi gösteriyor ama tarif edilen makale **gerçekten var
+ve iddia orada**.
+
+---
+
+## O.1 ⭐ "Neresinde geçiyor" şartı **işe yaradı** — ve yakaladığı şey bu
+
+**Yerini gösterebildiklerim: 6 iddianın 4'ü.** (#6'da bu oran **0/13**'tü —
+13 satırın hepsi *"Tam Uyumlu"* çıkmıştı ve ayırt etme yoktu.)
+
+⭐ **Asıl kazanç şu:** şart hataları **engellemedi**, ama **yakalanabilir**
+hâle getirdi. İlk kez iddiayı kendi alıntısının **yanına koyup**
+karşılaştırabildim — ve **altı iddianın üçü kendi alıntısının söylemediği bir
+şey söylüyor.** ⚠ Yalnız DOI doğrulamasıyla (D-076 öncesi rejim) **üçü de
+geçerdi**.
+
+| # | İddia | Kimlik | Yer | Alıntı iddiayı taşıyor mu | **Karar** |
+|---|---|---|---|---|---|
+| 1 | Uzamsal gömme özdeş ajanları ayrıştırır (Schelling) | ⚠ kısmi | ❌ yalnız ikincil metinlerde, biri kimliksiz | — | **kullanılmıyor** (mekanizma ayrıca not edilir) |
+| 2 | Sıralı erişim sıra etkisi yaratır | ❌→tamir | ✅ **iki alıntı da birebir bulundu** | ⚠ **kısmen** | **ikiye bölündü** — bak O.2 |
+| 3 | Sıra etkisi rastgeleleme/rotasyonla giderilir (Bru) | ✅ | ⚠ ödemeli, açamadım | ❌ **hayır** | **brief yanılmış** |
+| 4 | Birikimli evrim için sabit nesil sayısı yok; O(n log n) | ❌→tamir | ✅ **özette birebir** | ⚠ **yorum kaymış** | **alınır, çerçevesi düzeltilerek** |
+| 5 | ABM için Monte Carlo tekrar şart | ✅ | ✅ **birebir, §1.3** | ✅ alıntı doğru | **uyumlu** ⚠ ama **uyarlaması yanlış** — bak O.3 |
+| 6 | Aşırı tekrar "absürt" hassasiyet üretir | ✅ | ✅ **birebir, §2.2** | ✅ | **uyumlu** |
+
+---
+
+## O.2 ⭐ İddia 2 — alıntılar gerçek, **iddia iki ters bulguyu birleştirmiş**
+
+Makaleyi (Anwar & Georgalos 2024) **açıp okudum**. DR'nin iki alıntısı da
+**birebir var**:
+
+- s.6: *"This literature has identified significant ordering effects, even in
+  the case where later subjects in a sequence could not observe past
+  decisions"* — ve atıfları: **Rapoport ve ark. 1993; Budescu ve ark. 1995;
+  Suleiman ve ark. 1996; Rapoport 1997**.
+- s.6–7: *"They all find robust evidence of first movers contributing more
+  than later movers"*.
+
+⚠ **Ama DR'nin cümlesi bu ikisini birleştirip üçüncü bir şey söylüyor:**
+*"birinci hamle eden, davranışından bağımsız olarak avantaj kazanır — örneğin
+daha çok katkı verir (ya da daha çok hasat eder)"*. Üç ayrı kusur:
+
+1. **"first-mover advantage"** makalede **Varian (1994)**'e ait, **kuramsal**,
+   ve orada birinci hamle eden avantajını **daha AZ katkı vererek**
+   (bedavacılık) kullanıyor.
+2. **"first movers contributing more"** ise **leading-by-example** yazınının
+   **ampirik** bulgusu, **doğrusal kamu malı** oyunlarında — ve katkı
+   **maliyetli** bir davranıştır, **avantaj değil**. İki bulgu **ters yönde**.
+3. ***"ya da daha çok hasat eder"*** ifadesi kaynakta **hiç geçmiyor** —
+   DR'nin bizim kurulumumuza uydurmak için eklediği köprü.
+
+⇒ **Alınan:** *"sıralı protokollerde sıra etkileri belgelenmiştir"* ✅.
+⇒ **Alınmayan:** *"birinci hamle eden davranıştan bağımsız avantajlıdır"* ❌.
+⚠ Bu, P0'da ①'i zayıflatacak gibi görünen tek yeni iddiaydı; **kaynağında
+yoktu**.
+
+⭐ **İki bağımsız yol aynı yere çıktı.** O alıntının atıf listesi **Suleiman
+ve ark. 1996**'yı içeriyor — §N'de kendi taramamda bulduğum **W3**. Bu,
+D-065/J20 desenidir: iki bağımsız kaynak aynı birincil kaynağa varıyorsa delil
+değeri taşır. (İkinci kesişme: **Bru 2003 = §N'in W4'ü**.)
+
+⭐ **DR'nin atladığı, bizim işimize yarayan asıl bulgu:** makalenin **kendi
+deneyi** konum **belirsizliği** üzerine ve *"increased cooperation under
+positional uncertainty"* buluyor — ajanlar sıradaki konumlarını
+bilmediklerinde işbirliği artıyor.
+⚠ **Bizim için sınırlı ama gerçek:** bizim ajanlarımız konumlarını zaten
+görmüyor (prompt'ta yok) ⇒ konum etkisinin **stratejik** bileşeni bizde
+**yapı gereği kapalı**. Geriye kalan **mekanik** bileşen — tükenen havuzdan
+önce alanın daha çok alması — ki **aradığımız simetri kırılması tam olarak
+odur** (§N.1).
+
+---
+
+## O.3 ⚠ İddia 3 ve 5 — alıntı doğru olsa bile iddiayı taşımıyor
+
+**İddia 3 (Bru 2003).** Makale ödemeli, alıntıyı **doğrulayamadım**. ⚠ Ama
+**doğrulamaya gerek yok:** alıntının kendisi iddiayı taşımıyor.
+*"The order of the **treatments** was changed in each **session**"* =
+**koşulların sunuluş sırası** (öğrenme/yorulma etkisine karşı dengeleme).
+İddia ise **ajan sırasını döndürmek**. Bir oturumda hangi *koşulun* önce
+geldiği ≠ bir olayda hangi *ajanın* önce hasat ettiği. ⇒ **brief yanılmış**,
+alınmıyor.
+⚠ *"Rotasyon standart uygulamadır"* muhtemelen doğrudur ama **bu kaynakla
+desteklenmemiştir**; ve §N/W3 zaten daha güçlüsünü söylemişti: **rotasyon
+konum etkisini yok etmiyor**, yalnız kalıcı olmasını engelliyor.
+
+**İddia 5 (Lee 2015).** Alıntı **birebir doğru** (§1.3, açıp buldum). ⚠ Ama
+DR'nin uyarlaması **bizim kısıtımızı yanlış okuyor**: *"tekrarlanabilirlik
+kısıtımız bu ilkeyi ihlal ediyor, tohum değiştiremeyiz"*. **Değiştirebiliriz.**
+I0.6/D-037 *"aynı tohum + aynı kod aynı sonucu versin"* diyor — **farklı
+tohumlarla koşmayı yasaklamıyor**. B2 zaten **40 farklı tohumla** koşuldu
+(2004–2043).
+⇒ **brief yanılmış**, ama ⚠ **kısmen bizim tarifimizden**: §1.1'de büyük
+harfle *"TEKRARLANABILIRLIK ZORUNLU"* yazıp hemen ardından tek tohumlu bir
+örnek vermiştik. **§9'un dersi dördüncü kez:** brief kalitesi girdi kalitesiyle
+sınırlı, ve girdiyi biz yazıyoruz.
+
+---
+
+## O.4 İddia 4 — sayı doğru, **ölçtüğü şey iddianın söylediği şey değil**
+
+Doğru makale: **Rafferty, Griffiths & Klein (2014)**, `10.1111/cogs.12112`.
+Özette **birebir**: *"…results in convergence in a number of generations that
+is on the order of n log n"* (n = ikili parametre sayısı).
+
+⚠ **Ama makalenin ölçtüğü şey, ortak atanın etkisinin KAYBOLMASI** ve
+dağılımın öğrenme önseline yakınsaması. *"Birikimli etki oluşması"* için
+gereken süre **değil** — başlığı da bunu söylüyor: *"…Lose the Influence of a
+Common Ancestor"*.
+
+⇒ **Bizim için ters yönde ama daha kullanışlı:** n log n, atadan gelen izin
+**ne kadar süre hâlâ görülebilir olduğunun** ölçeği. Küçük G'de ata etkisi
+**henüz silinmemiş** demektir — yani küçük G, ata izini **aramak** için
+elverişsiz değil, tersine tam da o pencerede.
+⚠ **Bu benim çıkarımım, makalenin ifadesi değil.**
+
+⇒ **§N Bulgu 3 güncelleniyor:** *"birikimli kalıtım için yerleşik bir çıta
+yok"* **hâlâ geçerli** (üçüncü bağımsız denemede de sayı gelmedi). Yeni olan:
+çıta yerine bir **ölçek** var ve *"küçük bir sabit değil"*. G'yi kendi
+gerekçemizle seçip ön-kayıtta **ilan edilmiş bir seçim** olarak yazma kararı
+**değişmiyor**; gerekçeye eklenecek bir dayanak çıktı.
+
+---
+
+## O.5 ⭐ P0'a etkisi — **öneri değişmiyor**, ama tabloya beşinci seçenek giriyor
+
+1. **①'i zayıflatacak gibi görünen tek iddia (*"birinci hamle avantajı"*)
+   kaynağında yoktu** (O.2). ⇒ ① **zayıflamadı**.
+2. **Rotasyonun gerekçesi §N'deki hâliyle kalıyor:** *"konum etkisini yok
+   etmek"* değil (W3 onu yok etmiyor, Bru onu desteklemiyor), **kalıcı
+   olmasını engellemek**.
+3. ⭐ **Yeni bilgi:** konum etkisinin **stratejik** bileşeni bizde yapı gereği
+   kapalı (ajan konumunu görmüyor); geriye **mekanik** bileşen kalıyor — ki
+   istediğimiz o.
+4. **⑤ Uzamsal gömme** — §N.4'ün cevapsız #1'i **dolduruldu**, mekanizma
+   gerçek (Schelling). ⚠ **Ama bizim P0 tablomuzda ①'in değil ②/③'ün yanına
+   düşüyor:** Schelling'de farkı yaratan **başlangıçtaki rastgele yerleşim**
+   ⇒ **fark yaşamaktan önce geliyor**. Ve DR'nin *"hiçbir kısıt ihlal
+   edilmiyor"* değerlendirmesi **eksik**: ızgara boyutu, komşuluk yarıçapı,
+   kaynağın uzamsal dağılımı = **en az üç yeni sabit**. ①'in ilan edilmiş
+   üstünlüğü **sıfır yeni sabit**tı.
+
+⇒ **Claude Code'un önerisi değişmedi: ①.** ⚠ **Karar hâlâ Yasin'in.**
+
+---
+
+## O.6 Süreç — brief #8 için iki düzeltme
+
+1. ⭐ **Kaynakça istenecek.** Cevap iç indeks numaralarıyla geldi
+   (`[22] [39] [51] [56] [58] [63] [69]`) ama **kaynakça verilmedi** ⇒ `[56]`
+   hiçbir makaleye bağlanamadı ve iddia 1 bu yüzden düştü.
+2. ⭐ **Satır numarası işe yaramıyor, birebir alıntı yarıyor.** DR *"lines
+   249–253"* dedi, aynı cümleyi kendi çıkarımımda **313. satırda** buldum —
+   satır numaraları hiçbir kopyada tutmuyor. **Bulmayı sağlayan şey birebir
+   alıntıydı.** ⇒ #8'de *"bölüm adı **ve** birebir alıntı; satır numarası
+   yazma"* denecek.

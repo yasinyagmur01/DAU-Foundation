@@ -5844,3 +5844,128 @@ yalnız açık erişimlilerde** okundu. İki iddia *"kaynakta yerini
 gösteremedim"* diye **alınmadı**. **Hiçbir karar verilmedi, hiçbir kod
 değişmedi.** P0 **hâlâ Yasin'in** ve tarama onu kapatmadı — çerçevesini
 değiştirdi.
+
+---
+
+## D-080 · 2026-08-14 · DR #7 mutabakatı: *"neresinde geçiyor"* şartı **işe yaradı** — altı iddianın üçü kendi alıntısını taşımıyor
+
+**Durum:** literatür mutabakatı · **Etiket:** **kod değişmedi** · ham cevap
+`docs/research/2026-08-14_DR7-answer-raw.md` · mutabakat
+`RECONCILIATION.md` **§O** · altı kimlik açıldı · karşılaştırma **§N (D-079)**
+
+### Neden burada
+
+Brief #7 (`2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt`)
+cevaplandı. §9/D-006 süreci koştu. ⚠ D-076'nın yakaladığı *"doğru kimlik,
+yanlış iddia"* kusuru için bu turda **ek şart** vardı: iddianın kaynağın
+**neresinde** geçtiği. Bu kayıt o şartın **ne yaptığını** ölçüyor.
+
+### ⭐ Bulgu 1 — şart hataları engellemedi, **yakalanabilir** yaptı
+
+**Yerini gösterebildiğim iddia: 6'nın 4'ü.** (#6'da 13 satırın hepsi *"Tam
+Uyumlu"* çıkmıştı, ayırt etme **sıfır**.)
+
+⭐ Asıl kazanç: ilk kez iddiayı **kendi alıntısının yanına koyup**
+karşılaştırabildim. Sonuç: **altı iddianın üçü, kendi alıntısının söylemediği
+bir şey söylüyor.** ⚠ **Yalnız DOI doğrulamasıyla (D-076 öncesi rejim) üçü de
+geçerdi.** ⇒ şart kalıcı hâle getirilir.
+
+### ⭐ Bulgu 2 — iddia 2: alıntılar gerçek, **iki ters bulgu birleştirilmiş**
+
+DR *"Nishimura ve ark. (2024), arXiv:2308.00179"* dedi. Açtım: **Anwar &
+Georgalos**, *Position Uncertainty in a Sequential Public Goods Game*, Exp.
+Econ. 27:820–853, `10.1007/s10683-024-09831-3`. **Yazar uydurma, numara
+doğru** ⇒ **sekizinci kimlik hatası**, tamir edilebilir.
+
+PDF'i okudum, **iki alıntı da birebir var**. ⚠ Ama DR'nin cümlesi
+(*"birinci hamle eden davranışından bağımsız avantaj kazanır — daha çok katkı
+verir ya da daha çok hasat eder"*) üç yerden kusurlu:
+
+1. *"first-mover advantage"* makalede **Varian (1994)**'e ait, **kuramsal**,
+   ve orada avantaj **daha AZ katkı vererek** kullanılıyor.
+2. *"first movers contributing more"* **leading-by-example** yazınının
+   **ampirik** bulgusu, **doğrusal kamu malı** oyunlarında — katkı
+   **maliyetlidir, avantaj değildir**. İki bulgu **ters yönde**.
+3. *"ya da daha çok hasat eder"* kaynakta **hiç geçmiyor** — bizim
+   kurulumumuza uydurmak için eklenmiş köprü.
+
+⇒ **Alınan:** sıralı protokollerde sıra etkileri belgelenmiştir.
+⇒ **Alınmayan:** birinci hamle eden davranıştan bağımsız avantajlıdır.
+⚠ **P0'da ①'i zayıflatacak gibi görünen tek yeni iddia buydu ve kaynağında
+yoktu.**
+
+⭐ **İki bağımsız yol aynı yere çıktı** (D-065/J20 deseni): o alıntının atıf
+listesi **Suleiman ve ark. 1996**'yı içeriyor = §N'in **W3**'ü; ve DR'nin
+üçüncü kaynağı **Bru ve ark. 2003** = §N'in **W4**'ü.
+
+### Bulgu 3 — iddia 3 ve 5: alıntı doğru olsa bile iddiayı taşımıyor
+
+**Bru 2003:** alıntı *"order of the **treatments** … in each **session**"* =
+**koşulların sunuluş sırası** (dengeleme), iddia ise **ajan sırasını
+döndürmek**. Farklı şeyler ⇒ **brief yanılmış**, alınmıyor. (Makale ödemeli,
+alıntıyı doğrulayamadım — ama gerek yok, alıntının kendisi iddiayı taşımıyor.)
+
+**Lee 2015:** alıntı **birebir doğru** (JASSS 18(4):4 §1.3, açıp buldum). ⚠
+Uyarlaması yanlış: *"tekrarlanabilirlik kısıtınız tohum değiştirmenizi
+engelliyor"*. **Engellemiyor** — I0.6/D-037 *"aynı tohum + aynı kod aynı
+sonuç"* diyor; B2 **40 farklı tohumla** koşuldu. ⇒ **brief yanılmış**, ama
+⚠ **kısmen bizim tarifimizden**: §1.1'de büyük harfle *"TEKRARLANABILIRLIK
+ZORUNLU"* deyip tek tohumlu örnek vermiştik. **§9'un dersi dördüncü kez.**
+
+### Bulgu 4 — iddia 4: sayı doğrulandı, **ölçtüğü şey başka**
+
+DR `arXiv:0810.3070` dedi; açtım: **Barczy & Pap, *alpha-Wiener bridges***,
+Stochastic Analysis and Applications 28:447–466 — **konuyla ilgisi yok** ⇒
+**dokuzuncu kimlik hatası**. Doğru makaleyi buldum: **Rafferty, Griffiths &
+Klein (2014)**, *Analyzing the Rate at Which Languages Lose the Influence of a
+Common Ancestor*, Cognitive Science 38(7):1406–1431, `10.1111/cogs.12112`.
+Özette **birebir**: *"…convergence in a number of generations that is on the
+order of n log n"*.
+
+⚠ **Ama makale *birikimli etki oluşması* süresini değil, *ortak atanın
+etkisinin kaybolması* süresini ölçüyor** — başlığın kendisi bunu söylüyor.
+
+⇒ ⚠ **Şu benim çıkarımım, makalenin ifadesi değil:** n log n, atadan gelen
+izin **ne kadar süre hâlâ görülebilir** olduğunun ölçeği ⇒ küçük G, ata izini
+**aramak** için elverişsiz değil.
+
+⇒ **§N Bulgu 3 güncellendi:** *"yerleşik çıta yok"* **hâlâ geçerli** (üçüncü
+bağımsız denemede de sayı gelmedi); yeni olan, çıta yerine bir **ölçek** ve
+*"küçük bir sabit değil"* ifadesi. **G kendi gerekçemizle seçilip ön-kayıtta
+ilan edilecek** kararı **değişmedi**.
+
+### Bulgu 5 — uzamsal gömme: §N.4'ün cevapsızı doldu, **ama ②'nin yanına**
+
+Schelling (1971) — DR *"DOI yok"* dedi, **var**:
+`10.1080/0022250X.1971.9989794`. ⚠ Yeri yalnız **ikincil** metinlerde
+gösterildi ve biri (`[56]`) **hiçbir makaleye bağlanamadı** (kaynakça
+verilmedi) ⇒ **kaynağıyla kullanılmıyor**.
+
+⚠ **Ama asıl mesele kimlikte değil, uygulanabilirlikte:** Schelling'de farkı
+yaratan **başlangıçtaki rastgele yerleşim** ⇒ **fark yaşamaktan önce geliyor**
+— bizim P0 tablomuzda ②/③'ün konumu. Ve DR'nin *"hiçbir kısıt ihlal
+edilmiyor"* değerlendirmesi **eksik**: ızgara boyutu, komşuluk yarıçapı,
+kaynağın uzamsal dağılımı = **en az üç yeni sabit**; ①'in ilan edilmiş
+üstünlüğü **sıfır yeni sabit**tı. ⇒ P0 tablosuna **⑤** olarak eklendi.
+
+### ⚠ §N.3'ün hipotezi düştü
+
+§N.3'te *"#7'nin 'neresinde' şartı tarayıcısız bir modelin karşılayamayacağı
+bir şart"* diye yazmış ve cevapsızlığı buna bağlamıştım. **Cevap geldi ve
+şartı karşılamaya çalıştı** ⇒ hipotez **desteklenmedi**. Cevabı hangi
+aracın ürettiği bilinmiyor.
+
+### Süreç — brief #8 için iki düzeltme
+
+1. **Kaynakça istenecek.** İç indeks numaraları (`[56]` vb.) verildi, kaynakça
+   verilmedi ⇒ bir iddia bu yüzden düştü.
+2. **Satır numarası yerine birebir alıntı.** DR *"lines 249–253"* dedi, aynı
+   cümle benim çıkarımımda **313. satırdaydı**; bulmayı sağlayan **alıntıydı**.
+
+### Sınırlar
+
+**Hiçbir karar verilmedi, hiçbir kod değişmedi.** İki kaynak (Bru 2003,
+Gilbert 2002) **açılamadı** — biri ödemeli, biri konferans bildirisi.
+Schelling 1971'in kendisini de açamadım; kimliği doğrulandı, **iddianın yeri
+birincil kaynakta gösterilmedi**. **P0 hâlâ Yasin'in** ve DR #7 onu
+kapatmadı — ①'i **zayıflatmadı**, tabloya **⑤**'i ekledi.
