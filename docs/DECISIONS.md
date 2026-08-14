@@ -6221,3 +6221,92 @@ ve Hilker & Liz 2020 **ödemeli**, alıntıları **doğrulanamadı**. P.5'teki
 Holling II tablosu **keşifsel aritmetik**: model koşulmadı, ajan yaşamadı,
 ve hesap *"her ajan her olayda DEFECT eder"* varsayımına dayanıyor.
 **Rotasyonun etkisi hesaba katılmadı.**
+
+---
+
+## D-083 · 2026-08-14 · Rotasyon farkı öldürmüyor, ve prompt kanalı **tam duyarlı** — ①'in önündeki engel kaldırıldı
+
+**Durum:** iki ölçüm · **Etiket:** ⚠ **keşifsel, ön-kayıtlı değil** · **kod
+değişmedi, sabit değişmedi, model koşulmadı** · D-082'nin açtığı iş
+
+### Neden burada
+
+D-082'de Holling II'nin landmark'ta **%0.76**'lık bir ayrışma verdiğini
+hesaplamış, iki uyarı bırakmıştım: (1) rotasyon bunu daha da kısabilir,
+(2) fark davranışa taşınacak kanalın çözünürlüğünün altında kalabilir.
+İkisi de ölçüldü. **Biri doğrulandı, biri çürütüldü.**
+
+### Ölçüm 1 — rotasyon farkı **kısıyor ama öldürmüyor**
+
+Holling II (`h=2.0`), N=8, kişi başı `K=100`, `P₀=0.8K`, olay 1–10:
+
+| | hasat yayılımı | birikmiş enerji yayılımı | farklı ajan |
+|---|---|---|---|
+| sabit sıra | 0.325 (%0.42) | 0.00345 (%0.087) | **8/8** |
+| **rotasyonlu** | 0.071 (%0.092) | **0.00077 (%0.019)** | **8/8** |
+| rotasyonlu, 16 olay | 0.458 | — | **8/8** |
+
+⭐ **İki sonuç:**
+1. Rotasyon yayılımı **~4.5 kat kısıyor** — uyarım yönü doğruymuş.
+2. ⭐ **Ama sıfırlamıyor: her yapılandırmada 8 ajanın 8'i de farklı.**
+   Üstelik rotasyon **tamamlandığında** (16 olay = 2×N) yayılım
+   **büyüyor**, küçülmüyor.
+
+⇒ **D-079/§N.1'in çıkarımı ölçüldü.** Orada *"dönen sırada birikimli
+maruziyet eşitlenir; geriye kalan, durumun doğrusal olmayan biriktiği için
+oluşan yörünge ayrışmasıdır"* diye yazmış ve **bunun benim çıkarımım
+olduğunu, kaynağın bulgusu olmadığını** belirtmiştim. Artık sayısı var.
+
+### ⛔ Ölçüm 2 — **kendi endişemi çürüttüm**
+
+Prompt'a giden sayıların **iki ondalığa yuvarlandığını** görüp *"fark 0.005'i
+geçmezse prompt'lar özdeş olur, D-078'e döneriz"* demiştim. **Yanlıştı.**
+
+Yuvarlama **yalnız sistem prompt'unda** var: anı şiddeti
+(`{magnitude:.2f}`), drift uyarısı (`{bias:.2f}`), stratejik beklenti
+(`{p:.2f}`). ⚠ **Ama karar anında modele giden kullanıcı mesajı bunlardan
+biri değil** — `graph.py:1079`:
+
+```
+user_content = view.model_dump_json()
+```
+
+`AgentView` **tam kayan nokta duyarlılığıyla** serileştiriliyor. Ölçtüm:
+
+| enerji farkı | prompt değişiyor mu |
+|---|---|
+| 0.00345 (sabit sıra, landmark) | ✅ `0.4523177` → `0.4557677` |
+| **0.00077 (rotasyonlu, landmark)** | ✅ `0.4523177` → `0.4530877` |
+| **1e-9 (uç test)** | ✅ `0.4523177` → `0.452317701` |
+
+⇒ ⭐ **Kanal tam açık.** 1e-9'luk bir fark bile prompt dizgisini değiştiriyor.
+Holling II'nin landmark'ta ürettiği fark **3.–4. ondalıkta**, yani rahatça
+görünür.
+
+⚠ **Ayrıca not:** `apply_emotional_weight` prompt'a **sayı değil alan adı**
+enjekte ediyor ⇒ o kanal sürekli değil **kategorik**; yalnız somatik
+işaretlerin **sıralaması** değişince değişir.
+
+### ⚠ Kapanmayan soru — ve sıradaki ölçüm
+
+**Prompt'un değişmesi kararın değişmesini garanti etmez.** Greedy argmax
+4. ondalıktaki bir değişikliğe tepki vermeyebilir.
+
+⇒ **Sıradaki ölçüm (model gerekiyor, ~dakikalar):** yalnız enerjinin
+ondalığında farklılaşan iki `AgentView` üretilip gerçek modelle greedy
+koşulur, ve **kararın hangi fark büyüklüğünde değiştiği** taranır. Bu,
+①'in çalışıp çalışmayacağını **kod yazmadan, pilot koşmadan** söyler.
+
+⚠ Elimizdeki dolaylı kanıt **iki yönlü**: D-035 adapter'ın faz-2
+kararlarının **%68'ini** değiştirdiğini ölçtü (model girdiye duyarlı), ama
+bir adapter takası 4. ondalıktaki bir basamaktan **çok daha büyük** bir
+tedirginlik. ⇒ **Tahmin edilmiyor, ölçülecek.**
+
+### Sınırlar
+
+**Saf aritmetik + bir serileştirme testi.** Model koşulmadı, ajan yaşamadı,
+adapter yazılmadı. Rotasyon hesabı *"her ajan her olayda DEFECT eder"*
+varsayımına dayanıyor. Enerji yayılımı **birikmiş metabolik kazanç**
+üzerinden hesaplandı; gerçek `energy` durumu ayrıca **azalma** terimi
+taşıyor ve bu hesaba katılmadı — ⚠ azalma her ajanda **aynı** olduğu için
+yayılımı değiştirmez, ama **düzeyi** değiştirir.

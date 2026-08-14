@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-082.** Sıradaki kayıt **D-083** olarak açılır.
+- **Son D-kaydı: D-083.** Sıradaki kayıt **D-084** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -162,10 +162,29 @@ paylaştırma yoksa **sıralı erişimin tahkim edeceği bir şey kalmaz**.
 etmiyor. Ve `metabolic_gain` **zaten aynı fonksiyon ailesini** kullanıyor
 (D-066/J9) — evrene ikinci bir sabit ailesi açmıyor.
 
-⚠ **Üç uyarı:** landmark'taki fark **%0.76**, küçük · **rotasyonla
-çelişiyor** (sıra dönerse konumlar eşitlenir; 8 ajan/10 olayda rotasyon
-tamamlanmıyor ama artık fark **ölçülmedi**) · **yeni sabit `h` girer** ⇒
-kapasite sorusu **kaybolmuyor, yer değiştiriyor**.
+### ✅ D-083 iki uyarıyı da ölçtü — **biri doğrulandı, biri çürütüldü**
+
+**Rotasyon farkı ~4.5 kat kısıyor ama öldürmüyor.** Landmark'ta (olay 1–10):
+sabit sırada hasat yayılımı 0.325, rotasyonlu **0.071** — ama **her
+yapılandırmada 8 ajanın 8'i de farklı**, ve rotasyon *tamamlandığında*
+(16 olay) yayılım **büyüyor**. ⇒ §N.1'in çıkarımı **ölçüldü**.
+
+⛔ **Kendi endişemi çürüttüm: prompt kanalı tam duyarlı.** *"Sayılar
+`.2f`'ye yuvarlanıyor, fark görünmez"* demiştim; yuvarlama **yalnız sistem
+prompt'unda**. Karar anında modele giden kullanıcı mesajı
+[graph.py:1079](dau/foundation/graph.py:1079) → `view.model_dump_json()`,
+**tam kayan nokta duyarlılığı**. Ölçüldü: **1e-9'luk fark bile** prompt
+dizgisini değiştiriyor (`0.4523177` → `0.452317701`). Holling II'nin
+landmark farkı **3.–4. ondalıkta** ⇒ rahatça görünür.
+
+⚠ **Kalan tek soru:** prompt'un değişmesi **kararın** değişmesini garanti
+etmiyor. ⇒ **Sıradaki ölçüm (model gerekiyor, ~dakikalar):** yalnız
+enerjinin ondalığında farklılaşan iki `AgentView`, gerçek modelle greedy,
+**kararın hangi fark büyüklüğünde döndüğü** taranır. ①'in çalışıp
+çalışmayacağını **kod yazmadan, pilot koşmadan** söyler.
+
+⚠ **Kalan bedel:** Holling II **yeni bir sabit (`h`)** getiriyor ⇒ kapasite
+sorusu **kaybolmuyor, yer değiştiriyor**.
 
 ⏳ **Açık kalan sayı — kapasite ya da `h`.** Bugünkü kapasite 100 ile
 sabit-kota kıtlığı **olay 17**'de, yani landmark'tan (10) **sonra** ⇒ ölçüm
