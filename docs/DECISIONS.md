@@ -5690,3 +5690,75 @@ olabilir, seçilim görünmeyebilir"*di. Burada **ölçüm kurulamıyor**.
 sonra yapılacak: aynı tohumda iki ajan koşulur, `arm_digest`'leri
 karşılaştırılır. ⚠ Bugün beklenen sonuç **birebir aynı**; farklıysa bu kayıt
 yanlıştır ve düzeltilir.
+
+---
+
+## D-078 · 2026-08-14 · D-077 **ölçüldü**: iki ajan gerçekten özdeş · E3 uygulandı
+
+**Durum:** ölçüm + kod değişikliği · **Etiket:** ⚠ **keşifsel, ön-kayıtlı
+değil** · ölçüm 93 sn · **commit `32c1a8b`** · suite `414 passed`
+
+### 1. D-077 doğrulandı — iddia değil, ölçüm
+
+D-077 **kod okumasından** çıkmıştı ve *"doğrulaması ucuz, sonra yapılacak"*
+diye kaydedilmişti. Yapıldı.
+
+**Kurulum:** tohum **7801** (deneyde kullanılmamış), `null` kolu (eğitim yok),
+LoRA **kapalı** ⇒ diske adapter yazmadı. İki ajan (`agentA`, `agentB`), aynı
+tohum, 12 olay, **gerçek yerel Llama** (mock değil).
+
+**Sonuç: ölçülen dokuz niceliğin dokuzu da birebir aynı.**
+
+| Ne | Sonuç |
+|---|---|
+| `arm_digest` (= sha256(karar dizisi ++ PE dizisi), iki faz) | **AYNI** |
+| `pe_before_list` · `pe_after_list` | **AYNI** |
+| `events_lived_phase1/2` | **AYNI** |
+| `landmark_energy` · `landmark_drift_magnitudes` · `energy_mean_over_life` | **AYNI** |
+| `phase2_decision_hashes` | **AYNI** |
+
+⇒ **D-077 doğrulandı.** Aynı nişte doğan iki ajan, yaşam boyunca ayrışmıyor.
+`arm_digest`'in aynı çıkması özellikle güçlü: o, iki fazın **bütün** karar ve
+PE dizisinin özeti — tek bir olayda bile ayrışsalar farklı çıkardı.
+
+⚠ **P0 hâlâ açık ve Yasin'in.** Bu ölçüm P0'ı **gerekli** kıldı, çözmedi.
+
+### 2. E3 uygulandı — karara bağlı olmayan tek iş
+
+Popülasyon engellerinden **en sinsisi**. Diğerleri (ortak havuz, çok-ajanlı
+döngü, üreme katmanı) kodu **çalıştırmaz**; bu **çalıştırır ve yanlış sayı
+üretir**: N ajan aynı anda yaşarsa üç olay tamponunda her ordinal için N satır
+olur ve *"`event_counter == 10` olan satır"* arayan okuyucu bunlardan birini
+alır — gerçek bir sayı, **yanlış ajanın** sayısı, hata yok uyarı yok.
+
+**Ne değişti:** üç kayıt fonksiyonu `agent_id` alıyor ve satıra yazıyor
+(`EVENT_ROW_AGENT_ID`) · `graph.rows_for_agent()` yardımcısı ·
+`_landmark_reading`, `_s5_behaviour` ve `run_life_keep_vault`'un PE izi
+filtreliyor.
+
+⚠ **Filtre `get_*_event_log()` içine konmadı, bilerek:** paylaşılan bir
+tamponu **kimin** satırlarını istediğini söylemeden okumak, çağıranın kazara
+yapabileceği bir şey olmamalı (§2.9). Filtreleme çağrı yerinde görünür.
+
+**Tek ajanlı yolda davranış birebir aynı** — tampon zaten yaşam başına
+sıfırlanıyor, yani filtre bugün her satırı geçiriyor.
+
+⚠ **Testler karışık tamponda kanıtlıyor:** iki ajanın satırları birbirine
+geçmiş hâlde, çünkü peş peşe eklenmiş satırlarda ilk eşleşmeyi alan bir
+okuyucu **öne gelen ajan için doğru görünür**.
+
+**Mutasyon kontrolü (§2.4), üçü de kırdı:** landmark filtresi kalkıyor ·
+S5 filtresi kalkıyor · satırlar `agent_id` taşımıyor.
+
+⚠ **Mevcut bir test filtrenin çalıştığını kendiliğinden gösterdi:** gen2
+commons testinin sahte yaşamı başka bir ajanın satırlarını yazıyordu ve
+okuyucu onları **doğru şekilde reddetti**. Fikstür düzeltildi.
+
+### Sınırlar
+
+- Ölçüm **N=2, tek tohum, 12 olay**. Genelleme değil; ama iddia da genel
+  değildi (*"ayrışma mekanizması yok"*) ve tek karşı örnek onu çürütürdü.
+- **Tohum 7801 artık kullanılmış sayılır** — adapter yazmadı, yani I0.7'yi
+  tetiklemez, ama deneyde kullanılmamalı.
+- E3 popülasyonu **kurmuyor**; onun sessiz kusurunu önceden kapatıyor.
+- **P0–P7'nin hiçbiri karara bağlanmadı.**
