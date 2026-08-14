@@ -1135,3 +1135,172 @@ gerekçemizle seçip ön-kayıtta **ilan edilmiş bir seçim** olarak yazma kara
    satır numaraları hiçbir kopyada tutmuyor. **Bulmayı sağlayan şey birebir
    alıntıydı.** ⇒ #8'de *"bölüm adı **ve** birebir alıntı; satır numarası
    yazma"* denecek.
+
+---
+
+# §P — DR brief #8 mutabakatı: sabit kota mı, stoka bağlı hasat mı (2026-08-14)
+
+**Ham cevap:** `docs/research/2026-08-14_DR8-answer-raw.md` · **kayıt D-082**
+**Gönderim:** `_SHORT-A.txt` + `_SHORT-B.txt`, iki ayrı koşum (tam brief
+gövdeye sığmadı). ⚠ **İlk deneme cevapsız dönmüştü** — araç konuyu hiç
+görmemişti; kısaltma çözdü.
+
+## P.0 ⭐ Baş sonuç: **türetmemiz doğrulandı, adıyla birlikte**
+
+D-081'de çıkardığımız cebir literatürde **adı konmuş** bir sonuçmuş.
+Azar, Lindgren & Holmberg 1996'nın makalesinin **başlığı** birebir bizim
+sorunumuz: *"Constant quota versus constant effort harvesting"*.
+
+- Bizim `d = 8.0` sabit hasadımız **constant quota** demekmiş.
+- `H_MSY = rK/4` eşiği **standart** sonuçmuş.
+- Ve alıntı bizim (d) adımımızı aynen söylüyor: *"there is no lower limit
+  for the constant effort case, but constant quota harvesting is at the
+  lower limit — any disturbance that decreases the population size leads to
+  extinction."*
+
+⇒ **Beş adımın hiçbiri çürütülmedi.** D-081'in *"kademeli kıtlık yok, kıtlık
+anı var"* sonucu **sabit kota rejiminin bilinen bir özelliğiymiş**. Bu bir
+kusur değil, seçtiğimiz hasat kuralının tanımı.
+
+## P.1 Kimlik doğrulaması — **on bir kaynak açıldı**
+
+| Kaynak | Durum |
+|---|---|
+| Azar, Lindgren & Holmberg 1996, *Constant quota versus constant effort harvesting*, Env. & Resource Economics **7:193–196**, `10.1007/BF00699291` | ✅ **birebir** |
+| Hilker & Liz 2020, *Threshold harvesting as a conservation or exploitation strategy…*, Theoretical Ecology **13:519–536**, `10.1007/s12080-020-00465-8` | ✅ **birebir** |
+| NRC 2010, *The Prevention and Treatment of Missing Data in Clinical Trials*, `10.17226/12955` | ✅ **birebir** |
+| Rice 2008, *A stochastic version of the Price equation…*, BMC Evol. Biol. **8:262**, `10.1186/1471-2148-8-262` | ✅ **birebir** |
+| Gomez 2018, `10.5287/ora-jv6j78zbd` | ⚠ **var ama Crossref'te değil** (DataCite/ORA). Başlık: ***Ghosts and bottlenecks in elastic snap-through*** — **elastisite tezi**, ekoloji değil. Alıntıdaki *"pull-in transition"* MEMS terimi |
+| *"Maklakov & Chapman 2021"*, `10.1002/evl3.254` | ⚠ **YAZARLAR YANLIŞ** — gerçek: **Carlsson, Ivimey-Cook, Duxbury, Edden, Sales & Maklakov**. **Chapman yazar değil**; Maklakov **son** yazar. Makale ve başlık doğru |
+| *"Ioannidis 2022, Adv. Theor. Simul. 5(1):2100182"*, `10.1016/j.mbs.2022.108782` | ⚠ **DERGİ VE MAKALE NO UYDURMA** — doğrusu ***Mathematical Biosciences* 345:108782**. Başlık/yazar/DOI doğru |
+| *"Moher ve ark. 2010 (Lancet 375:1133–1143)"* | ⚠ **DERGİ VE SAYFA YANLIŞ** — CONSORT 2010 E&E = **BMJ 340:c869**, `10.1136/bmj.c869` |
+| Siepe ve ark. 2024, ADEMP-PreReg | ⚠ **DOI verilmedi**; buldum: **`10.1037/met0000695`** (*Psychological Methods*), önbaskı `10.31234/osf.io/ufgy6`. ⚠ Yazar listesi de eksikti (Morris, Boulesteix, Heck atlanmış) |
+| *"Atwood 2020, wildlife textbook"* | ❌ **KİMLİK YOK** — yazar+yıl dışında hiçbir tanımlayıcı verilmedi ⇒ **kullanılmıyor** |
+| Földesi 2021, Rockland Immunochemicals | ⚠ **ticari firma blog yazısı**, literatür değil ⇒ iddiası ders kitabı düzeyinde doğru ama **kaynak olarak sayılmıyor** |
+
+⇒ **Onuncu, on birinci, on ikinci kimlik hatası.** Hepsi **tamir edilebilir**
+cinsten: doğru makale, yanlış künye. ⚠ Desen artık nettir — bu araçlar
+**makaleyi buluyor, künyeyi uyduruyor**.
+
+## P.2 Yer doğrulaması
+
+**Açabildiğim tek tam metin: Rice 2008** (açık erişim, Europe PMC
+`PMC2577117`). İddia **doğrulandı**: *"the expected change due to selection
+in a very small population can be substantially larger than would be expected
+from classical theory… the amplification of the selection differential decays
+with increasing population size"*, ve **Şekil 1**'in başlığı *"Amplification
+of expected selection differentials in small populations"*.
+⚠ DR bunu *"section"* diye gösterdi; aslında **şekil başlığı + Sonuçlar
+metni**. Küçük sapma, iddia gerçek.
+
+⚠ **Azar 1996 ve Hilker & Liz 2020 ödemeli — alıntıları doğrulayamadım.**
+Kimlikleri birebir ve alıntılar konularıyla tutarlı, ama **yerini
+gösteremedim**; kuralımız gereği bunu **açıkça yazıyorum**.
+
+## P.3 ⭐ Süreç kazanımı: **ilk kez bir boşluk ilan edildi**
+
+Q3'ün ikinci yarısına DR şunu yazdı:
+
+> *"(No specific claim found in sources – inference from population genetics
+> theory.)"*
+
+⭐ **Üç turdur istediğimiz şey tam olarak bu.** İlk kez bir iddia
+*"kaynağım yok, bu benim çıkarımım"* diye işaretlendi. ⇒ *"gösteremezsen
+gösteremediğini yaz"* şartı **çalışıyor**, ve kaynakça da eklendi
+(D-080'in iki düzeltmesinden ikincisi tuttu).
+
+## P.4 ⛔ DR'nin verdiği iki çıkış yolu — **ikisi de bizde çalışmıyor**
+
+DR iki alternatif verdi ve ikisi de matematiksel olarak doğru:
+
+1. **Constant effort** (hasat ∝ stok): `P* = (r−h)K/r`, `h < r` iken çöküş yok.
+2. **Escapement / eşik hasadı** (Hilker & Liz): `T ≤ K` ise `T` **küresel
+   çekici**, çöküş yok.
+
+⚠ **Ama ikisi de bizim ihtiyacımızı öldürüyor, ve DR bunu göremezdi** —
+çünkü bizim **karneye ihtiyacımız** olduğunu bilmiyor.
+
+> **Constant effort'ta kıtlık *hiç* olmaz.** Herkesin hasadı `h·P` olarak
+> tanımlıysa kimse **eksik almaz**; eksik alma yoksa **paylaştırılacak bir
+> şey yoktur**; paylaştırma yoksa **sıralı erişimin tahkim edecek hiçbir şeyi
+> kalmaz.** Çöküşü çözer, **mekanizmayı yok eder.**
+
+Aynısı escapement için de geçerli: `T`'de dengelenen bir havuz herkese aynı
+payı verir.
+
+⇒ **İhtiyacımız olan üçüncü seçenek, ve DR onu atladı:** brief'in Q2'sinde
+adı geçen **Holling tipi tepki fonksiyonu** — *talep sabit kalır (8.0), ama
+**gerçekleşen** hasat stoka bağlıdır*. DR bu maddeye yalnız
+*"Empirical studies of such functional responses are sparse"* dedi ve
+geçti.
+
+## P.5 ⭐ Kendi hesabım: Holling II bandı **üretiyor** (keşifsel)
+
+`gerçekleşen_i = d·P/(h+P)`, `h = 2.0`, N=8, olay içinde **sıralı** erişim
+(her ajandan sonra stok güncelleniyor). Kişi başı `K=100`, `P₀=0.8K`:
+
+| olay | havuz/kişi | ilk ajan | son ajan | **fark** |
+|---|---|---|---|---|
+| 1 | 74.60 | 7.810 | 7.794 | **0.017** |
+| **10** ⭐ | 36.62 | 7.654 | 7.596 | **0.058** |
+| 15 | 14.33 | 7.320 | 7.071 | **0.250** |
+| 18 | 0.56 | 5.660 | 2.414 | **3.246** |
+
+**Sabit kotada aynı tablo:** olay 1–16 fark **tam sıfır**, olay 17'de
+1.763 vs 0 (yedi ajan **hiç** alamıyor), olay 18'den sonra hepsi sıfır.
+
+⇒ **Holling II, landmark'ta (olay 10) sıfırdan farklı ve tekdüze büyüyen bir
+ayrışma veriyor**, hiç kimse sıfır almıyor, havuz bir uçurumdan düşmüyor.
+⚠ **Ama landmark'taki fark 7.65 üzerinden 0.058 — yani %0.76.** Küçük.
+Bugünkü durum **tam sıfır** (bit düzeyinde özdeş) olduğu için bu bir simetri
+kırılmasıdır, ama **yeterli olduğu gösterilmedi**; pilotun işi.
+
+⚠ **Ve rotasyonla çelişiyor:** sıra dönerse ajanlar konumları eşitler ve
+landmark'taki fark daha da küçülür. §N.1'de yazdığım gerilim burada
+**sayıya döndü**. 8 ajan, 10 olay ⇒ rotasyon **tamamlanmıyor**, artık fark
+kalıyor — ama ne kadar, ölçülmedi.
+
+## P.6 ⚠ Bize dokunan diğer bulgu: Price kestirimi küçük N'de **yanlı**
+
+Rice 2008 (doğrulandı, P.2): çok küçük popülasyonlarda beklenen seçilim
+farkı klasik kuramın öngördüğünden **sistematik olarak büyük** çıkıyor, ve
+bu **büyütme** N arttıkça sönüyor.
+
+⇒ ⚠ **Bizim `Cov(w, z)` kestirimimiz küçük N'de yalnız gürültülü değil,
+şişkin olabilir.** D-076'nın getirdiği Price eşitliği bu uyarıyla birlikte
+okunmalı ve **ikinci ön-kayıta sınır olarak yazılmalı**.
+
+## P.7 Q1'in cevaplanmayan yarısı
+
+Kritik yavaşlama için *"how many events, how does it scale with the excess"*
+diye **sayı sormuştum**; DR olguyu doğruladı ama **ölçekleme yasası
+vermedi**, ve dayanağı bir **elastisite tezi** (P.1). ⇒ *"talebi MSY'nin
+hemen üstüne koyup uzun bir geçiş bandı elde etme"* seçeneği **hâlâ
+sayısız**. ⚠ Zaten kırılgan bir seçenek: `d`'yi `rK/4`'e ayarlamak, sabiti
+sonuca göre seçmenin **en uç** hâli olurdu.
+
+## P.8 Yöntem soruları — alınanlar
+
+| İddia | Karar |
+|---|---|
+| *"fixed study time"* / *"fixed event time"* ayrımı (NRC 2010) | ✅ **kullanılabilir sözcük dağarcığı** — bizim landmark'ımız *fixed study time* |
+| Ölçümden önce ölüm = **rekabet eden risk**, rastgele sansür sayılamaz | ✅ K1–K3'ün gerekçesini dışarıdan destekliyor |
+| Bilgilendirici ölüm dışlanmamalı (Carlsson ve ark. 2021) | ✅ yön uyumlu ⚠ künye yanlıştı (P.1), yer doğrulanamadı |
+| **Sabit yaşta birincil + açılış-sonrası oran ikincil** | ⭐ **doğrudan işimize yarıyor** — K1 zaten *"landmark + olay-başına oran"* diyordu; DR bunu bağımsız olarak öneriyor |
+| Simülasyon ön-kaydı şablonu (Siepe ve ark. 2024, `10.1037/met0000695`) | ⭐ **ikinci ön-kayıt için doğrudan kullanılabilir** ⚠ künyesini ben tamamladım |
+| **Pozitif kontrol** benzetmesi | ⚠ **kaynağı geçersiz** (firma blogu) ama kavram gerçek ⇒ P0-b'nin savunması için **daha iyi bir kaynak gerekiyor** |
+
+## P.9 Claude Code'un okuması (karar Yasin'in)
+
+1. **D-081 çürütülmedi, adlandırıldı.** Sabit kota = uçurum, bu bilinen bir
+   özellik.
+2. **DR'nin iki çıkışı da mekanizmayı öldürüyor** (P.4) — kabul edilemez.
+3. ⭐ **Holling II üçüncü yol ve tek çalışanı** (P.5): talep sabit kalır,
+   gerçekleşen hasat stoka bağlanır. **Ortamın özelliği**, karar kuralının
+   değil ⇒ K7'yi ve aksiyomu **ihlal etmiyor**. Ve `metabolic_gain` zaten
+   **aynı fonksiyon ailesini** kullanıyor (D-066/J9) — evrende ikinci bir
+   sabit ailesi açmıyor.
+4. ⚠ **Bedeli:** yeni bir sabit (`h`) girer, ve `h`'nin değeri **P0-b'nin
+   kapasite sorusunun yerini alır** — sorun kaybolmuyor, yer değiştiriyor.
+5. ⚠ **Landmark'taki fark %0.76** ve rotasyon onu küçültüyor. **Pilotun ilk
+   sorusu bu olmalı.**

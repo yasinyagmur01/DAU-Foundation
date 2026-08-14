@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-081.** Sıradaki kayıt **D-082** olarak açılır.
+- **Son D-kaydı: D-082.** Sıradaki kayıt **D-083** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -136,9 +136,40 @@ landmark'ta hâlâ askıda** olsun ve **her soy oraya ulaşsın**. Kıtlık anı
 konusu olan **bilgilendirici sansürleme** geri gelir. ⇒ **landmark 10'da
 kalıyor.**
 
-⏳ **Açık kalan tek sayı — kişi başı kapasite.** Bugünkü 100 ile kıtlık anı
-**olay 17**, yani landmark'tan (10) **sonra** ⇒ ölçüm anında ajanlar
-**özdeş**, ① hiçbir şey ölçmez.
+### ⭐ D-082 tabloyu değiştirdi — **kapasite artık tek seçenek değil**
+
+DR #8 D-081'i **çürütmedi, adlandırdı**: `d = 8.0` bir **constant quota**'dır
+ve *"sabit kotada herhangi bir bozulma yok oluşa götürür"* bilinen bir sonuç
+(Azar, Lindgren & Holmberg 1996, `10.1007/BF00699291`).
+
+⛔ **DR'nin verdiği iki çıkış da bizde mekanizmayı öldürüyor** (§P.4):
+*constant effort* ve *escapement* kıtlığı ortadan kaldırıyor — hasat `h·P`
+ise **kimse eksik almaz**, eksik alma yoksa **paylaştırma yoktur**,
+paylaştırma yoksa **sıralı erişimin tahkim edeceği bir şey kalmaz**.
+
+⭐ **Üçüncü yol çalışıyor: Holling II** (§P.5, keşifsel). **Talep sabit kalır
+(8.0), gerçekleşen hasat stoka bağlanır:** `gerçekleşen = d·P/(h+P)`.
+
+| olay | sabit kota (bugün) | **Holling II (h=2)** |
+|---|---|---|
+| 1–9 | fark **tam sıfır** | 0.017 → 0.049 |
+| **10 (landmark)** | fark **tam sıfır** | **0.058** |
+| 15 | fark **tam sıfır** | 0.250 |
+| 17 | 1.763 vs 0, **yedi ajan hiç almıyor** | — |
+| 18 | hepsi sıfır | 3.246 |
+
+⇒ **Ortamın özelliğidir, karar kuralının değil** ⇒ K7'yi ve aksiyomu ihlal
+etmiyor. Ve `metabolic_gain` **zaten aynı fonksiyon ailesini** kullanıyor
+(D-066/J9) — evrene ikinci bir sabit ailesi açmıyor.
+
+⚠ **Üç uyarı:** landmark'taki fark **%0.76**, küçük · **rotasyonla
+çelişiyor** (sıra dönerse konumlar eşitlenir; 8 ajan/10 olayda rotasyon
+tamamlanmıyor ama artık fark **ölçülmedi**) · **yeni sabit `h` girer** ⇒
+kapasite sorusu **kaybolmuyor, yer değiştiriyor**.
+
+⏳ **Açık kalan sayı — kapasite ya da `h`.** Bugünkü kapasite 100 ile
+sabit-kota kıtlığı **olay 17**'de, yani landmark'tan (10) **sonra** ⇒ ölçüm
+anında ajanlar **özdeş**, ① hiçbir şey ölçmez.
 
 | kişi başı kapasite | kıtlık anı |
 |---|---|
@@ -623,11 +654,11 @@ GAP-19'un kendisi D-067'de kapandı; sınır ilk ön-kayıt için geçerliydi.
 
 ---
 
-## ▶ DR KANALI — ⏳ **#8 gönderilmeyi bekliyor** · ✅ **#7 cevaplandı (D-080)** · ✅ **#6 cevaplandı (D-076)** · ⏳ **#5 hâlâ gönderilmedi**
+## ▶ DR KANALI — ✅ **#8 cevaplandı (D-082)** · ✅ **#7 cevaplandı (D-080)** · ✅ **#6 cevaplandı (D-076)** · ⏳ **#5 hâlâ gönderilmedi**
 
 | # | Brief | Durum |
 |---|---|---|
-| **8** | **Ortak havuzda *kademeli* kıtlık rejimi kurulabilir mi, ve ölçüm anı sonuca ayar yapmadan nasıl seçilir** — `docs/research/2026-08-14_scarcity-band-and-operating-point.md` · ⭐ **gönderilecek sürüm `..._PLAIN.txt`** | ⏳ **ilk deneme cevapsız döndü — araç konuyu hiç görmedi** (*"Unspecified Topic"* başlıklı jenerik bir araştırma planı üretti; beş sorumuzdan tek kelime yok ⇒ **mutabakat yapılacak bir şey yok**). Teşhis: brief gövde metni olarak ulaşmamış. ⇒ **saf ASCII düz metin sürümü üretildi** (#6/#7'nin `_PLAIN` alışkanlığı, markdown yazmak hataydı). Hedef **OpenAI Deep Research** (matematik gücü için). ⚠ **İngilizce yazıldı**, bilerek. D-081'in açtığı iş. Beş soru: **Q1** §2'deki türetmemiz doğru mu + *kritik yavaşlama* uzun bir geçiş bandı verir mi · **Q2** davranışa dokunmadan kademeli kıtlık üreten mekanizmalar (stoka bağlı hasat / Holling / escapement) — ⚠ hangisi **ortamın** özelliği, hangisi **karar kuralının** · **Q3** sabit yaşta ölçüm ile mekanizmanın geç açılması çatışınca · **Q4** bir sabiti *"mekanizma çalışsın diye"* seçmenin kabul görmüş adı var mı · **Q5** Price kovaryansı kaç seçilim epizodunda tanımlı olur. ⭐ **D-080'in iki süreç düzeltmesi girdi:** kaynakça iste · satır numarası **değil birebir alıntı** iste. ⚠ Tekrarlanabilirlik kısıtı bu kez **açıkça** *"tek tohum demek değil, 40 tohumla koştuk"* diye yazıldı (D-080'in yanlış okumasına karşı). ⚠ **Etki sorulmuyor** (L9) |
+| **8** | **Ortak havuzda *kademeli* kıtlık rejimi kurulabilir mi, ve ölçüm anı sonuca ayar yapmadan nasıl seçilir** — `docs/research/2026-08-14_scarcity-band-and-operating-point.md` · gönderilen: `_SHORT-A` + `_SHORT-B` | ✅ **cevaplandı ve mutabakata bağlandı (D-082, §P).** Ham: `2026-08-14_DR8-answer-raw.md`. ⭐ **D-081 çürütülmedi, adlandırıldı** (Azar ve ark. 1996: bizim `d=8.0`'ımız *constant quota*, ve çöküş o rejimin bilinen özelliği). ⛔ **DR'nin iki çıkışı da mekanizmayı öldürüyor** — kıtlığı kaldırıyorlar, karne kalmıyor. ⭐ **Üçüncü yol Holling II** ve DR onu atladı; kendim hesapladım. ⚠ **Üç kimlik hatası daha** (10., 11., 12.) — desen net: **makaleyi buluyor, künyeyi uyduruyor**. ⭐ **İlk kez bir boşluk ilan edildi** (*"no specific claim found in sources"*) ve **kaynakça eklendi** ⇒ D-080'in iki düzeltmesinden ikincisi tuttu. ⚠ **Rice 2008: Price kestirimi küçük N'de yanlı** — ikinci ön-kayıta sınır. ⚠ İlk gönderim denemesi cevapsız dönmüştü — araç konuyu hiç görmedi (*"Unspecified Topic"* başlıklı jenerik bir araştırma planı üretti; beş sorumuzdan tek kelime yok ⇒ **mutabakat yapılacak bir şey yok**). Teşhis: brief gövde metni olarak ulaşmamış. ⇒ **saf ASCII düz metin sürümü üretildi** (#6/#7'nin `_PLAIN` alışkanlığı, markdown yazmak hataydı). Hedef **OpenAI Deep Research** (matematik gücü için). ⚠ **İngilizce yazıldı**, bilerek. D-081'in açtığı iş. Beş soru: **Q1** §2'deki türetmemiz doğru mu + *kritik yavaşlama* uzun bir geçiş bandı verir mi · **Q2** davranışa dokunmadan kademeli kıtlık üreten mekanizmalar (stoka bağlı hasat / Holling / escapement) — ⚠ hangisi **ortamın** özelliği, hangisi **karar kuralının** · **Q3** sabit yaşta ölçüm ile mekanizmanın geç açılması çatışınca · **Q4** bir sabiti *"mekanizma çalışsın diye"* seçmenin kabul görmüş adı var mı · **Q5** Price kovaryansı kaç seçilim epizodunda tanımlı olur. ⭐ **D-080'in iki süreç düzeltmesi girdi:** kaynakça iste · satır numarası **değil birebir alıntı** iste. ⚠ Tekrarlanabilirlik kısıtı bu kez **açıkça** *"tek tohum demek değil, 40 tohumla koştuk"* diye yazıldı (D-080'in yanlış okumasına karşı). ⚠ **Etki sorulmuyor** (L9) |
 | **7** | **Davranışsal olarak özdeş ajanlar arasında heterojenlik nereden gelir** — `docs/research/2026-08-14_heterogeneity-among-identical-agents_PLAIN.txt` (baştan düz metin) | ✅ **cevaplandı ve mutabakata bağlandı (D-080, §O).** Ham: `2026-08-14_DR7-answer-raw.md`. ⭐ **Süreç eklemesi işe yaradı:** *"iddia kaynağın neresinde"* şartı sayesinde yerini gösterebildiğim iddia **6/4** oldu (#6'da 13/13 *"Tam Uyumlu"*, sıfır ayırt etme) ve **altı iddianın üçü kendi alıntısını taşımıyor** çıktı — ⚠ **yalnız DOI ile üçü de geçerdi**. ❌ **İki kimlik hatası daha** (8. ve 9.), ikisi de tamir edildi: `arXiv:2308.00179` = **Anwar & Georgalos** (*"Nishimura"* uydurma) · `arXiv:0810.3070` **bambaşka makale** ⇒ doğrusu **Rafferty ve ark. 2014** `10.1111/cogs.12112`. ⭐ **①'i zayıflatacak tek iddia (*birinci hamle avantajı*) kaynağında yoktu** · **⑤ uzamsal gömme** tabloya eklendi (ama ②'nin yanına) · **iki bağımsız yol** Suleiman 1996 ve Bru 2003'te §N ile kesişti. ⚠ **§N.3'ün hipotezi düştü** — cevap geldi. **Brief #8:** kaynakça iste, satır numarası değil **birebir alıntı** iste |
 | **6** | **Tek soy yerine popülasyon: seçilim şeması ve ortak havuz** — `docs/research/2026-08-13_population-selection-and-shared-commons.md` (⚠ **Gemini'ye giden sürüm `..._PLAIN.txt`**) | ✅ **cevaplandı ve mutabakata bağlandı (D-076, §M).** Ham: `2026-08-14_DR6-answer-raw.md`. ⚠ **Yeni kusur türü: doğru kimlik, yanlış iddia** — üç iddia gerçek kaynaklara yüklenmiş ama o kaynaklarda yok; DOI doğrulaması bunu yakalamıyor. Bir DOI kırık (Bedau 1998, 404). 13/13 satır *"Tam Uyumlu"* ⇒ ayırt etme yok. ⚠ **İçsel çelişki:** §5 birikimli iz için G=5–10 diyor, §6 sentezi G=3 öneriyor. ⭐ **Değerli:** Price eşitliği D-075'in totoloji borcunu ödüyor · ayrı havuz iki bağımsız kaynakta aynı yerde. Önce: **D-075 yerel taraması** (§L, dokuz kimlik) D-074'ün açtığı iş. Altı soru: S1 küçük N'de üreme/seçilim şeması · S2 sürüklenme mi seçilim mi · **S3 ortak havuzda kol kirlenmesi** (en kritik: müdahale bireye, ortam paylaşılıyor) · S4 uygunluk hem seçilim girdisi hem sonuçken · S5 kaç nesil = birikimli kalıtım · S6 sabit bütçede birey mi nesil mi. ⚠ **Etki sorulmuyor** (L9). Kısıtlar §1.1'de listelendi ki DR yasak bir şey önermesin; ihlal ederse **işaretlemesi** isteniyor |
 | **5** | **Yaşam uzunluğu değişkenken uç nokta nasıl tanımlanır** — `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` | ⏳ **gönderilemedi — DR'de teknik sorun.** ⇒ **D-069: yerel tarama yapıldı** (§K, sekiz kimlik Crossref'ten doğrulandı), K1–K3 karara hazır hale geldi. ⚠ Tarama **sistematik derleme değil**; brief geçerliliğini koruyor, DR düzelince aynen sorulabilir. Altı soru: S1 bilgilendirici sansürleme · S2 landmark vs yaşam boyu özet · S3 ölümün belirlediği durum değişkeni · S4 hayatta kalma hem girdi hem sonuçken · S5 farklı uzunluklu dizilerde eşleştirilmiş karşılaştırma · S6 küçük N'de zaman-olay gücü. ⚠ **Etki sorulmuyor, bilerek** (D-064/L9 disiplini) |

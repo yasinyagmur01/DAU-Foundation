@@ -6097,3 +6097,127 @@ kaynağı yok. Gerçek koşumda davranış karışırsa talep düşer ve kıtlı
 **gecikir** — yani yukarıdaki tablo **en erken** durumu verir. ⚠ Ölüm
 modelinin (`should_continue` + grace) etkisi hesaba **katılmadı**;
 landmark'tan sonra ömürlerin ne olacağı **ölçülmedi**.
+
+---
+
+## D-082 · 2026-08-14 · DR #8: D-081 **doğrulandı ve adlandırıldı**; DR'nin iki çıkışı da mekanizmayı öldürüyor, üçüncüsü çalışıyor
+
+**Durum:** literatür mutabakatı + keşifsel hesap · **Etiket:** **kod
+değişmedi** · ham `docs/research/2026-08-14_DR8-answer-raw.md` · mutabakat
+`RECONCILIATION.md` **§P** · on bir kimlik açıldı
+
+### ⭐ Bulgu 1 — türetmemizin literatürde adı var
+
+**Azar, Lindgren & Holmberg 1996** (`10.1007/BF00699291`, Env. & Resource
+Economics 7:193–196) — makalenin **başlığı** birebir bizim sorunumuz:
+*"Constant quota versus constant effort harvesting"*.
+
+Bizim `d = 8.0`'ımız **constant quota**. `H_MSY = rK/4` standart eşik. Ve
+alıntı D-081'in (d) adımını aynen söylüyor: *"constant quota harvesting is at
+the lower limit — any disturbance that decreases the population size leads to
+extinction."*
+
+⇒ **D-081'in beş adımının hiçbiri çürütülmedi.** *"Kademeli kıtlık yok"*
+bizim evrenimizin kusuru değil, **sabit kota rejiminin bilinen özelliği**.
+
+### ⛔ Bulgu 2 — DR'nin verdiği iki çıkış da bizde **mekanizmayı yok ediyor**
+
+DR iki alternatif verdi, ikisi de matematiksel olarak doğru: **constant
+effort** (`P* = (r−h)K/r`) ve **escapement** (Hilker & Liz 2020,
+`10.1007/s12080-020-00465-8`: `T ≤ K` ise `T` küresel çekici).
+
+⚠ **İkisi de kıtlığı ortadan kaldırıyor, çöküşü değil sadece.** Hasat
+`h·P` olarak tanımlıysa kimse **eksik almaz** ⇒ paylaştırılacak bir şey
+yoktur ⇒ **sıralı erişimin tahkim edeceği hiçbir şey kalmaz**. DR bunu
+göremezdi: bizim **karneye ihtiyacımız olduğunu** bilmiyor.
+
+### ⭐ Bulgu 3 — üçüncü yol çalışıyor: **Holling II** (keşifsel hesap)
+
+Brief'in Q2'sinde adı geçiyordu, DR yalnız *"empirical studies are sparse"*
+deyip geçti. Kendim hesapladım: **talep sabit kalır (8.0), gerçekleşen hasat
+stoka bağlanır**, `gerçekleşen = d·P/(h+P)`, `h = 2.0`, N=8, olay içinde
+sıralı erişim (her ajandan sonra stok güncelleniyor):
+
+| olay | havuz/kişi | ilk ajan | son ajan | fark |
+|---|---|---|---|---|
+| 1 | 74.60 | 7.810 | 7.794 | 0.017 |
+| **10** (landmark) | 36.62 | 7.654 | 7.596 | **0.058** |
+| 15 | 14.33 | 7.320 | 7.071 | 0.250 |
+| 18 | 0.56 | 5.660 | 2.414 | 3.246 |
+
+**Sabit kotada aynı tablo:** olay 1–16 fark **tam sıfır**; olay 17'de
+1.763 vs 0 (yedi ajan hiç alamıyor); sonrası hep sıfır.
+
+⇒ Holling II **landmark'ta sıfırdan farklı ve tekdüze büyüyen** bir ayrışma
+veriyor, kimse sıfır almıyor, havuz uçurumdan düşmüyor. **Ortamın
+özelliğidir, karar kuralının değil** ⇒ K7'yi ve aksiyomu ihlal etmiyor. Ve
+`metabolic_gain` **zaten aynı fonksiyon ailesini** kullanıyor (D-066/J9).
+
+⚠ **Üç uyarı:**
+1. Landmark'taki fark 7.65 üzerinden **0.058 = %0.76**. Sıfırdan farklı ama
+   **küçük**; yeterliliği **gösterilmedi**.
+2. **Rotasyonla çelişiyor** — sıra dönerse konumlar eşitlenir ve fark daha da
+   küçülür. §N.1'in gerilimi burada sayıya döndü. 8 ajan/10 olayda rotasyon
+   **tamamlanmıyor**, artık fark kalıyor; **ne kadar, ölçülmedi**.
+3. **Yeni bir sabit (`h`) girer** ⇒ P0-b'nin kapasite sorusu **kaybolmuyor,
+   yer değiştiriyor**.
+
+### ⚠ Bulgu 4 — Price kestirimi küçük N'de yalnız gürültülü değil, **yanlı**
+
+**Rice 2008** (`10.1186/1471-2148-8-262`) — **açık erişimden okundu ve
+doğrulandı** (Europe PMC `PMC2577117`): *"the expected change due to
+selection in a very small population can be substantially larger than would
+be expected from classical theory… the amplification of the selection
+differential decays with increasing population size"*, Şekil 1 başlığı
+*"Amplification of expected selection differentials in small populations"*.
+
+⇒ **`Cov(w, z)` küçük N'de şişkin olabilir.** D-076'nın getirdiği Price
+eşitliği bu uyarıyla birlikte okunmalı ve **ikinci ön-kayıta sınır olarak**
+yazılmalı.
+
+### Bulgu 5 — üç kimlik hatası daha (onuncu, on birinci, on ikinci)
+
+Hepsi **tamir edilebilir**; desen artık net: **makaleyi buluyor, künyeyi
+uyduruyor**.
+
+- *"Maklakov & Chapman 2021"* (`10.1002/evl3.254`) ⇒ gerçek yazarlar
+  **Carlsson, Ivimey-Cook, Duxbury, Edden, Sales & Maklakov**; **Chapman
+  yazar değil**.
+- *"Ioannidis 2022, Adv. Theor. Simul. 5(1):2100182"* ⇒ doğrusu
+  ***Mathematical Biosciences* 345:108782** (DOI doğruydu, dergi uydurma).
+- *"Moher ve ark. 2010 (Lancet 375:1133–1143)"* ⇒ CONSORT 2010 E&E =
+  **BMJ 340:c869**.
+- ❌ *"Atwood 2020, wildlife textbook"* — **hiçbir tanımlayıcı yok**,
+  kullanılmadı.
+- ⚠ *Gomez 2018* (`10.5287/ora-jv6j78zbd`) **gerçek** (DataCite) ama
+  ***Ghosts and bottlenecks in elastic snap-through*** — **elastisite tezi**;
+  saddle-node hayaleti genel bir olgu olduğu için fizik taşınıyor, ama
+  sorduğum **ölçekleme yasası verilmedi**.
+- ⚠ *Földesi 2021* — **ticari firma blogu**, kaynak sayılmadı.
+
+### ⭐ Bulgu 6 — süreç: **ilk kez bir boşluk ilan edildi**
+
+Q3'ün ikinci yarısına DR *"(No specific claim found in sources – inference
+from population genetics theory.)"* yazdı. **Üç turdur istediğimiz şey tam
+olarak buydu.** ⇒ *"gösteremezsen gösteremediğini yaz"* şartı çalışıyor, ve
+**kaynakça da eklendi** — D-080'in iki düzeltmesinden ikincisi tuttu.
+
+### Yan kazanım — ikinci ön-kayıt için iki alet
+
+- **Siepe ve ark. 2024**, simülasyon çalışmaları için ön-kayıt şablonu —
+  künyesini ben tamamladım: **`10.1037/met0000695`** (*Psychological
+  Methods*), önbaskı `10.31234/osf.io/ufgy6`.
+- **NRC 2010**'un *"fixed study time"* / *"fixed event time"* ayrımı: bizim
+  landmark'ımız **fixed study time**, ve ölçümden önceki ölüm **rekabet eden
+  risk** olarak adlandırılıyor — K1–K3'ün gerekçesini dışarıdan destekliyor.
+- ⚠ **Pozitif kontrol** benzetmesi P0-b'yi savunmak için tam yerinde ama
+  **kaynağı bir firma blogu** ⇒ daha iyi bir dayanak gerekiyor.
+
+### Sınırlar
+
+**Hiçbir karar verilmedi, hiçbir kod değişmedi, hiçbir sabit değişmedi.**
+Yer doğrulaması yalnız **Rice 2008**'de yapılabildi (açık erişim); Azar 1996
+ve Hilker & Liz 2020 **ödemeli**, alıntıları **doğrulanamadı**. P.5'teki
+Holling II tablosu **keşifsel aritmetik**: model koşulmadı, ajan yaşamadı,
+ve hesap *"her ajan her olayda DEFECT eder"* varsayımına dayanıyor.
+**Rotasyonun etkisi hesaba katılmadı.**
