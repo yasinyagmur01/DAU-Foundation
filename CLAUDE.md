@@ -19,114 +19,121 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-13) — ✅ **ALET HAZIR, SIRA POPÜLASYONDA**
+# 1. Şu An Neredeyiz (2026-08-14) — ⛔ **P0 KARARI BEKLİYOR**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. `origin/main` ile senkron (`c571e35`).
-- **Suite:** `410 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
+  etiketinde. `origin/main` ile senkron (`4aef611`).
+- **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
 - **Son D-kaydı: D-079.** Sıradaki kayıt **D-080** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — **A4-② popülasyon** (kilitten ÖNCE, D-074)
+## ▶▶ SIRADAKİ İŞ — **iki şey: P0 kararı (Yasin'in) + DR #7 cevabının mutabakatı**
 
-Üç kod değişikliğinin üçü de bitti (D-071/072/073). **Ön-kayıt taslağı
-ertelendi** — Yasin ② popülasyonun kilitten önce gelmesine karar verdi
-(**D-074**).
+### 1. ⏳ DR brief #7'nin cevabı geldi — **önce mutabakat**
 
-**Neden:** her fizik değişikliği kilidi geçersizleştiriyor ⇒ şimdi kilitleyip
-koşmak, ② sonrası **üçüncü** bir ön-kayıt demek. D-014'ün hedefi zaten N
-nesil, ve D-065/J20 *"önce bedel, sonra popülasyon"* demişti — bedel D-066'da
-bitti.
+Yasin cevabı yapıştıracak. Yapılacaklar (§9 / D-006):
 
-### ✅ Denetim + tasarım önerisi **BİTTİ** ⇒ sıra **Yasin'in yedi kararında**
+1. Ham cevabı **değiştirmeden** `docs/research/2026-08-1X_DR7-answer-raw.md`
+   olarak kaydet.
+2. **İki aşamalı doğrulama** — bu turda kural değişti:
+   - **Kimlik:** her DOI/arXiv Crossref'ten **açılarak** doğrulanır (D-069'dan
+     beri standart).
+   - ⭐ **Yer:** iddianın kaynağın **neresinde** geçtiği (bölüm/şekil/alıntı).
+     **D-076'nın yakaladığı kusur bu:** kaynaklar gerçekti, DOI'ler doğruydu,
+     ama üç iddia o kaynaklarda **yoktu**. DOI doğrulaması bunu yakalamıyor.
+     ⚠ D-079'da bu kuralı kendime uyguladım ve **iki iddiayı elemek zorunda
+     kaldım** — kural işliyor.
+3. Mutabakat `RECONCILIATION.md` **§O** olarak eklenir · kayıt **D-080**.
+4. ⚠ **D-079 (§N) ile karşılaştır.** Aynı dört soruyu ben de taradım. İki
+   bağımsız kaynak aynı yere çıkarsa delil değeri taşır (D-065/J20 deseni);
+   çelişirse **çelişki en değerli çıktıdır**.
 
-**`docs/POPULATION_DESIGN_PROPOSAL.md`** — denetim, yedi karar noktası
-(**P1–P7**), maliyet zarfı, kod iş sırası. ⚠ **Kod yazılmadı** (§2.3).
+### 2. ⛔ P0 — **karar Yasin'in**, ve her şey buna bağlı
 
-**⭐ Denetimin linçpini:** Price eşitliği (D-076) `Cov(wᵢ, zᵢ)` istiyor ve bu
-ancak `w` **değişkense** tanımlı. Bugün her ebeveynin **tam olarak bir**
-varisi var ⇒ `w` sabit ⇒ **seçilim ölçülemez.** ⇒ ②'nin asıl işi popülasyon
-eklemek değil, **`w`'yi değişken yapmak**; gerisi altyapı.
+**Sorun (ölçüldü, D-078):** aynı nişte doğan iki ajan yaşam boyunca **bit
+düzeyinde özdeş** kalıyor — dokuz nicelikte de. Popülasyon bunun üstüne
+kurulursa N tane **aynı** ajan olur, `F_agent`'lar özdeş çıkar, turnuva
+yazı-turaya döner ve `Cov(w, z) = 0` **yapı gereği** olur. Bu bir bulgu değil,
+**ölçüm hatası** olurdu.
 
-**Karar bekleyen yedi nokta** (ayrıntı ve kanıt önerinin içinde):
+**Soru:** ajanlar arasındaki farkı **ne** yaratacak?
 
-| # | Karar | Öneri |
+| Seçenek | Fark nereden gelir | Not |
 |---|---|---|
-| **P1** | Havuz paylaşımı | **Kol başına ayrı havuz** — iki bağımsız literatür aynı yerde (D-075 + D-076). ⚠ Bedeli: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
-| **P2** | Seçilim şeması | **Turnuva k=2** — orantılı şema dar uygunluk dağılımımızda baskı üretmez, kesme N=8'de iki nesilde tek soya iner |
-| **P3** | Üreme | Sabit N; ölenin yerine turnuvayla seçilen ebeveynden bir varis ⇒ `w` = turnuva kazanımı ⇒ **değişken** |
-| **P4** | `w` ne olsun | ⚠ **`F_agent`'ı doğrudan `w` yapma** — D-071'den beri içinde gerçekleşmiş hayatta kalma var, totoloji geri gelir. Üç katman ayrı: `F_agent` (girdi) → `w` (varis sayısı) → `z` (landmark drift, **sonuç**) |
-| **P5** | Kol yapısı | Kol = **popülasyonun tamamına uygulanan eğitim kuralı**; üç popülasyon, üç havuz |
-| **P6** | İki faz korunsun mu | **Tek faz** — maliyeti yarıya indirir. ⚠ Bedeli: `delta_pe` (nesil içi) uç noktası kaybolur |
-| **P7** | N / G / tohum | ⚠ **Literatür sayı vermedi.** `G ≥ 5` taban (birikimli kalıtım ②'nin gerekçesi). Zarf: tohum=10 · N=8 · G=5 · E=30 ⇒ **32.7 sa** |
+| **① Sıralı erişim, sıra dönerek** ⭐ | Tükenen ortak kaynak için çekişmeden | **Claude Code'un önerisi.** Aksiyom testini geçen tek seçenek · **sıfır yeni sabit** · var olan fiziğin üstüne oturuyor. ⚠ **En zayıf yeri aşağıda** |
+| ② Ajan başına ayrı niş | Doğduğu dünyadan | Fark yaşamaktan **önce** gelir; "ortak havuz" iddiası zayıflar. Yeni sabit ister (*nişler ne kadar farklı?*) |
+| ③ Asimetrik doğum koşulları | Doğrudan bizim elimizden | Aksiyomun sınırında. Yeni sabit ister |
+| ④ Örneklemeli çözümleme | Rastgele sayı üretecinden | ⛔ **D-037'yi ve I0.6'yı kırar** — `warn_only` altında aynı tohum farklı adapter + 21/50 farklı karar üretiyordu, **gürültü etkiden büyüktü** |
 
-⚠ **Ön-kayıta girmesi gereken geçerlilik kapısı:** `F_agent` dağılımının
-yayılımı ve `w`'nin varyansı **ön-koşul**. Yayılım yoksa turnuva yazı-turaya
-döner, `Cov(w,z) ≈ 0` olur ve koşum **seçilim hakkında bilgisizdir**.
-Bu **etkiye bakmak değil** (L9): kol farkına değil, dağılımın **var olup
-olmadığına** bakılıyor ve kural koşumdan önce yazılıyor.
+⚠ **①'in ilan edilmiş zayıflığı:** yalnız **kıtlık varken** çalışır. Kaba
+hesap: havuz 80 → yenilenmeyle ~89; 8 ajan × 8.0 = **64 talep < 89** ⇒ ilk
+olaylarda herkes tam alır, **fark yok**. Ayrışma ancak havuz azalınca başlar.
+D-068 çöküşün geldiğini gösteriyor (8.0 → 6.17 → 0) ama **landmark 10. olayda**
+ve ayrışmanın ondan önce başlayıp başlamadığı **bilinmiyor**.
+⇒ ① seçilirse **pilotun ilk sorusu:** *"ajanlar kaçıncı olayda ayrışıyor, ve
+bu landmark'tan önce mi?"* Cevap "sonra" ise ya landmark kayar ya havuz
+başlangıcı kısılır. ②/③/④'te bu risk yok — onlar doğumdan itibaren farklı.
 
-### Ondan sonra, sırayla
+⚠ **D-079 ①'in çerçevesini değiştirdi:** bu bir uygulama ayrıntısı değil,
+**ilan edilmesi gereken bir fizik kararı** (Schönfisch & de Roos 1999;
+Fatès 2014). Ve konum etkisi **ölçülmüş** bir olgu (Suleiman ve ark. 1996) —
+rotasyon onu **yok etmiyor**, yalnız **kalıcı olmasını** engelliyor.
 
-1. **Pilot** — ② yerleştikten sonra, yeni seed'lerle. ⚠ İşi ön-kaydın
-   girdisini üretmek: **K3'ün N hesabı yeni aletten varyans istiyor ve
-   elimizde yok** (D-068 pilotu D-071/072/073'ten önce, N=2, kırık pencere).
-   ⚠ Yalnız **dağılım** okunur, **kol farkı mühürlü** (L9).
-2. **İkinci ön-kayıt taslağı.** Çözmesi gereken üç seçim — alet üçünü de
-   üretiyor ama ön-kayıt **seçmek zorunda** (D-073 bilerek açık bıraktı):
-   - **PE ikincilleri:** `delta_pe_landmark` (sabit yaş) mı `delta_pe`
-     (olay başına oran) mı S3/S4'ün ön-kayıtlı hâli?
-   - **Enerji:** K2 hem `landmark_energy` hem `energy_mean_over_life` istedi
-     — ikisi de birincil olamaz.
-   - **Erken sonlanma eşiği:** `I3.4` artık bayrak basmıyor (D-073) ⇒ eşik
-     ön-kayıtta belirlenmezse **hiçbir yerde** belirlenmemiş olur.
-   Ayrıca: yedi kararın metne dökülmesi (D-070), K5'in sınır ilanı
-   (*"birincil, aktarılan drift'in kendisi değil, sabit yaşta okunan
-   kesiti"*), ve **K7'nin ilan edilmiş sınırı** (D-074: davranış çökük
-   kaldığı sürece seçilim görünmeyebilir).
-3. **Koşum.** ⚠ **Kilit yazılmadan başlamaz.**
+### 3. P0 verildikten sonra, sırayla
 
-⚠ Yeni koşum **yeni seed'lerden** başlamalı: **2001–2043 · 3001–3004 ·
-4001–4002** diskte adapter bıraktı (`dau_runs/adapters/`, 102 dizin) ⇒ bu
-seed'lerle başlanırsa **I0.7 abort eder**. 7777 (dur-kontroller) ve 9101
-(`SEED_UNIT`, testler) adapter **yazmadı** ama deneyde kullanılmamalı.
+**Tasarım:** `docs/POPULATION_DESIGN_PROPOSAL.md` — **P0–P7**, kanıtları,
+maliyet zarfı, kod iş sırası. ⚠ Kod yazılmadı (§2.3).
 
-### ⚠ Ön-kayıt yazılırken elde olan yeni alanlar
+| # | İş | Bağlı |
+|---|---|---|
+| ~~E3~~ | ✅ **D-078** — olay satırları `agent_id` taşıyor, okuyucular filtreliyor | — |
+| E1/E5 | Ortak havuzu akışların dışına al; `pool_step_node` N talebi toplasın | P0, P1 |
+| E2 | N ajanı olay bazında ilerleten dış döngü | ⚠ **denetimsiz yapılmaz** |
+| E4 | Üreme katmanı: turnuva, `w` sayacı, varis üretimi | P2, P3, P4 |
+| — | Price aletlemesi: `Cov(w,z)` + `E(w·Δz)` nesil başına | P4 |
 
-| Nerede | Alan |
-|---|---|
-| `ArmResult` | `events_lived_phase1/2` · `landmark_reached` · `landmark_energy` · `landmark_drift_flags/magnitudes` · `energy_mean_over_life` · `pe_before/after_landmark` · `delta_pe_landmark` · `pe_before/after_at_landmark` |
-| `Gen2Result` | `events_lived` · `mean_pe_landmark` · `mean_pe_at_landmark` |
-| `BirthDriftLog` | `f_agent_t_survived` · `f_agent_t_generation` |
-| `tool_identity` | `fitness` bloğu · `endpoints` bloğu |
-| `describe_pe_window` | `pe_locf_padding=False` · `pe_landmark_event` |
+Sonra **pilot** → **ikinci ön-kayıt** → **koşum**.
 
-### ⚠ Bu iş sırasında geçerli olan sınırlar
+### ⭐ Linçpin — unutulmaması gereken
 
-- **Hiçbir sabit sonuca bakılarak ayarlanmaz** (§2.7). Üç metabolik sabit
-  D-070'te *"olduğu gibi"* kilitlendi, `METABOLIC_GAIN_CALIBRATED = False`
-  **kalıyor**.
-- **Uç nokta etkiye bakılarak seçilmez** (L9). Pilotun `pe_after` sayıları
-  (0.50 / 0.43 / 0.35) **okunmaz** — %71 pad'liydi. D-072/D-073'ün
-  dur-kontrollerinde de yalnız *"alan doluyor mu"* soruldu.
-- ⚠ **Davranış hâlâ çökük** (D-068): D-066'dan sonra bile olayların
-  %94–100'ünde DEFECT. K7 bilişsel önseli aksiyom gerekçesiyle kapattı;
-  D-074 bunu **açık risk** olarak kayda geçirdi — hangi fizik eklenirse
-  eklensin seçilim görünmeyebilir.
-- **DR brief #5 gönderilemedi** (teknik sorun):
-  `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md`.
-  D-069'un yerel taraması K1–K3'ü karara bağlanabilir hale getirdi ama
-  **kapatmadı**; cevaplanamayan üç şey §K.2'de.
+D-076'nın getirdiği **Price eşitliği** `Cov(wᵢ, zᵢ)` istiyor ve bu ancak `w`
+**değişkense** tanımlı. Bugün her ebeveynin **tam olarak bir** varisi var ⇒
+`w` sabit ⇒ **seçilim ölçülemez.** ⇒ ②'nin asıl işi popülasyon eklemek değil,
+**`w`'yi değişken yapmak**; gerisi altyapı.
+⚠ `F_agent`'ı doğrudan `w` yapma — D-071'den beri içinde **gerçekleşmiş
+hayatta kalma** var, Mills & Beatty'nin totolojisi geri gelir (D-075). Üç
+katman ayrı: `F_agent` (girdi) → `w` (varis sayısı) → **`z` = landmark drift
+(sonuç)**.
+
+### ⚠ Ön-kayıta girmesi gereken geçerlilik kapısı
+
+`F_agent` dağılımının yayılımı ve `w`'nin varyansı **ön-koşul**. Yayılım
+yoksa turnuva yazı-turaya döner ve koşum **seçilim hakkında bilgisizdir**.
+⚠ Bu **etkiye bakmak değil** (L9): kol farkına değil, dağılımın **var olup
+olmadığına** bakılıyor ve kural koşumdan **önce** yazılıyor.
+
+### ⚠ Bu iş sırasında geçerli sınırlar
+
+- **Hiçbir sabit sonuca bakılarak ayarlanmaz** (§2.7).
+- **Uç nokta etkiye bakılarak seçilmez** (L9).
+- ⚠ **Davranış hâlâ çökük** (D-068): olayların %94–100'ünde DEFECT. K7
+  bilişsel önseli aksiyom gerekçesiyle kapattı; D-074 bunu **açık risk** olarak
+  kaydetti. **Vallinder & Hughes 2024** (D-075) en yakın yayımlanmış analogun
+  sonucu **strateji metni aktararak** aldığını gösteriyor — yani bizim
+  kapattığımız kanaldan. K7'nin bedelinin **üçüncü** bağımsız teyidi.
+- ⚠ **Kullanılmış tohumlar:** 2001–2043 · 3001–3004 · 4001–4002 diskte adapter
+  bıraktı ⇒ I0.7 abort eder. **7777 · 7801 · 9101** adapter yazmadı ama
+  deneyde kullanılmamalı.
 
 ---
 
