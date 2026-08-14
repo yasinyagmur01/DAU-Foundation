@@ -6310,3 +6310,79 @@ varsayımına dayanıyor. Enerji yayılımı **birikmiş metabolik kazanç**
 üzerinden hesaplandı; gerçek `energy` durumu ayrıca **azalma** terimi
 taşıyor ve bu hesaba katılmadı — ⚠ azalma her ajanda **aynı** olduğu için
 yayılımı değiştirmez, ama **düzeyi** değiştirir.
+
+---
+
+## D-084 · 2026-08-14 · Karar kanalı **doygun**: 1e-9'dan 1e-1'e kadar her tedirginlik aynı hasadı veriyor
+
+**Durum:** ölçüm (gerçek model, greedy) · **Etiket:** ⚠ **keşifsel,
+ön-kayıtlı değil** · `DAU_LORA_ENABLED=0`, **adapter yazılmadı, sabit
+değişmedi** · süre **43.2 sn** (model yüklemesi dahil 20.4 sn)
+
+### Soru
+
+D-083 prompt kanalının **tam duyarlı** olduğunu gösterdi (1e-9 bile dizgiyi
+değiştiriyor). Kapanmayan soru: **prompt'un değişmesi kararı değiştiriyor
+mu?** ①'in çalışıp çalışmadığı buna bağlıydı.
+
+### Yöntem
+
+Yalnız `energy` ondalığında farklılaşan `AgentView`'ler, çıplak
+`SYSTEM_PROMPT`, gerçek Llama-3.1-8B-Instruct, greedy, on fark büyüklüğü.
+Karşılaştırma **iki düzeyde**: ham metin **ve** `decision_to_extraction`
+(kararın eşlendiği hasat miktarı).
+
+### ⛔ Sonuç
+
+| fark | ham metin | **hasat** |
+|---|---|---|
+| **0 (kontrol)** | aynı | 8.0 |
+| 1e-9 | **farklı** (165. karakterden) | 8.0 |
+| 1e-7 | **farklı** | 8.0 |
+| 1e-5 | **farklı** | 8.0 |
+| 1e-4 | aynı | 8.0 |
+| **7.7e-4 (rotasyonlu landmark)** | **farklı** | 8.0 |
+| 3.45e-3 | **farklı** | 8.0 |
+| 1e-2 | **farklı** | 8.0 |
+| 5e-2 | aynı | 8.0 |
+| 1e-1 | **farklı** (70. karakterden) | 8.0 |
+
+**Benzersiz hasat miktarı: 1.** Benzersiz outcome: `defect`. **Onda on.**
+
+⭐ **Kontrol geçti** (fark=0 → birebir aynı) ⇒ sonda deterministik, D-037
+tutuyor.
+
+⚠ **Metin farkı büyüklükle sıralı değil:** 1e-9 metni değiştiriyor ama 1e-4
+değiştirmiyor. Yani ham metin duyarlılığı **kaotik**, ölçüsüz.
+
+### Ne öldü, ne ölmedi
+
+⛔ **Karar kanalı doygun.** D-068'in çöküşü (%94–100 DEFECT) burada
+mekanizma olarak görünüyor: davranış eşlemesinin **tek bir soğurucu çıktısı**
+var, dolayısıyla **hiçbir girdi tedirginliği onu oynatamaz**. ⇒ ajanlar
+**karar vererek ayrışamaz**.
+
+⭐ **Ama ① karar kanalına ihtiyaç duymuyor.** Holling II'de iki ajan aynı
+şeye karar verip (*"8.0 al"*) **farklı miktar alıyor** (7.654 vs 7.596,
+D-082) — çünkü ayrım **ortamın karnesinde**, ajanın tercihinde değil.
+Oradan `metabolic_gain` → enerji → iç durum → drift'e akıyor, ve **birincil
+uç nokta landmark'taki drift**.
+
+⇒ ⭐ **①'in ürettiği şey yeniden tarif edilmeli:** *"özdeş karar veren ama
+farklı yaşayan ajanlar"*. ⚠ Bunun aksiyomu (*"trait yaşamdan çıkar"*)
+karşılayıp karşılamadığı **tasarım kararıdır ve Yasin'indir** (D-007) —
+Claude Code tek başına vermez.
+
+### Sınırlar — ⚠ önemli
+
+- **Çıplak `SYSTEM_PROMPT` kullanıldı**: anı bloğu, drift uyarısı, stratejik
+  beklenti katmanları **yok**. Gerçek ajan 10. olayda bunları taşır. ⇒ sonda
+  gerçek prompt'un değişkenliği için bir **alt sınır**. ⚠ Ama drift uyarısı
+  `.2f` yuvarlanıyor (D-083) yani o katman **daha az** duyarlı, daha çok
+  değil.
+- **Tek karar bağlamı**, tek durum vektörü, on örnek. Yaşam boyu davranışın
+  taraması değil.
+- Doygunluk **bugünkü fizikte** ölçüldü; A4-① metabolik döngüsü davranışı
+  değiştirirse (K7 kapattı) bu sonuç yeniden ölçülmeli.
+- ⚠ Sonda çıktısını **repo köküne** yazdı, fark edildi ve scratchpad'e
+  taşındı. Repoda iz bırakmadı.

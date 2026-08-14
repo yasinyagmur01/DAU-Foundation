@@ -25,12 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-083.** Sıradaki kayıt **D-084** olarak açılır.
+- **Son D-kaydı: D-084.** Sıradaki kayıt **D-085** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
@@ -177,11 +177,27 @@ prompt'unda**. Karar anında modele giden kullanıcı mesajı
 dizgisini değiştiriyor (`0.4523177` → `0.452317701`). Holling II'nin
 landmark farkı **3.–4. ondalıkta** ⇒ rahatça görünür.
 
-⚠ **Kalan tek soru:** prompt'un değişmesi **kararın** değişmesini garanti
-etmiyor. ⇒ **Sıradaki ölçüm (model gerekiyor, ~dakikalar):** yalnız
-enerjinin ondalığında farklılaşan iki `AgentView`, gerçek modelle greedy,
-**kararın hangi fark büyüklüğünde döndüğü** taranır. ①'in çalışıp
-çalışmayacağını **kod yazmadan, pilot koşmadan** söyler.
+### ⛔ D-084 — o soru da ölçüldü: **karar kanalı doygun**
+
+Gerçek model, greedy, on fark büyüklüğü (1e-9 … 1e-1), **43 saniye**.
+Ham metin değişiyor (1e-9 bile), ama **hasat miktarı onda onunda `8.0`** —
+benzersiz outcome sayısı **1**. Kontrol (fark=0) birebir aynı ⇒ sonda
+deterministik.
+
+⇒ **D-068'in çöküşü burada mekanizma olarak görünüyor:** davranış
+eşlemesinin **tek soğurucu çıktısı** var ⇒ hiçbir girdi tedirginliği onu
+oynatamaz ⇒ ajanlar **karar vererek ayrışamaz**.
+
+⭐ **Ama ① karar kanalına ihtiyaç duymuyor.** Holling II'de iki ajan aynı
+şeye karar verip **farklı miktar alıyor** (7.654 vs 7.596) — ayrım
+**ortamın karnesinde**, tercihte değil. Oradan `metabolic_gain` → enerji →
+iç durum → **drift**'e akıyor, ve birincil uç nokta zaten **landmark'taki
+drift**.
+
+⇒ ⭐ **①'in tarifi değişti:** *"özdeş karar veren ama **farklı yaşayan**
+ajanlar"*. ⚠ **Bunun aksiyomu karşılayıp karşılamadığı tasarım kararıdır ve
+Yasin'indir** — Claude Code tek başına vermez. **P0'ın gerçek sorusu artık
+bu.**
 
 ⚠ **Kalan bedel:** Holling II **yeni bir sabit (`h`)** getiriyor ⇒ kapasite
 sorusu **kaybolmuyor, yer değiştiriyor**.
