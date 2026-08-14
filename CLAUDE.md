@@ -25,19 +25,41 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`4aef611`).
 - **Suite:** `414 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi**.
-- **Son D-kaydı: D-084.** Sıradaki kayıt **D-085** olarak açılır.
+- **Son D-kaydı: D-085.** Sıradaki kayıt **D-086** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)**.
+- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
   karşılaştırılamaz.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — **tek şey kaldı: ⛔ P0 kararı (Yasin'in)**
+## ▶▶ SIRADAKİ İŞ — ⚠ **P0'dan önce: aletin iki ölü kanalı (D-085)**
+
+⭐ **Doğrulama koşumu yapıldı (D-085, N=4 tohum, ~29 dk).** Bugünkü aletle
+**ilk kez** uçtan uca soy koşuldu. **Ölçüm makinesi çalışıyor** — landmark
+**12/12** soyda okundu, replay birebir, aletleme canlıda yazıldı. ⚠ **Ama
+evrende iki şey ölü, ve popülasyon bunların üstüne kurulursa ikisi de miras
+alınır:**
+
+| # | Bulgu | Sayı |
+|---|---|---|
+| **1** | **Uygunluk kapısı kalıtımın %90'ını kesiyor.** `w_transfer = memory_score × F_agent × valans`, eşik **0.6**; `memory_score ≤ 1` olduğu için `w_transfer` **`F_agent`'ı aşamaz**. Ölçülen `F_agent` **0.084–0.184** | kapı açıkken **4** anı / 12 soy · `f_agent=None` kolunda **39** |
+| **2** | **`fitness_class` yine 12/12 `low`** — D-060'ın dejenerasyonu A4'ten sonra geri gelmiş. ⚠ Ama `F_agent`'ın kendisi ayrım taşıyor ⇒ sorun **eşiklerde** | 12/12 |
+| **3** | Enerji terimi (fitness'ın %40'ı) pratikte ölü — ajanlar enerjileri bittiği için ölüyor | `E_son` 10/12'de **0.000** |
+| **4** | ⚠ `landmark_energy` **12'nin 5'inde tavanda** (1.000) ⇒ K2'nin seçtiği okuma **doygunluk riski** taşıyor; `energy_mean_over_life` (0.59–0.86) daha ayırt edici | 5/12 |
+| **5** | ⭐ Ayrım **gen2 ömründe** görünüyor: 5004'te lived **14**, null/shuffle **10** | ⚠ hücre başına N=1 |
+
+⇒ ⭐ **Sıra değişti:** P0 (ajanlar nasıl farklılaşacak) hâlâ Yasin'in, ama
+**önce aletin kendi kanalları açılmalı** — yoksa popülasyon kurulduğunda
+kalıtım akmıyor, uygunluk tek sınıfta toplanıyor ve seçilim yine ölçülemiyor.
+
+---
+
+## ▶ P0 — **karar Yasin'in** (D-084 sonrası yeniden tarif edildi)
 
 ### 1. ✅ DR #7 mutabakata bağlandı (**D-080**, §O) — **P0'ı kapatmadı**
 

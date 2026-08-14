@@ -6386,3 +6386,119 @@ Claude Code tek başına vermez.
   değiştirirse (K7 kapattı) bu sonuç yeniden ölçülmeli.
 - ⚠ Sonda çıktısını **repo köküne** yazdı, fark edildi ve scratchpad'e
   taşındı. Repoda iz bırakmadı.
+
+---
+
+## D-085 · 2026-08-14 · Doğrulama koşumu: **ölçüm makinesi çalışıyor**, ama uygunluk kapısı kalıtımın %90'ını kesiyor
+
+**Durum:** ölçüm (doğrulama koşumu) · **Etiket:** ⚠ **keşifsel, ön-kayıtlı
+değil** · N=4 tohum (5001–5004), üç kol, `--lora`, gen1+gen2 · ham çıktı
+`dau_runs/validate_d085_n1_local.json` + `..._n3_local.json` ·
+`run_quality = flagged` (ikisinde de) · süre **5 dk 48 sn + 23 dk**
+
+### Neden koşuldu
+
+**Aletin bugünkü hâliyle uçtan uca tek bir soy koşulmamıştı.** D-071/072/073
+(havuz teriminin normalizasyonu, landmark aletlemesi, LOCF'un kaldırılması)
+uygulandıktan sonra yapılan tek ölçüm D-078'in 12 olaylık sondasıydı.
+⚠ Bu oturumda P0 tartışılırken kullanılan *"ömürler 11–20"*, *"davranış
+%94–100 DEFECT"* gibi sayılar **eski aletin** pilotundan (D-068) geliyordu.
+Yasin'in planının birinci maddesi — *"aleti tam anlamıyla doğrula"* —
+yapılmamıştı.
+
+### ✅ Çalışan: ölçüm makinesi
+
+| | Sonuç |
+|---|---|
+| Uçtan uca koşum | `exit 0`, çökme yok · 3 OOM uyarısı, toparladı |
+| **Landmark'a ulaşan soy** | ⭐ **12/12** — grace penceresi tasarlandığı gibi çalışıyor, **sansür yok** |
+| **Landmark aletlemesi** | ⭐ **İlk kez canlıda yazıldı:** `landmark_energy`, `landmark_drift_magnitudes`, `energy_mean_over_life`, `delta_pe_landmark` |
+| Tekrarlanabilirlik | `I4.1` replay **birebir aynı** ⇒ D-037 tutuyor |
+| Adapter davranışı değiştiriyor mu | seed 5001'de faz-2 kararlarının **8/11'i** farklı (%73) — kanal 2 canlı |
+| Ömür değişkenliği | tohum bazında **11 · 20 · 17 · 13** olay — gerçek yayılım var |
+
+### ⛔ Bulgu 1 — uygunluk kapısı kalıtımın **%90'ını** kesiyor
+
+| | anı |
+|---|---|
+| `F_agent` kapısı **açık** (gerçek yol) | **4** anı / 12 soy — ve **8 soy hiçbir şey almıyor** |
+| `f_agent=None` duyarlılık kolu | **39** anı |
+
+Sebebi cebirsel. Kapı:
+`w_transfer = memory_score × F_agent × valans`, eşik **0.6**.
+`memory_score ≤ 1` ve valans nötrken 1 ⇒ **`w_transfer` `F_agent`'ı aşamaz.**
+
+Ölçülen `F_agent`: **0.084 – 0.184**, ortalama **0.139**. Eşiğin **dörtte
+biri**. ⇒ Aksiyomun *"iz iki kanaldan aktarılır"* iddiasında **Kanal 1
+neredeyse hiç akmıyor**.
+
+⚠ **Bu bir bug değil**, tasarlanmış kapının *"kimsenin fit olmadığı"* bir
+evrende verdiği doğru sonuç. D-066 ölümü gerçek yapınca ajanlar 11–20 olayda
+ölmeye başladı ve `F_agent` kapının çok altına düştü.
+
+### ⛔ Bulgu 2 — `fitness_class` yine **12/12 `low`**
+
+D-060'ın *"120/120 kolda tek değer"* bulgusu, A4 düzeltmesinden sonra
+**aynen geri gelmiş**. Uygunluk sınıfı hiçbir ayrım taşımıyor.
+
+⚠ Ama `F_agent`'ın **kendisi** ayrım taşıyor (0.084–0.184, kollar arasında
+farklı) — sorun sürekli değerde değil, **sınıflandırmanın eşiklerinde**.
+
+### ⚠ Bulgu 3 — enerji terimi neredeyse ölü (⚠ *"tam sıfır"* demiştim, yanlıştı)
+
+`f_agent_energy_final`: **12 soyun 10'unda 0.000**, kalan ikisinde 0.041 ve
+0.040. Yani fitness'ın **%40'ını** taşıyan terim pratikte hiçbir şey
+katmıyor — çünkü ajanlar **enerjileri bittiği için** ölüyor, dolayısıyla son
+enerji yapısı gereği tabana yakın.
+
+⚠ **Düzeltme:** N=1 sonrası *"yapı gereği tam sıfır"* demiştim; dört tohumda
+iki istisna çıktı. Doğrusu: **10/12'de 0.000, azami 0.041.**
+
+⭐ **Ve ironi:** enerji **bilgi taşıyor** — `energy_mean_over_life` 0.59–0.86,
+`landmark_energy` 0.130–1.000 arasında. K2 uç nokta için tam da bunları
+seçmişti. `F_agent` ise onları değil, ölüm anındaki sıfırı okuyor.
+
+### ⚠ Bulgu 4 — `landmark_energy` **12'nin 5'inde tavanda** (1.000)
+
+Enerji `METRIC_MAX`'tan başlıyor ve grace penceresi 10 olay sürüyor ⇒ 10.
+olayda ajanların yaklaşık %40'ı **hâlâ tavanda**. ⇒ K2'nin seçtiği landmark
+enerji okuması **doygunluk riski taşıyor**; `energy_mean_over_life`
+(0.59–0.86, hiç tavana değmiyor) daha ayırt edici.
+⚠ Bu bir **ön-kayıt tasarım sorunudur**, kod hatası değil.
+
+### ⭐ Bulgu 5 — ayrım **gen2 ömründe** görünüyor
+
+| tohum | lived | null | shuffle |
+|---|---|---|---|
+| 5002 | **20** | 19 | 19 |
+| 5003 | 18 | 19 | 19 |
+| 5004 | **14** | **10** | **10** |
+
+Gen1'de kollar aynı ömrü yaşıyor (adapter yalnız faz-2'yi etkiliyor), ama
+**varislerin ömrü kola göre farklılaşıyor** — 5004'te 14'e karşı 10.
+⚠ Hücre başına N=1, **gözlem, iddia değil**. Ama bu, aletin bir ayrım
+taşıdığı ilk canlı işaret.
+
+### ⭐ Bulgu 6 — D-084 canlıda doğrulandı
+
+Seed 5001'de `lived` ve `null` kollarının `F_agent`'ı **bit düzeyinde aynı**
+(0.11855132990852824) ve `delta_pool`'ları da aynı (72.58494322683171) —
+**ama faz-2 kararlarının 8/11'i farklı.**
+
+⇒ **Farklı metin, aynı hasat.** D-084'ün sondasının öngördüğü davranış
+doygunluğu, gerçek koşumda birebir çıktı.
+
+### Bayraklar
+
+`I3.2` (Precision-PE atıl, `pi_n_distinct=2 < 8` ⇒ **L13 bugünkü aletle de
+geçerli**) · `I1.3b` (kırpma doygun ⇒ **L18 sürüyor**) · `I3.4` (ömür 11–20,
+bütçe 50 ⇒ rapor modu, **D-073 tasarlandığı gibi**) · `I5.4` yalnız N=1'de
+(miras somatik ölçek hiç uygulanmadı — Kanal 1 kapalı olduğu için beklenen).
+
+### Sınırlar
+
+**Dört tohum, hücre başına bir soy.** Hipotez testi değil, alet denetimi.
+⚠ **P0 bu koşumda test edilmedi** — sıralı erişim, Holling kuralı, çıkarım
+bedeli, popülasyon: hiçbiri yok. Bulgular aletin **kendi** özellikleri, ve
+popülasyon katmanı bunların üstüne kurulursa **hepsi miras alınır**.
+Hiçbir sabit değişmedi, hiçbir karar verilmedi.
