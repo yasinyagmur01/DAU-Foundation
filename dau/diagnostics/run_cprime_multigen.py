@@ -197,7 +197,7 @@ class BirthDriftLog:
     # cannot be read without t_survived, and t_generation stopped being a copy
     # of t_survived — which is what had pinned the survival term at exactly
     # 1.0 for every lineage this harness has ever scored.
-    f_agent_energy_final: float
+    f_agent_energy_lived: float
     f_agent_delta_pool: float
     f_agent_t_survived: float
     f_agent_t_generation: float
@@ -674,7 +674,7 @@ def transfer_to_heir(
     # Read through the same helper _resolve_f_agent uses, so the report cannot
     # drift from the score it explains (CLAUDE.md 2.8).
     f_inputs = f_agent_inputs(parent_state, events_gen1)
-    f_agent_energy = float(f_inputs["energy_final"])
+    f_agent_energy = float(f_inputs["energy_lived"])
     f_agent_dpool = float(f_inputs["delta_pool"])
     f_agent_t_survived = float(f_inputs["t_survived"])
     f_agent_t_generation = float(f_inputs["t_generation"])
@@ -730,7 +730,7 @@ def transfer_to_heir(
         gen1_arm=gen1_arm,
         seed=seed,
         f_agent=f_agent,
-        f_agent_energy_final=f_agent_energy,
+        f_agent_energy_lived=f_agent_energy,
         f_agent_delta_pool=f_agent_dpool,
         f_agent_t_survived=f_agent_t_survived,
         f_agent_t_generation=f_agent_t_generation,
@@ -754,7 +754,7 @@ def transfer_to_heir(
     print(
         f"[MULTIGEN][TRANSFER] {parent_state.agent_id} → {heir_id} "
         f"arm={gen1_arm} n_transfer={birth.n_transfer_candidates} "
-        f"f_agent={f_agent:.3f} (E={f_agent_energy:.3f} "
+        f"f_agent={f_agent:.3f} (E_lived={f_agent_energy:.3f} "
         f"|dpool|={abs(f_agent_dpool):.1f}) "
         f"warnings={birth.n_inherited_warnings} "
         f"drift_flags={birth.birth_drift_flags}",

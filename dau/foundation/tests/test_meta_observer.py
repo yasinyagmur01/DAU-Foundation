@@ -54,6 +54,14 @@ EVENTS_LIVED_UNIT: int = 4
 BUDGET_SHORT: int = 8
 BUDGET_LONG: int = 40
 EVENT_TYPE_UNIT: str = "meta-budget-probe"
+# D-086: F_agent's energy term averages the energy on every lived event, and a
+# row without it raises rather than being skipped (§2.9). The probe events below
+# are synthetic — graph.agent_node puts this key on every real decision row — so
+# they carry a constant reading. The value is irrelevant to what this test
+# asserts (the survival denominator); a constant keeps the energy term fixed
+# across both budgets so any difference must come from t_generation.
+ENERGY_PROBE_KEY: str = "energy"
+ENERGY_PROBE_VALUE: float = 0.5
 
 
 def _delta(magnitude: float, domain: str = "resource") -> DeltaRecord:
@@ -430,7 +438,11 @@ def test_meta_observer_reads_the_live_event_budget(monkeypatch) -> None:
         delta_log=[_delta(0.45)],
         lod_state=LODState(),
         event_log=[
-            Event(event_type=EVENT_TYPE_UNIT) for _ in range(EVENTS_LIVED_UNIT)
+            Event(
+                event_type=EVENT_TYPE_UNIT,
+                payload={ENERGY_PROBE_KEY: ENERGY_PROBE_VALUE},
+            )
+            for _ in range(EVENTS_LIVED_UNIT)
         ],
     )
 

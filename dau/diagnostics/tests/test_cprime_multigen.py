@@ -298,7 +298,7 @@ def test_transfer_records_what_f_agent_was_computed_from(store: MemoryStore) -> 
         events_gen1=EVENTS_GEN1_UNIT,
     )
 
-    assert birth.f_agent_energy_final == expected["energy_final"]
+    assert birth.f_agent_energy_lived == expected["energy_lived"]
     assert birth.f_agent_delta_pool == expected["delta_pool"]
     # K4-b: the pool term is a rate now, so the record has to carry both
     # halves of it. Reporting delta_pool alone would leave the same number
@@ -329,7 +329,7 @@ def test_f_agent_inputs_is_the_only_reader(store: MemoryStore) -> None:
     # ignored the helper and rebuilt the reads, it would land back on the
     # agent's own lifespan for both and the survival term would be 1.0.
     sentinel = {
-        "energy_final": 0.5,
+        "energy_lived": 0.5,
         "delta_pool": 12.5,
         "t_survived": 7.0,
         "t_generation": 20.0,
@@ -342,7 +342,7 @@ def test_f_agent_inputs_is_the_only_reader(store: MemoryStore) -> None:
         assert self_model._resolve_f_agent(
             parent, EVENTS_GEN1_UNIT
         ) == compute_fitness(
-            energy_final=0.5, delta_pool=12.5, t_survived=7, t_generation=20
+            energy_lived=0.5, delta_pool=12.5, t_survived=7, t_generation=20
         )
     finally:
         self_model.f_agent_inputs = original
@@ -1401,7 +1401,7 @@ def test_multigen_smoke_mock_llm_end_to_end(
         ), "pe_before must be the mean of the whole phase, not a prefix"
         # D-035 item 1: a zero F_agent has to be explainable from the file.
         assert "f_agent_delta_pool" in lin.transfer
-        assert "f_agent_energy_final" in lin.transfer
+        assert "f_agent_energy_lived" in lin.transfer
 
     divergence = results[0].phase2_decision_divergence
     assert divergence["reference_arm"] == ARM_NULL

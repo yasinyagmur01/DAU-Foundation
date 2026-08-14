@@ -42,6 +42,11 @@ MIN_SURVIVAL_DENOMINATOR: int = 1
 MEMORY_SCORE_KEY: str = "memory_score"
 MEMORY_SCORE_ALT_KEY: str = "score"
 
+# Decision-event payload key holding the energy at that event (graph.agent_node
+# writes it on both the SYSTEM_1 and SYSTEM_2 branch). F_agent averages it over
+# the life (D-086), so the name lives here rather than as a bare string.
+ENERGY_PAYLOAD_KEY: str = "energy"
+
 
 class SelfModel(BaseModel):
     """Structured self-representation assembled from existing DAU telemetry.
@@ -161,12 +166,34 @@ def f_agent_inputs(state: DAUAgentState, t_generation: int) -> dict[str, float]:
     and D-068's reading of it. Since D-066 a life can end early, so the
     fraction of the span endured is a real measurement and the budget is
     genuinely outside information (K4-b, D-070).
+
+    D-086: ``energy_lived`` is the mean over every event the agent lived, not
+    the reading at the instant it died. Death is by energy exhaustion, so the
+    final reading is pinned near zero by the death rule itself and carried no
+    information — 10 of 12 lineages reported exactly 0.000 in D-085 while the
+    same lives spread 0.59–0.86 on the lifetime mean. An empty event log is not
+    a missing measurement: a life of zero events has exactly one energy reading,
+    the present one. A logged event WITHOUT the key is a broken invariant and
+    raises rather than being skipped (§2.9, no silent fallback) — both writers
+    in graph.agent_node put it on every decision row.
     """
 
     env = state.env_state
     t_survived = len(state.event_log)
+    energies: list[float] = []
+    for event in state.event_log:
+        if ENERGY_PAYLOAD_KEY not in event.payload:
+            raise ValueError(
+                f"event {event.event_type!r} at t={event.timestamp} carries no "
+                f"{ENERGY_PAYLOAD_KEY!r}; F_agent cannot average a life whose "
+                "energy trace has holes"
+            )
+        energies.append(float(event.payload[ENERGY_PAYLOAD_KEY]))
+    energy_lived = (
+        fmean(energies) if energies else float(state.internal_state.energy)
+    )
     return {
-        "energy_final": float(state.internal_state.energy),
+        "energy_lived": energy_lived,
         "delta_pool": (
             float(agent_delta_pool(env, state.agent_id))
             if isinstance(env, EnvironmentState)
@@ -183,7 +210,7 @@ def _resolve_f_agent(state: DAUAgentState, t_generation: int) -> float:
     inputs = f_agent_inputs(state, t_generation)
     return float(
         compute_fitness(
-            energy_final=inputs["energy_final"],
+            energy_lived=inputs["energy_lived"],
             delta_pool=inputs["delta_pool"],
             t_survived=int(inputs["t_survived"]),
             t_generation=int(inputs["t_generation"]),

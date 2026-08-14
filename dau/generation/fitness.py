@@ -17,9 +17,17 @@ from dau.society.extraction import EXTRACTION_DEFECT
 # Fitness weights, thresholds, and transfer scaling (no magic numbers)
 # ---------------------------------------------------------------------------
 
-FITNESS_W_ENERGY: float = 0.4  # weight: remaining energy
+FITNESS_W_ENERGY: float = 0.4  # weight: energy held across the life
 FITNESS_W_POOL: float = 0.3  # weight: pool preservation
 FITNESS_W_SURVIVAL: float = 0.3  # weight: time survived
+
+# D-086. Which energy reading the w_energy term scores. Runs before D-086 used
+# the final reading and runs after use the lifetime mean, and the two produce
+# different F_agent from identical lives — 0.139 vs 0.446 on the same twelve
+# D-085 lineages. Nothing else in a results file distinguishes them, so the
+# label travels in tool_identity (U5 / D-030 pattern: say out loud which
+# formula ran rather than letting a reader assume).
+FITNESS_ENERGY_READING: str = "mean_over_life"
 
 FITNESS_LOW_THRESHOLD: float = 0.35  # below: trauma → cautionary inherited_warning
 FITNESS_HIGH_THRESHOLD: float = 0.70  # above: trauma → inherited warning
@@ -44,7 +52,7 @@ def _clamp_unit(value: float) -> float:
 
 
 def compute_fitness(
-    energy_final: float,
+    energy_lived: float,
     delta_pool: float,
     t_survived: int,
     t_generation: int,
@@ -52,11 +60,28 @@ def compute_fitness(
 ) -> float:
     """Objective ancestral survival fitness F_agent in [0, 1].
 
-    Biology analogy: how much fuel remained, how gently the commons was used
-    *while it was used*, and what fraction of the generation's event span the
-    organism endured.
+    Biology analogy: how well fuelled the life was, how gently the commons was
+    used *while it was used*, and what fraction of the generation's event span
+    the organism endured.
 
-    F = w_e·(E/E_max) + w_p·(1 − (|Δpool|/t_survived)/X_max) + w_s·(t_survived / t_gen)
+    F = w_e·(E_lived/E_max) + w_p·(1 − (|Δpool|/t_survived)/X_max) + w_s·(t_survived / t_gen)
+
+    D-086: the energy term reads the LIFE, not the ending. It used to take
+    E_final, and since D-066 the only way a life ends is energy exhaustion, so
+    E_final is fixed at ~0 BY THE DEATH RULE — 10 of 12 lineages reported
+    exactly 0.000 in the D-085 validation run and the term contributed nothing
+    to 40% of the score. run_protocol_c_prime already carried that diagnosis in
+    a comment ("it measures the ending, not the living") but applied it only to
+    the K2 endpoint reading, leaving F_agent on the dead term. Same defect class
+    as the survival term before D-071 (t_survived/t_survived ≡ 1.0): a term that
+    is not measuring what its name claims.
+
+    ``energy_lived`` is the mean energy over the events the agent actually
+    lived; self_model.f_agent_inputs derives it. The landmark reading was
+    rejected as the alternative: it is K2's ENDPOINT, so feeding it into
+    fitness would make F_agent and the outcome share one number and rebuild the
+    Mills & Beatty tautology D-075 warned about. The three layers stay separate
+    — F_agent (input) → w (heirs) → z (landmark drift, outcome).
 
     K4-b (D-070): the pool term is a RATE, not a lifetime sum. Summing the
     ledger made the term a lifespan proxy — the pilot's two lineages spread
@@ -72,7 +97,7 @@ def compute_fitness(
     as it already did for lifetime sums past P_max.
     """
 
-    energy_term = float(energy_final) / ENERGY_MAX
+    energy_term = float(energy_lived) / ENERGY_MAX
     events_lived = max(int(t_survived), MIN_EVENTS_LIVED)
     pool_per_event = abs(float(delta_pool)) / float(events_lived)
     pool_term = 1.0 - pool_per_event / float(per_event_extraction_max)

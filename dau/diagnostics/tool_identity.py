@@ -44,6 +44,7 @@ from dau.foundation.constraints import (
 )
 from dau.foundation.lora_update import LORA_ENABLED_DEFAULT, LORA_ENABLED_ENV
 from dau.generation.fitness import (
+    FITNESS_ENERGY_READING,
     FITNESS_W_ENERGY,
     FITNESS_W_POOL,
     FITNESS_W_SURVIVAL,
@@ -262,6 +263,7 @@ def build_tool_identity(
             "w_pool": FITNESS_W_POOL,
             "w_survival": FITNESS_W_SURVIVAL,
             "pool_term_per_event_max": EXTRACTION_DEFECT,
+            "energy_reading": FITNESS_ENERGY_READING,
         },
         # K1/K2/K5 (D-070). Which ordinal every lineage is read at. Two runs of
         # this harness can disagree about what "the endpoint" means without

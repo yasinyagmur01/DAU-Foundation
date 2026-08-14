@@ -96,19 +96,19 @@ def _candidate(
 def test_compute_fitness_formula() -> None:
     """F matches weighted energy / pool / survival terms and clamps to [0, 1]."""
 
-    energy_final = 0.8
+    energy_lived = 0.8
     delta_pool = 20.0
     t_survived = 40
     t_generation = 50
 
     expected = (
-        FITNESS_W_ENERGY * (energy_final / ENERGY_MAX)
+        FITNESS_W_ENERGY * (energy_lived / ENERGY_MAX)
         + FITNESS_W_POOL
         * (1.0 - (abs(delta_pool) / t_survived) / EXTRACTION_DEFECT)
         + FITNESS_W_SURVIVAL * (t_survived / t_generation)
     )
     assert compute_fitness(
-        energy_final, delta_pool, t_survived, t_generation
+        energy_lived, delta_pool, t_survived, t_generation
     ) == pytest.approx(expected)
 
     assert compute_fitness(2.0, 0.0, 10, 10) == 1.0
@@ -127,13 +127,13 @@ def test_pool_term_is_a_rate_not_a_lifetime_sum() -> None:
     """
 
     short = compute_fitness(
-        energy_final=NO_ENERGY_LEFT,
+        energy_lived=NO_ENERGY_LEFT,
         delta_pool=RATE_PER_EVENT * RATE_SHORT_LIFE_EVENTS,
         t_survived=RATE_SHORT_LIFE_EVENTS,
         t_generation=RATE_SHORT_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
     )
     long_life = compute_fitness(
-        energy_final=NO_ENERGY_LEFT,
+        energy_lived=NO_ENERGY_LEFT,
         delta_pool=RATE_PER_EVENT * RATE_LONG_LIFE_EVENTS,
         t_survived=RATE_LONG_LIFE_EVENTS,
         t_generation=RATE_LONG_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
@@ -142,7 +142,7 @@ def test_pool_term_is_a_rate_not_a_lifetime_sum() -> None:
     assert short == pytest.approx(long_life)
     # Not vacuous in the other direction: taking more per event still costs.
     greedier = compute_fitness(
-        energy_final=NO_ENERGY_LEFT,
+        energy_lived=NO_ENERGY_LEFT,
         delta_pool=RATE_PER_EVENT * RATE_SHORT_LIFE_EVENTS * 2.0,
         t_survived=RATE_SHORT_LIFE_EVENTS,
         t_generation=RATE_SHORT_LIFE_EVENTS * RATE_SURVIVAL_MULTIPLE,
@@ -161,13 +161,13 @@ def test_survival_term_measures_the_budget_not_the_agents_own_span() -> None:
     """
 
     short = compute_fitness(
-        energy_final=NO_ENERGY_LEFT,
+        energy_lived=NO_ENERGY_LEFT,
         delta_pool=SPAN_PER_EVENT * SPAN_SHORT_EVENTS,
         t_survived=SPAN_SHORT_EVENTS,
         t_generation=SPAN_BUDGET_EVENTS,
     )
     long_life = compute_fitness(
-        energy_final=NO_ENERGY_LEFT,
+        energy_lived=NO_ENERGY_LEFT,
         delta_pool=SPAN_PER_EVENT * SPAN_LONG_EVENTS,
         t_survived=SPAN_LONG_EVENTS,
         t_generation=SPAN_BUDGET_EVENTS,
@@ -347,3 +347,111 @@ def test_normal_fitness_uses_w_transfer_and_drift_gate() -> None:
         == []
     )
     assert compute_w_transfer(0.1, f_normal, 0.0, 0.0) < GENERATION_TRANSFER_THRESHOLD
+
+
+# D-086: F_agent's energy term reads the LIFE, not the ending. Death is by
+# energy exhaustion, so the final reading is pinned near zero by the death rule
+# itself — 10 of 12 lineages reported exactly 0.000 in the D-085 validation run
+# while the same lives spread 0.59-0.86 on the lifetime mean.
+ENERGY_TRACE_STARVED: tuple[float, ...] = (0.9, 0.7, 0.5, 0.3, 0.0)
+ENERGY_TRACE_LEAN: tuple[float, ...] = (0.2, 0.2, 0.1, 0.1, 0.0)
+ENERGY_DEATH_READING: float = 0.0
+ENERGY_TRACE_EVENT_TYPE: str = "agent_decision"
+ENERGY_TRACE_POOL: float = 10.0
+ENERGY_TRACE_BUDGET: int = 20
+
+
+def _state_with_energy_trace(
+    agent_id: str,
+    trace: tuple[float, ...],
+) -> DAUAgentState:
+    """A life whose logged energies are ``trace`` and whose LAST reading is 0."""
+
+    from dau.foundation.state import Event, InternalState
+
+    return DAUAgentState(
+        agent_id=agent_id,
+        environment=build_default_constraints(),
+        internal_state=InternalState(energy=ENERGY_DEATH_READING),
+        event_log=[
+            Event(event_type=ENERGY_TRACE_EVENT_TYPE, payload={"energy": value})
+            for value in trace
+        ],
+    )
+
+
+def test_energy_term_reads_the_life_not_the_ending() -> None:
+    """Two lives with the SAME final energy but different traces score apart.
+
+    Mutation control (§2.4): revert f_agent_inputs to
+    state.internal_state.energy and this must fail — both states end at exactly
+    ENERGY_DEATH_READING, so the old read cannot tell them apart. That
+    indistinguishability is the defect D-086 fixes, not a hypothetical.
+    """
+
+    from dau.foundation.self_model import f_agent_inputs
+
+    well_fuelled = _state_with_energy_trace("f-lived-rich", ENERGY_TRACE_STARVED)
+    lean = _state_with_energy_trace("f-lived-lean", ENERGY_TRACE_LEAN)
+
+    # The old reading is identical for both — this is what used to be scored.
+    assert well_fuelled.internal_state.energy == lean.internal_state.energy
+
+    rich_inputs = f_agent_inputs(well_fuelled, ENERGY_TRACE_BUDGET)
+    lean_inputs = f_agent_inputs(lean, ENERGY_TRACE_BUDGET)
+    assert rich_inputs["energy_lived"] > lean_inputs["energy_lived"]
+
+    rich_f = compute_fitness(
+        energy_lived=rich_inputs["energy_lived"],
+        delta_pool=ENERGY_TRACE_POOL,
+        t_survived=int(rich_inputs["t_survived"]),
+        t_generation=ENERGY_TRACE_BUDGET,
+    )
+    lean_f = compute_fitness(
+        energy_lived=lean_inputs["energy_lived"],
+        delta_pool=ENERGY_TRACE_POOL,
+        t_survived=int(lean_inputs["t_survived"]),
+        t_generation=ENERGY_TRACE_BUDGET,
+    )
+    assert rich_f > lean_f
+    expected_gap = FITNESS_W_ENERGY * (
+        (sum(ENERGY_TRACE_STARVED) - sum(ENERGY_TRACE_LEAN))
+        / len(ENERGY_TRACE_STARVED)
+        / ENERGY_MAX
+    )
+    assert rich_f - lean_f == pytest.approx(expected_gap)
+
+
+def test_energy_trace_with_a_hole_raises_instead_of_averaging_around_it() -> None:
+    """A logged event without the energy key is loud, not skipped (§2.9)."""
+
+    from dau.foundation.self_model import f_agent_inputs
+    from dau.foundation.state import Event
+
+    holed = _state_with_energy_trace("f-lived-hole", ENERGY_TRACE_STARVED)
+    holed = holed.model_copy(
+        update={
+            "event_log": [
+                *holed.event_log,
+                Event(event_type=ENERGY_TRACE_EVENT_TYPE, payload={}),
+            ]
+        }
+    )
+    with pytest.raises(ValueError, match="energy"):
+        f_agent_inputs(holed, ENERGY_TRACE_BUDGET)
+
+
+def test_life_of_zero_events_scores_its_present_energy() -> None:
+    """An empty log is not a hole: one reading exists, the current one."""
+
+    from dau.foundation.self_model import f_agent_inputs
+    from dau.foundation.state import InternalState
+
+    newborn = DAUAgentState(
+        agent_id="f-lived-newborn",
+        environment=build_default_constraints(),
+        internal_state=InternalState(energy=ENERGY_MAX),
+    )
+    inputs = f_agent_inputs(newborn, ENERGY_TRACE_BUDGET)
+    assert inputs["energy_lived"] == pytest.approx(ENERGY_MAX)
+    assert inputs["t_survived"] == 0.0
