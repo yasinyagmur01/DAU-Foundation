@@ -24,8 +24,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `463 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-101.** Sıradaki kayıt **D-102** olarak açılır.
+- **Suite:** `493 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-104.** Sıradaki kayıt **D-105** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
