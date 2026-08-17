@@ -24,8 +24,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `493 passed, 2 deselected`. Çalışma ağacı temiz, `origin/main` senkron.
-- **Son D-kaydı: D-104.** Sıradaki kayıt **D-105** olarak açılır.
+- **Suite:** `538 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — gece boyunca 14 commit yerel.
+- **Son D-kaydı: D-109.** Sıradaki kayıt **D-110** olarak açılır.
+- **2026-08-17/18 gece oturumu:** ✅ **Kuşak A kapandı** — A1 kapılar (**D-105**) · A2 I4.1 replay (**D-106**) · A3 G≥3 yapısal (**D-107**) · analiz aracı · I1.1 muafiyeti sebebe bağlandı (**D-108**) · ⭐ **B1 pilotu koştu (D-109)**.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -38,34 +39,66 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — **A1'den başla** (kapıları sarmalayıcıya bağla)
+## ▶▶ SIRADAKİ İŞ — ⛔ **UÇ NOKTA KARARI, Yasin'in** (D-109)
 
-⭐ **2026-08-17 çok uzun bir oturumdu: D-092 … D-104, on üç kayıt.** Aşağısı o
-oturumun sonunda birlikte çıkarılan **genel tablo ve iş sırası**. Soğuk oturum
-buradan devam eder, başka yere bakmaz.
+⭐ **Kuşak A bitti ve B1 pilotu koştu.** Soğuk oturum buradan devam eder.
 
 ### Nerede duruyoruz — üç cümlede
 
-**Makine bitti.** Popülasyon deneyi uçtan uca kuruldu: N ajan × G nesil × üç
-kol, kol başına ayrı mera, turnuva ile üreme, iki kanaldan kalıtım, Price
-ayrışması. **Linçpin kapandı** — `w` artık değişken.
+**Makine bitti ve kanıtlandı.** B1: `run_quality=clean` · beş kapı yeşil ·
+**I4.1 identical** (iki nesil bit düzeyinde) · `Var(w)` **1.0–1.75** ⇒ linçpin
+çalışıyor. Süreçler arası determinizm **dört bağımsız koşumda** doğrulandı.
 
-**Kararlar kilitli.** P0-① (sıralı erişim + rotasyon) · P1 ayrı havuz · P2
-turnuva k=2 · P3 sabit N · P4 üç katman ayrı · P6 tek faz · P7-b **kestirim
-koşumu** · mera **taze** · Kanal 2 **varise miras kalıyor** (3A tersine).
+**⛔ Ama uç nokta ölçmüyor.** `z = landmark drift` **8 ajanda 1 farklı değer**,
+ve 24 kol-neslinin **23'ünde tamamen boş** (`{}`) ⇒ `Cov(w,z)` **yapı gereği
+sıfır** ⇒ seviye 1/2/3 **üçü de boş**. ⚠ D-104'ün *"8 ajanda 4 farklı z"*
+bulgusu **bu tohumda tekrarlanmadı** — ikinci ölçümü sağ atlatmayan dördüncü
+bulgu.
 
-**Kanıtlanmış (keşifsel, tek tohum):** `Var(w)` **1.0–1.5** · `z` varyansı
-**4/8** · seçilim terimi **ilk kez ≠ 0** (−0.201).
+**⭐ Uç noktanın görmediği şey büyük:** eğitilen kollar kontrolün **2–3 katı**
+yaşıyor (gen3: `lived` 24.8 · `shuffle` 28.2 · **`null` 10.0**), ama
+`lived ≈ shuffle` ⇒ uzayan ömür *"doğru"* adapter'dan değil **adapter'ın
+varlığından** geliyor (B2 deseninin birebir tekrarı).
+
+### ⛔ Yasin'in vermesi gereken dört karar
+
+| # | karar | neden şimdi |
+|---|---|---|
+| **1** ⛔⛔ | **`z` uç noktası ne olacak** | Bugünkü hâliyle *hiçbir şey* ölçmüyor. Üç aday sebep — travma hiç tetiklenmiyor · landmark (10) çok erken · drift bayrağı çok seyrek — ve **hiçbiri B1'den ayırt edilemez**. Tasarım kararı (D-007) |
+| **2** | **Ömür uç nokta olsun mu** | ⛔ **Uyarı:** hareket ettiğini **gördükten sonra** seçmek L9'un yasakladığı post-hoc seçimdir. Meşru tek yolu: ikinci ön-kayıta **koşumdan önce** yazmak ve **taze tohumla** sınamak |
+| **3** | **C1 için checkpoint** | Koşum sonuna kadar diske hiçbir şey yazmıyor. Bu gece **iki kez** kayıp yaşandı (I1.1 + elektrik). 20 saatlik ana koşumda kabul edilemez |
+| **4** | **P7-a bütçe tavanı** | Ölçüldü: bir pilot (N=8·G=3·30 olay·3 kol+replay) = **~1 sa 15 dk**, 48 adapter ~670 MB, replay payı **~%25** |
+
+⚠ **Karar 1 verilmeden B2 (ikinci ön-kayıt) yazılamaz** — ön-kaydın birincil uç
+noktası odur.
 
 ---
 
-### ⛔ Kuşak A — koşumu **meşru** kılan işler *(ön-kayıttan önce şart)*
+### ✅ Kuşak A — **KAPANDI** (2026-08-17/18 gecesi)
+
+| # | iş | kayıt |
+|---|---|---|
+| **A1** | Kapılar bağlandı: I0.3·I0.6·I0.7·I1.1 + `run_quality` + `invariants` | **D-105** |
+| **A2** | I4.1 replay, nesil başına digest, `REPLAY_GENERATIONS=2` türetildi | **D-106** |
+| **A3** | G≥3 yapısal gereklilik; `generations_informative` damgası | **D-107** |
+| — | Analiz aracı `analyze_population_run.py` (seviye 0/1/2/3, p-değeri **üretmiyor**) | commit `0c1b346` |
+| — | I1.1 muafiyeti **sebebe** bağlandı (sayıya değil) | **D-108** |
+| **B1** | Üç kollu tam pilot koştu | **D-109** |
+
+⚠ **A1'in kalan borcu:** **I0.4 bağlanamadı** — `AGENT_ID_SEED_PATTERN`
+popülasyon id'leriyle eşleşmiyor. I0.1/I0.2 kapsam dışı bırakıldı. İkinci
+ön-kayıta gider.
+
+<details><summary>Kuşak A'nın orijinal tablosu (tarihçe)</summary>
+
 
 | # | iş | süre | neden |
 |---|---|---|---|
 | **A1** ⛔⛔ | **Kapıları `run_population_experiment`'e bağla** — I0.3 · I0.6 · **I0.7** · I1.1 + `run_quality` + `invariants` bloğu | ~1 sa | ⛔ **Sarmalayıcıda şu an SIFIR kapı var** (multigen'de dokuz yerde geçiyor). I0.7 olmadan adapter sızıntısı **sessizce** olur — ve artık adapter **kopyalıyoruz**, yani risk D-033 gününden **büyük**. En ucuz, en kritik iş |
 | **A2** | **I4.1 replay** popülasyon için — bir kolu ikinci kez koşup digest karşılaştır | ~30 dk + koşum | Determinizmi **iddia edebilmenin** tek yolu |
 | **A3** | **G ≥ 3'ü yapısal gereklilik** olarak yaz | ~10 dk | gen1'in kurucuları P0-① gereği özdeş ⇒ **ilk geçiş sıfır terim üretir**. G=2 bir koşum yalnız sıfır üretir. Belge işi |
+
+</details>
 
 ### Kuşak B — deneyi tanımlayan işler
 
@@ -131,8 +164,10 @@ Lamarckçı kalıtım vardır"* (tek model, tek niş ailesi, **n = 1 deney**) ·
 ### Kullanılmış tohumlar — ⚠ yeniden kullanma
 
 2001–2043 · 3001–3004 · 4001–4002 · 5001–5013 · 8801–8802 · 9101 · **9301 ·
-9401 · 9501 · 9601 · 9701 · 9702** (sonuncular popülasyon; `dau_runs/adapters/`
-altında `pop-` önekli 80 dizin bıraktılar).
+9401 · 9501 · 9601 · 9701 · 9702 · 9801 · 9802 · 9901** (sonuncular
+popülasyon; `dau_runs/adapters/` altında `pop-` önekli dizinler bıraktılar).
+⚠ **9901 = B1 pilotu** (D-109), **9802 = A2 replay duman koşumu** (D-106),
+**9801 = mock duman koşumu** (adapter yazmadı).
 
 
 ## ▶ ÖNCEKİ SIRADAKİ İŞ — aletin iki ölü kanalı (D-085) ✅ kapandı
