@@ -15,17 +15,14 @@ What this wrapper does, per arm, per generation:
     → next generation's states … and one generation later, close_transition
       gives the Price partition for that step (D-101).
 
-⚠ SCOPE — read this before reading the numbers. This step wires the PLUMBING and
-the selection term. Two things are deliberately NOT here yet:
+✅ Channel 1 (the memory vault) is wired: each arm keeps one temp vault, every
+parent is consolidated at the end of its life and each heir is birthed through
+``apply_generation``, so inherited engrams, drift and somatic scales reach the
+newborn before it takes its first event.
 
-  * memory-vault inheritance into heirs (``transfer_to_heir``), and
-  * per-arm adapter training.
-
-Without them the three arms are the same experiment run three times and the
-transmission term is noise, so **no arm contrast may be read off this runner
-yet**. They are E2-4b-2, kept separate because that is where D-033 (adapters
-surviving across runs → I0.7) and D-067 (the vault clock) both live, and mixing
-them in would make a failure impossible to attribute.
+⚠ SCOPE — per-arm ADAPTER TRAINING (Channel 2) is still not wired. Until it is,
+the three arms differ only in name and no arm contrast may be read off this
+runner. That step is where D-033 (adapters outliving their runs → I0.7) lives.
 
 ✅ D-081 honoured (fixed after D-102 measured the contradiction): the pasture
 scales with N. ``EnvironmentState.capacity`` carries the carrying capacity, so N
@@ -41,8 +38,11 @@ still a draft and P7-a (the budget) is still open.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import random
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -55,6 +55,16 @@ from dau.diagnostics.run_protocol_c_prime import (
     _lock_seeds,
 )
 from dau.diagnostics.tool_identity import build_tool_identity, resolve_lora_choice
+from dau.foundation.drift import DriftState
+from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
+from dau.foundation.generation import (
+    INHERITED_WARNING_KEY,
+    SOMATIC_SCALE_KEY,
+    GenerationRecord,
+    apply_generation,
+    consolidate_generation,
+)
+from dau.foundation.meta_observer import bind_memory_store, unbind_memory_store
 from dau.foundation.self_model import build_self_model, f_agent_inputs
 from dau.foundation.state import DAUAgentState
 from dau.generation.population import (
@@ -68,6 +78,7 @@ from dau.generation.reproduction import (
     TOURNAMENT_K,
     Candidate,
 )
+from dau.memory.store import MemoryStore
 from dau.society.environment import POOL_MAX, EnvironmentState, get_pool_ratio
 
 # ---------------------------------------------------------------------------
@@ -95,6 +106,8 @@ class AgentGenerationRow:
     f_agent_inputs: dict[str, float]
     events_lived: int
     landmark: dict[str, Any]
+    reward_marker: float
+    threat_marker: float
 
 
 def founder_id(arm: str, seed: int, index: int) -> str:
@@ -176,6 +189,12 @@ def score_generation(
                 f_agent_inputs=f_agent_inputs(state, events_budget),
                 events_lived=len(state.event_log),
                 landmark=_landmark_reading(body_rows, len(state.event_log), agent_id),
+                reward_marker=float(
+                    self_model.emotional_weight.somatic_markers.get(MARKER_REWARD, 0.0)
+                ),
+                threat_marker=float(
+                    self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0)
+                ),
             )
         )
     return rows
@@ -200,27 +219,114 @@ def candidates_from_rows(rows: list[AgentGenerationRow]) -> list[Candidate]:
     ]
 
 
+@dataclass
+class ArmVault:
+    """The arm's vault plus the set of agents currently bound to it."""
+
+    store: MemoryStore
+    bound: set[str]
+
+    def bind(self, agent_ids: list[str]) -> None:
+        """Register newborns so their events reach the vault."""
+
+        bind_vault(self.store, agent_ids)
+        self.bound.update(agent_ids)
+
+
+@contextlib.contextmanager
+def arm_vault(agent_ids: list[str]):
+    """One vault for the whole arm, bound to every agent in it.
+
+    Per ARM rather than per agent: the store is already agent_id-keyed
+    (`list_nodes(agent_id)`), so agents inside an arm cannot see each other's
+    engrams, while a heir CAN be seeded from its parent's nodes — which is
+    exactly what apply_generation does and what a per-agent store would make
+    impossible. Arms stay isolated from each other, which is what P1 requires.
+
+    The store is a temp directory, so nothing survives the run: D-033 found
+    adapters outliving their runs and I0.7 exists because of it, and a vault
+    that persisted would reopen the same hole on the memory side.
+    """
+
+    tmp = tempfile.TemporaryDirectory(prefix="dau_population_")
+    store = MemoryStore(
+        chroma_path=os.path.join(tmp.name, "chroma"),
+        sqlite_path=os.path.join(tmp.name, "memory.db"),
+    )
+    vault = ArmVault(store=store, bound=set())
+    try:
+        vault.bind(list(agent_ids))
+        yield vault
+    finally:
+        for agent_id in sorted(vault.bound):
+            unbind_memory_store(agent_id)
+            graph_mod._memory_stores.pop(agent_id, None)
+            graph_mod._memory_written.pop(agent_id, None)
+        with contextlib.suppress(Exception):
+            store.close()
+        with contextlib.suppress(Exception):
+            tmp.cleanup()
+
+
+def bind_vault(store: MemoryStore, agent_ids: list[str]) -> None:
+    """Register a vault for each agent so their events reach it."""
+
+    for agent_id in agent_ids:
+        graph_mod._memory_stores[agent_id] = store
+        graph_mod._memory_written[agent_id] = 0
+        bind_memory_store(agent_id, store)
+
+
+def consolidate_parents(
+    rows: list[AgentGenerationRow],
+    states: dict[str, DAUAgentState],
+    store: MemoryStore,
+) -> dict[str, GenerationRecord]:
+    """End-of-life consolidation for every parent — the inheritance package.
+
+    F_agent is passed in, so the Layer-4 fitness gate that D-088 recalibrated
+    is the one that runs here too; the wrapper does not get its own copy of the
+    rule.
+    """
+
+    return {
+        row.agent_id: consolidate_generation(
+            states[row.agent_id],
+            store,
+            f_agent=row.f_agent,
+            reward_marker=row.reward_marker,
+            threat_marker=row.threat_marker,
+        )
+        for row in rows
+    }
+
+
 def _heir_states(
     plan: GenerationPlan,
     parents: dict[str, DAUAgentState],
+    records: dict[str, GenerationRecord],
+    store: MemoryStore,
     seed: int,
 ) -> list[DAUAgentState]:
-    """Birth the planned heirs.
+    """Birth the planned heirs WITH their parent's inheritance (Channel 1).
 
-    ⚠ E2-4b-2: these heirs are born from the niche, NOT from their parents'
-    vaults. ``transfer_to_heir`` is not called yet, so Channel 1 is silent and
-    the transmission term of the Price partition carries no inheritance. The
-    pedigree is real; the inheritance is not, and this is the single biggest
-    reason the runner's numbers are plumbing evidence and not science yet.
+    Each heir starts from a fresh niche — not the parent's continuing pool —
+    and then apply_generation seeds the selected parent engrams under the
+    heir's own id and writes the inherited drift and somatic scales. That is
+    the same call the single-lineage path makes; a second implementation here
+    would be the drift §2.8 keeps catching.
+
+    Ordering matters and is enforced by construction: apply_generation returns
+    before this function does, so no heir can be streamed before its
+    inheritance has landed.
     """
 
     born: list[DAUAgentState] = []
     for assignment in plan.heirs:
         parent = parents[assignment.parent_id]
-        heir = _initial_state(assignment.heir_id, seed)
-        born.append(
-            heir.model_copy(update={"opponent_id": parent.opponent_id})
-        )
+        blank = _initial_state(assignment.heir_id, seed)
+        heir = apply_generation(blank, records[assignment.parent_id], store)
+        born.append(heir.model_copy(update={"opponent_id": parent.opponent_id}))
     return born
 
 
@@ -248,12 +354,13 @@ def run_arm(
     # default instead of the budget the life actually ran against.
     original_max_events = graph_mod.MAX_EVENTS
     try:
-        return _run_arm_generations(
-            arm=arm, seed=seed, rng=rng, app=app, env=env, states=states,
-            generations=generations, previous_plan=previous_plan,
-            previous_parents=previous_parents, n_agents=n_agents,
-            n_generations=n_generations, events_budget=events_budget,
-        )
+        with arm_vault([state.agent_id for state in states]) as vault:
+            return _run_arm_generations(
+                arm=arm, seed=seed, rng=rng, app=app, env=env, states=states,
+                vault=vault, generations=generations, previous_plan=previous_plan,
+                previous_parents=previous_parents, n_agents=n_agents,
+                n_generations=n_generations, events_budget=events_budget,
+            )
     finally:
         graph_mod.MAX_EVENTS = original_max_events
 
@@ -266,6 +373,7 @@ def _run_arm_generations(
     app: Any,
     env: EnvironmentState,
     states: list[DAUAgentState],
+    vault: "ArmVault",
     generations: list[dict[str, Any]],
     previous_plan: GenerationPlan | None,
     previous_parents: dict[str, DAUAgentState],
@@ -303,6 +411,10 @@ def _run_arm_generations(
                  for row in rows},
             )
 
+        # Channel 1: end-of-life consolidation for every parent, before any
+        # heir exists. The record is what the heir inherits; building it after
+        # birth would let a newborn's own events into its ancestry.
+        records = consolidate_parents(rows, outcome.states, vault.store)
         is_last = generation == FIRST_GENERATION + n_generations - 1
         plan = (
             None
@@ -310,6 +422,11 @@ def _run_arm_generations(
             else plan_next_generation(
                 generation + 1, candidates, rng, n_slots=n_agents
             )
+        )
+        heirs = (
+            []
+            if plan is None
+            else _heir_states(plan, outcome.states, records, vault.store, seed)
         )
         generations.append(
             {
@@ -324,9 +441,20 @@ def _run_arm_generations(
                         "f_agent_inputs": row.f_agent_inputs,
                         "events_lived": row.events_lived,
                         "landmark": row.landmark,
+                        # Whether this agent's events could reach the vault at
+                        # all. An unbound heir writes no engrams, so its own
+                        # children inherit nothing and the transmission term
+                        # goes quietly to zero — invisible without this flag
+                        # (measured: the binding could be deleted and every
+                        # test still passed).
+                        "vault_bound": row.agent_id in vault.bound,
                     }
                     for row in rows
                 ],
+                "n_inherited_by_parent": {
+                    agent_id: len(record.inherited_memories)
+                    for agent_id, record in sorted(records.items())
+                },
                 "price_for_previous_transition": price,
                 "reproduction_report": None if plan is None else plan.report,
                 "w_by_parent": None if plan is None else plan.w_by_parent,
@@ -336,13 +464,41 @@ def _run_arm_generations(
                     {"heir_id": h.heir_id, "parent_id": h.parent_id}
                     for h in plan.heirs
                 ],
+                # Birth telemetry, the population equivalent of BirthDriftLog.
+                # Written because a pedigree alone cannot show whether the
+                # inheritance actually landed: skipping apply_generation leaves
+                # a heir whose `generation` never advances, and without this
+                # block that failure is invisible in the results (measured —
+                # the first version of the inheritance test passed with
+                # apply_generation deleted).
+                "birth": [
+                    {
+                        "heir_id": heir.agent_id,
+                        "generation": int(heir.generation),
+                        "n_retrieval_context": len(heir.retrieval_context),
+                        "has_inherited_warning": any(
+                            isinstance(entry, dict)
+                            and entry.get(INHERITED_WARNING_KEY) is True
+                            for entry in heir.retrieval_context
+                        ),
+                        "has_somatic_scale": any(
+                            isinstance(entry, dict) and SOMATIC_SCALE_KEY in entry
+                            for entry in heir.retrieval_context
+                        ),
+                        "birth_drift_flags": dict(heir.drift_state.flags)
+                        if isinstance(heir.drift_state, DriftState)
+                        else {},
+                    }
+                    for heir in heirs
+                ],
             }
         )
         if plan is None:
             break
         previous_parents = dict(outcome.states)
         previous_plan = plan
-        states = _heir_states(plan, previous_parents, seed)
+        states = heirs
+        vault.bind([state.agent_id for state in states])
 
     return {"arm": arm, "seed": seed, "generations": generations}
 
@@ -373,7 +529,7 @@ def run_population_experiment(
                 "tournament_k": TOURNAMENT_K,
                 "heirs_per_tournament_win": HEIRS_PER_TOURNAMENT_WIN,
                 "p0_niche": P0_NICHE_LABEL,
-                "inheritance_wired": False,
+                "inheritance_wired": True,
                 "adapter_training_wired": False,
                 # D-081: per-capita capacity held constant as N grows.
                 "pool_capacity_scaled": True,

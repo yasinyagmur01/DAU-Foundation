@@ -188,3 +188,51 @@ def test_shared_pasture_keeps_the_seed_dependent_niche_stock() -> None:
     other = shared_pasture(build_arm_population(ARM_ORDER[0], SEED + 1, N_AGENTS))
 
     assert one.pool != pytest.approx(other.pool)
+
+
+def test_heirs_inherit_from_their_parents_vault(monkeypatch) -> None:
+    """⭐ Channel 1: a newborn must carry ancestry before its first event.
+
+    Checked through the generation record rather than a marker count, because
+    the count can legitimately be zero for an unfit parent — what must never
+    happen is heirs being born from a blank niche while the pedigree claims
+    descent (the state this runner was in at D-102).
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=N_AGENTS,
+        n_generations=N_GENERATIONS,
+        events_budget=EVENTS,
+    )
+
+    for arm in results["arms"]:
+        for row in arm["generations"][:-1]:
+            assert set(row["n_inherited_by_parent"]) == {
+                a["agent_id"] for a in row["agents"]
+            }
+            assert len(row["birth"]) == N_AGENTS
+            for agent in row["agents"]:
+                assert agent["vault_bound"] is True, (
+                    "an unbound agent writes no engrams, so its children "
+                    "inherit nothing"
+                )
+            for birth in row["birth"]:
+                # apply_generation advances lineage age; a heir born from a
+                # blank niche stays at generation 0 forever.
+                assert birth["generation"] >= 1, "heir was not born through apply_generation"
+        assert arm["generations"][-1]["birth"] == []
+    assert results["tool_identity"]["reproduction"]["inheritance_wired"] is True
+
+
+def test_arm_vault_unbinds_every_agent_it_bound(monkeypatch) -> None:
+    """A leaked binding would let the next arm read this arm's engrams (P1)."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    assert graph_mod._memory_stores == {}
+    assert graph_mod._memory_written == {}
