@@ -24,8 +24,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `445 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-098.** Sıradaki kayıt **D-099** olarak açılır.
+- **Suite:** `451 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-099.** Sıradaki kayıt **D-100** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -112,14 +112,24 @@ yapmadı).
 
 | adım | ne | doğrulama |
 |---|---|---|
-| ~~E2-1~~ | `build_event_graph` + `step_agent_once` | ✅ iki mutasyon |
-| **E2-2** | `run_round`: her canlı ajan bir olay → `advance_commons` **bir kez** → `should_continue` | havuz **tur başına bir tik** |
-| **E2-3** | `run_population`: turlar üzerinde yaşam döngüsü, ölüm, kasa bağlama | ⭐ **N=1 bugünün yaşamıyla birebir** (`--mock-llm`, `arm_digest`) |
+| ~~E2-1~~ | `build_event_graph` + `step_agent_once` | ✅ **D-098** iki mutasyon |
+| ~~E2-2~~ | `run_round` + `commons_request_from_state` | ✅ **D-099** — ⭐ mutasyon kontrolü bir **test zayıflığı** yakaladı ve düzeltildi |
+| **E2-3** ⬜ | `run_population`: turlar üzerinde yaşam döngüsü, ölüm, kasa bağlama | ⭐ **N=1 bugünün yaşamıyla birebir** (`--mock-llm`, `arm_digest`) |
 | **E2-4** | Nesil döngüsü (G) + `allocate_heirs` + Price aletlemesi | `TOURNAMENT_K` alet kimliğine girer |
 
 ⚠ **Neden mera tur başına bir kez tıklamalı:** aksi halde aynı turda ikinci
 ajan, birincinin çekilişinden **sonraki** havuzu görür ve
-`realized_extractions`'ın oransal paylaştırması (D-066) hiç devreye girmez.
+`realized_extractions`'ın oransal paylaştırması (D-066) hiç devreye girmez —
+*"ortak havuz"* iddiası **kodda yanlış** olur ama sonuçlarda doğru görünür.
+
+⭐ **Eylem sırası bilerek çağıranın** (D-099): sıra ilan edilmesi gereken bir
+fizik kararı (D-079) ve **P0-① tam olarak o sıra hakkında**. Kodda `sorted()`
+yazmak Yasin'in kararını sessizce kapatırdı.
+
+⚠ **D-099'un yan gözlemi:** `should_continue` hasat krediye yazıldıktan sonra
+yargılıyor ⇒ stoklu merada enerjisi sıfır olan ajan **tur içinde canlanıyor**.
+Bugünkü evrende açlıktan ölmek ancak **havuz çöktüğünde** mümkün, bireysel
+kötü karardan değil.
 | — | E4'ü orkestrasyona bağla + `TOURNAMENT_K`'yı alet kimliğine ekle | E1/E5 + E2 |
 
 ⭐ **Linçpin teknik olarak çözüldü:** `w` artık değişken olabiliyor ve Price
