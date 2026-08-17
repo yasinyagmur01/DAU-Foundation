@@ -7580,3 +7580,72 @@ değil. D-093'ün *"8/12 soy havuzu öldürüyor"* ölçümüyle birlikte okunma
 ⚠ **Üretim yolu bu kayıtta da değişmedi** — `pool_step_node` artık paylaşılan
 yardımcıyı çağırıyor ama davranışı aynı (451 test yeşil, D-097'nin mock
 karşılaştırması hâlâ geçerli).
+
+---
+
+## D-100 · 2026-08-17 · **E2 adım 3**: yaşam döngüsü grafın dışına çıktı — N=1 digest'i **birebir**
+
+**Durum:** kod (`f690b88`) · **Etiket:** yeni yetenek, üretim yolu değişmedi ·
+suite **`455 passed, 2 deselected`**
+
+### 1. Ne yazıldı
+
+`run_population(env_state, states, app, max_rounds) → PopulationOutcome`
+[graph.py](dau/foundation/graph.py). `build_graph`'ın koşullu kenarının sahip
+olduğu **döngü** artık dışarıda; **yetkili durma kuralı hâlâ
+`should_continue`**.
+
+Üç tasarım kararı açıkça yazıldı:
+
+| # | karar | gerekçe |
+|---|---|---|
+| **1** | `max_rounds` bir **guard**, ikinci bir bütçe değil, ve **zorunlu** | Hatalı bir `MAX_EVENTS` sonsuza dönerdi. Varsayılan vermedim: hiçbir çağıran **seçmediği** bir sayıyı miras almamalı (§2.9) |
+| **2** | Guard ısırırsa `hit_round_cap = True` | Kısa bir yaşamı **tamamlanmış gibi** döndürmek, D-073'te `MODE_REPORT`'u getiren akıl yürütmenin tersi olurdu — sessiz kırpma yok |
+| **3** | Ölen ajan son state'ini `states`'te **bırakıyor** | Altı turda bitmiş bir yaşam **veridir**; düşürmek onu *hiç başlamamış* bir yaşamdan ayırt edilemez yapardı |
+
+### 2. ⭐ Doğrulama — söz verilen digest kontrolü yapıldı
+
+D-098'de şu şart yazılmıştı: *"N=1 bugünün yaşamıyla **birebir** olmalı
+(`arm_digest`)"*. Yapıldı, ve **kod yolunun içinden**, koşum sarmalayıcısına
+bağlanmayı beklemeden:
+
+Aynı doğum state'i **iki yoldan** koşuldu — (a) üretim grafının `app.stream`'i,
+(b) `run_population`. Sonuç:
+
+| karşılaştırılan | sonuç |
+|---|---|
+| **`arm_digest`** (= `sha256(karar dizisi ++ PE dizisi)`, D-012) | **birebir aynı** |
+| havuz | aynı |
+| enerji | aynı |
+| tur sayısı | `MAX_EVENTS` ile aynı, `hit_round_cap = False` |
+
+⚠ **Karşılaştırmanın boş olmadığı ayrıca ölçüldü** — bu tam olarak D-099'un
+yakaladığı zayıflık sınıfı: 4 karar, 4 PE (0.856 / 0.856 / 1.000 / 1.000), ve
+digest boş-dizi digest'inden farklı. İki taraf da boş dizi verse hash'ler
+**zaten** eşleşirdi ve test hiçbir şey söylemezdi.
+
+### 3. Mutasyon kontrolü (§2.4) — üç mutasyon
+
+| mutasyon | kırılan |
+|---|---|
+| havuzu turlar arası ilerletme (`env` sabit) | digest testi **+** iki-ajan testi |
+| `hit_round_cap` her zaman `False` | guard testi |
+| `should_continue`'yu yok say (`alive` yerine hepsi) | digest testi |
+
+### 4. Kalan tek adım — E2-4
+
+| ne | bağlı |
+|---|---|
+| Nesil döngüsü (G) + E4'ün `allocate_heirs`'ı + Price aletlemesi | P7-a (bütçe) hariç hepsi karara bağlandı |
+| `TOURNAMENT_K` + `HEIRS_PER_TOURNAMENT_WIN` alet kimliğine girer | **D-094'ün borcu** |
+| `run_population`'ı `run_protocol_c_prime`'ın koşum sarmalayıcısına bağlamak | ⚠ anı kasası bağlama ve adapter yolu **bilerek dışarıda** tutuldu |
+
+⚠ **`run_population` bilerek saf:** anı kasası açma/bağlama ve adapter
+yaşam döngüsü içine **alınmadı**, çağıranda kalıyor. İkisi de global durum
+tutuyor (`_memory_stores`, adapter diski) ve ikisi de zaten `agent_id`
+anahtarlı; kopyalamak D-033'ün *"adapter'lar koşumlar arası diskte kalıyordu"*
+kusurunun ikinci bir kopyasını açardı.
+
+⚠ **Üretim yolu bu kayıtta da değişmedi.** `build_graph`, `pool_step_node` ve
+`_collect_pe_events` olduğu gibi duruyor; hiçbir koşum `run_population`'ı
+kullanmıyor.
