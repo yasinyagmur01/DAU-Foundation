@@ -7932,3 +7932,93 @@ Zarf **doğrulandı**.
 |---|---|---|
 | **1** ⛔ | Çekiliş **sıralı** mı olsun (①'in gerçek hâli), sıra nesil başına mı döndürülsün | ⭐ **Evet, sıralı + rotasyon.** Aksi hâlde seçilim terimi **yapı gereği** sıfır kalır ve koşum seçilim hakkında hiçbir şey söyleyemez |
 | **2** | Mera nesiller arası devretsin mi, yoksa 1A gibi **taze** mi başlasın | ⚠ Karar ne olursa olsun **ilan edilmeli** |
+
+---
+
+## D-104 · 2026-08-17 · **P0-① tamamlandı** (sıralı + rotasyon) · **mera taze kalıyor** — ⭐ simetri kırıldı
+
+**Durum:** kod (`860243d`) + iki karşılaştırma koşumu · **Etiket:** ⚠ **keşifsel**
+· ham `dau_runs/cmp_pasture_carryover_n8_g3.json` ve
+`dau_runs/cmp_pasture_fresh_n8_g3.json` · tek kol (`lived`), N=8, G=3, 30 olay,
+`--lora` · varyant başına ~35 dk
+
+### 1. D-103'ün kök nedeni giderildi
+
+①'in tam adı *"**sıralı erişim, sıra dönerek**"*. `run_round` ise eşzamanlı
+erişim + orantılı bölüşüm yapıyordu ⇒ özdeş ajanlar özdeş pay alıyor ve özdeş
+kalıyordu.
+
+`realized_extractions_sequential`: talepler **sırayla**, her biri kalandan.
+⚠ **Yenilenme hâlâ tur başına bir kez** — değişen yalnız hizmet sırası.
+`run_population` sırayı **tur başına** döndürüyor (yaşam içinde sabit sıra aynı
+ajana her kıt olayı verirdi; Suleiman ve ark. 1996'nın ölçtüğü kalıcı avantaj).
+
+### 2. Mera devri — **koşumdan önce ilan edilen** karar kuralıyla karşılaştırıldı
+
+⚠ Yasin *"emin olamadım, karşılaştırabilir miyiz"* dedi. §2.7/L9 sonucu görüp
+tasarım seçmeyi yasakladığı için kural **koşumdan önce** yazıldı:
+
+**Bakılacak (üçü de aletin ölçebilirliği, sonuç değil):** (1) kaç nesil canlı
+merada başlıyor · (2) `z`'de `resource` var mı / tavanda mı · (3) `z`'de varyans
+var mı.
+**⛔ Bakılmayacak:** `Cov(w,z)`'nin büyüklüğü · kol farkları · `F_agent`
+yayılımlarının varyantlar arası karşılaştırması.
+**Beraberlik:** ayrım yoksa **(b) taze** kalır (1A yürürlükte, sıfır yeni sabit).
+
+### 3. Sonuç — (b) üçünde de önde, beraberlik kuralına gerek kalmadı
+
+| gösterge | **(a) devreden** | **(b) taze** |
+|---|---|---|
+| canlı merada başlayan nesil | **1 / 3** (gen2–3: 0.000) | **3 / 3** (0.757 · 0.848 · 0.836) |
+| `z`'de `resource` tavanda | gen2–3'te **8/8** | **0/8, hiçbir neslde** |
+| farklı `z` sayısı (8 ajanda) | 1 · 1 · 2 | 1 · **4** · **4** |
+
+**⇒ Karar: taze mera. 1A korunuyor.**
+
+**Destekleyici gözlem** (karar kuralına girmedi): (a)'da gen2 ve gen3'te sekiz
+ajanın **sekizi de 10. olayda** ölüyor — ölü merada açlık. (b)'de ömürler 10–30
+arasında dağılıyor.
+
+⚠ **İlan edilecek sınır:** ortak kaynak nesiller arası **birikmiyor**; bu koşum
+kuşaklararası mera bozulması hakkında hiçbir şey söyleyemez. İstenirse üçüncü
+ön-kayıta ayrı bir kol olarak girer — ama o zaman `z` için havuzdan **bağımsız**
+bir uç nokta gerekir, çünkü (a) tam olarak bu yüzden düştü.
+
+### 4. ⭐ Claude Code'un tahmini **yanlış çıktı** — ve bu tabloyu değiştirdi
+
+Koşumdan önce *"(b) de muhtemelen takılır, `z` varyansı 1/8 kalır, sonra
+kapasite (100 → 50) tartışılır"* demiştim. **Olmadı:** (b)'de gen2 ve gen3'te
+**8 ajanda 4 farklı `z`**.
+
+⇒ **Sıralı erişim + rotasyon + taze mera simetriyi kırıyor.** D-103'ün *"sekiz
+ajan bit düzeyinde özdeş, `Cov(w,z)` yapı gereği sıfır"* tablosu **artık
+geçerli değil**.
+⇒ ⭐ **Kapasite sorusu (100 mü 50 mi) şimdilik zorunlu olmaktan çıktı** — D-081'in
+açtığı ve 0c'nin yeniden hesapladığı karar **askıya alınabilir**, çünkü ayrım
+kapasiteye dokunmadan doğuyor.
+
+⚠ **gen1 hâlâ 1/8:** kurucular P0-① gereği özdeş doğuyor ve landmark'tan (10)
+önce kıtlık ısırmıyor ⇒ **ilk geçişin seçilim terimi hâlâ sıfır**. Ayrım ikinci
+nesilden başlıyor. ⇒ G'nin en az 3 olması **yapısal bir gereklilik**, tercih
+değil: G=2 bir koşum yalnız sıfır terim üretir.
+
+### 5. Karar sonrası gözlem — açıkça etiketli
+
+Karar üç göstergeden verildikten **sonra** Price'a bakıldı:
+
+| | seçilim terimi |
+|---|---|
+| (a) gen2 · gen3 | `0.0` · `0.0` |
+| **(b) gen3** | **−0.201** |
+
+⇒ **Seçilim terimi ilk kez sıfırdan farklı.** ⚠ Tek tohum, tek kol, N=8 —
+**hiçbir iddia değil**; söylenen yalnızca *tanımsız/sıfır değil*. İşareti ve
+büyüklüğü yorumlanmıyor.
+
+### 6. Sıradaki iş
+
+| # | ne |
+|---|---|
+| 1 | ⛔ **G ≥ 3** ön-kayıta yapısal gereklilik olarak yazılır (gen1 sıfır terim üretir) |
+| 2 | Üç kollu tam pilot (taze mera, sıralı erişim) — kol farkı ilk kez anlamlı olur |
+| 3 | İkinci ön-kayıt taslağı: okuma kuralları, ilan edilmiş sınırlar, P7-a bütçesi |
