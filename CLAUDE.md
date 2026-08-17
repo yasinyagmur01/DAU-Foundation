@@ -24,8 +24,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `451 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-099.** Sıradaki kayıt **D-100** olarak açılır.
+- **Suite:** `455 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-100.** Sıradaki kayıt **D-101** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -106,7 +106,7 @@ yapmadı).
 |---|---|---|
 | ~~**E4**~~ ⭐⭐ | **Üreme: turnuva k=2, `w` sayacı, varis üretimi + Price ayrışması** | ✅ **D-094** (`374906c`) — `dau/generation/reproduction.py`, 12 test, dört mutasyon ⚠ **bağlı değil** |
 | ~~E1/E5~~ | Havuz adımı N ajana çıktı (`advance_commons`) | ✅ **D-097** (`43b4220`) — N=1 yolu `--mock-llm` ile **birebir** doğrulandı, üç mutasyon |
-| **E2** 🚧 | N ajanı olay bazında ilerleten dış döngü — **dört adıma bölündü** | 🚧 **E2-1 ✅ D-098** (`285d2fd`) · E2-2/3/4 ⬜ · ⚠ **denetimsiz yapılmaz** |
+| **E2** 🚧 | N ajanı olay bazında ilerleten dış döngü — **dört adıma bölündü** | 🚧 **üçü bitti** (D-098/099/100) · **E2-4 son adım** · ⚠ **denetimsiz yapılmaz** |
 
 **E2'nin kalan üç adımı** (doğrulama şartları D-098'de yazılı):
 
@@ -114,8 +114,8 @@ yapmadı).
 |---|---|---|
 | ~~E2-1~~ | `build_event_graph` + `step_agent_once` | ✅ **D-098** iki mutasyon |
 | ~~E2-2~~ | `run_round` + `commons_request_from_state` | ✅ **D-099** — ⭐ mutasyon kontrolü bir **test zayıflığı** yakaladı ve düzeltildi |
-| **E2-3** ⬜ | `run_population`: turlar üzerinde yaşam döngüsü, ölüm, kasa bağlama | ⭐ **N=1 bugünün yaşamıyla birebir** (`--mock-llm`, `arm_digest`) |
-| **E2-4** | Nesil döngüsü (G) + `allocate_heirs` + Price aletlemesi | `TOURNAMENT_K` alet kimliğine girer |
+| ~~E2-3~~ | `run_population` | ✅ **D-100** — ⭐ **`arm_digest` birebir** (üretim grafı vs dış döngü), üç mutasyon |
+| **E2-4** ⬜ | Nesil döngüsü (G) + `allocate_heirs` + Price aletlemesi + `run_protocol_c_prime`'a bağlama | `TOURNAMENT_K` alet kimliğine girer (D-094'ün borcu) |
 
 ⚠ **Neden mera tur başına bir kez tıklamalı:** aksi halde aynı turda ikinci
 ajan, birincinin çekilişinden **sonraki** havuzu görür ve
