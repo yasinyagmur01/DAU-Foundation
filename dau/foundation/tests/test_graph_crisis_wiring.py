@@ -10,6 +10,8 @@ from dau.foundation.drift import DriftState
 from dau.foundation.constraints import LANDMARK_EVENT, METABOLIC_GRACE_EVENTS
 from dau.foundation.graph import (
     END,
+    CommonsRequest,
+    advance_commons,
     NODE_AGENT,
     NODE_META_OBSERVER,
     NODE_POOL_STEP,
@@ -472,3 +474,150 @@ def test_no_lineage_can_die_before_reaching_the_landmark() -> None:
     assert should_continue(_exhausted_after(LANDMARK_EVENT - 1)) == NODE_AGENT
     # Landmark event closed and recorded — now exhaustion may end the life.
     assert should_continue(_exhausted_after(LANDMARK_EVENT)) == END
+
+
+# ---------------------------------------------------------------------------
+# advance_commons — N agents share one pasture (E1/E5, D-097)
+# ---------------------------------------------------------------------------
+
+SECOND_AGENT_ID: str = "crisis-wire-1"
+# Two agents on one thin pasture: the requests differ so a proportional split
+# is distinguishable from an equal one.
+BIG_REQUEST: float = EXTRACTION_DEFECT
+SMALL_REQUEST: float = EXTRACTION_COOPERATE
+# Distinct per-agent clocks: the pool ticks once per round, each life counts
+# its own events, so a row must not borrow the environment's counter.
+FIRST_AGENT_EVENT: int = 3
+SECOND_AGENT_EVENT: int = 11
+
+
+def _request(agent_id: str, requested: float, event_counter: int, energy: float):
+    """One CommonsRequest with a fresh body and an unscarred drift map."""
+
+    return CommonsRequest(
+        agent_id=agent_id,
+        requested=requested,
+        event_counter=event_counter,
+        drift_state=DriftState(),
+        internal_state=InternalState(energy=energy),
+    )
+
+
+def test_advance_commons_matches_the_single_agent_node() -> None:
+    """N=1 through advance_commons is the node's own physics, unchanged."""
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    state = _state_with_env(pool=POOL_ABOVE_CRISIS)
+    state = state.model_copy(
+        update={"internal_state": InternalState(energy=ENERGY_HALF)}
+    )
+    node_patch = pool_step_node(state)
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    direct_env, direct = advance_commons(
+        _state_with_env(pool=POOL_ABOVE_CRISIS).env_state,
+        [
+            _request(
+                AGENT_ID,
+                decision_to_extraction(NPC_ACTION_EXTRACT_MODERATE),
+                0,
+                ENERGY_HALF,
+            )
+        ],
+    )
+
+    assert direct_env.pool == pytest.approx(node_patch["env_state"].pool)
+    assert direct[AGENT_ID].internal_state.energy == pytest.approx(
+        node_patch["internal_state"].energy
+    )
+    assert direct[AGENT_ID].drift_state.flags == node_patch["drift_state"].flags
+
+
+def test_advance_commons_splits_a_shortfall_in_proportion_to_the_request() -> None:
+    """An exhausted pasture serves both grazers pro rata, not first-come."""
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    env = EnvironmentState(pool=POOL_MIN_STOCK)
+    _, outcomes = advance_commons(
+        env,
+        [
+            _request(AGENT_ID, BIG_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF),
+            _request(SECOND_AGENT_ID, SMALL_REQUEST, SECOND_AGENT_EVENT, ENERGY_HALF),
+        ],
+    )
+
+    big = outcomes[AGENT_ID].granted
+    small = outcomes[SECOND_AGENT_ID].granted
+    assert big < BIG_REQUEST and small < SMALL_REQUEST, "pasture was not short"
+    assert big / small == pytest.approx(BIG_REQUEST / SMALL_REQUEST)
+
+
+def test_advance_commons_writes_one_row_per_agent_on_its_own_clock() -> None:
+    """Each row carries the AGENT's event counter, never the pool's."""
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    advance_commons(
+        EnvironmentState(pool=POOL_ABOVE_CRISIS),
+        [
+            _request(AGENT_ID, BIG_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF),
+            _request(SECOND_AGENT_ID, SMALL_REQUEST, SECOND_AGENT_EVENT, ENERGY_HALF),
+        ],
+    )
+
+    pool_rows = graph_mod.get_pool_event_log()
+    body_rows = graph_mod.get_body_event_log()
+    assert len(pool_rows) == len(body_rows) == 2
+    by_agent = {row["agent_id"]: row["event_counter"] for row in pool_rows}
+    assert by_agent == {
+        AGENT_ID: FIRST_AGENT_EVENT,
+        SECOND_AGENT_ID: SECOND_AGENT_EVENT,
+    }
+
+
+def test_advance_commons_feeds_each_agent_from_its_own_harvest() -> None:
+    """The grazer that took more is the one that gained more energy."""
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    _, outcomes = advance_commons(
+        EnvironmentState(pool=POOL_ABOVE_CRISIS),
+        [
+            _request(AGENT_ID, BIG_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF),
+            _request(SECOND_AGENT_ID, SMALL_REQUEST, SECOND_AGENT_EVENT, ENERGY_HALF),
+        ],
+    )
+
+    assert outcomes[AGENT_ID].internal_state.energy == pytest.approx(
+        ENERGY_HALF + metabolic_gain(BIG_REQUEST)
+    )
+    assert outcomes[SECOND_AGENT_ID].internal_state.energy == pytest.approx(
+        ENERGY_HALF + metabolic_gain(SMALL_REQUEST)
+    )
+    assert (
+        outcomes[AGENT_ID].internal_state.energy
+        > outcomes[SECOND_AGENT_ID].internal_state.energy
+    )
+
+
+def test_advance_commons_rejects_a_duplicate_agent() -> None:
+    """Two requests with one id would make the ledger ambiguous (§2.9)."""
+
+    with pytest.raises(ValueError, match="duplicate"):
+        advance_commons(
+            EnvironmentState(pool=POOL_ABOVE_CRISIS),
+            [
+                _request(AGENT_ID, BIG_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF),
+                _request(AGENT_ID, SMALL_REQUEST, SECOND_AGENT_EVENT, ENERGY_HALF),
+            ],
+        )
+
+
+def test_advance_commons_rejects_an_empty_round() -> None:
+    """A round with no grazers is a caller bug, not a no-op."""
+
+    with pytest.raises(ValueError, match="at least one"):
+        advance_commons(EnvironmentState(pool=POOL_ABOVE_CRISIS), [])

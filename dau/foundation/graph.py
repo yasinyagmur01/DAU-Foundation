@@ -13,6 +13,7 @@ import json
 import os
 import sqlite3
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
@@ -1234,8 +1235,137 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Commons step — N agents share one pasture (E1/E5)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CommonsRequest:
+    """One agent's announced withdrawal at one event, with the body it brings.
+
+    ``event_counter`` is the AGENT's event clock (its last event's timestamp),
+    not the environment's: the two diverge once N agents share one pasture,
+    because the pool ticks once per round while each agent counts its own life.
+    """
+
+    agent_id: str
+    requested: float
+    event_counter: int
+    drift_state: DriftState
+    internal_state: InternalState
+
+
+@dataclass(frozen=True)
+class CommonsOutcome:
+    """What the pasture delivered to one agent, and the body it leaves behind."""
+
+    agent_id: str
+    granted: float
+    drift_state: DriftState
+    internal_state: InternalState
+
+
+def advance_commons(
+    env_state: EnvironmentState,
+    requests: list[CommonsRequest],
+) -> tuple[EnvironmentState, dict[str, CommonsOutcome]]:
+    """Regenerate, serve N announced withdrawals, then feed and scar each agent.
+
+    Biology analogy: one pasture, several grazers. The stock grows, every
+    animal takes what it announced as far as the stock allows, and whatever
+    each one actually got is what feeds it.
+
+    E1/E5 of the population design. The pool PHYSICS was already N-capable —
+    ``step_pool``, ``realized_extractions`` and ``step_pool_with_crisis`` all
+    take N-entry dicts, and the short-fall is already split in proportion to
+    what each agent asked for (D-066). What was single-agent was this
+    bookkeeping, because it lived inside a LangGraph node bound to one state.
+    Splitting it out changes nothing for N=1 and is tested to stay that way.
+
+    Order is load-bearing and matches what ``pool_step_node`` did before:
+    regenerate and scar, read the ratio once for the whole round, then per
+    agent read the ledger, write the commons row, apply the metabolic credit,
+    and write the body row.
+    """
+
+    if not requests:
+        raise ValueError("advance_commons needs at least one request")
+    seen: set[str] = set()
+    for request in requests:
+        if request.agent_id in seen:
+            raise ValueError(f"duplicate agent_id in commons step: {request.agent_id}")
+        seen.add(request.agent_id)
+
+    new_env, updated_drifts = step_pool_with_crisis(
+        env_state,
+        {r.agent_id: float(r.requested) for r in requests},
+        {r.agent_id: r.drift_state for r in requests},
+    )
+    pool_ratio = get_pool_ratio(new_env)
+    outcomes: dict[str, CommonsOutcome] = {}
+    for request in requests:
+        # What the pasture actually gave, read back from the ledger rather than
+        # re-derived from the announcement: the two differ exactly when the pool
+        # runs dry, which is the case the metabolic cost depends on (D-066).
+        granted = realized_extraction_at(
+            new_env,
+            request.agent_id,
+            int(new_env.event_counter),
+        )
+        _record_pool_event(
+            agent_id=request.agent_id,
+            event_counter=int(request.event_counter),
+            extraction=granted,
+            requested=float(request.requested),
+            pool_ratio=pool_ratio,
+            crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
+        )
+        # Eat now, act on it next event: the evaluator already spent this
+        # event's energy, so crediting here keeps the metabolic loop one tick
+        # behind the act that earned it instead of rewriting the evaluator's
+        # own patch.
+        fed = request.internal_state.model_copy(
+            update={
+                "energy": max(
+                    METRIC_MIN,
+                    min(
+                        METRIC_MAX,
+                        request.internal_state.energy + metabolic_gain(granted),
+                    ),
+                )
+            }
+        )
+        # Landmark instrumentation (D-070). Written here rather than in the
+        # evaluator because this is the last node of the cycle: the harvest is
+        # in, the metabolic credit is applied, and crisis trauma has already
+        # scarred the drift map. Anywhere earlier and the row would describe an
+        # event that was still happening.
+        fed_drift = updated_drifts[request.agent_id]
+        _record_body_event(
+            agent_id=request.agent_id,
+            event_counter=int(request.event_counter),
+            energy=float(fed.energy),
+            drift_flags=dict(fed_drift.flags),
+            drift_magnitudes=dict(fed_drift.magnitudes),
+        )
+        outcomes[request.agent_id] = CommonsOutcome(
+            agent_id=request.agent_id,
+            granted=granted,
+            drift_state=fed_drift,
+            internal_state=fed,
+        )
+    return new_env, outcomes
+
+
 def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
     """Advance the shared pool, then apply crisis trauma when ratio is critical.
+
+    The N=1 caller of ``advance_commons``. The two early returns below leave no
+    ledger row, deliberately — a life with no society physics has no commons
+    and no metabolic credit, and inventing a row for it would be the silent
+    fallback §2.9 forbids. The reader treats a missing landmark row on a life
+    long enough to have reached it as an abort, not as a default.
 
     Biology analogy: after the organism acts and the body consolidates the
     experience, the commons regenerates and is harvested. If stock falls below
@@ -1258,62 +1388,23 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
     if not isinstance(drift, DriftState):
         drift = DriftState()
 
-    new_env, updated_drifts = step_pool_with_crisis(
+    new_env, outcomes = advance_commons(
         state.env_state,
-        {state.agent_id: amount},
-        {state.agent_id: drift},
-    )
-    pool_ratio = get_pool_ratio(new_env)
-    # What the pasture actually gave, read back from the ledger rather than
-    # re-derived from the announcement: the two differ exactly when the pool
-    # runs dry, which is the case the metabolic cost depends on (D-066).
-    granted = realized_extraction_at(
-        new_env,
-        state.agent_id,
-        int(new_env.event_counter),
-    )
-    _record_pool_event(
-        agent_id=state.agent_id,
-        event_counter=int(state.event_log[-1].timestamp),
-        extraction=granted,
-        requested=amount,
-        pool_ratio=pool_ratio,
-        crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
-    )
-    # Eat now, act on it next event: the evaluator already spent this event's
-    # energy, so crediting here keeps the metabolic loop one tick behind the
-    # act that earned it instead of rewriting the evaluator's own patch.
-    fed = state.internal_state.model_copy(
-        update={
-            "energy": max(
-                METRIC_MIN,
-                min(METRIC_MAX, state.internal_state.energy + metabolic_gain(granted)),
+        [
+            CommonsRequest(
+                agent_id=state.agent_id,
+                requested=amount,
+                event_counter=int(state.event_log[-1].timestamp),
+                drift_state=drift,
+                internal_state=state.internal_state,
             )
-        }
+        ],
     )
-    # Landmark instrumentation (D-070). Written here rather than in the
-    # evaluator because this is the last node of the cycle: the harvest is in,
-    # the metabolic credit is applied, and crisis trauma has already scarred
-    # the drift map. Anywhere earlier and the row would describe an event that
-    # was still happening.
-    #
-    # The two early returns above leave no row, deliberately — a life with no
-    # society physics has no commons and no metabolic credit, and inventing a
-    # row for it would be the silent fallback §2.9 forbids. The reader treats
-    # a missing landmark row on a life long enough to have reached it as an
-    # abort, not as a default.
-    fed_drift = updated_drifts[state.agent_id]
-    _record_body_event(
-        agent_id=state.agent_id,
-        event_counter=int(state.event_log[-1].timestamp),
-        energy=float(fed.energy),
-        drift_flags=dict(fed_drift.flags),
-        drift_magnitudes=dict(fed_drift.magnitudes),
-    )
+    outcome = outcomes[state.agent_id]
     return {
         "env_state": new_env,
-        "drift_state": fed_drift,
-        "internal_state": fed,
+        "drift_state": outcome.drift_state,
+        "internal_state": outcome.internal_state,
     }
 
 
