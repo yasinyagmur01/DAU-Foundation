@@ -19,12 +19,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-17) — ✅ **D-091 blokajı kapandı (D-092)**
+# 1. Şu An Neredeyiz (2026-08-17) — ✅ **popülasyon makinesi kuruldu, linçpin kapandı**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `493 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Suite:** `493 passed, 2 deselected`. Çalışma ağacı temiz, `origin/main` senkron.
 - **Son D-kaydı: D-104.** Sıradaki kayıt **D-105** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
@@ -38,157 +38,102 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — ⛔ **iki ölçüm borcu, sonra Kuşak 1 (C/D/E)**
+## ▶▶ SIRADAKİ İŞ — **A1'den başla** (kapıları sarmalayıcıya bağla)
 
-✅ **D-091 blokajı kapandı (D-092, `53fdf04` + `67ba99f`).** Eşleme onarıldı,
-0a-2 ve 0a-3 koşuldu. ⇒ Sıradaki iş **Kuşak 1'e girmeden önce iki yeniden
-hesap**, çünkü D-092 üç sayıyı birden geçersiz kıldı.
+⭐ **2026-08-17 çok uzun bir oturumdu: D-092 … D-104, on üç kayıt.** Aşağısı o
+oturumun sonunda birlikte çıkarılan **genel tablo ve iş sırası**. Soğuk oturum
+buradan devam eder, başka yere bakmaz.
 
-### ✅ D-092 ne yaptı — üç cümlede
+### Nerede duruyoruz — üç cümlede
 
-`decision_to_outcome` artık *"take a moment"* (deyim) ve *"extract
-**information**"* (nesne havuz değil) kullanımlarını eşlemeden **önce**
-ayıklıyor; yalnız **fiil** siliniyor, çevresi kalıyor. Dal sırası bilerek
-değişmedi — reddedilen iki alternatif (`en çok anahtar` / `ilk eylem`) hasat
-miktarını **retoriğe** bağlıyordu ve 36 metnin **17'sinde** ayrışıyorlar.
+**Makine bitti.** Popülasyon deneyi uçtan uca kuruldu: N ajan × G nesil × üç
+kol, kol başına ayrı mera, turnuva ile üreme, iki kanaldan kalıtım, Price
+ayrışması. **Linçpin kapandı** — `w` artık değişken.
 
-| ölçüm | önce | **sonra** |
-|---|---|---|
-| sentetik ızgara (36 çağrı, metinler **36/36 birebir aynı**) | 35 defect / 1 coop | **20 / 16** |
-| **canlı koşum** gen2 `defect` payı (N=2) | 78.4 % | **53.3 %** |
-| canlı `cooperate` payı | 2.0 % | **30.5 %** |
-| ömür sonunda havuz ölü | 6/6 soy | **5/6 soy** |
+**Kararlar kilitli.** P0-① (sıralı erişim + rotasyon) · P1 ayrı havuz · P2
+turnuva k=2 · P3 sabit N · P4 üç katman ayrı · P6 tek faz · P7-b **kestirim
+koşumu** · mera **taze** · Kanal 2 **varise miras kalıyor** (3A tersine).
 
-⛔ **D-090'ın ⭐⭐ bulgusu düştü:** drift ekseni artık tekdüze değil
-(D D D C C C C → **C D C C C C C**). ✅ **Enerji havzası birebir ayakta.**
-⇒ **D kararının drift yarısı zayıfladı, enerji yarısı duruyor.**
-
-~~⛔ Bedeli: `fitness_class` 6/6 `normal`~~ ⇒ ✅ **çürütüldü (D-093)** —
-N=4'te yayılım **0.239** (D-089'un 0.210'unun üstünde), sınıflar 10 `normal`
-+ 2 `low`. **Tohum etkisiymiş.** ⚠ Açık madde **A** (`high` bandı) 12/12 boş,
-yerinde duruyor; madde **B** (`landmark_energy` doygunluğu) **1/12**'ye düştü.
-
-### 🚧 Kuşak 0 — kalan iki iş *(Kuşak 1'in önünde)*
-
-| # | İş | Durum |
-|---|---|---|
-| ~~0a~~ | Eşleme düzeltmesi + mutasyon kontrollü test + D-092 | ✅ `53fdf04` |
-| ~~0a-2~~ | D-090 taraması yeniden (57 çağrı, 198 sn) | ✅ **drift eşiği düştü** |
-| ~~0a-3~~ | Doğrulama koşumu N=2 (seed 5008–9) | ✅ `dau_runs/validate_d092_n2.json` |
-| ~~0c~~ | Havuz aritmetiği yeniden hesaplandı | ✅ **D-093** — kıtlık anı 17 → **28**, kapasite 67 → **50** |
-| ~~0d~~ | `fitness_class` daralması ölçüldü | ✅ **D-093** — **tohum etkisiymiş**; N=4'te yayılım **0.239** (D-089'un üstünde) |
-| **0b** | `SYSTEM_PROMPT` kelime dayatması (*"prefer … extract, take"*) | ⏸ **Yasin'in** — rakam artık var, oranlar **hâlâ o prompt'un altında** alındı |
-
-⭐⭐ **D-093'ün asıl bulgusu — ①'in aradığı simetri kırılması görünüyor.**
-Eski eşlemede altı soyun **altısı** havuzu öldürüyordu; N=4'te **12 soyun 4'ü**
-20 olay boyunca öldürmüyor, ve fark **davranıştan** geliyor (çökmeyenlerin
-ortalama hasadı **4.612**, çökenlerin **7.411**). En temiz örnek seed 5011:
-olay başına **2.625**, `cooperate` **%56**, havuz sonunda **0.791**.
-⇒ **D-084'ün *"ayrım ancak ortam kuralıyla gelir"* öncülü düştü.**
-⚠ *"Havuz korunuyor"* **denmez** — 4.612 de MSY'nin (3.75) üstünde, kıtlık
-yalnız 45. olaya kayıyor, yani pencerenin dışına.
-
-⛔ **C kararı hâlâ bekliyor:** D-082'nin Holling II tablosu `d = 8.0`/olay
-üzerine kurulu, **yeniden hesaplanmalı** (0c bunu D-081 için yaptı, D-082 için
-yapmadı).
-
-### ⛔ Kuşak 1 — evrenin fiziği *(üçü de Yasin'in, 0c bitmeden sorulmaz)*
-
-| # | Karar | Not |
-|---|---|---|
-| **D** ⭐ | **Çıkarımın bedeli olsun mu** | ⚠ **D-092 gerekçeyi yarıya indirdi:** D-090'ın drift eşiği düştü, **enerji havzası ayakta** ⇒ *"bedel ajanları düşük enerjiye iter"* duruyor, *"drift'i artırır"* dayanaksız. Ölçümü hâlâ **yarıda** |
-| **C** | Hasat kuralı — sabit kota / **Holling II** (+ `h`) | ⛔ **0c'den önce sorulmaz** — bütün aritmetiği *"%94–100 DEFECT"*a oturuyordu, gerçek oran **%53** |
-| **E** | **P0 = ①** + aksiyom sorusu | ⚠ D-090 çerçeveyi değiştirdi: *"özdeş karar veren ajanlar"* **zorunlu değilmiş**. ⭐ D-092 bunu **güçlendirdi**: davranış artık %30 `cooperate` üretiyor |
-
-### 🎯 Kuşak 2 — asıl hedef, hiç dokunulmadı
-
-| # | İş | Durum / bağlı |
-|---|---|---|
-| ~~**E4**~~ ⭐⭐ | **Üreme: turnuva k=2, `w` sayacı, varis üretimi + Price ayrışması** | ✅ **D-094** (`374906c`) — `dau/generation/reproduction.py`, 12 test, dört mutasyon ⚠ **bağlı değil** |
-| ~~E1/E5~~ | Havuz adımı N ajana çıktı (`advance_commons`) | ✅ **D-097** (`43b4220`) — N=1 yolu `--mock-llm` ile **birebir** doğrulandı, üç mutasyon |
-| **E2** 🚧 | N ajanı olay bazında ilerleten dış döngü — **beş adıma bölündü** | 🚧 **dördü bitti** (D-098/099/100/101) · **E2-4b son adım** · ⚠ **denetimsiz yapılmaz** |
-
-**E2'nin kalan üç adımı** (doğrulama şartları D-098'de yazılı):
-
-| adım | ne | doğrulama |
-|---|---|---|
-| ~~E2-1~~ | `build_event_graph` + `step_agent_once` | ✅ **D-098** iki mutasyon |
-| ~~E2-2~~ | `run_round` + `commons_request_from_state` | ✅ **D-099** — ⭐ mutasyon kontrolü bir **test zayıflığı** yakaladı ve düzeltildi |
-| ~~E2-3~~ | `run_population` | ✅ **D-100** — ⭐ **`arm_digest` birebir** (üretim grafı vs dış döngü), üç mutasyon |
-| ~~E2-4a~~ | Nesil defteri: `plan_next_generation` + `close_transition` | ✅ **D-101** (`e9d07a9`) — üç mutasyon |
-| **E2-4b** ⬜ | Koşum sarmalayıcısına bağlama + kasa/adapter yaşam döngüsü + `tool_identity` | ⛔ **ilk kez üretim yolu değişir** · D-033/I0.7 ve D-067 tam burada · ⚠ **karar: yeni sarmalayıcı mı, multigen'i değiştirmek mi — Yasin'in** |
-
-⚠ **Neden mera tur başına bir kez tıklamalı:** aksi halde aynı turda ikinci
-ajan, birincinin çekilişinden **sonraki** havuzu görür ve
-`realized_extractions`'ın oransal paylaştırması (D-066) hiç devreye girmez —
-*"ortak havuz"* iddiası **kodda yanlış** olur ama sonuçlarda doğru görünür.
-
-⭐ **Eylem sırası bilerek çağıranın** (D-099): sıra ilan edilmesi gereken bir
-fizik kararı (D-079) ve **P0-① tam olarak o sıra hakkında**. Kodda `sorted()`
-yazmak Yasin'in kararını sessizce kapatırdı.
-
-⚠ **D-099'un yan gözlemi:** `should_continue` hasat krediye yazıldıktan sonra
-yargılıyor ⇒ stoklu merada enerjisi sıfır olan ajan **tur içinde canlanıyor**.
-Bugünkü evrende açlıktan ölmek ancak **havuz çöktüğünde** mümkün, bireysel
-kötü karardan değil.
-| — | E4'ü orkestrasyona bağla + `TOURNAMENT_K`'yı alet kimliğine ekle | E1/E5 + E2 |
-
-⭐ **Linçpin teknik olarak çözüldü:** `w` artık değişken olabiliyor ve Price
-kimliği testle korunuyor (`test_price_identity_holds_exactly`). ⛔ **Ama hâlâ
-hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar.
-
-⭐⭐ **D-101'in ön-kayıta girmesi gereken sonucu: Price bir nesil GECİKMELİ
-okunur.** `Δzᵢ` varislerin z'sini istiyor ⇒ g → g+1 geçişinin ayrışması g'nin
-sonunda hesaplanamaz. ⇒ **G = 5 ⇒ 4 geçiş ⇒ 4 Price satırı**, ve **son nesil
-hiç Price satırı üretmez** (varisi yok). ✅ P7-a'nın *"kol başı 40 epizod"*
-hesabı bunu zaten böyle sayıyordu (10 tohum × (G−1)).
-
-### ✅ P1 ve P6 kilitlendi (D-095) — ⛔ P7'de **iki** soru açık
-
-| # | Karar | Durum |
-|---|---|---|
-| ~~P1~~ | Havuz paylaşımı | ✅ **kol başına ayrı havuz.** ⚠ İlan edilecek sınır: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
-| ~~P6~~ | İki faz | ✅ **tek faz.** ⛔ Bedeli: **`delta_pe` uç noktası kaybolur**, S3/S4 yeniden yazılır |
-| **P7-a** | **Bütçe tavanı (kaç saat GPU)** | ⛔ **tek kalan sayı sorusu, Yasin'in.** Üçlü tavandan **türetilir**, seçilmez (§2.7). Üç eksen ayrı iş yapıyor: **N** → Price kestiriminin *yanlılığı* (Rice 2008) · **G ≥ 5** → birikimli kalıtım iddiası (D-014/D-074) · **tohum** → *kesinlik* (D-076: tekrar > N) |
-| ~~P7-b~~ ⭐ | Hipotez testi mi, kestirim mi | ✅ **kestirim (D-096).** ⇒ en küçük anlamlı etki ilan etmek **gerekmiyor** · birincil slot **test değil kestirim** · geçiş kapısı **`Var(w) > 0`** (tanım, kalibre eşik değil) · **null sonuç meşru çıktı** · bütçe artık *"ne harcayabiliriz"* sorusu |
-
-### ✅ E1/E5 kapandı (D-097) — ⬜ **tek kalan kod işi E2**
-
-`advance_commons(env, [CommonsRequest, …])` yazıldı; `pool_step_node` onun
-**N=1 çağıranı**. ⭐ `CommonsRequest.event_counter` **ajanın** saati, ortamın
-değil — havuz tur başına bir tik atarken her yaşam kendi olayını sayıyor.
-
-Davranış korunumu iki yoldan doğrulandı: **441 passed**, ve `--mock-llm` ile
-aynı tohumda refactor **öncesi/sonrası** `arm_digest` · gen2 `pe_list` ·
-`f_agent` · `extraction_by_event` **birebir aynı**.
-
-⚠ **Yan bulgu (D-097/§3):** anı kayıt id'leri `uuid4()` tabanlı ⇒ **aynı kodun
-iki koşumunda da değişiyor**. Digest'i, anı sayısını ve uç noktaları
-etkilemiyor, ama `inherited_memory_ids` **replay kanıtı olarak kullanılamaz**.
-İlan edilmiş sınır olarak kaydedildi, kusur açılmadı.
-
-⚠ **Hâlâ hiçbir şey N ajanla koşmuyor** — eklenen şey bir **yetenek**, bir
-koşum değil.
-
-### 📋 Kuşak 3 — ikinci ön-kayıta ertelendi
-
-`fitness_class`'ın boş `high` bandı · `landmark_energy` doygunluğu (1/6
-tavanda) · KTO kararı · `lr` bandı · uç nokta seçimi · DTW · MAP-Elites
-
-### ⚠ Ölçüm borcu — D-092 sonrası **güncellendi**
-
-| kayıt | durum |
-|---|---|
-| **D-090 Bulgu 3** (drift eşiği) | ⛔ **düştü** — eşlemenin eseriymiş |
-| D-090 Bulgu 2 (enerji havzası) | ✅ **ayakta, birebir** |
-| **D-068** (%94–100 defect) | ⛔ sayı geçersiz ⇒ **%53** (N=2, keşifsel) |
-| **D-084** (karar kanalı doygun) | ⛔ **öncülü düştü (D-093)** — davranış ayrışıyor ve ortamı değiştiriyor |
-| **D-081** (kıtlık anı, kapasite) | ✅ **yeniden hesaplandı (D-093)** — 17 → 28, kapasite 67 → **50** |
-| **D-082** (Holling II tablosu) | ⬜ **hâlâ `d = 8.0` üzerine kurulu** — C kararından önce |
-| **D-060** (`fitness_class` dejenerasyonu) | ✅ **D-093** — dejenerasyon yok, 10 `normal` + 2 `low` |
-| **K7** (*"çöküş bulgudur"*) | ⚠ öncülü **iyice zayıfladı** — N=4'te 12 soyun **4'ü** havuzu öldürmüyor |
+**Kanıtlanmış (keşifsel, tek tohum):** `Var(w)` **1.0–1.5** · `z` varyansı
+**4/8** · seçilim terimi **ilk kez ≠ 0** (−0.201).
 
 ---
+
+### ⛔ Kuşak A — koşumu **meşru** kılan işler *(ön-kayıttan önce şart)*
+
+| # | iş | süre | neden |
+|---|---|---|---|
+| **A1** ⛔⛔ | **Kapıları `run_population_experiment`'e bağla** — I0.3 · I0.6 · **I0.7** · I1.1 + `run_quality` + `invariants` bloğu | ~1 sa | ⛔ **Sarmalayıcıda şu an SIFIR kapı var** (multigen'de dokuz yerde geçiyor). I0.7 olmadan adapter sızıntısı **sessizce** olur — ve artık adapter **kopyalıyoruz**, yani risk D-033 gününden **büyük**. En ucuz, en kritik iş |
+| **A2** | **I4.1 replay** popülasyon için — bir kolu ikinci kez koşup digest karşılaştır | ~30 dk + koşum | Determinizmi **iddia edebilmenin** tek yolu |
+| **A3** | **G ≥ 3'ü yapısal gereklilik** olarak yaz | ~10 dk | gen1'in kurucuları P0-① gereği özdeş ⇒ **ilk geçiş sıfır terim üretir**. G=2 bir koşum yalnız sıfır üretir. Belge işi |
+
+### Kuşak B — deneyi tanımlayan işler
+
+| # | iş | süre | not |
+|---|---|---|---|
+| **B1** | **Üç kollu tam pilot** (taze mera, sıralı erişim, **kapılı**) | ~1.5 sa | Kol farkı **ilk kez** anlamlı olur. ⚠ **A1 bitmeden koşulmaz** — kapısız pilot yine keşifsel kalır ve aynı 1.5 saat ikinci kez ödenir |
+| **B2** | **İkinci ön-kayıt taslağı** | ~2 sa | Okuma kuralları (**seviye 0/1/2/3**, aşağıda) · ilan edilmiş sınırlar · uç noktalar · testler |
+| **B3** ⛔ | **P7-a: bütçe tavanı (kaç saat GPU)** | — | **Yasin'in.** Üçlü ondan **türetilir**, seçilmez (§2.7): **G ≥ 5** ← D-014/D-074 · **N ≥ 8** ← `Var(w)>0` + Rice 2008 yanlılığı · **tohum** ← kesinlik. Referans: 10 tohum × N=8 × G=5 ≈ **en kötü 32.7 sa, beklenen ~20.5 sa**, adapter **~11 GB**. Kesme sırası: **tohum** (10→8→6). ⛔ **G ve N kesilmez** |
+| **B4** | Kilit | ~30 dk | Hash + dondurulmuş alet kimliği |
+
+### Kuşak C — ana koşum
+
+| # | iş | süre |
+|---|---|---|
+| **C1** | Ana koşum | ~20 sa |
+| **C2** | Analiz + sonuç raporu (`B2_RESULTS.md` deseni) | ~2 sa |
+| **C3** ⭐ | **Taze tohum bloğuyla tekrar** | ~20 sa |
+
+⭐ **C3 pazarlık konusu değil:** bu projede coşkuyla yazılan hiçbir bulgu ikinci
+ölçümü sağ atlatmadı — D-090'ın drift eşiği, D-092'nin bant daralması, D-059'un
+kırpma kaldıracı, **üçü de öldü**.
+
+### 📖 "Olumlu sonuç" ne demek — dört seviye, **koşumdan önce** tanımlı
+
+| seviye | ne görülür | ne **iddia edilir** | ne **edilmez** |
+|---|---|---|---|
+| **0 — kapı** | `Var(w) > 0` | hiçbir şey; bu **ön koşul** | — |
+| **1 — seçilim** | `Cov(w,z) ≠ 0`, işaret tohumlar arası tutarlı | *"seçilim landmark drift üzerinde etki etti"* | *"kalıtım aktı"* |
+| **2 — birikim** | terim nesiller boyu sönmüyor | *"etki birikimli"* — aksiyomun asıl cümlesi | *"kanal parametrik/sembolik"* |
+| **3 — kol farkı** ⭐ | `lived` ≠ `shuffle` ≠ `null` | **Lamarckçı kanal iddiası** | *"anlamlı"* (test yok, D-096) |
+
+⚠ **En sık yapılacak hata:** Price **seçilimi** verir, kolların karşılaştırması
+**kalıtımı**. Seviye 1 dolup seviye 3 boş çıkabilir — B2'de üç kol **eşit
+uzaklıkta** çıkmıştı.
+
+⛔ **Olumlu sonuçta bile iddia edilemeyecekler:** *"anlamlı"* (kestirim, test
+değil) · birey düzeyi (P1 ⇒ **grup düzeyi**, Chevin 2011) · *"LLM ajanlarında
+Lamarckçı kalıtım vardır"* (tek model, tek niş ailesi, **n = 1 deney**) ·
+`delta_pe` üzerinden hiçbir şey (P6 onu kaldırdı).
+
+### ⏸ Askıya alınanlar — ve neden
+
+| madde | durum |
+|---|---|
+| **Kapasite 100 → 50** | ⏸ **askıda** — D-104 ayrımın kapasiteye **dokunmadan** doğduğunu gösterdi |
+| **0b** — `SYSTEM_PROMPT`'un *"prefer … extract, take"* dayatması | ⏸ **Yasin'in**; rakam artık var (%53) ve oranlar **hâlâ o prompt'un altında** alındı |
+| **K7 yeniden açılması** (davranışsal önsel) | ⏸ **ancak olumlu sonuçtan sonra**; bugün karşılaştırılacak taban yok |
+| `fitness_class` `high` bandı · `landmark_energy` doygunluğu · KTO · `W_SEM` · DTW · MAP-Elites · uzunluk kontrolü | ⏸ ikinci/üçüncü ön-kayıt |
+| Belge borcu (master ref §12/§14, `.html`/`.pdf`) | ⏸ **Cursor'a uygun**, aciliyeti yok |
+
+### ⚠ Yeni oturumun bilmesi gereken beş şey
+
+1. **Popülasyon koşucusu ayrı bir dosya:** `dau/diagnostics/run_population_experiment.py`.
+   `run_cprime_multigen.py` **değişmedi** ve B2'nin yolu olarak duruyor.
+2. **Zorunlu CLI bayrakları:** `--lora/--no-lora` **ve** `--pasture-carryover/--fresh-pasture`.
+   `PYTHONHASHSEED=0` olmadan multigen abort eder; popülasyon koşucusu **henüz etmiyor** (A1).
+3. **P0 tek bir fonksiyonda:** `build_arm_population`. ②/③/⑤ seçilirse **yalnız o değişir**.
+4. **Price bir nesil GECİKMELİ** (D-101): G nesil ⇒ **G−1** satır, son nesil hiç üretmez.
+5. ⚠ **Mutasyon kontrolü kuralı sertleşti** (bu oturumda **beş boş test** yakalandı):
+   *"bir test kırıldı mı"* yetmez, **hangi** testin kırıldığına bakılır; global durum
+   okuyan testler **ayırt edici sentinel** kullanır.
+
+### Kullanılmış tohumlar — ⚠ yeniden kullanma
+
+2001–2043 · 3001–3004 · 4001–4002 · 5001–5013 · 8801–8802 · 9101 · **9301 ·
+9401 · 9501 · 9601 · 9701 · 9702** (sonuncular popülasyon; `dau_runs/adapters/`
+altında `pop-` önekli 80 dizin bıraktılar).
+
 
 ## ▶ ÖNCEKİ SIRADAKİ İŞ — aletin iki ölü kanalı (D-085) ✅ kapandı
 
@@ -1219,6 +1164,18 @@ olurdu. Hangi izin aktarıldığı, aksiyomun iddiasının ne olduğunu değişt
   Fisher-Freeman-Halton, paired t-test/Wilcoxon, travma için McNemar.
   ⚠ KW + FFH provenansı hiçbir brief'te yok (D-010) — türetilmiş, kilitli değil.
 - **F_agent transfer kapısı korunur** + `f_agent=None` duyarlılık kolu (D-003).
+- **Popülasyon tasarımı kilitlendi (2026-08-17):** **P0 = ①** sıralı erişim +
+  **tur başına rotasyon** (D-104) · **P1** kol başına ayrı popülasyon **ve** ayrı
+  mera (D-095) · **P2** turnuva **k = 2** (D-094) · **P3** sabit N, ölen her
+  ajanın yerine turnuva kazananından bir varis ⇒ `w ∈ {0,1,2,…}` (D-094) ·
+  **P4** üç katman ayrı: `F_agent` (girdi) → `w` (varis sayısı) → `z` = landmark
+  drift (sonuç) (D-094) · **P6** tek faz, `delta_pe` uç noktası **kayboldu**
+  (D-095) · **P7-b** ilk koşum **kestirimdir, hipotez testi değildir** (D-096) ·
+  **mera her nesilde taze** (D-104, 1A korunuyor) · **Kanal 2 varise miras
+  kalıyor** — 3A **tersine çevrildi**, ebeveynin adapter dizini varisin id'sine
+  kopyalanıyor (D-102/§1, Yasin 2026-08-17).
+- **Havuz kapasitesi N ile ölçeklenir** — `EnvironmentState.capacity`, kişi başı
+  100/80 sabit (D-081, uygulaması 2026-08-17).
 
 ---
 
