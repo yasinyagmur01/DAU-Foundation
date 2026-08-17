@@ -1614,6 +1614,68 @@ def run_round(
     )
 
 
+@dataclass(frozen=True)
+class PopulationOutcome:
+    """A whole population's life: the pasture, every last state, and how it ended."""
+
+    env_state: EnvironmentState
+    states: dict[str, DAUAgentState]
+    n_rounds: int
+    granted_by_round: list[dict[str, float]]
+    hit_round_cap: bool
+
+
+def run_population(
+    env_state: EnvironmentState,
+    states: list[DAUAgentState],
+    app: Any,
+    max_rounds: int,
+) -> PopulationOutcome:
+    """Run rounds until nobody can continue, or the round guard is spent.
+
+    E2 step 3 — the loop that ``build_graph``'s conditional edge used to own.
+    The authoritative stop is still ``should_continue``: an agent leaves the
+    population when its energy or its event budget says so, exactly as before.
+
+    ``max_rounds`` is a GUARD, not a second budget. It exists because a
+    misconfigured ``MAX_EVENTS`` would otherwise spin forever, and it is
+    required rather than defaulted so that no caller can inherit a number it
+    never chose (§2.9). If it ever bites while agents are still alive the run
+    was truncated, so ``hit_round_cap`` says so out loud instead of returning a
+    short life that looks complete — the same reasoning that put MODE_REPORT in
+    D-073 rather than letting a gate quietly stop flagging.
+
+    Dead agents keep their last state in ``states``: a life that ended at round
+    six is data, and dropping it would leave the reader unable to tell it from a
+    life that never started.
+    """
+
+    if not states:
+        raise ValueError("run_population needs at least one agent")
+    if max_rounds < 1:
+        raise ValueError(f"max_rounds must be >= 1, got {max_rounds}")
+
+    env = env_state
+    final: dict[str, DAUAgentState] = {state.agent_id: state for state in states}
+    living = list(states)
+    granted_by_round: list[dict[str, float]] = []
+    n_rounds = 0
+    while living and n_rounds < max_rounds:
+        result = run_round(env, living, app)
+        env = result.env_state
+        final.update(result.states)
+        granted_by_round.append(result.granted)
+        n_rounds += 1
+        living = [result.states[agent_id] for agent_id in result.alive]
+    return PopulationOutcome(
+        env_state=env,
+        states=final,
+        n_rounds=n_rounds,
+        granted_by_round=granted_by_round,
+        hit_round_cap=bool(living),
+    )
+
+
 def _state_to_plain(values: Any) -> dict[str, Any]:
     """Normalize graph state values into a JSON-serializable dict."""
 

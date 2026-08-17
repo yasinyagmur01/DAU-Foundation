@@ -15,6 +15,7 @@ from dau.foundation.graph import (
     NODE_POOL_STEP,
     NODE_SOCIAL_PRE,
     build_event_graph,
+    run_population,
     run_round,
     step_agent_once,
 )
@@ -256,4 +257,129 @@ def test_run_round_rejects_duplicate_agent_ids(monkeypatch) -> None:
             EnvironmentState(pool=POOL_START),
             [_birth_state_named(AGENT_ID), _birth_state_named(AGENT_ID)],
             app,
+        )
+
+
+# ---------------------------------------------------------------------------
+# run_population — the loop build_graph's conditional edge used to own (E2-3)
+# ---------------------------------------------------------------------------
+
+LIFE_EVENTS: int = 4
+ROUND_GUARD: int = 20
+# Deliberately below the event budget so the guard bites while agents live on.
+TIGHT_GUARD: int = 2
+
+
+def _life_trace(agent_id: str) -> tuple[list[str], list[float]]:
+    """Decisions and PE values of one life, read off the global ledgers."""
+
+    decisions = [
+        str(row.payload.get("decision", ""))
+        for row in _TRACE_STATES[agent_id].event_log
+    ]
+    pe_values = [
+        float(row["prediction_error"])
+        for row in graph_mod.get_pe_event_log()
+        if row["agent_id"] == agent_id
+    ]
+    return decisions, pe_values
+
+
+_TRACE_STATES: dict[str, DAUAgentState] = {}
+
+
+def test_run_population_reproduces_the_production_graph_digest(monkeypatch) -> None:
+    """⭐ The load-bearing check: one life through both paths, same arm_digest.
+
+    The production graph closes its own loop; run_population closes it from
+    outside. If the two disagree on decisions or PE — the two sequences
+    arm_digest hashes (D-012) — then every run measured before this refactor
+    stops being a comparison baseline.
+    """
+
+    from dau.diagnostics.preflight import arm_digest
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", LIFE_EVENTS)
+
+    graph_mod.reset_pe_event_log()
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    inside: Any = _birth_state()
+    for values in graph_mod.build_graph().stream(
+        _birth_state(),
+        config={"recursion_limit": ROUND_GUARD * 10},
+        stream_mode="values",
+    ):
+        inside = values
+    inside_state = DAUAgentState.model_validate(inside)
+    _TRACE_STATES[AGENT_ID] = inside_state
+    inside_digest = arm_digest(*_life_trace(AGENT_ID))
+    inside_pool = inside_state.env_state.pool
+    inside_energy = float(inside_state.internal_state.energy)
+
+    graph_mod.reset_pe_event_log()
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    outcome = run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state()],
+        build_event_graph(),
+        max_rounds=ROUND_GUARD,
+    )
+    _TRACE_STATES[AGENT_ID] = outcome.states[AGENT_ID]
+    outside_digest = arm_digest(*_life_trace(AGENT_ID))
+
+    assert outside_digest == inside_digest
+    assert outcome.env_state.pool == pytest.approx(inside_pool)
+    assert outcome.states[AGENT_ID].internal_state.energy == pytest.approx(
+        inside_energy
+    )
+    assert outcome.n_rounds == LIFE_EVENTS
+    assert outcome.hit_round_cap is False
+
+
+def test_run_population_runs_two_agents_on_one_pasture(monkeypatch) -> None:
+    """N agents, one tick per round — the pool advances once per round, not per agent."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", LIFE_EVENTS)
+    outcome = run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
+        build_event_graph(),
+        max_rounds=ROUND_GUARD,
+    )
+
+    assert outcome.env_state.event_counter == outcome.n_rounds
+    assert len(outcome.granted_by_round) == outcome.n_rounds
+    assert set(outcome.states) == {AGENT_ID, SECOND_ID}
+
+
+def test_run_population_says_out_loud_when_the_guard_truncates(monkeypatch) -> None:
+    """A truncated run must not look like a completed one (§2.9)."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", LIFE_EVENTS)
+    outcome = run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state()],
+        build_event_graph(),
+        max_rounds=TIGHT_GUARD,
+    )
+
+    assert outcome.n_rounds == TIGHT_GUARD
+    assert outcome.hit_round_cap is True
+
+
+def test_run_population_rejects_a_nonsense_guard(monkeypatch) -> None:
+    """Zero rounds is a caller bug, not an empty result."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    with pytest.raises(ValueError, match="max_rounds"):
+        run_population(
+            EnvironmentState(pool=POOL_START),
+            [_birth_state()],
+            build_event_graph(),
+            max_rounds=0,
         )
