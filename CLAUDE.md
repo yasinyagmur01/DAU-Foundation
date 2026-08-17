@@ -23,14 +23,14 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **`origin/main`'in önünde iki commit** (`67ba99f`) — push edilmedi.
-- **Suite:** `423 passed, 2 deselected`. Çalışma ağacı temiz (`67ba99f`).
-- **Son D-kaydı: D-092.** Sıradaki kayıt **D-093** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde beş commit** (`17a13f4`) — push edilmedi.
+- **Suite:** `423 passed, 2 deselected`. Çalışma ağacı temiz (`17a13f4`).
+- **Son D-kaydı: D-093.** Sıradaki kayıt **D-094** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı, iki ölçüm yenilendi (D-092)**.
+- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı (D-092)** · ⭐ **havuz aritmetiği yeniden hesaplandı, davranış ilk kez ortamı değiştiriyor (D-093)**.
 - **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
@@ -63,9 +63,10 @@ miktarını **retoriğe** bağlıyordu ve 36 metnin **17'sinde** ayrışıyorlar
 (D D D C C C C → **C D C C C C C**). ✅ **Enerji havzası birebir ayakta.**
 ⇒ **D kararının drift yarısı zayıfladı, enerji yarısı duruyor.**
 
-⛔ **Bedeli:** `fitness_class` **6/6 `normal`** (D-089'da 4 `normal` + 2 `low`),
-`F_agent` bandı 0.210 → **0.046**. Açık madde **A** kötüleşti. ⚠ Farklı
-tohumlar (5008–9 vs 5006–7), tohum etkisi dışlanamaz.
+~~⛔ Bedeli: `fitness_class` 6/6 `normal`~~ ⇒ ✅ **çürütüldü (D-093)** —
+N=4'te yayılım **0.239** (D-089'un 0.210'unun üstünde), sınıflar 10 `normal`
++ 2 `low`. **Tohum etkisiymiş.** ⚠ Açık madde **A** (`high` bandı) 12/12 boş,
+yerinde duruyor; madde **B** (`landmark_energy` doygunluğu) **1/12**'ye düştü.
 
 ### 🚧 Kuşak 0 — kalan iki iş *(Kuşak 1'in önünde)*
 
@@ -74,13 +75,22 @@ tohumlar (5008–9 vs 5006–7), tohum etkisi dışlanamaz.
 | ~~0a~~ | Eşleme düzeltmesi + mutasyon kontrollü test + D-092 | ✅ `53fdf04` |
 | ~~0a-2~~ | D-090 taraması yeniden (57 çağrı, 198 sn) | ✅ **drift eşiği düştü** |
 | ~~0a-3~~ | Doğrulama koşumu N=2 (seed 5008–9) | ✅ `dau_runs/validate_d092_n2.json` |
-| **0c** ⭐ | **D-081/D-082'nin havuz aritmetiği yeniden hesaplanır** — hepsi *"her ajan her olayda 8.0 alır"* varsayıyordu, gerçek oran **%53** | ⬜ **C kararından önce şart** |
-| **0d** | **`fitness_class` bandının daralması** ölçülür — tohum etkisi mi, eşlemenin yan etkisi mi | ⬜ ⚠ **E4'ün önkoşulu**: turnuva ayrım ister |
+| ~~0c~~ | Havuz aritmetiği yeniden hesaplandı | ✅ **D-093** — kıtlık anı 17 → **28**, kapasite 67 → **50** |
+| ~~0d~~ | `fitness_class` daralması ölçüldü | ✅ **D-093** — **tohum etkisiymiş**; N=4'te yayılım **0.239** (D-089'un üstünde) |
 | **0b** | `SYSTEM_PROMPT` kelime dayatması (*"prefer … extract, take"*) | ⏸ **Yasin'in** — rakam artık var, oranlar **hâlâ o prompt'un altında** alındı |
 
-⚠ **Neden 0c bloke ediyor:** C kararı (sabit kota / Holling II) tamamen
-*"talep 8.0, olayların %94–100'ü DEFECT"* aritmetiğine oturuyordu. İkisi de
-değişti.
+⭐⭐ **D-093'ün asıl bulgusu — ①'in aradığı simetri kırılması görünüyor.**
+Eski eşlemede altı soyun **altısı** havuzu öldürüyordu; N=4'te **12 soyun 4'ü**
+20 olay boyunca öldürmüyor, ve fark **davranıştan** geliyor (çökmeyenlerin
+ortalama hasadı **4.612**, çökenlerin **7.411**). En temiz örnek seed 5011:
+olay başına **2.625**, `cooperate` **%56**, havuz sonunda **0.791**.
+⇒ **D-084'ün *"ayrım ancak ortam kuralıyla gelir"* öncülü düştü.**
+⚠ *"Havuz korunuyor"* **denmez** — 4.612 de MSY'nin (3.75) üstünde, kıtlık
+yalnız 45. olaya kayıyor, yani pencerenin dışına.
+
+⛔ **C kararı hâlâ bekliyor:** D-082'nin Holling II tablosu `d = 8.0`/olay
+üzerine kurulu, **yeniden hesaplanmalı** (0c bunu D-081 için yaptı, D-082 için
+yapmadı).
 
 ### ⛔ Kuşak 1 — evrenin fiziği *(üçü de Yasin'in, 0c bitmeden sorulmaz)*
 
@@ -115,10 +125,11 @@ tavanda) · KTO kararı · `lr` bandı · uç nokta seçimi · DTW · MAP-Elites
 | **D-090 Bulgu 3** (drift eşiği) | ⛔ **düştü** — eşlemenin eseriymiş |
 | D-090 Bulgu 2 (enerji havzası) | ✅ **ayakta, birebir** |
 | **D-068** (%94–100 defect) | ⛔ sayı geçersiz ⇒ **%53** (N=2, keşifsel) |
-| **D-084** (karar kanalı doygun) | ⬜ yeniden ölçülmedi |
-| **D-081/D-082** (havuz aritmetiği) | ⬜ **0c** — `d = 8.0`/olay varsayımı düştü |
-| **D-060** (`fitness_class` dejenerasyonu) | ⬜ kök neden okuması değişti · **0d** |
-| **K7** (*"çöküş bulgudur"*) | ⚠ öncülü zayıfladı, **çürümedi** — çöküş 5/6 soyda hâlâ var |
+| **D-084** (karar kanalı doygun) | ⛔ **öncülü düştü (D-093)** — davranış ayrışıyor ve ortamı değiştiriyor |
+| **D-081** (kıtlık anı, kapasite) | ✅ **yeniden hesaplandı (D-093)** — 17 → 28, kapasite 67 → **50** |
+| **D-082** (Holling II tablosu) | ⬜ **hâlâ `d = 8.0` üzerine kurulu** — C kararından önce |
+| **D-060** (`fitness_class` dejenerasyonu) | ✅ **D-093** — dejenerasyon yok, 10 `normal` + 2 `low` |
+| **K7** (*"çöküş bulgudur"*) | ⚠ öncülü **iyice zayıfladı** — N=4'te 12 soyun **4'ü** havuzu öldürmüyor |
 
 ---
 
