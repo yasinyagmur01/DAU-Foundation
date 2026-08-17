@@ -7736,3 +7736,94 @@ geçerdi** — D-099'da yakalanan zayıflık sınıfının aynısı.
 → gen2 şemasına ve üç kola göre kurulu; popülasyon şeması (P1: kol başına ayrı
 popülasyon **ve** ayrı havuz, P6: tek faz) farklı bir iskelet. Değiştirmek
 B2'nin koştuğu yolu geri dönüşsüz biçimde karıştırır. ⚠ **Karar Yasin'in.**
+
+---
+
+## D-102 · 2026-08-17 · **E2-4b**: popülasyon sarmalayıcısı koştu — ⭐ linçpin çalıştı · ⛔ **D-081 ile çelişki bulundu**
+
+**Durum:** kod (`7eee33f`) + duman koşumu · **Etiket:** ⚠ **keşifsel**, hiçbir
+şey ön-kayıtlı değil · suite **`471 passed, 2 deselected`** · ham
+`scratchpad/pop_smoke.json`
+
+### 1. Yasin'in kararı ve ne yazıldı
+
+**Karar:** mevcut `run_cprime_multigen`'i **değiştirmek yerine yeni
+sarmalayıcı** — `dau/diagnostics/run_population_experiment.py`. Gerekçe: o
+koşucu `gen1 → aktarım → gen2` iskeletine kurulu; popülasyon şeması (P1: kol
+başına ayrı popülasyon **ve** ayrı mera; P6: tek faz) o iskelete sığmıyor, ve
+değiştirmek **B2'nin koştuğu yolu** `prereg/b2-code` etiketi dışında
+referanssız bırakırdı.
+
+Kol başına, nesil başına: N doğum state → `run_population` (E2-3) → `F_agent`
+(`build_self_model`) → `z` = landmark drift (K5) → `plan_next_generation` (E4)
+→ sonraki nesil; ve **bir nesil sonra** `close_transition` Price'ı kapatıyor.
+
+✅ **D-094'ün borcu ödendi:** `TOURNAMENT_K` ve `HEIRS_PER_TOURNAMENT_WIN` artık
+`tool_identity`'de, **sabitten okunarak** (§2.8), üç bayrakla birlikte.
+
+⭐ **P0 tek bir fonksiyonda:** `build_arm_population` bütün kurucuları **aynı
+nişe** doğuruyor = **P0 seçeneği ①**. ⚠ P0 formen hâlâ Yasin'in (Kuşak 1 / E);
+②, ③ veya ⑤ seçilirse **yalnız o fonksiyon** değişir, ve bugüne kadar hiçbir
+ölçüm oradan geçmedi.
+
+### 2. ⭐ Duman koşumu — linçpin **çalıştı**
+
+Mock LLM, N=4, G=3, 4 olay, `exit 0`. Üç kolun üçünde de:
+
+| nesil | `w` dağılımı | `selection_measurable` |
+|---|---|---|
+| 1 | **[0, 0, 1, 3]** | **True** |
+| 2 | **[0, 0, 2, 2]** | **True** |
+| 3 | — (son nesil, varisi yok) | — |
+
+⇒ **`Var(w) > 0` gerçek bir koşumda ilk kez oluştu.** D-076'dan beri açık olan
+*"`w` sabit ⇒ `Cov(w,z)` tanımsız"* linçpini **mekanik olarak** kapandı.
+
+### 3. ⛔ Ama bu koşumun sayılarından **bilim okunmaz** — beş sebep, hepsi kodda yazılı
+
+| # | sebep |
+|---|---|
+| **1** | **Kalıtım bağlanmadı** — `transfer_to_heir` çağrılmıyor ⇒ üç kol **aynı deney**, aktarım terimi gürültü |
+| **2** | **Adapter eğitimi bağlanmadı** |
+| **3** | ⛔ **D-081 çelişkisi** (aşağıda) |
+| **4** | **`F_agent` 4 ajanda özdeş** (0.654 ×4): P0-① + mock LLM ⇒ özdeş yaşamlar ⇒ turnuvayı **ilan edilmiş eşitlik kırıcı** (`agent_id`) belirliyor. Yani buradaki `Var(w)` **tie-break'in eseri**, uygunluk farkının değil |
+| **5** | **Olay bütçesi 4 < `LANDMARK_EVENT` 10** ⇒ landmark okunamıyor, `z` boş, Price satırları **boş sözlük**. ✅ Kod **imputasyon yapmıyor**, `[LANDMARK][WARN]` basıyor — D-069/V1'in LOCF yasağı burada da tutuyor |
+
+### 4. ⛔ Bulunan çelişki — havuz N ile ölçeklenmiyor
+
+**D-081 (Yasin, onaylı):** *"havuz **N ile ölçeklenecek**, kişi başı
+kapasite/başlangıç bugünkü sayılarda (100 / 80) ⇒ sıfır yeni sabit, ve kişi
+başı yörünge N=1 evreninin birebir aynısı kalıyor."*
+
+⛔ **Sarmalayıcı bunu yapamıyor.** `POOL_MAX` bir **modül sabiti**: `step_pool`
+lojistik büyümede ona doğru büyüyor ve `get_pool_ratio` ona bölüyor. Stoğu
+ölçekleyip kapasiteyi ölçeklememek oranı **1'in üstüne** çıkarır ve kriz
+eşiğini bozar — daha büyük bir mera modellemez.
+
+⇒ **Kapasiteyi `dau/society/environment.py` üzerinden geçirmek gerekiyor**, bu
+bir **fizik değişikliği** ve ayrı adım. §2.11 gereği **sessizce yamanmadı**:
+modül docstring'i ve `tool_identity` (`pool_capacity_scaled: False`) bunu ilan
+ediyor.
+
+⚠ **Bugünkü durumda kişi başı kapasite 100/N**, yani D-081'in tarif ettiğinden
+**N kat kıt**. Duman koşumunda sonucu görünüyor: N=4'te mera **2. nesilde ölü**.
+
+### 5. ⚠ Bu oturumda **üçüncü** boş test yakalandı
+
+`MAX_EVENTS` testi ilk hâlinde global'i *"ne tutuyorsa"* okuyordu. Önceki
+testler bütçeyi sızdırdığı için `before == bütçe` oluyor ve *"geri verme"*
+mutasyonu **geçiyordu**. Ayırt edici bir sentinel (137) ile düzeltildi.
+
+⇒ **Ders üçüncü kez tekrarlandı ve kurala dönüştürülmeli:** mutasyon kontrolü
+*"bir test kırıldı mı"* diye sorulunca yetmiyor — **hangi** testin kırıldığına
+bakmak gerekiyor. Global durum okuyan testler **ayırt edici sentinel** kullanmak
+zorunda, yoksa test sırası testi boşaltıyor.
+
+### 6. Sıradaki iş
+
+| # | ne | not |
+|---|---|---|
+| **1** ⛔ | **Havuz kapasitesini N'e ölçekle** — `environment.py` | D-081'i geri getirir. ⚠ Fizik değişikliği, N=1 davranışı **birebir** korunmalı |
+| **2** | Kasa kalıtımını bağla (`transfer_to_heir`) | ⛔ **D-067**'nin kasa saati tam burada |
+| **3** | Adapter eğitimini kola göre bağla | ⛔ **D-033 / I0.7** tam burada |
+| **4** | Pilot (1.3 sa) | 1–3 bitmeden anlamsız |
