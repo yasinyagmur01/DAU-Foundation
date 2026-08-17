@@ -1358,25 +1358,19 @@ def advance_commons(
     return new_env, outcomes
 
 
-def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
-    """Advance the shared pool, then apply crisis trauma when ratio is critical.
+def commons_request_from_state(state: DAUAgentState) -> CommonsRequest | None:
+    """Read one agent's announced withdrawal off its own last decision event.
 
-    The N=1 caller of ``advance_commons``. The two early returns below leave no
-    ledger row, deliberately — a life with no society physics has no commons
-    and no metabolic credit, and inventing a row for it would be the silent
-    fallback §2.9 forbids. The reader treats a missing landmark row on a life
-    long enough to have reached it as an abort, not as a default.
-
-    Biology analogy: after the organism acts and the body consolidates the
-    experience, the commons regenerates and is harvested. If stock falls below
-    the crisis floor, somatic resource trauma scars the drift map. Skips when
-    society physics is absent (env_state is None).
+    ``None`` when the life has no commons to act on: no society physics, or no
+    event yet. Shared by ``pool_step_node`` (N=1) and ``run_round`` (N) on
+    purpose — two callers re-deriving "what did this agent ask for" is exactly
+    how the reporting/measuring pairs in §2.8 drifted apart four times.
     """
 
     if state.env_state is None or not isinstance(state.env_state, EnvironmentState):
-        return {}
+        return None
     if not state.event_log:
-        return {}
+        return None
 
     decision = str(state.event_log[-1].payload.get("decision", ""))
     amount = (
@@ -1387,19 +1381,35 @@ def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
     drift = state.drift_state
     if not isinstance(drift, DriftState):
         drift = DriftState()
-
-    new_env, outcomes = advance_commons(
-        state.env_state,
-        [
-            CommonsRequest(
-                agent_id=state.agent_id,
-                requested=amount,
-                event_counter=int(state.event_log[-1].timestamp),
-                drift_state=drift,
-                internal_state=state.internal_state,
-            )
-        ],
+    return CommonsRequest(
+        agent_id=state.agent_id,
+        requested=amount,
+        event_counter=int(state.event_log[-1].timestamp),
+        drift_state=drift,
+        internal_state=state.internal_state,
     )
+
+
+def pool_step_node(state: DAUAgentState) -> dict[str, Any]:
+    """Advance the shared pool, then apply crisis trauma when ratio is critical.
+
+    The N=1 caller of ``advance_commons``. A life with no commons leaves no
+    ledger row, deliberately — no society physics means no harvest and no
+    metabolic credit, and inventing a row for it would be the silent fallback
+    §2.9 forbids. The reader treats a missing landmark row on a life long
+    enough to have reached it as an abort, not as a default.
+
+    Biology analogy: after the organism acts and the body consolidates the
+    experience, the commons regenerates and is harvested. If stock falls below
+    the crisis floor, somatic resource trauma scars the drift map. Skips when
+    society physics is absent (env_state is None).
+    """
+
+    request = commons_request_from_state(state)
+    if request is None:
+        return {}
+
+    new_env, outcomes = advance_commons(state.env_state, [request])
     outcome = outcomes[state.agent_id]
     return {
         "env_state": new_env,
@@ -1529,6 +1539,79 @@ def step_agent_once(state: DAUAgentState, app: Any) -> DAUAgentState:
     if isinstance(result, dict):
         return DAUAgentState.model_validate(result)
     raise TypeError(f"unexpected event-graph result type: {type(result)!r}")
+
+
+@dataclass(frozen=True)
+class RoundOutcome:
+    """What one round left behind: the pasture, every body, and who lives on."""
+
+    env_state: EnvironmentState
+    states: dict[str, DAUAgentState]
+    alive: tuple[str, ...]
+    granted: dict[str, float]
+
+
+def run_round(
+    env_state: EnvironmentState,
+    states: list[DAUAgentState],
+    app: Any,
+) -> RoundOutcome:
+    """One round: every agent acts once, THEN the pasture ticks exactly once.
+
+    E2 step 2. The order matters and is deliberately **the caller's**: act
+    order is a physics decision that has to be declared, not an implementation
+    detail (D-079 — Schönfisch & de Roos 1999, Fatès 2014), and P0-① is a
+    decision about precisely this order. Hard-coding a sort here would settle
+    a question that belongs to Yasin.
+
+    What is NOT the caller's is the tick: every request is collected before the
+    pool moves. Ticking per agent would let the second agent see the pool the
+    first one already drew from, and the proportional short-fall split (D-066)
+    would never engage — the "shared commons" claim would be false in the code
+    while looking true in the results.
+
+    A state that cannot produce a request (no society physics, no event) is an
+    error here rather than a skip: in a population the pasture is the thing all
+    the agents have in common, so an agent that is not on it is a caller bug.
+    """
+
+    if not states:
+        raise ValueError("run_round needs at least one agent")
+    seen: set[str] = set()
+    for state in states:
+        if state.agent_id in seen:
+            raise ValueError(f"duplicate agent_id in round: {state.agent_id}")
+        seen.add(state.agent_id)
+
+    stepped = [step_agent_once(state, app) for state in states]
+    requests: list[CommonsRequest] = []
+    for state in stepped:
+        request = commons_request_from_state(state)
+        if request is None:
+            raise ValueError(f"{state.agent_id}: no commons request after its event")
+        requests.append(request)
+
+    new_env, outcomes = advance_commons(env_state, requests)
+    updated: dict[str, DAUAgentState] = {}
+    alive: list[str] = []
+    for state in stepped:
+        outcome = outcomes[state.agent_id]
+        merged = state.model_copy(
+            update={
+                "env_state": new_env,
+                "drift_state": outcome.drift_state,
+                "internal_state": outcome.internal_state,
+            }
+        )
+        updated[state.agent_id] = merged
+        if should_continue(merged) != END:
+            alive.append(state.agent_id)
+    return RoundOutcome(
+        env_state=new_env,
+        states=updated,
+        alive=tuple(alive),
+        granted={aid: outcome.granted for aid, outcome in outcomes.items()},
+    )
 
 
 def _state_to_plain(values: Any) -> dict[str, Any]:
