@@ -7305,3 +7305,60 @@ değişti** ⇒ sessiz bir kayma, bugünün iki koşumunu (`validate_d092_n2`,
 yazılıyor: N=1 yolu yeniden düzenlemeden **sonra** aynı env / drift / internal
 state ve **aynı defter satırlarını** üretmek zorunda; testi mutasyon
 kontrolünden geçecek.
+
+---
+
+## D-096 · 2026-08-17 · **P7-b: ilk popülasyon koşumu bir kestirim koşumudur**, hipotez testi değil
+
+**Durum:** tasarım kararı (Yasin) · **Etiket:** karar · **kod değişmedi**
+
+### Karar
+
+⭐ **Seçilen: kestirim.** İlk popülasyon koşumu *"seçilim var / yok"* demeyi
+hedeflemiyor; **`w` ve `z`'nin dağılımını ve Price ayrışmasının terimlerini
+ölçmeyi** hedefliyor.
+
+**Reddedilen: hipotez testi.** Gerekçe iki katmanlı:
+
+1. `Cov(w, z)` üzerinde güç hesabı bir **etki büyüklüğü tahmini** ister.
+   Elimizde yok, ve bakmak **yasak** (L9: etkiyi görüp istatistik seçmek
+   post-hoc). DR #1'in S4 için yaptığı *"en küçük anlamlı etki"* işi seçilim
+   terimi için **hiç yapılmadı**.
+2. **GAP-9'un dersi:** N=15 *"varsayılan"* alınmıştı, güç analizi baştan
+   yetersiz olduğunu söylüyordu, B2 40 tohumla koştu ve **p = 0.9914** çıktı.
+   32 saatlik bir zarf, nesillere ve tohumlara bölündükten sonra seçilim terimi
+   üzerinde anlamlı bir teste güç taşıması **muhtemel değil**.
+
+Yasin'in gerekçesi: *"sonucuna göre farklı yerlere de gidebiliriz,
+savunulabilir bir şeyler elde etmek daha mantıklı."*
+
+### ⇒ Beş somut sonucu
+
+| # | ne değişiyor |
+|---|---|
+| **1** | **En küçük anlamlı etki ilan etmek gerekmiyor** — türetemediğimiz bir sayıyı uydurmaktan kurtuluyoruz |
+| **2** | Ön-kayıtın birincil slotu bir **test** değil bir **kestirim** olur: `Cov(w,z)`, `E(w·Δz)`, `Var(w)` + ilan edilmiş kesinlik |
+| **3** | ⭐ Koşumun asıl geç/kal kapısı **geçerlilik kapısı** olur: `Var(w) > 0`. Bu **kalibre edilmiş bir eşik değil, bir tanım** ⇒ §2.7 devrede değil, ve kural koşumdan **önce** yazıldı (`reproduction_report`, D-094) |
+| **4** | ⚠ **Null sonuç başarısızlık değil** — *"`Var(w)` şu, `Cov(w,z)` şu aralıkta"* raporlanabilir bir çıktıdır. Bu, *"Null/underpowered sonuç meşru bilimsel çıktıdır"* süreç kuralının doğrudan uygulaması |
+| **5** | **P7-a (bütçe) basitleşti:** artık *"güç ne gerektiriyor"* değil **"ne kadarını harcayabiliriz"** sorusu. Zarf gücün değil kesinliğin fonksiyonu |
+
+### ⚠ Kesinlik / yanlılık ödünleşmesi — kilitte açıkça yazılacak
+
+Kestirim koşumunda üçlü şu şekilde ayrışıyor, ve üçü aynı işi yapmıyor:
+
+| eksen | neyi belirler |
+|---|---|
+| **N** (nesil başına ajan) | Price kestiriminin **yanlılığı** — Rice 2008 küçük N'de yanlı olduğunu söylüyor |
+| **G** (nesil) | **birikimli kalıtım iddiasının** ön koşulu, G ≥ 5 (D-014/D-074) |
+| **tohum** | **kesinlik** / tekrar (Kofler & Schlötterer: *tekrar > N*, D-076) |
+
+⚠ Bu tablo bir **karar değil, türetme çerçevesi**. Sayılar P7-a'dan
+(bütçe tavanı) türetilecek ve türetme ön-kayıta yazılacak — **hiçbir pilot
+verisine bakılmadan**.
+
+### Sınır
+
+⚠ **Bu karar iddianın kapsamını daraltıyor ve bu bilinçli.** Koşum sonunda
+*"seçilim çalışıyor"* denemeyecek; denebilecek olan *"seçilim terimi ölçüldü,
+şu büyüklükte, ve `w`'de şu kadar varyans vardı"*. K5'in ve P1'in sınırlarının
+yanına yazılacak.
