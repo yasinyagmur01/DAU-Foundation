@@ -7261,3 +7261,47 @@ vermedi, D-076/§M.4).
 
 ⚠ **E2 için tasarım belgesinin uyarısı yerinde:** *"N ajanı olay bazında
 ilerleten dış döngü **denetimsiz yapılmaz**"*.
+
+---
+
+## D-095 · 2026-08-17 · **P1 ve P6 kilitlendi** · E1/E5 denetimi: havuz fiziği zaten N'e hazır
+
+**Durum:** iki tasarım kararı (Yasin) + read-only denetim · **Etiket:** karar +
+denetim · **kod değişmedi**
+
+### 1. Yasin'in iki kararı
+
+| # | Karar | Seçilen | İlan edilmesi gereken bedeli |
+|---|---|---|---|
+| **P1** | Havuz paylaşımı | ⭐ **Kol başına ayrı havuz** | ⚠ **İzolasyon, seçilim iddiasını birey düzeyinden grup düzeyine kaydırır** (Chevin 2011). İkinci ön-kayıta **ilan edilmiş sınır** olarak yazılacak, K5'in sınırının yanına. Gerekçe: `null` kolumuz bir **referans suştur** ve ortak havuz o varsayımı yapı gereği ihlal eder — Hudgens & Halloran 2008 (SUTVA/kısmi girişim) ve Xiao vd. 2023 aynı yerde buluşuyor |
+| **P6** | İki faz korunsun mu | ⭐ **Tek faz** | ⛔ **`delta_pe` uç noktası kaybolur** ⇒ S3/S4'ün ön-kayıtlı hâli yeniden yazılacak. Gerekçe: popülasyonda karşılaştırma nesiller arası (g → g+1), faz-2'nin işini bir sonraki nesil zaten görüyor; iki faz maliyeti **ikiye katlıyor** |
+
+### 2. ⭐ E1/E5 denetimi — iş sanıldığından **küçük**
+
+Tasarım belgesi E1/E5'i *"ortak havuzu akışların dışına al"* diye tarif ediyor.
+Denetim (read-only) bunun **yarısının zaten yapılmış** olduğunu gösterdi:
+
+| katman | N'e hazır mı |
+|---|---|
+| `step_pool`, `realized_extractions`, `step_pool_with_crisis` | ✅ **hazır** — üçü de **N girişli sözlük** alıyor, ve `realized_extractions` eksik kalan stoğu **talep oranında paylaştırma** kuralını zaten uyguluyor (D-066) |
+| `pool_step_node` ([graph.py:1237](dau/foundation/graph.py:1237)) | ⛔ **tek ajanlı** — `{state.agent_id: amount}` diye **tek girişli** sözlük geçiyor |
+
+⇒ Havuz **fiziği** N ajanlı; tek ajanlı olan şey **düğüm**, çünkü LangGraph
+düğümü tek bir ajanın state'i üzerinde çalışıyor.
+
+⇒ **E1/E5'in gerçek içeriği:** ajan başına yapılan defter işini (`_record_pool_event`
+· metabolik kredi · `_record_body_event` · landmark satırı) N ajan üzerinde
+dönen bir fonksiyona çıkarmak; `pool_step_node` o fonksiyonun **N=1 çağıranı**
+olarak kalır.
+
+### 3. ⚠ Neden burada durdum (§2.3)
+
+Bu bir **davranış korumalı yeniden düzenleme**, ama **üretim grafiğinin
+ön-kayıtlı yoluna** dokunuyor. Ve bugün (D-092) o yolun davranışı **zaten
+değişti** ⇒ sessiz bir kayma, bugünün iki koşumunu (`validate_d092_n2`,
+`validate_d093_n4`) karşılaştırma tabanı olarak **geçersiz kılar**.
+
+⇒ Uygulanmadan önce Yasin'e sunuluyor, ve doğrulama şartı **şimdiden**
+yazılıyor: N=1 yolu yeniden düzenlemeden **sonra** aynı env / drift / internal
+state ve **aynı defter satırlarını** üretmek zorunda; testi mutasyon
+kontrolünden geçecek.
