@@ -934,3 +934,188 @@ def test_one_generation_is_still_refused() -> None:
         run_population_experiment(
             seeds=[SEED], n_agents=2, n_generations=1, events_budget=EVENTS
         )
+
+
+# ---------------------------------------------------------------------------
+# D-108 — a life too quiet to yield a preference pair is data, not a failure
+# ---------------------------------------------------------------------------
+
+
+def _outcome(reason: str):
+    """A declined train step: zero counts and an unread weight, plus a reason.
+
+    This is byte-for-byte what all five of _train_adapter's early exits return,
+    which is the whole problem — only `reason` tells them apart.
+    """
+
+    from dau.diagnostics.run_protocol_c_prime import (
+        LORA_B_ABS_SUM_UNREAD,
+        TrainOutcome,
+    )
+
+    return TrainOutcome(0, 0, LORA_B_ABS_SUM_UNREAD, reason=reason)
+
+
+def test_an_agent_with_no_pairs_does_not_take_the_run_down(monkeypatch) -> None:
+    """⭐ D-108, measured on the first real pilot: two of 48 agents had no pairs.
+
+    A life can be too quiet to yield a usable preference pair, and that is a
+    property of the LIFE. Aborting on it puts a selection effect on which runs
+    may report at all: runs where every agent lived richly pass, runs with one
+    quiet agent are never written — and the JSON is never produced, so the
+    other 46 agents are lost with it.
+    """
+
+    from dau.diagnostics.run_protocol_c_prime import TrainOutcome
+    from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    quiet = "pop-lived-"
+
+    def _mostly_fine(agent_id: str, examples, shuffled: bool = False):
+        if agent_id.startswith(quiet) and agent_id.endswith("a1"):
+            return _outcome(TRAIN_SKIP_NO_PAIRS)
+        return TrainOutcome(7, 0, 0.5)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "_train_adapter", _mostly_fine)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS, lora=True
+    )
+
+    assert results["invariants"]["I1.1"] is True
+    assert results["run_quality"] == RUN_QUALITY_CLEAN
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "lora_update import failed",
+        "pair builder raised",
+        "train raised",
+        "declined without a stated reason",
+        "",
+    ],
+)
+def test_every_other_refusal_still_aborts(monkeypatch, reason: str) -> None:
+    """⛔ The exemption is on the REASON, and on exactly one of them.
+
+    Four of the five early exits ALSO report zero pairs, so exempting by count
+    would wave an import failure, a pair builder that raised and a train step
+    that raised straight through — and e4c026b (weights that never moved while
+    the run reported healthy counts) is the failure this gate exists for.
+    """
+
+    from dau.diagnostics.run_protocol_c_prime import TrainOutcome
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    # ⚠ MIXED on purpose, and this is the whole discriminating power of the
+    # test. With every agent declining, the gate aborts anyway via "no ungated
+    # train arm to check" — so the test would pass even if the exemption were
+    # wired to the pair COUNT, which would wave these four refusals through.
+    # Measured: two mutations (exempt-by-count, exempt-on-any-reason) both
+    # survived the all-declining version of this test (§2.4).
+    def _one_bad_agent(agent_id: str, examples, shuffled: bool = False):
+        if agent_id.endswith("a1"):
+            return _outcome(reason)
+        return TrainOutcome(7, 0, 0.5)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "_train_adapter", _one_bad_agent)
+
+    with pytest.raises(PreflightAbort, match="I1.1"):
+        run_population_experiment(
+            seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
+            lora=True,
+        )
+
+
+def test_the_exempting_reason_is_the_trainers_own_string() -> None:
+    """Both ends of the branch read ONE constant — never two literals.
+
+    The gate branches on this text. If the trainer's wording and the reader's
+    wording were separate literals, the day one was reworded the exemption
+    would stop firing and the only symptom would be a run that aborts for a
+    reason nobody can find.
+    """
+
+    from dau.foundation import constraints, local_llm
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    assert (
+        pop_mod.TRAIN_SKIP_NO_PAIRS
+        is local_llm.TRAIN_SKIP_NO_PAIRS
+        is constraints.TRAIN_SKIP_NO_PAIRS
+    )
+
+
+def test_the_reason_reaches_the_results_file(monkeypatch) -> None:
+    """A reader must be able to see WHICH agent was exempted, and why.
+
+    Without this the results say "48 agents, 46 trained" and nothing about the
+    other two — the exemption would be invisible in the artefact and visible
+    only in a console log nobody keeps.
+    """
+
+    from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    from dau.diagnostics.run_protocol_c_prime import TrainOutcome
+
+    def _one_quiet(agent_id: str, examples, shuffled: bool = False):
+        if agent_id.endswith("a1"):
+            return _outcome(TRAIN_SKIP_NO_PAIRS)
+        return TrainOutcome(7, 0, 0.5)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "_train_adapter", _one_quiet)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS, lora=True
+    )
+
+    trained = results["arms"][0]["generations"][0]["trained"]
+    assert trained, "no training block at all"
+    quiet = [
+        record
+        for agent_id, record in trained.items()
+        if agent_id.endswith("a1")
+    ]
+    assert quiet and all(
+        record[pop_mod.SECTION_REASON_KEY] == TRAIN_SKIP_NO_PAIRS
+        for record in quiet
+    )
+    sections = pop_mod.training_sections(results["arms"])
+    exempted = [s for s in sections if s[pop_mod.SECTION_GATED_KEY]]
+    assert exempted, "the exemption never reached the gate's input"
+
+
+def test_a_run_where_EVERY_agent_was_exempted_still_aborts(monkeypatch) -> None:
+    """⭐ The exemption must not become a blanket off-switch.
+
+    One quiet life among many is data. A run in which NOTHING trained
+    demonstrates nothing about Channel 2, and `lived` / `shuffle` / `null` then
+    differ only in name — so the gate still refuses, via "no ungated train arm
+    to check". Found by writing the test above with every agent exempted and
+    watching it abort, which was the correct answer.
+    """
+
+    from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(
+        pop_mod,
+        "_train_adapter",
+        lambda agent_id, examples, shuffled=False: _outcome(TRAIN_SKIP_NO_PAIRS),
+    )
+
+    with pytest.raises(PreflightAbort, match="I1.1"):
+        run_population_experiment(
+            seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
+            lora=True,
+        )

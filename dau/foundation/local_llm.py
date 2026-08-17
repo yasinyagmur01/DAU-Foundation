@@ -28,6 +28,7 @@ from dau.foundation.constraints import (
     DPO_MAX_SEQUENCE_TOKENS,
     LORA_B_ABS_SUM_UNREAD,
     LORA_INIT_SEED,
+    TRAIN_SKIP_NO_PAIRS,
     PER_AGENT_LORA_ALPHA,
     PER_AGENT_LORA_RANK,
 )
@@ -1044,7 +1045,7 @@ def run_micro_train_preference_step(
         return {
             "trained": False,
             "skipped": True,
-            "reason": "no preference pairs",
+            "reason": TRAIN_SKIP_NO_PAIRS,
             "agent_id": agent_id,
         }
 

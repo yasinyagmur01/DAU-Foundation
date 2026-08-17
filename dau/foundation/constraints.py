@@ -127,6 +127,15 @@ ADAPTER_SWITCH_MAX_MS: int = 1
 # on the model). Deliberately not 0.0 — that is a real reading, and it means
 # the train step moved no weights, which is the failure I1.1 exists to catch.
 LORA_B_ABS_SUM_UNREAD: float = float("nan")
+# D-108. The trainer's own words for "there was nothing to train on". Lives
+# here rather than in local_llm because a GATE now branches on it (I1.1 exempts
+# an agent whose pair set was empty, and fails one whose weights went unread
+# for any other reason) while the reader — the population runner — must not
+# have to import the torch-dependent trainer to know the string. Two literals
+# in two files is a branch that silently stops firing the day one is reworded.
+# ⚠ It is a fact about the LIFE, not about the instrument: a life can be too
+# quiet to yield a usable preference pair, and that is data.
+TRAIN_SKIP_NO_PAIRS: str = "no preference pairs"
 # I1.3 sentinel: no optimizer step ran, so no gradient norm was ever sampled.
 # Same reasoning as above — 0.0 is a real reading and means the optimizer
 # stepped on a zero gradient, which is exactly the no-op I1.3 exists to catch.

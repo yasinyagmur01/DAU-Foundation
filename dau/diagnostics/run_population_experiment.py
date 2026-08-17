@@ -116,6 +116,7 @@ from dau.diagnostics.tool_identity import (
     resolve_lora_choice,
 )
 from dau.foundation.drift import DriftState
+from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
 from dau.foundation.generation import (
     INHERITED_WARNING_KEY,
@@ -176,6 +177,12 @@ ROTATE_ACT_ORDER: bool = True
 SECTION_ARM_KEY: str = "arm"
 SECTION_SEED_KEY: str = "seed"
 SECTION_DELTA_KEY: str = "lora_b_abs_sum_delta"
+# `gated` is the predicate's own word for "deliberately not trained, so do not
+# hold it against the run". The multigen path sets it from the diversity gate;
+# the population path had no equivalent, which is what took the first B1
+# attempt down (D-108).
+SECTION_GATED_KEY: str = "gated"
+SECTION_REASON_KEY: str = "reason"
 # I4.1 (A2). The replay is an arm in its own right, run under its own label so
 # its founders get their own ids: re-using the original ids would make the
 # second pass load the adapters the first one just wrote, and phase 1 would run
@@ -270,6 +277,7 @@ def training_sections(arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
             trained = generation.get("trained") or {}
             for agent in generation["agents"]:
                 outcome = trained.get(agent["agent_id"])
+                reason = "" if outcome is None else str(outcome.get(SECTION_REASON_KEY, ""))
                 sections.append(
                     {
                         SECTION_ARM_KEY: arm_result["arm"],
@@ -282,6 +290,20 @@ def training_sections(arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
                             if outcome is None
                             else outcome.get(SECTION_DELTA_KEY)
                         ),
+                        # ⚠ D-108. Exempt on the REASON, never on the count.
+                        # Four of _train_adapter's five early exits also report
+                        # zero pairs — an import failure, a pair builder that
+                        # raised, a train step that raised — and exempting by
+                        # count would wave all of them through. Only the
+                        # trainer's own "the pair set was empty" is a fact
+                        # about the LIFE rather than about the instrument, and
+                        # a life can legitimately be too quiet to yield a pair.
+                        # Aborting on that would put a selection effect on
+                        # which runs are allowed to report at all: runs where
+                        # every agent lived richly pass, runs with a quiet
+                        # agent are never written.
+                        SECTION_GATED_KEY: reason == TRAIN_SKIP_NO_PAIRS,
+                        SECTION_REASON_KEY: reason,
                     }
                 )
     return sections
@@ -623,6 +645,10 @@ def train_generation(
             "n_pairs_trained": int(outcome.n_pairs_trained),
             "n_pairs_rejected": int(outcome.n_pairs_rejected),
             "lora_b_abs_sum_delta": float(outcome.lora_b_abs_sum_delta),
+            # D-108. Empty on a healthy step; on a declined one it says which
+            # of the five refusals happened, and I1.1 branches on exactly one
+            # of them.
+            SECTION_REASON_KEY: str(outcome.reason),
         }
     return trained
 

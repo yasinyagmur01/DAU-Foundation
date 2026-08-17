@@ -220,6 +220,17 @@ OPPONENT_ID: str = "cprime-npc-opponent"
 # Protocol C′ ids end in the seed (``cprime-{arm}-{seed}``); multigen appends a
 # generation suffix (``…-g1`` / ``…-g2``). Both must yield the same seed.
 AGENT_ID_SEED_PATTERN: re.Pattern[str] = re.compile(r"-(?P<seed>\d+)(?:-g\d+)?$")
+# D-108. Why a train step declined — one distinct string per early exit of
+# _train_adapter, because the five of them return identical counts and the same
+# unread weight sentinel. Only ONE of these is a property of the life rather
+# than of the instrument (the trainer's own "no preference pairs"), and it is
+# deliberately NOT listed here: it comes from local_llm, and copying its text
+# into this file would be two literals that must agree forever.
+TRAIN_SKIP_LORA_OFF: str = "lora disabled by env"
+TRAIN_SKIP_IMPORT_FAILED: str = "lora_update import failed"
+TRAIN_SKIP_PAIR_BUILDER_RAISED: str = "pair builder raised"
+TRAIN_SKIP_TRAIN_RAISED: str = "train raised"
+TRAIN_SKIP_UNSTATED: str = "declined without a stated reason"
 ARM_LIVED: str = "lived"
 ARM_NULL: str = "null"
 ARM_SHUFFLE: str = "shuffle"
@@ -278,6 +289,15 @@ class TrainOutcome(NamedTuple):
     dpo_delta_logp_chosen: float = float("nan")
     dpo_delta_logp_rejected: float = float("nan")
     dpo_chosen_went_down: int = EMPTY_COUNT
+    # D-108. WHY the weights went unread, when they did. Pure instrumentation:
+    # nothing on the single-lineage path reads it and no computation here
+    # changes (§2.10). It exists because the five early exits below all return
+    # the same unread sentinel AND the same zero counts, so the result cannot
+    # tell "this life produced no pair to train on" — a real property of a
+    # quiet life — from "the trainer blew up". A gate that must exempt the
+    # first without exempting the second needs the reason, and the counts
+    # cannot supply it: four of the five exits report zero pairs.
+    reason: str = ""
 
 
 @dataclass
@@ -1054,7 +1074,10 @@ def _train_adapter(
         "yes",
         "YES",
     }:
-        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
+        return TrainOutcome(
+            EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD,
+            reason=TRAIN_SKIP_LORA_OFF,
+        )
 
     try:
         from dau.foundation.lora_update import (
@@ -1073,7 +1096,10 @@ def _train_adapter(
             f"({exc!r}) — arm continues untrained",
             flush=True,
         )
-        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
+        return TrainOutcome(
+            EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD,
+            reason=TRAIN_SKIP_IMPORT_FAILED,
+        )
 
     os.environ.setdefault(NLI_FILTER_ENABLED_ENV, "1")
 
@@ -1096,7 +1122,10 @@ def _train_adapter(
             f"raised {exc!r} — arm continues untrained",
             flush=True,
         )
-        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
+        return TrainOutcome(
+            EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD,
+            reason=TRAIN_SKIP_PAIR_BUILDER_RAISED,
+        )
 
     n_pairs_trained = int(POLARITY_FILTER_STATS.get("passed", EMPTY_COUNT)) - before_passed
     n_pairs_rejected = (
@@ -1140,7 +1169,10 @@ def _train_adapter(
             f"arm continues untrained",
             flush=True,
         )
-        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
+        return TrainOutcome(
+            EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD,
+            reason=TRAIN_SKIP_TRAIN_RAISED,
+        )
 
     trained = bool(result.get("trained", False))
     if not trained:
@@ -1149,7 +1181,12 @@ def _train_adapter(
             f"({result.get('reason', 'no reason given')}) — arm is untrained",
             flush=True,
         )
-        return TrainOutcome(EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD)
+        # The trainer's OWN reason, passed through rather than re-derived: it
+        # is the only place that knows whether the pair set was empty.
+        return TrainOutcome(
+            EMPTY_COUNT, EMPTY_COUNT, LORA_B_ABS_SUM_UNREAD,
+            reason=str(result.get("reason", TRAIN_SKIP_UNSTATED)),
+        )
 
     print(
         f"[PROTOCOL_C_PRIME] {agent_id}: trained on {len(pairs)} pairs "
