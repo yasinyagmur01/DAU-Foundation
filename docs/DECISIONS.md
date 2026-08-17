@@ -8169,3 +8169,57 @@ multigen'in sözleşmesini korudu (replay her koşumda var, yalnız mock'ta atla
 koşumun *"deterministik"* olduğu iddiası, o kolun iki geçişte aynı çıktığı
 gözlemine dayanır — bütün kolların bütün tohumlarda test edildiği anlamına
 **gelmez**.
+
+---
+
+## D-107 · 2026-08-17 · **A3: G ≥ 3 yapısal gereklilik olarak yazıldı** — iki taban ayrıldı
+
+**Ne yapıldı:** *"kaç nesil"* sorusunun **iki ayrı tabanı** olduğu kodda ve
+belgede ayrıldı, ve ikisi **farklı türde** kurallar:
+
+| taban | değer | ne olur | kural türü |
+|---|---|---|---|
+| `MINIMUM_GENERATIONS_DEFINED` | **2** | G=1'de geçiş yok ⇒ Price **tanımsız** | ⛔ **hata** (`ValueError`) |
+| `MINIMUM_GENERATIONS_INFORMATIVE` | **3** | G=2'de tek geçiş var, ama o geçişin seçilim terimi **yapı gereği sıfır** | ⚠ **damga** (`[WARN]` + `generations_informative: false`) |
+
+### 1. Neden 3 — türetim, tercih değil
+
+P0-① gereği kurucular **aynı nişe** doğuyor ve bit düzeyinde özdeşler. ⇒ 1.
+nesil geçişine `z`'de **sıfır varyansla** giriyor, ve sabit bir `z` üzerinde
+`Cov(w, z)` turnuva ne yaparsa yapsın **sıfırdır** — *"küçük"* değil,
+*"tespit edemedik"* değil, **tanım gereği sıfır**.
+
+⭐ D-104 bunu **ölçtü**: gen1'de 8 ajanda **1** farklı `z`, gen2 ve gen3'te **4**.
+
+⇒ G=2 bir koşumun **tek** geçişi, yalnızca sıfır raporlayabilen geçiştir.
+**G ≥ 3 tasarımın yapısal gereğidir**, güç ya da bütçe tercihi değil ⇒ ⛔
+**P7-a (bütçe) bunu kesemez.** Bütçe kesme sırası zaten *tohum* idi (§B3).
+
+### 2. Neden hata değil de damga — ve bu bir taviz değil
+
+G=2 **iyi tanımlı** (Price hesaplanıyor) ve duman koşumunun istediği şey tam
+olarak o; A2'nin replay'i de `REPLAY_GENERATIONS = 2` ile koşuyor. Hata yapmak
+kendi doğrulama aletimizi kapatırdı.
+
+⚠ Ama sessiz de bırakılmadı (§2.9): **yalnızca sıfır raporlayabilen bir koşum,
+sıfır ölçmüş bir koşum gibi okunamaz.** Konsola `[WARN]` basılıyor **ve**
+sonuç JSON'una `generations_informative: false` yazılıyor — ikincisi
+bilerek: bir ay sonra dosyayı açan okuyucunun terminal geçmişi yok.
+
+### 3. Mutasyon kontrolü (§2.4)
+
+| mutasyon | kırılan test |
+|---|---|
+| damga her koşumda `True` | `test_two_generations_are_stamped_uninformative` |
+| konsol uyarısı silindi | aynı test (`capsys` ile metni tutuyor) |
+
+Ve `test_three_generations_are_not_stamped` ters yönü tutuyor: damga
+**ayırt etmek** zorunda, her zaman basmak değil.
+
+### 4. Sınır
+
+⚠ Bu, G ≥ 3'ün **yeterli** olduğunu söylemiyor. Söylediği tek şey: G=2
+**yetersizdir ve bunu koşumdan önce biliyoruz**. Kaç nesil gerektiği (D-076'nın
+S5'i: *"kaç nesil = birikimli kalıtım"*) hâlâ ikinci ön-kaydın ve P7-a'nın
+konusu; ⚠ DR #6'nın kendi içinde çelişkili olduğu yer de burasıydı (§5 G=5–10
+derken §6 sentezi G=3 öneriyordu).
