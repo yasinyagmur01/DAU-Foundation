@@ -7502,3 +7502,81 @@ repoya işe yaramaz bir bekçi girer"* uyarısının test-kurgusu hâli.
 ⚠ **Üretim yolu bu kayıtta değişmedi.** `build_graph` ve `pool_step_node`
 olduğu gibi duruyor; eklenen şey **yeni bir yetenek**, ve hiçbir koşum onu
 henüz kullanmıyor.
+
+---
+
+## D-099 · 2026-08-17 · **E2 adım 2**: `run_round` — mera tur başına bir kez tıklıyor
+
+**Durum:** kod (`56943af`) · **Etiket:** yeni yetenek, üretim yolu değişmedi ·
+suite **`451 passed, 2 deselected`**
+
+### 1. Ne yazıldı
+
+`run_round(env_state, states, app) → RoundOutcome(env_state, states, alive,
+granted)` [graph.py](dau/foundation/graph.py).
+
+Bir tur: her ajan `step_agent_once` ile **bir olay** ilerler → bütün talepler
+toplanır → `advance_commons` **bir kez** çağrılır → sonuçlar her ajanın
+state'ine yazılır → `should_continue` kimin yaşadığına karar verir.
+
+### 2. İki tasarım ayrımı — biri çağıranın, biri değil
+
+⭐ **Eylem sırası bilerek çağıranın.** Sıra bir **fizik kararı** ve ilan
+edilmesi gerekiyor (D-079 — Schönfisch & de Roos 1999; Fatès 2014), ve
+**P0-① tam olarak bu sıra hakkında bir karar** (sıralı erişim, sıra dönerek).
+Burada `sorted()` yazmak Yasin'e ait bir soruyu sessizce kapatırdı.
+
+⛔ **Tık çağıranın değil.** Bütün talepler havuz kımıldamadan **önce**
+toplanıyor. Ajan başına tıklamak, aynı turda ikinci ajanın birincinin çektiği
+havuzu görmesine yol açar ve `realized_extractions`'ın oransal paylaştırması
+(D-066) **hiç devreye girmez** ⇒ *"ortak havuz"* iddiası **kodda yanlış** olur
+ama sonuçlarda doğru görünür.
+
+### 3. Tekrarın kaldırılması
+
+`commons_request_from_state` çıkarıldı: *"bu ajan ne istedi"* kuralını artık
+`pool_step_node` (N=1) ve `run_round` (N) **paylaşıyor**. İki çağıranın aynı
+kuralı yeniden türetmesi, §2.8'deki ölçüm/rapor çiftlerinin **dört kez**
+ayrışma biçimiydi.
+
+### 4. ⭐ Mutasyon kontrolü bir **test zayıflığı** yakaladı
+
+İlk hâlinde iki stub ajan **aynı** kararı veriyordu. *"Havuz ajan başına
+tıklasın"* mutasyonu altında sıra-bağımsızlığı testi **geçti** — çünkü simetrik
+talepte sıralı çekiliş her iki sırada da aynı sayıları veriyor. ⇒ **Test tam da
+yakalamak için yazıldığı mutasyona karşı boştu.**
+
+Düzeltildi: iki ajan artık **farklı** talep ediyor (8.0 vs 2.0) ve mera **ince**
+(stok 1.0, paylaştırma fiilen devreye giriyor). Test ayrıca *"mera gerçekten
+kıt mı"* diye assert ediyor, yoksa kontrol yine boşa düşerdi.
+
+| mutasyon | kırılan (düzeltmeden sonra) |
+|---|---|
+| havuz ajan başına tıklasın | *"tur başına bir tık"* **+ *"sıra bağımsız"*** |
+| ölen ajanı süzme | bütçe testi |
+
+⇒ **§2.4'ün kendisi hakkında bir ders:** mutasyon kontrolü *"test kırıldı mı"*
+diye sorulunca yeterli değil; **hangi** testlerin kırıldığına bakmak gerekiyor.
+Kırılması beklenen bir test ayakta kalıyorsa o test boştur.
+
+### 5. Bir yan gözlem — ölüm testi neden enerjiyle kurulamadı
+
+`should_continue` hasat **krediye yazıldıktan sonra** yargılıyor (D-066: *"eat
+now, act on it next event"*). ⇒ Stoklu bir merada enerjisi **sıfır** olan bir
+ajan tur içinde **canlanıyor** (`metabolic_gain(8.0) ≈ 1.0`). Boş merada ise
+**ikisi de** ölüyor. ⇒ Test **olay bütçesi** yolundan kuruldu.
+
+⚠ Bu bir kusur değil, fiziğin sonucu — ama **kayda değer**: bugünkü evrende
+*"açlıktan ölmek"* ancak **havuz çöktüğünde** mümkün, bireysel kötü karardan
+değil. D-093'ün *"8/12 soy havuzu öldürüyor"* ölçümüyle birlikte okunmalı.
+
+### 6. Kalan iki adım
+
+| adım | doğrulama şartı |
+|---|---|
+| **E2-3** `run_population` | ⭐ **N=1 bugünün yaşamıyla birebir** (`--mock-llm`, `arm_digest`) |
+| **E2-4** nesil döngüsü + `allocate_heirs` + Price | `TOURNAMENT_K` alet kimliğine girer (D-094'ün borcu) |
+
+⚠ **Üretim yolu bu kayıtta da değişmedi** — `pool_step_node` artık paylaşılan
+yardımcıyı çağırıyor ama davranışı aynı (451 test yeşil, D-097'nin mock
+karşılaştırması hâlâ geçerli).
