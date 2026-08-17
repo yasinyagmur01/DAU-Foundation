@@ -19,18 +19,18 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-17) — ⛔ **D-091 BLOKAJI**
+# 1. Şu An Neredeyiz (2026-08-17) — ✅ **D-091 blokajı kapandı (D-092)**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. `origin/main` ile senkron (`6201dd5`).
-- **Suite:** `419 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi** (`6201dd5`).
-- **Son D-kaydı: D-091.** Sıradaki kayıt **D-092** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde iki commit** (`67ba99f`) — push edilmedi.
+- **Suite:** `423 passed, 2 deselected`. Çalışma ağacı temiz (`67ba99f`).
+- **Son D-kaydı: D-092.** Sıradaki kayıt **D-093** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** (aşağıda).
+- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı, iki ölçüm yenilendi (D-092)**.
 - **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
@@ -38,67 +38,57 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — ⛔ **D-091: davranış çöküşü artefakt olabilir**
+## ▶▶ SIRADAKİ İŞ — ⛔ **iki ölçüm borcu, sonra Kuşak 1 (C/D/E)**
 
-⚠ **2026-08-17.** Yasin *"yerel model erişimi kapandı"* diye mail almış.
-✅ **Kontrol edildi, bizi etkilemiyor:** model **15 GB diskte**,
-`HF_HUB_OFFLINE=1` altında 24 sn'de yüklenip karar üretti. Meta'nın
-kapattığı şey **Llama API Public Preview** (2026-07-06), ağırlıklar değil —
-ve biz o servisi hiç kullanmadık. ⚠ **Ağırlıkları silme:** yeniden indirmek
-kapılı depo + lisans onayı ister.
+✅ **D-091 blokajı kapandı (D-092, `53fdf04` + `67ba99f`).** Eşleme onarıldı,
+0a-2 ve 0a-3 koşuldu. ⇒ Sıradaki iş **Kuşak 1'e girmeden önce iki yeniden
+hesap**, çünkü D-092 üç sayıyı birden geçersiz kıldı.
 
-⛔ **Ama o kontrol daha ciddi bir şey buldu (D-091).**
+### ✅ D-092 ne yaptı — üç cümlede
 
-`decision_to_outcome` **DEFECT anahtarlarını en önce** sınıyor ve `"take"`
-bir DEFECT anahtarı. 36 gerçek çıktıda ölçüldü:
+`decision_to_outcome` artık *"take a moment"* (deyim) ve *"extract
+**information**"* (nesne havuz değil) kullanımlarını eşlemeden **önce**
+ayıklıyor; yalnız **fiil** siliniyor, çevresi kalıyor. Dal sırası bilerek
+değişmedi — reddedilen iki alternatif (`en çok anahtar` / `ilk eylem`) hasat
+miktarını **retoriğe** bağlıyordu ve 36 metnin **17'sinde** ayrışıyorlar.
 
-| | sayı |
-|---|---|
-| `defect` sayılan | **35 / 36** |
-| bunlardan **koruma/işbirliği dili de içeren** | **31 / 35** |
-| *"take a moment"* **deyimi** içeren | **30 / 35** |
-| ⭐ **gerçek hasat ifadesi HİÇ olmayan** | **14 / 35** |
-
-⛔⛔ Ve `SYSTEM_PROMPT` sınıflandırıcının anahtarlarını **dikte ediyor**:
-*"Prefer plain English words such as resource, **extract**, **take**…"* —
-ikisi de DEFECT anahtarı. **GAP-5 / L14'ün ölçülmüş hâli.**
-
-⇒ ⚠ ***"Olayların %94–100'ü DEFECT"* güvenli değil.** D-060 · D-068 · D-084 ·
-D-090 · D-081/082 — hepsi buna dayanıyor. Ve **K7'nin öncülü sarsıldı**:
-çöküşün bir kısmı bulgu değil **artefakt** olabilir.
-
-### ✅ Yasin'in kararları (2026-08-17, üçü de onaylandı)
-
-| | Karar | Seçilen |
+| ölçüm | önce | **sonra** |
 |---|---|---|
-| **0a** | Eşleme nasıl düzeltilsin | ⭐ **Öncelik + deyim ayıklama.** DEFECT'in mutlak önceliği kalkar, *"take a moment/time"* gibi deyimler hasat sayılmaz. **Prompt'a dokunulmaz** ⇒ koşumlar geçersiz olmaz |
-| **0b** | `SYSTEM_PROMPT`'un kelime dayatması | ⏸ **Şimdi karar verme.** Eşleme düzeldikten sonra davranış oranı yeniden ölçülür; prompt'un etkisi o zaman **rakamla** görünür |
-| — | Yasin yokken ne yapılacak | ✅ **Düzeltmeyi uygula + etkilenen ölçümleri yenile** (D-090 taraması + bir doğrulama koşumu) |
+| sentetik ızgara (36 çağrı, metinler **36/36 birebir aynı**) | 35 defect / 1 coop | **20 / 16** |
+| **canlı koşum** gen2 `defect` payı (N=2) | 78.4 % | **53.3 %** |
+| canlı `cooperate` payı | 2.0 % | **30.5 %** |
+| ömür sonunda havuz ölü | 6/6 soy | **5/6 soy** |
 
----
+⛔ **D-090'ın ⭐⭐ bulgusu düştü:** drift ekseni artık tekdüze değil
+(D D D C C C C → **C D C C C C C**). ✅ **Enerji havzası birebir ayakta.**
+⇒ **D kararının drift yarısı zayıfladı, enerji yarısı duruyor.**
 
-## ▶ ADIM ADIM KALAN İŞ — soğuk oturum buradan devam eder
+⛔ **Bedeli:** `fitness_class` **6/6 `normal`** (D-089'da 4 `normal` + 2 `low`),
+`F_agent` bandı 0.210 → **0.046**. Açık madde **A** kötüleşti. ⚠ Farklı
+tohumlar (5008–9 vs 5006–7), tohum etkisi dışlanamaz.
 
-### 🚧 Kuşak 0 — D-091 blokajı *(her şeyin önünde)*
+### 🚧 Kuşak 0 — kalan iki iş *(Kuşak 1'in önünde)*
 
 | # | İş | Durum |
 |---|---|---|
-| **0a** | Eşleme düzeltmesi + mutasyon kontrollü test + D-092 | ✅ **onaylandı**, uygulanacak |
-| **0a-2** | D-090 taraması yeniden koşulur (36 çağrı, ~3 dk) | 0a'dan sonra |
-| **0a-3** | Bir doğrulama koşumu (N=1–2, ~6–12 dk) — davranış oranı, `delta_pool`, ömür | 0a-2'den sonra |
-| **0b** | `SYSTEM_PROMPT` kelime dayatması | ⏸ **ertelendi**, 0a-3'ün sayısına bakılacak |
+| ~~0a~~ | Eşleme düzeltmesi + mutasyon kontrollü test + D-092 | ✅ `53fdf04` |
+| ~~0a-2~~ | D-090 taraması yeniden (57 çağrı, 198 sn) | ✅ **drift eşiği düştü** |
+| ~~0a-3~~ | Doğrulama koşumu N=2 (seed 5008–9) | ✅ `dau_runs/validate_d092_n2.json` |
+| **0c** ⭐ | **D-081/D-082'nin havuz aritmetiği yeniden hesaplanır** — hepsi *"her ajan her olayda 8.0 alır"* varsayıyordu, gerçek oran **%53** | ⬜ **C kararından önce şart** |
+| **0d** | **`fitness_class` bandının daralması** ölçülür — tohum etkisi mi, eşlemenin yan etkisi mi | ⬜ ⚠ **E4'ün önkoşulu**: turnuva ayrım ister |
+| **0b** | `SYSTEM_PROMPT` kelime dayatması (*"prefer … extract, take"*) | ⏸ **Yasin'in** — rakam artık var, oranlar **hâlâ o prompt'un altında** alındı |
 
-⚠ **Neden bloke ediyor:** *"olayların %94–100'ü DEFECT"* sayısı **C, D ve
-E'nin üçünün de** altında duruyor. Ve **K7'nin öncülü** (*"çöküş bir
-bulgudur"*) bu sayıya dayanıyor.
+⚠ **Neden 0c bloke ediyor:** C kararı (sabit kota / Holling II) tamamen
+*"talep 8.0, olayların %94–100'ü DEFECT"* aritmetiğine oturuyordu. İkisi de
+değişti.
 
-### ⛔ Kuşak 1 — evrenin fiziği *(üçü de Yasin'in, 0a bitmeden sorulmaz)*
+### ⛔ Kuşak 1 — evrenin fiziği *(üçü de Yasin'in, 0c bitmeden sorulmaz)*
 
 | # | Karar | Not |
 |---|---|---|
-| **D** ⭐ | **Çıkarımın bedeli olsun mu** | D-090'dan sonra **en umut verici**. ⚠ Ölçümü **yarıda kaldı**: gen2 enerji yörüngesi gerçek veriden yeniden kuruldu (`pe_list` + `extraction_by_event`), bedelin bandı nasıl kaydırdığı **hesaplanmadı** |
-| **C** | Hasat kuralı — sabit kota / **Holling II** (+ `h`) | Ölçüldü (D-082/083), hazır. ⚠ 0a ve D bunu değiştirebilir |
-| **E** | **P0 = ①** + aksiyom sorusu | ⚠ D-090 çerçeveyi değiştirdi: *"özdeş karar veren ajanlar"* **zorunlu değilmiş** |
+| **D** ⭐ | **Çıkarımın bedeli olsun mu** | ⚠ **D-092 gerekçeyi yarıya indirdi:** D-090'ın drift eşiği düştü, **enerji havzası ayakta** ⇒ *"bedel ajanları düşük enerjiye iter"* duruyor, *"drift'i artırır"* dayanaksız. Ölçümü hâlâ **yarıda** |
+| **C** | Hasat kuralı — sabit kota / **Holling II** (+ `h`) | ⛔ **0c'den önce sorulmaz** — bütün aritmetiği *"%94–100 DEFECT"*a oturuyordu, gerçek oran **%53** |
+| **E** | **P0 = ①** + aksiyom sorusu | ⚠ D-090 çerçeveyi değiştirdi: *"özdeş karar veren ajanlar"* **zorunlu değilmiş**. ⭐ D-092 bunu **güçlendirdi**: davranış artık %30 `cooperate` üretiyor |
 
 ### 🎯 Kuşak 2 — asıl hedef, hiç dokunulmadı
 
@@ -118,10 +108,17 @@ ve uygunluğu onardı, **seçilimi değil**.
 `fitness_class`'ın boş `high` bandı · `landmark_energy` doygunluğu (1/6
 tavanda) · KTO kararı · `lr` bandı · uç nokta seçimi · DTW · MAP-Elites
 
-### ⚠ Ölçüm borcu — D-091 doğruysa yeniden ölçülecekler
+### ⚠ Ölçüm borcu — D-092 sonrası **güncellendi**
 
-**D-068** (çöküş) · **D-084/D-090** (karar kanalı) · **D-081/D-082** (havuz
-aritmetiği — hepsi `d = 8.0`/olay varsayıyor)
+| kayıt | durum |
+|---|---|
+| **D-090 Bulgu 3** (drift eşiği) | ⛔ **düştü** — eşlemenin eseriymiş |
+| D-090 Bulgu 2 (enerji havzası) | ✅ **ayakta, birebir** |
+| **D-068** (%94–100 defect) | ⛔ sayı geçersiz ⇒ **%53** (N=2, keşifsel) |
+| **D-084** (karar kanalı doygun) | ⬜ yeniden ölçülmedi |
+| **D-081/D-082** (havuz aritmetiği) | ⬜ **0c** — `d = 8.0`/olay varsayımı düştü |
+| **D-060** (`fitness_class` dejenerasyonu) | ⬜ kök neden okuması değişti · **0d** |
+| **K7** (*"çöküş bulgudur"*) | ⚠ öncülü zayıfladı, **çürümedi** — çöküş 5/6 soyda hâlâ var |
 
 ---
 
