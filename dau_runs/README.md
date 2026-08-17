@@ -58,6 +58,7 @@ sütunu içeriğe göre verildi, tarihe göre değil.**
 | smoke_d032_local.json | 2026-08-10 14:51 | ESKİ ALET | D-032 smoke; local |
 | step0_d035_n3_local.json | 2026-08-10 20:18 | ESKİ ALET | D-035 Adım 0; N=3; local |
 | sweep_d092_texts.json | 2026-08-17 | KEŞİFSEL | **D-092 / 0a-2** — D-090 taramasının yeni eşlemeyle tekrarı (57 çağrı). ⭐ **Ham karar metinleri saklandı** (D-091'in ilan edilmiş sınırı buydu). D-kaydı bu dosyayı `scratchpad/sweep_d092.json` diye anar; içerik **aynı**, buraya kalıcılık için kopyalandı |
+| validate_d093_n4.json | 2026-08-17 | KEŞİFSEL | **D-093 / 0d-2** — N=4 (seed 5010–5013), `--lora`, I4.1 replay **identical**. `F_agent` yayılımı **0.239** ⇒ D-092'nin daralma uyarısı **çürütüldü**. gen2 `defect` **%50.5**, **12 soyun 4'ü** havuzu pencerede öldürmüyor |
 | validate_d092_n2.json | 2026-08-17 | KEŞİFSEL | **D-092 / 0a-3** — eşleme onarımından sonraki canlı doğrulama, N=2 (seed 5008–5009), `--lora`, `run_quality=flagged`. gen2 `defect` payı **%53.3** |
 | sweep_dpo_hyperparams.json / .jsonl | 2026-08-12 | KEŞİFSEL | **D-058/D-059** — `lr` × kırpma taraması, 96 hücre. `.jsonl` devam ettirilebilirlik kaydı; seed bazında `dpo_loss` burada |
 | training_artifacts/ (dizin, 8 dosya) | 2026-08-12 | KEŞİFSEL | **D-057** — eğitim girdilerinin diske dökümü (`DAU_DUMP_TRAINING_ARTIFACTS`), seed 3001–3004 × iki kol. D-059 ve **D-062**'nin korpusu |
