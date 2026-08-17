@@ -7827,3 +7827,108 @@ zorunda, yoksa test sırası testi boşaltıyor.
 | **2** | Kasa kalıtımını bağla (`transfer_to_heir`) | ⛔ **D-067**'nin kasa saati tam burada |
 | **3** | Adapter eğitimini kola göre bağla | ⛔ **D-033 / I0.7** tam burada |
 | **4** | Pilot (1.3 sa) | 1–3 bitmeden anlamsız |
+
+---
+
+## D-103 · 2026-08-17 · **Pilot koştu** — makine çalışıyor, ⛔ **seçilim terimi yapı gereği sıfır**
+
+**Durum:** pilot koşum (gerçek model, `--lora`) · **Etiket:** ⚠ **keşifsel** ·
+ham `dau_runs/pilot_population_n8_g2.json` · tohum 9601, N=8, G=2, 30 olay ·
+**~70 dk**, 998 PE olayı, `exit 0` · 32 adapter (~0.45 GB)
+
+### 1. ✅ Makine çalışıyor — dört kanalın dördü de canlıda
+
+| kanal | kanıt |
+|---|---|
+| **Seçilim mekaniği** | `w = [0,0,0,0,1,1,3,3]`, **`Var(w) = 1.500`**, `selection_measurable = True` — üç kolda da |
+| **Kanal 1 (kasa)** | miras **3 → 4–6**, varislerde `retrieval_context = 3`, `generation = 1` |
+| **Kanal 2 (adapter)** | `lived` ve `shuffle`'da **8/8 varis** ata ağırlıklarını aldı, `null`'da **0/8**. Eğitim: ajan başına **17 çift**, `lora_b_abs_sum_delta` **3.25–3.34** ⇒ ağırlıklar gerçekten hareket etti |
+| **Havuz** | gen1 sonunda **0.706** — kapasite ölçeklemesi (D-081) N=8'de tutuyor |
+
+⇒ D-076'dan beri açık olan linçpin **gerçek modelle** kapandı: `Cov(w,z)`
+hesaplanabilir durumda ve Price ayrışması alan alan yazılıyor.
+
+### 2. ⛔ Ama seçilim terimi **her satırda 0.0**
+
+| kol | gen1→gen2 Price |
+|---|---|
+| `lived` | energy `sec=0.0` `akt=−0.544` · resource `sec=0.0` `akt=1.0` |
+| `null` | energy `sec=0.0` `akt=−0.540` |
+| `shuffle` | energy `sec=0.0` `akt=−0.338` |
+
+**Sebebi ölçüldü:** gen1'in sekiz ajanı **bit düzeyinde özdeş**.
+
+| ölçüm | sonuç |
+|---|---|
+| `f_agent_inputs` sekiz ajanda | **hepsi aynı** |
+| landmark `z` sekiz ajanda | **hepsi aynı** (`{energy: 0.82}`) |
+| `F_agent` yayılımı | **0.000** |
+| ömür | **21, sekizinde de** |
+
+⇒ `Cov(w, z)` **z'nin varyansı sıfır** olduğu için tanımı gereği 0.
+⇒ Ve `w = [0,0,0,0,1,1,3,3]` **uygunluk farkının değil**, ilan edilmiş eşitlik
+kırıcının (`agent_id`) ve turnuva çekilişlerinin eseri. **Seçilim gen1'de
+kurgusal.**
+
+### 3. ⛔⛔ Kök neden — **①'i eksik uyguladım**
+
+P0-①'in tam adı *"**sıralı erişim, sıra dönerek**"*. `run_round` (D-099) ise
+şunu yapıyor: bütün talepler toplanır, `realized_extractions` eksik stoğu
+**talep oranında** paylaştırır. Yani **eşzamanlı erişim + orantılı bölüşüm**.
+
+⇒ Özdeş ajanlar eşzamanlı erişimde **özdeş pay** alır ⇒ özdeş kalır, sonsuza
+kadar. **①'in simetriyi kıran özelliği tam da atladığım şeydi.**
+
+⚠ D-099'da *"tık tur başına bir kez, yoksa oransal paylaştırma devreye
+girmez"* diye yazmıştım ve o **doğru**du — ama iki ayrı şeyi birbirine
+bağlamışım:
+
+| | doğru olan |
+|---|---|
+| **yenilenme** | tur başına **bir kez** ✅ (kalmalı) |
+| **çekiliş** | ① **sıralı** olmalı: ajan *i*, *i−1*'den **artan** stoktan alır. İkinci bir yenilenme yok, yalnız hizmet sırası |
+
+Bu ayrım korunursa hem havuz fiziği bozulmaz hem ① gerçekten uygulanır.
+⚠ **Sıra bir fizik kararı** (D-079) ve `run_round` onu bilerek çağırana
+bırakmıştı — kararın kendisi hâlâ Yasin'in.
+
+### 4. ⚠ İkinci ilan edilmemiş sapma — mera nesiller arası **devrediyor**
+
+Sarmalayıcı `env`'i nesilden nesile taşıyor. Tek soy tasarımı ise
+**1A: *"gen2 taze havuz, gen1'in devam eden ortak alanı değil"*** demişti.
+Pilotta sonucu görünüyor: gen2'de havuz **üç kolda da 0.000**.
+
+⚠ Hangisinin doğru olduğu **açık bir tasarım kararı**: popülasyonda ortak
+kaynağın nesiller arası devri savunulabilir (mera da miras kalır), ama 1A'nın
+tersidir ve **ilan edilmeden** yapılmamalı.
+
+### 5. ⭐ Yine de gen2'de ayrım **başladı**
+
+| kol | gen2 `F_agent` yayılımı | gen2 ömür |
+|---|---|---|
+| `lived` | **0.189** | 18–22 |
+| `shuffle` | 0.049 | 24 (sekizi de) |
+| `null` | **0.000** | 18 (sekizi de) |
+
+⇒ Ayrım **kalıtımdan** geliyor: `null` hiçbir şey almadığı için özdeş kalıyor,
+`lived` en çok ayrışıyor. ⚠ **Tek tohum, N=8, hipotez testi değil** — ama
+mekanizmanın çalıştığının ilk canlı işareti.
+
+### 6. Maliyet ölçüldü
+
+| | |
+|---|---|
+| süre | **~70 dk** (tahmin 1.3 sa — tuttu) |
+| PE olayı | 998 |
+| adapter | 32 × 14 MB ≈ **0.45 GB** |
+| boş disk | **60 GB** (Qwen önbellekleri silindikten sonra) |
+
+⇒ Ana koşum tahmini (10 tohum × N=8 × G=5) **~20 sa**, adapter **~11 GB**.
+Zarf **doğrulandı**.
+
+### 7. Sıradaki karar — Yasin'in
+
+| # | soru | öneri |
+|---|---|---|
+| **1** ⛔ | Çekiliş **sıralı** mı olsun (①'in gerçek hâli), sıra nesil başına mı döndürülsün | ⭐ **Evet, sıralı + rotasyon.** Aksi hâlde seçilim terimi **yapı gereği** sıfır kalır ve koşum seçilim hakkında hiçbir şey söyleyemez |
+| **2** | Mera nesiller arası devretsin mi, yoksa 1A gibi **taze** mi başlasın | ⚠ Karar ne olursa olsun **ilan edilmeli** |
