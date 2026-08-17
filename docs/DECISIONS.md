@@ -8109,3 +8109,63 @@ politika (ör. `*.aborted.json`) istenirse **ayrı bir karardır**.
   `I0.3=True · I0.6=True · I0.7=None (backend local değil) · I1.1=None (LoRA kapalı)`.
   ⭐ `None` ile `True`'nun ayrı tutulması burada görülüyor: koşamayan kapı
   **geçmiş sayılmıyor**.
+
+---
+
+## D-106 · 2026-08-17 · **A2: I4.1 replay popülasyona bağlandı** — ⭐ iki nesil **bit düzeyinde** tekrarlandı, ilk `clean` popülasyon koşumu
+
+**Ne yapıldı:** popülasyon koşucusu artık her **nesil** için bir `arm_digest`
+üretiyor ve koşumun sonunda `lived` kolunu **ikinci kez** koşup digest'leri
+karşılaştırıyor (`I4.1`, ABORT; mock'ta FLAG).
+
+### 1. Neden gerekliydi
+
+Tek geçişin içinde her ajan **bir kez** eğitiliyor ⇒ koşum kendi determinizmi
+hakkında hiçbir şey söyleyemez. D-037'de aynı tohum + aynı kod iki koşumda
+**farklı adapter** ve 21/50 karar farkı üretmişti, ve **diğer bütün kapılar
+yeşil kalmıştı**. Bunu gören tek şey ikinci bir geçiştir.
+
+### 2. Üç tasarım kararı, üçü de türetildi
+
+| karar | gerekçe |
+|---|---|
+| digest **nesil** başına | ayrışma **okunabilir** olsun: 1. nesli tutup 2. neslde ayrılan bir replay, kaymanın **miras alınan adapter'da** olduğunu söyler. Kol başına tek digest yalnız *"bir yerde"* derdi |
+| replay **kendi kol etiketiyle** (`pop-replay-…`) | aynı id'lerle koşsa ilk geçişin yazdığı adapter'ları yükler ⇒ 1. nesil **çıplak yerine adapte** koşar ve digest determinizmle ilgisi olmayan bir sebeple ayrışır. Multigen'in `replay_agent_id`'siyle aynı gerekçe. ⇒ replay kurucuları **I0.7'nin listesine** de eklendi |
+| derinlik `REPLAY_GENERATIONS = 2` | ⭐ **türetildi, seçilmedi:** kurucular adapter'sız doğar ⇒ 1. neslin kararları taban politikadan gelir ⇒ tek başına replay edilmesi **aranan kusuru göremez**. Eğitilmiş ağırlığa bağlı ilk nesil, varisin adapter'ı miras aldığı **2. nesildir** ⇒ 2, kusuru görebilen **en küçük** derinlik |
+
+Replay **en son** koşuyor (hiçbir kol onun bıraktığı adapter'ı tüketmesin), ve
+replay kolunun ajanları **I1.1'e de giriyor** — iki geçiş de hiçbir şey
+eğitmediyse digest'ler **yanlış sebeple** eşleşirdi.
+
+### 3. ⭐ Canlı doğrulama — tohum **9802**, N=2, G=2, 12 olay, `--lora`, ~13 dk
+
+| | sonuç |
+|---|---|
+| **I4.1** | ⭐ **identical** — iki neslin ikisi de bit düzeyinde aynı |
+| `run_quality` | ⭐ **clean** — popülasyon yolunda **ilk kez** |
+| kapılar | I0.3 ✅ · I0.6 ✅ · I0.7 ✅ (*"8 agent start from the base policy"*) · I1.1 ✅ (*"12 train arms moved lora_B; null arms unread"*) · I4.1 ✅ |
+
+⭐ **Beklenmeyen ama doğrulayıcı iki gözlem:**
+
+| gözlem | ne anlama geliyor |
+|---|---|
+| **gen1 digest'i DÖRT kolda da özdeş** (`f4490e0091dc`) | kollar yalnız **2. nesilden** ayrışıyor ⇒ kurucular gerçekten aynı fizikte koşuyor ve kol farkı **yalnız Kanal 2'den** geliyor. Bu, aletin doğru bağlandığının bağımsız kanıtı |
+| gen2: `lived` = `21547bc4` · `null` = `ec5e3c12` · `shuffle` = `a33c8d36` · **`replay` = `21547bc4`** | üç kol ayrışıyor **ve** replay `lived`'i birebir tekrarlıyor ⇒ ayrım gerçek, tekrar gerçek |
+
+Ham çıktı `scratchpad/a2_replay_smoke.json` (keşifsel, **dau_runs'a
+alınmadı**; N=2/G=2 duman koşumu, hiçbir bulgu taşımıyor).
+
+### 4. Bedel — ve bunun kimin kararı olduğu
+
+Replay bir kol × `REPLAY_GENERATIONS` nesil demek. Üç kollu G=3 bir koşumda
+**+2 kol-nesli ≈ %22 ek süre** ve N × 2 ek adapter dizini.
+⚠ Bunu kısmak **P7-a'nın (bütçe) konusudur ve Yasin'indir**; Claude Code
+multigen'in sözleşmesini korudu (replay her koşumda var, yalnız mock'ta atlanır)
+çünkü onu kapatmak *"determinizm"* iddiasını da kapatır.
+
+### 5. Sınır
+
+⚠ Replay **tek tohumun tek kolunu** tekrar ediyor (multigen'de de öyle). Bir
+koşumun *"deterministik"* olduğu iddiası, o kolun iki geçişte aynı çıktığı
+gözlemine dayanır — bütün kolların bütün tohumlarda test edildiği anlamına
+**gelmez**.
