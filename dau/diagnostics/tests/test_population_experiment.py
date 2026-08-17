@@ -406,3 +406,65 @@ def test_shuffle_arm_trains_with_the_preference_direction_shuffled(
     assert counts[True] > 0, "the shuffle arm never trained"
     assert counts[False] > 0, "the lived arm never trained"
     assert not any(NULL_MARKER in agent_id for agent_id, _ in seen)
+
+
+def test_mock_llm_flag_installs_the_canned_llm(monkeypatch, tmp_path) -> None:
+    """Flagging a mock without installing it silently runs the real model.
+
+    Measured: the first full-chain smoke run set the env var, reported
+    `mock=True` in tool_identity, and spent three minutes loading Llama before
+    it was killed. The flag has to reach graph._build_llm, not just the report.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    installed: list[bool] = []
+    monkeypatch.setattr(
+        pop_mod, "install_mock_llm", lambda: installed.append(True) or (lambda: None)
+    )
+    monkeypatch.setattr(pop_mod, "run_population_experiment", lambda **_: {"arms": []})
+
+    pop_mod.main(
+        [
+            "--seeds", str(SEED), "--n-agents", "2", "--n-generations", "2",
+            "--events", "3", "--no-lora", "--mock-llm",
+            "--results", str(tmp_path / "out.json"),
+        ]
+    )
+
+    assert installed == [True]
+
+
+def test_price_partition_actually_carries_drift_domains(monkeypatch) -> None:
+    """⭐ z must not be empty when the landmark was reached.
+
+    Reading the wrong landmark key is SILENT: z comes back empty, the partition
+    finds no domains and returns {}, and every generation reports a Price row
+    that says nothing at all. Measured — the first full-chain run reported
+    `price={}` for every transition and looked healthy otherwise.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=2,
+        n_generations=2,
+        events_budget=LANDMARK_EVENT + 2,
+    )
+
+    closed = [
+        row["price_for_previous_transition"]
+        for arm in results["arms"]
+        for row in arm["generations"]
+        if row["price_for_previous_transition"] is not None
+    ]
+    assert closed, "no transition was closed at all"
+    assert any(part for part in closed), "every Price partition came back empty"
+    for arm in results["arms"]:
+        for row in arm["generations"]:
+            for agent in row["agents"]:
+                if agent["landmark"]["landmark_reached"]:
+                    assert agent["landmark"]["landmark_drift_magnitudes"] is not None

@@ -64,7 +64,12 @@ from pathlib import Path
 from typing import Any
 
 import dau.foundation.graph as graph_mod
-from dau.diagnostics.run_cprime_multigen import _landmark_reading, mock_llm_enabled
+from dau.diagnostics.run_cprime_multigen import (
+    MOCK_LLM_ENV,
+    _landmark_reading,
+    install_mock_llm,
+    mock_llm_enabled,
+)
 from dau.diagnostics.run_protocol_c_prime import (
     ARM_NULL,
     ARM_ORDER,
@@ -117,6 +122,11 @@ ROUND_GUARD_SLACK: int = 1
 # What build_arm_population actually implements, said out loud in the results so
 # a reader never has to infer P0 from the code (§2.8).
 P0_NICHE_LABEL: str = "shared-per-seed (P0 option 1)"
+# The key _landmark_reading writes z under. Named rather than inlined because
+# reading the wrong one is silent: `z` comes back empty, price_partition finds
+# no domains and returns {}, and every generation reports a Price row that says
+# nothing. That is exactly what happened on the first full-chain run.
+LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
 
 
 @dataclass(frozen=True)
@@ -235,7 +245,7 @@ def candidates_from_rows(rows: list[AgentGenerationRow]) -> list[Candidate]:
         Candidate(
             agent_id=row.agent_id,
             f_agent=row.f_agent,
-            z=dict(row.landmark.get("drift_magnitudes", {}) or {}),
+            z=dict(row.landmark.get(LANDMARK_DRIFT_KEY, {}) or {}),
         )
         for row in rows
     ]
@@ -497,8 +507,10 @@ def _run_arm_generations(
         if previous_plan is not None:
             price = close_transition(
                 previous_plan,
-                {row.agent_id: dict(row.landmark.get("drift_magnitudes", {}) or {})
-                 for row in rows},
+                {
+                    row.agent_id: dict(row.landmark.get(LANDMARK_DRIFT_KEY, {}) or {})
+                    for row in rows
+                },
             )
 
         # Channel 2 first, then Channel 1. Order matters: training reads the
@@ -665,6 +677,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--n-generations", type=int, required=True)
     parser.add_argument("--events", type=int, required=True)
     parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument(
+        "--mock-llm",
+        action="store_true",
+        help="Deterministic canned LLM (no GPU). Must be INSTALLED, not just "
+        "flagged: reading the env var alone left the real model loading, which "
+        "is how the first full-chain smoke run silently became a real run.",
+    )
     # Mirrors the multigen runner: no default, so a forgotten flag can never be
     # mistaken for a deliberately untrained run (D-004 pattern).
     lora = parser.add_mutually_exclusive_group(required=True)
@@ -675,6 +694,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
+    if args.mock_llm:
+        os.environ[MOCK_LLM_ENV] = "1"
+        install_mock_llm()
     results = run_population_experiment(
         seeds=list(args.seeds),
         n_agents=int(args.n_agents),
