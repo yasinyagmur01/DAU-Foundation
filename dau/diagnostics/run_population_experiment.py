@@ -46,6 +46,13 @@ universe's, unchanged. The starting stock comes from the founders' own niche —
 they share it under P0-① — multiplied by N, so seed-to-seed variation survives
 the scaling instead of being replaced by a flat default.
 
+✅ The preflight gates are wired (A1, D-105). Until then this wrapper had ZERO
+of them while the multigen runner had nine, and the missing one that mattered
+most was I0.7: with the adapter now COPIED from parent to heir, a leftover
+directory on disk does not merely contaminate one life, it seeds a lineage.
+Phase 0 (I0.3 · I0.6 · I0.7) aborts before any GPU work, I1.1 is read after the
+run, and the results carry the invariants block and a `run_quality` stamp.
+
 ⚠ Exploratory. Nothing here is pre-registered; the second pre-registration is
 still a draft and P7-a (the budget) is still open.
 """
@@ -64,6 +71,16 @@ from pathlib import Path
 from typing import Any
 
 import dau.foundation.graph as graph_mod
+from dau.diagnostics.preflight import (
+    MODE_ABORT,
+    MODE_FLAG,
+    Preflight,
+    PreflightAbort,
+    check_determinism_settings,
+    check_no_stale_adapters,
+    check_pythonhashseed,
+    check_training_moved_weights,
+)
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
     _landmark_reading,
@@ -81,7 +98,11 @@ from dau.diagnostics.run_protocol_c_prime import (  # noqa: E402
     _build_lived_examples,
     _train_adapter,
 )
-from dau.diagnostics.tool_identity import build_tool_identity, resolve_lora_choice
+from dau.diagnostics.tool_identity import (
+    LORA_CHOICE_ON,
+    build_tool_identity,
+    resolve_lora_choice,
+)
 from dau.foundation.drift import DriftState
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
 from dau.foundation.generation import (
@@ -134,6 +155,119 @@ LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
 # because ① is the declared physics of this experiment, not a knob.
 SEQUENTIAL_ACCESS: bool = True
 ROTATE_ACT_ORDER: bool = True
+# The keys check_training_moved_weights (I1.1) reads out of a "section". The
+# predicate takes plain dicts, so a misspelt key here is not a type error: for a
+# train arm it reads as "weights never read" and fails loudly, but for the null
+# arm it reads as "nothing was recorded" and PASSES — the contamination half of
+# I1.1 would be silently switched off. Named so the test can hold the wrapper
+# and the predicate to the same string (§2.8).
+SECTION_ARM_KEY: str = "arm"
+SECTION_SEED_KEY: str = "seed"
+SECTION_DELTA_KEY: str = "lora_b_abs_sum_delta"
+
+
+def planned_founder_ids(
+    seeds: list[int],
+    n_agents: int,
+    arms: tuple[str, ...],
+) -> list[str]:
+    """Every agent id that exists before the first tournament — I0.7's input.
+
+    Only founders: heir ids are decided by the tournament and cannot be known
+    before the run. The heirs are covered at birth instead, by
+    ``inherit_adapter`` refusing a directory that is already there.
+    """
+
+    return [
+        founder_id(arm, seed, index)
+        for seed in seeds
+        for arm in arms
+        for index in range(FIRST_FOUNDER_INDEX, FIRST_FOUNDER_INDEX + n_agents)
+    ]
+
+
+def run_population_phase0(gate: Preflight, *, agent_ids: list[str]) -> Preflight:
+    """I0.3 · I0.6 · I0.7 before any GPU work — the population runner's phase 0.
+
+    A SUBSET of ``preflight.run_phase0``, and calling the whole thing instead
+    would abort every run here: I0.4 derives the seed from the agent id with
+    ``AGENT_ID_SEED_PATTERN``, which matches ``cprime-{arm}-{seed}`` and not the
+    population's ``pop-{arm}-s{seed}-a{index}`` (nor a heir's ``…-g{n}-h{k}``).
+    The predicates themselves are imported rather than re-implemented, so this
+    runner and the multigen one cannot drift apart on what a gate means (§2.8).
+
+    ⚠ I0.1/I0.2 are deliberately NOT here — they are a decision, not an
+    oversight, and it is written down in D-105.
+    """
+
+    gate.check("I0.3", check_pythonhashseed, mode=MODE_ABORT)
+    gate.check("I0.6", check_determinism_settings, mode=MODE_ABORT)
+    gate.check("I0.7", lambda: check_no_stale_adapters(agent_ids), mode=MODE_ABORT)
+    return gate
+
+
+def training_sections(arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One I1.1 section per agent per generation, across every arm.
+
+    Per AGENT, not per arm: in a population an arm trains N adapters per
+    generation and a single silent failure among them is exactly the thing that
+    must not average out. The null arm gets rows too, carrying no delta at all —
+    that is what lets I1.1's other half fire, the one that catches a train step
+    landing on the control's weights.
+    """
+
+    sections: list[dict[str, Any]] = []
+    for arm_result in arms:
+        for generation in arm_result["generations"]:
+            trained = generation.get("trained") or {}
+            for agent in generation["agents"]:
+                outcome = trained.get(agent["agent_id"])
+                sections.append(
+                    {
+                        SECTION_ARM_KEY: arm_result["arm"],
+                        SECTION_SEED_KEY: (
+                            f"{arm_result['seed']}/g{generation['generation']}/"
+                            f"{agent['agent_id']}"
+                        ),
+                        SECTION_DELTA_KEY: (
+                            None
+                            if outcome is None
+                            else outcome.get(SECTION_DELTA_KEY)
+                        ),
+                    }
+                )
+    return sections
+
+
+def run_population_phase2(
+    gate: Preflight,
+    *,
+    sections: list[dict[str, Any]],
+    lora_enabled: bool,
+) -> Preflight:
+    """I1.1 — read after the run, because only then have the weights moved.
+
+    ABORT, like the multigen runner, and for the same reason: every other
+    signal a trained agent emits is produced upstream of the gradient step, so
+    a run that reports pair counts and adapter files while Σ|lora_B| never
+    moved is the failure this project already shipped once (e4c026b).
+
+    ⚠ There is no diversity gate in this path, so ``gated`` is never set: an
+    agent whose life yields no usable preference pair reports an unread delta
+    and takes the whole run down with it. That is the strict reading and it is
+    deliberate — the alternative, exempting agents by their pair count, is
+    exactly the hole the predicate's docstring warns about, because a gated
+    agent and a silently failed one report the same zero.
+    """
+
+    gate.check(
+        "I1.1",
+        lambda: check_training_moved_weights(sections, lora_enabled=lora_enabled),
+        # A canned LLM has no LoRA layers to read, so the delta is unread by
+        # construction; aborting there would only punish smoke runs (D-012).
+        mode=MODE_FLAG if gate.mock else MODE_ABORT,
+    )
+    return gate
 
 
 @dataclass(frozen=True)
@@ -352,22 +486,35 @@ def inherit_adapter(parent_id: str, heir_id: str) -> bool:
 
     Returns whether anything was inherited. False is normal, not a failure: a
     founder has no parent adapter and an untrained arm never writes one.
+
+    ⚠ The refusal is checked BEFORE the parent is, and that order is the whole
+    point: heir ids cannot be known before the tournament, so I0.7 can only
+    clear the founders and this call is the heirs' half of the same gate. If it
+    only fired when the parent had an adapter, the null arm — which never
+    trains, so its parents never have one — would be the one arm able to inherit
+    a previous run's weights off disk, and it is the control.
     """
 
     try:
         from dau.foundation.local_llm import adapter_dir, adapter_exists
     except ImportError:  # torch/peft absent — the arm simply stays untrained
         return False
-    if not adapter_exists(parent_id):
-        return False
     target = adapter_dir(heir_id)
-    if target.exists():
+    if adapter_exists(heir_id):
         raise ValueError(
             f"{heir_id}: adapter directory already exists — refusing to graft "
             "onto it (D-033 / I0.7: a leftover adapter is how a fresh arm "
             "silently inherits a previous run)"
         )
-    shutil.copytree(adapter_dir(parent_id), target)
+    if not adapter_exists(parent_id):
+        return False
+    # adapter_exists asks for the config file, so the refusal above lets an
+    # EMPTY leftover directory through — and there are many: 79 of the 114 under
+    # dau_runs/adapters were created by a query that used to mkdir what it was
+    # asked about. An empty directory carries no weights and switch_adapter
+    # never loads from it, so it is not contamination; it would only make
+    # copytree raise FileExistsError three hours into a run.
+    shutil.copytree(adapter_dir(parent_id), target, dirs_exist_ok=True)
     return True
 
 
@@ -647,21 +794,39 @@ def run_population_experiment(
     lora: bool = False,
     pasture_carryover: bool = False,
     arms: tuple[str, ...] = ARM_ORDER,
+    preflight: Preflight | None = None,
 ) -> dict[str, Any]:
-    """Every arm × every seed. Each arm keeps its own population and pasture."""
+    """Every arm × every seed. Each arm keeps its own population and pasture.
+
+    ``preflight`` collects the invariant verdicts; phase 0 runs here and aborts
+    before any GPU work, and the block it renders is written into the results.
+    """
 
     if n_generations < 2:
         raise ValueError(
             "n_generations must be >= 2: with one generation there is no "
             "transition and Price is undefined (D-101)"
         )
+    use_mock = mock_llm_enabled()
+    # Resolved before anything runs: it is what sets DAU_LORA_ENABLED, and the
+    # three gate layers downstream read that env var at call time.
+    lora_choice = resolve_lora_choice(bool(lora), mock=use_mock)
+    gate = preflight if preflight is not None else Preflight(mock=use_mock)
+    gate.mock = use_mock
+    # Lock before checking I0.6: the check reports the determinism state the run
+    # will have, it does not create it. run_arm locks again per arm; this first
+    # lock exists so phase 0 is not judging the state some earlier import left.
+    _lock_seeds(seeds[0])
+    run_population_phase0(
+        gate,
+        agent_ids=planned_founder_ids(list(seeds), n_agents, tuple(arms)),
+    )
+    gate.enforce()
+
     # D-094's debt paid here: a run that SELECTS must say which selection rule
-    # ran, read from the constants rather than restated (§2.8). `lora_choice` is
-    # explicitly OFF because this step trains no adapters at all (E2-4b-2) —
-    # letting resolve_lora_choice exit on an unset flag would be right for the
-    # pre-registered runner and wrong here, where there is no choice to make yet.
+    # ran, read from the constants rather than restated (§2.8).
     identity = build_tool_identity(
-        lora_choice=resolve_lora_choice(bool(lora), mock=mock_llm_enabled()),
+        lora_choice=lora_choice,
         seeds=list(seeds),
         extra={
             "reproduction": {
@@ -678,6 +843,22 @@ def run_population_experiment(
             }
         },
     )
+    arm_results = [
+        run_arm(
+            arm, seed, n_agents, n_generations, events_budget,
+            pasture_carryover=pasture_carryover,
+        )
+        for seed in seeds
+        for arm in arms
+    ]
+    # Phase 2 can only be judged now — the weights move during the run. It is
+    # still ABORT, so a run whose training silently did nothing writes no JSON.
+    run_population_phase2(
+        gate,
+        sections=training_sections(arm_results),
+        lora_enabled=(lora_choice == LORA_CHOICE_ON),
+    )
+    gate.enforce()
     return {
         "note": RESULTS_NOTE,
         "protocol": PROTOCOL_NAME,
@@ -686,14 +867,8 @@ def run_population_experiment(
         "events_budget": events_budget,
         "seeds": list(seeds),
         "tool_identity": identity,
-        "arms": [
-            run_arm(
-                arm, seed, n_agents, n_generations, events_budget,
-                pasture_carryover=pasture_carryover,
-            )
-            for seed in seeds
-            for arm in arms
-        ],
+        **gate.block(),
+        "arms": arm_results,
     }
 
 
@@ -734,18 +909,25 @@ def main(argv: list[str] | None = None) -> None:
     if args.mock_llm:
         os.environ[MOCK_LLM_ENV] = "1"
         install_mock_llm()
-    results = run_population_experiment(
-        seeds=list(args.seeds),
-        n_agents=int(args.n_agents),
-        n_generations=int(args.n_generations),
-        events_budget=int(args.events),
-        lora=bool(args.lora),
-        pasture_carryover=bool(args.carryover),
-        arms=tuple(args.arms),
-    )
+    try:
+        results = run_population_experiment(
+            seeds=list(args.seeds),
+            n_agents=int(args.n_agents),
+            n_generations=int(args.n_generations),
+            events_budget=int(args.events),
+            lora=bool(args.lora),
+            pasture_carryover=bool(args.carryover),
+            arms=tuple(args.arms),
+        )
+    except PreflightAbort as abort:
+        # An expected refusal, not a crash: print the named invariants rather
+        # than a traceback, and write NO results file (preflight.py's contract —
+        # a silent fake result has to be impossible, not merely labelled).
+        raise SystemExit(str(abort)) from None
     args.results.parent.mkdir(parents=True, exist_ok=True)
     args.results.write_text(json.dumps(results, indent=1), encoding="utf-8")
     print(f"wrote {args.results}")
+    print(f"run_quality={results['run_quality']}", flush=True)
 
 
 if __name__ == "__main__":
