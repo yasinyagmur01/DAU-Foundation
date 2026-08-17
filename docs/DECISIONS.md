@@ -6924,3 +6924,144 @@ Sentetik prompt taraması (katman fonksiyonları gerçek, değerler benim), tek
 karar bağlamı, 36 örnek. Canlı koşum metinleri `dau_runs/*.json`'da **yok**
 (yalnız hash var) ⇒ geçmiş koşumlara geriye dönük uygulanamadı.
 **Hiçbir karar verilmedi, hiçbir kod değişmedi.**
+
+---
+
+## D-092 · 2026-08-17 · Davranış eşlemesi onarıldı — **D-090'ın drift eşiği düştü, enerji havzası ayakta**
+
+**Durum:** kod değişikliği (`53fdf04`) + iki ölçüm · **Etiket:** ⚠ ölçümler
+**keşifsel** · suite `423 passed, 2 deselected` · ham
+`scratchpad/sweep_d092.json` (57 çağrı, 198.3 sn) ve
+`dau_runs/validate_d092_n2.json` (N=2, seed 5008–5009, `--lora`,
+`run_quality = flagged`)
+
+D-091'in açtığı blokajın kapanışı. Yasin'in 2026-08-17'de verdiği karar
+(**0a**): *"Öncelik + deyim ayıklama. Prompt'a dokunulmaz."*
+
+### 1. Ne değişti
+
+`decision_to_outcome` artık anahtar eşlemesinden **önce** iki deseni
+ayıklıyor (`dau/society/extraction.py`):
+
+| desen | ne yakalar |
+|---|---|
+| `NON_HARVEST_IDIOM_RE` | *"take a moment / a short rest / some time"* — İngilizce deyim, nesnesi yok |
+| `NON_COMMONS_OBJECT_RE` | *"extract as much **information**"* — nesne havuz değil |
+
+**Dal sırası bilerek değişmedi.** İlan edilen çekim fizikseldir; yanında
+duran işbirliği dili birimleri geri koymaz.
+
+### 2. Reddedilen iki alternatif — ölçüldü, seçilmedi
+
+D-091'in ham 36 metninde üç kural karşılaştırıldı (model çağrısı yok):
+
+| kural | 36 metinde |
+|---|---|
+| bugünkü (ayıklama yok, DEFECT önce) | 35 defect / 1 coop |
+| **P — ayıklama + DEFECT yine önce** ⭐ seçilen | **20 / 16** |
+| C — en çok anahtar taşıyan sınıf | 6 / 30 |
+| F — metinde ilk ilan edilen eylem | 6 / 28 |
+
+Üç kural **36 metnin 17'sinde** ayrışıyor ⇒ bu bir uygulama ayrıntısı değil.
+**C ve F reddedildi:** C uzun cümleyi, F açılış cümlesini ödüllendiriyor;
+ikisi de hasat miktarını **retoriğe** bağlıyor ve `SYSTEM_PROMPT`'un dayattığı
+kelimelere P'den daha açık.
+
+⚠ **Yasin'in kararı *"DEFECT'in mutlak önceliği kalkar"* diyordu; P onu
+kısmen koruyor.** Sapma Yasin'e sunuldu ve onaylandı (2026-08-17) — gerekçe
+yukarıdaki ölçüm: kusurun kaynağı önceliğin kendisi değil **ayıklamanın
+yokluğu**.
+
+### 3. Yol üzerinde çıkan alt karar (§2.3)
+
+İlk uygulama ifadenin **tamamını** siliyordu; *"take a short rest"*
+ayıklanırken `rest` de gidiyordu ⇒ düzeltme DEFECT'i onarırken **CONSERVE
+kanıtını sessizce siliyordu**. ⇒ desenler **lookahead**'e çevrildi: yalnız
+**fiil** siliniyor, çevresi kalıyor. Kendi testi var
+(`test_strip_removes_only_the_verb`).
+
+### 4. Mutasyon kontrolü (§2.4) — üç mutasyon, üçü de doğru testi kırdı
+
+| mutasyon | kırılan |
+|---|---|
+| ayıklama `return text` (no-op) | 3 test |
+| lookahead → span (tümünü sil) | verb-only testi |
+| `"resource"` nesne listesine (aşırı ayıklama) | gerçek-hasat regresyon testi |
+
+### 5. ⭐ 0a-2 — D-090 taraması yeniden (57 çağrı)
+
+⭐ **Önce kontrol:** 36 ızgara metni D-091'inkiyle **36/36 birebir aynı**
+⇒ sınıf değişiminin **tamamı** eşlemeden geliyor, model kaymasından değil.
+Determinizm üçlüsü 3/3 aynı (D-037 tutuyor).
+
+| sonda | D-090 | **şimdi** |
+|---|---|---|
+| geniş ızgara | 35 defect / 1 coop | **20 / 16** |
+| ortalama hasat | 7.833 | **5.333** |
+| **enerji ekseni** | D C D C C C C D D D D | **birebir aynı** ✅ |
+| **drift ekseni** ⭐⭐ | D D D **C C C C** | **C D C C C C C** |
+
+⛔ **D-090'ın ⭐⭐ işaretli asıl bulgusu düştü.** *"Drift ekseninde tırtıksız,
+tekdüze bir eşik — gürültü değil kaldıraç"* ifadesi **eşlemenin eseriymiş**:
+metinler aynı, eski eşleme ilk üç noktayı `defect` sayıyordu, düzelince
+monotonluk kalmadı (7 noktanın 6'sı `cooperate`, biri değil).
+
+✅ **Enerji havzası (D-090 Bulgu 2) ayakta**, hem de nokta nokta aynı.
+
+⇒ ⚠ **D kararının gerekçesinin drift yarısı zayıfladı.** *"Bedel ajanları
+drift'i artırarak `cooperate` bölgesine sokar"* argümanı düşen bulguya
+dayanıyordu; **enerji yarısı duruyor.**
+
+### 6. ⭐ 0a-3 — canlı doğrulama koşumu (N=2, seed 5008–5009)
+
+| | D-089 (5006–7, eski eşleme) | **D-092 (5008–9, yeni eşleme)** |
+|---|---|---|
+| gen2 `defect` (8.0) payı | **78.4 %** | **53.3 %** |
+| gen2 `cooperate` (2.0) payı | 2.0 % | **30.5 %** |
+| ortalama çıkarım | 6.896 | **5.951** |
+| ömrün sonunda havuz ölü | **6 / 6 soy** | **5 / 6 soy** |
+| `F_agent` bandı | 0.334 – 0.544 | 0.470 – 0.516 |
+| `fitness_class` | 4 `normal` · 2 `low` | **6 `normal`** |
+| aktarılan anı | 23 | 19 |
+| landmark drift ≠ ∅ | 3 / 6 | **4 / 6** (resource 1.26–1.82) |
+
+⭐ *"Olayların %94–100'ü DEFECT"* ifadesi **artık geçerli değil**: aynı alette,
+aynı fizikte, yalnız eşleme düzeltilerek oran **%53**'e indi ve `cooperate`
+sıfırdan **%30**'a çıktı.
+
+⚠ **Ama çöküş kalkmadı, gecikti:** 6 soyun 5'inde havuz yine ölüyor. ⇒ D-081'in
+*"kıtlık anı"* okuması **niteliksel olarak** ayakta; sayıları (`d = 8.0`/olay
+varsayımı) yeniden hesaplanmalı.
+
+⛔ **Ve bir bedeli var: uygunluk ayrımı daraldı.** `fitness_class` D-089'da ilk
+kez iki bant birden doluyordu, şimdi **6/6 `normal`**. `F_agent` bandı
+0.210 → 0.046'ya düştü. Açık madde **A** (`high` bandı boş) **kötüleşti**.
+⚠ Farklı tohumlar ⇒ tohum etkisi dışlanamaz.
+
+### 7. Neye dokunuyor
+
+| kayıt | durum |
+|---|---|
+| **D-090 Bulgu 3** (drift eşiği) | ⛔ **düştü** |
+| D-090 Bulgu 2 (enerji havzası) | ✅ ayakta, birebir |
+| **D-068** (%94–100 defect) | ⛔ sayı geçersiz; yeni ölçüm %53 |
+| **D-084** (karar kanalı doygun) | ⚠ yeniden ölçülmeli |
+| **D-081 / D-082** (havuz aritmetiği) | ⚠ `d = 8.0`/olay varsayımı düştü; **yeniden hesaplanmalı** |
+| **D-060** (`fitness_class` dejenerasyonu) | ⚠ kök neden okuması değişti |
+| **K7** (*"çöküş bulgudur, müdahale etme"*) | ⚠ öncülü zayıfladı ama **çürümedi** — çöküş hâlâ 5/6 soyda var |
+
+### 8. Sınırlar — ⚠ ağır
+
+- **Farklı tohumlar.** D-089 5006–5007, bu koşum 5008–5009; her ikisi de
+  **N=2**. Karşılaştırma **tohum etkisiyle karışık**, aynı tohumda A/B değil.
+  ⚠ Aynı tohumda koşulamazdı: I0.7 diskteki adapter'lar yüzünden abort eder.
+- Tarama **sentetik** (katman fonksiyonları gerçek, değerler benim), tek karar
+  bağlamı.
+- **P kuralının iki kalıntısı ilan ediliyor**, düzeltilmedi:
+  *"I choose to cooperate and share what I **gathered**"* → `defect` ·
+  *"I will restrain myself and **take** only what I need"* → `defect` 8.0.
+  İkisi de gerçek bir hasat fiili taşıyor; eşlemede *"kısıtlı çekim"* sınıfı
+  **yok**. Bir sınıf eklemek ön-kayıt konusudur, düzeltme değil.
+- **0b hâlâ ertelenmiş.** `SYSTEM_PROMPT`'un *"prefer … extract, take"*
+  dayatması **kaldırılmadı** (prompt'a dokunulmadı ⇒ koşumlar geçersiz olmadı).
+  Artık rakam var: bu oranlar **hâlâ o prompt'un altında** alındı.
