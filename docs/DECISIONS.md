@@ -7432,3 +7432,73 @@ N=1'den geçiyor.
 
 ⚠ `TOURNAMENT_K` / `HEIRS_PER_TOURNAMENT_WIN` **hâlâ `tool_identity`'de değil**
 (D-094'ün borcu) — E2 bağlanınca girecek.
+
+---
+
+## D-098 · 2026-08-17 · **E2 adım 1**: tek olaylık graf — dış döngü artık mümkün
+
+**Durum:** kod (`285d2fd`) · **Etiket:** yeni yetenek, üretim yolu değişmedi ·
+suite **`445 passed, 2 deselected`**
+
+E2 dört adıma bölündü ve birincisi yapıldı. ⚠ **E2 bir bütün olarak
+"denetimsiz yapılmaz"** (tasarım belgesi); adım adım Yasin'in onayıyla
+gidiliyor.
+
+### 1. Neden bölündü — mimari kısıt
+
+Üretim grafı ([graph.py](dau/foundation/graph.py) `build_graph`) döngüsünü
+`pool_step_node` üzerinden **kapatıyor** ve yaşam bitene kadar kendi içinde
+dönüyor (`app.stream`). Tek ajan için doğru. ⛔ **N ajan için yanlış:** mera
+**tur başına bir kez** tıklamalı, her ajan için bir kez değil — yoksa aynı
+turda ikinci ajan, birincinin çekilişinden **sonraki** havuzu görür ve
+`realized_extractions`'ın oransal paylaştırması (D-066) hiç devreye girmez.
+
+⇒ İki şey grafın dışına çıkmak zorunda: **havuz adımı** (E1/E5, D-097 yaptı) ve
+**döngünün kendisi**.
+
+### 2. Ne yazıldı
+
+| parça | ne |
+|---|---|
+| `build_event_graph()` | `social_pre → agent → evaluator → meta → END`. Üretim çevriminin **wiring'i çıkarılmış** hâli — ikinci bir uygulama değil, aynı düğüm fonksiyonları aynı sırada |
+| `step_agent_once(state, app)` | Tek ajanı **tam bir olay** ilerletir, havuza dokunmaz |
+
+**İki tasarım ayrıntısı bilinçli:**
+
+1. `agent_node` graf **build anında** modülden okunuyor ⇒ Protocol C'nin
+   monkeypatch'i (`graph_mod.agent_node = _safe_agent`) `build_graph`'ta olduğu
+   gibi çalışmaya devam ediyor.
+2. `app` **dışarıdan** veriliyor. N ajan × çok tur bir döngüde grafı binlerce
+   kez yeniden derlemek yerine bir kez derliyoruz; ayrıca çağrı başına build
+   etmek `agent_node`'u **koşum ortasında** yeniden okurdu — D-042'nin adapter
+   yolunda kovaladığı sessiz kaymanın aynısı.
+
+### 3. ⚠ Test yazarken öğrenilen bir değişmez
+
+Stub agent'ın `agent_decision` olayına **`energy` koyması zorunlu**: meta
+gözlemci, enerji izinde **delik** olan bir satırı reddediyor
+([self_model.py:186](dau/self_model.py:186) — *"F_agent cannot average a life
+whose energy trace has holes"*, D-086'nın koyduğu kapı).
+
+⇒ Stub da gerçek düğüm gibi bu değişmeze uymak zorunda. Uymasaydı test **daha
+zayıf bir sözleşmeye** karşı geçerdi — §2.4'ün *"mutasyon kontrolü olmadan
+repoya işe yaramaz bir bekçi girer"* uyarısının test-kurgusu hâli.
+
+### 4. Mutasyon kontrolü (§2.4) — iki mutasyon, ikisi de doğru testi kırdı
+
+| mutasyon | kırılan |
+|---|---|
+| havuz düğümü grafa geri eklendi | *"havuz düğümü yok"* + *"havuza dokunmuyor"* |
+| `step_agent_once` girdiyi aynen döndürdü | *"tam bir olay ekler"* + tip kontrolü |
+
+### 5. Kalan üç adım
+
+| adım | ne | doğrulama şartı (şimdiden yazılı) |
+|---|---|---|
+| **E2-2** | `run_round`: her canlı ajanı bir olay ilerlet → `advance_commons` **bir kez** → sonuçları uygula → `should_continue` | N=2'de havuz **tur başına bir tik** atmalı |
+| **E2-3** | `run_population`: turlar üzerinde yaşam döngüsü, ajan başına ölüm, anı kasası bağlama | ⭐ **N=1 bugünün yaşamıyla birebir aynı** olmalı (`--mock-llm`, `arm_digest`) |
+| **E2-4** | Nesil döngüsü (G) + E4'ün `allocate_heirs`'ı + Price aletlemesi | `TOURNAMENT_K` alet kimliğine girer (D-094'ün borcu) |
+
+⚠ **Üretim yolu bu kayıtta değişmedi.** `build_graph` ve `pool_step_node`
+olduğu gibi duruyor; eklenen şey **yeni bir yetenek**, ve hiçbir koşum onu
+henüz kullanmıyor.
