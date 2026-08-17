@@ -23,9 +23,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **`origin/main`'in önünde on iki commit** (`9f5918e`) — push edilmedi.
-- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`9f5918e`).
-- **Son D-kaydı: D-096.** Sıradaki kayıt **D-097** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde on beş commit** — push edilmedi.
+- **Suite:** `441 passed, 2 deselected`. Çalışma ağacı temiz (`43b4220`+).
+- **Son D-kaydı: D-097.** Sıradaki kayıt **D-098** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -105,8 +105,8 @@ yapmadı).
 | # | İş | Durum / bağlı |
 |---|---|---|
 | ~~**E4**~~ ⭐⭐ | **Üreme: turnuva k=2, `w` sayacı, varis üretimi + Price ayrışması** | ✅ **D-094** (`374906c`) — `dau/generation/reproduction.py`, 12 test, dört mutasyon ⚠ **bağlı değil** |
-| E1/E5 | Ortak havuzu akışların dışına al; `pool_step_node` N talebi toplasın | ⛔ **P1** |
-| E2 | N ajanı olay bazında ilerleten dış döngü | ⛔ **P1 + P6** · ⚠ **denetimsiz yapılmaz** |
+| ~~E1/E5~~ | Havuz adımı N ajana çıktı (`advance_commons`) | ✅ **D-097** (`43b4220`) — N=1 yolu `--mock-llm` ile **birebir** doğrulandı, üç mutasyon |
+| **E2** ⬜ | N ajanı olay bazında ilerleten dış döngü | ⭐ **tek kalan kod işi** · `advance_commons` arayüzü hazır · ⚠ **denetimsiz yapılmaz** |
 | — | E4'ü orkestrasyona bağla + `TOURNAMENT_K`'yı alet kimliğine ekle | E1/E5 + E2 |
 
 ⭐ **Linçpin teknik olarak çözüldü:** `w` artık değişken olabiliyor ve Price
@@ -122,20 +122,23 @@ hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar.
 | **P7-a** | **Bütçe tavanı (kaç saat GPU)** | ⛔ **tek kalan sayı sorusu, Yasin'in.** Üçlü tavandan **türetilir**, seçilmez (§2.7). Üç eksen ayrı iş yapıyor: **N** → Price kestiriminin *yanlılığı* (Rice 2008) · **G ≥ 5** → birikimli kalıtım iddiası (D-014/D-074) · **tohum** → *kesinlik* (D-076: tekrar > N) |
 | ~~P7-b~~ ⭐ | Hipotez testi mi, kestirim mi | ✅ **kestirim (D-096).** ⇒ en küçük anlamlı etki ilan etmek **gerekmiyor** · birincil slot **test değil kestirim** · geçiş kapısı **`Var(w) > 0`** (tanım, kalibre eşik değil) · **null sonuç meşru çıktı** · bütçe artık *"ne harcayabiliriz"* sorusu |
 
-### ⬜ E1/E5 — denetim bitti, **uygulama onay bekliyor** (D-095)
+### ✅ E1/E5 kapandı (D-097) — ⬜ **tek kalan kod işi E2**
 
-⭐ **İş sanıldığından küçük:** `step_pool` / `realized_extractions` /
-`step_pool_with_crisis` **zaten N girişli sözlük** alıyor. Tek ajanlı olan şey
-`pool_step_node` ([graph.py:1237](dau/foundation/graph.py:1237)) — tek girişli
-sözlük geçiyor. ⇒ Yapılacak: ajan başına defter işini N üzerinde dönen bir
-fonksiyona çıkarmak, `pool_step_node` **N=1 çağıranı** olarak kalır.
+`advance_commons(env, [CommonsRequest, …])` yazıldı; `pool_step_node` onun
+**N=1 çağıranı**. ⭐ `CommonsRequest.event_counter` **ajanın** saati, ortamın
+değil — havuz tur başına bir tik atarken her yaşam kendi olayını sayıyor.
 
-⚠ **Neden onay bekliyor:** davranış korumalı ama **üretim grafiğinin
-ön-kayıtlı yoluna** dokunuyor, ve D-092 o yolun davranışını bugün **zaten
-değiştirdi** ⇒ sessiz bir kayma bugünün iki koşumunu karşılaştırma tabanı
-olarak geçersiz kılar. Doğrulama şartı yazıldı: N=1 yolu **aynı env / drift /
-internal state ve aynı defter satırlarını** üretecek, testi mutasyon
-kontrolünden geçecek.
+Davranış korunumu iki yoldan doğrulandı: **441 passed**, ve `--mock-llm` ile
+aynı tohumda refactor **öncesi/sonrası** `arm_digest` · gen2 `pe_list` ·
+`f_agent` · `extraction_by_event` **birebir aynı**.
+
+⚠ **Yan bulgu (D-097/§3):** anı kayıt id'leri `uuid4()` tabanlı ⇒ **aynı kodun
+iki koşumunda da değişiyor**. Digest'i, anı sayısını ve uç noktaları
+etkilemiyor, ama `inherited_memory_ids` **replay kanıtı olarak kullanılamaz**.
+İlan edilmiş sınır olarak kaydedildi, kusur açılmadı.
+
+⚠ **Hâlâ hiçbir şey N ajanla koşmuyor** — eklenen şey bir **yetenek**, bir
+koşum değil.
 
 ### 📋 Kuşak 3 — ikinci ön-kayıta ertelendi
 
