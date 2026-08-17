@@ -8022,3 +8022,90 @@ büyüklüğü yorumlanmıyor.
 | 1 | ⛔ **G ≥ 3** ön-kayıta yapısal gereklilik olarak yazılır (gen1 sıfır terim üretir) |
 | 2 | Üç kollu tam pilot (taze mera, sıralı erişim) — kol farkı ilk kez anlamlı olur |
 | 3 | İkinci ön-kayıt taslağı: okuma kuralları, ilan edilmiş sınırlar, P7-a bütçesi |
+
+---
+
+## D-105 · 2026-08-17 · **A1: kapılar sarmalayıcıya bağlandı** — ⭐ üç sessiz kusur yakalandı (biri **testlerin yarısını mock'a çeviriyormuş**)
+
+**Ne yapıldı:** `run_population_experiment` bugüne kadar **sıfır** preflight
+kapısıyla koşuyordu; multigen koşucusunda dokuz yerde geçen aynı sistem burada
+hiç yoktu. Bağlananlar: **faz 0 = I0.3 · I0.6 · I0.7** (ABORT, GPU işinden
+önce), **I1.1** (koşum sonrası, ABORT), ve sonuç JSON'una **`invariants` +
+`invariant_details` + `run_quality`** bloğu.
+
+Commit: kod+test `[A1]`, sızıntı düzeltmesi `[TEST]`.
+
+### 1. Neden en kritik iş buydu
+
+D-102'de **3A tersine çevrildi**: varis artık ebeveynin adapter dizinini
+**kopyalıyor**. ⇒ diskte kalmış bir adapter D-033 günündeki gibi **bir yaşamı**
+kirletmiyor, **bir soyu kuruyor** — ve kirlenme yönü hipotez lehine
+(`lived` koşumlar arası eğitim biriktirir, `null` hiç biriktirmez).
+
+### 2. Ne bağlanmadı, ve neden — sessizce atlanmadı
+
+| kapı | durum |
+|---|---|
+| **I0.4** (tohum ajan id'sinden türetilebiliyor mu) | ⛔ **bağlanamaz.** `AGENT_ID_SEED_PATTERN` = `-(\d+)(-g\d+)?$`; popülasyon id'si `pop-{arm}-s{seed}-a{index}` ve varis id'si `…-g{n}-h{k}` **eşleşmiyor** ⇒ bağlansa **her** koşum abort ederdi. ⚠ Kalan borç: bu kapı popülasyon yolunda **yok**, ikinci ön-kayıta girer |
+| **I0.1 / I0.2** (alet kimliği tam · LoRA seçimi ilan edilmiş) | ⏸ **kapsam dışı bırakıldı**, A1'in tanımı dört kapıydı. Ucuzlar; ikinci ön-kayıt öncesi eklenebilir |
+
+### 3. ⭐ Üç sessiz kusur — kapılar bağlanınca ortaya çıktılar
+
+**(a) Varislerin I0.7'si yokmuş.** Varis id'leri turnuvadan çıkıyor ⇒ faz 0
+**yalnız kurucuları** temizleyebiliyor. `inherit_adapter` diski kontrol
+ediyordu ama **ebeveyn kontrolünden sonra** ⇒ ebeveyni hiç eğitilmeyen tek kol,
+yani **`null`**, eski bir koşumun ağırlıklarıyla doğabilirdi. Sıra ters
+çevrildi. ⚠ Boş dizin **kasten** geçiriliyor: `dau_runs/adapters` altındaki
+114 dizinin 79'u boş ve hiçbiri yüklenmiyor; onları reddetmek üç saatlik bir
+koşumu sahte alarmla düşürürdü.
+
+**(b) ⭐⭐ `DAU_MOCK_LLM=1` süreç boyunca sızıyormuş.**
+`test_mock_llm_flag_installs_the_canned_llm` `main()` üzerinden bu değişkeni
+`os.environ`'a yazıyor ve **kimse geri almıyordu** ⇒ o testten **sonra** koşan
+her test sessizce **mock koşum** sayılıyordu. A1'e kadar görünmezdi; `run_quality`
+bağlanınca damga `mock` döndü ve **I1.1 ABORT'tan FLAG'e düştü** — yani kapı
+kendini kapatıyordu.
+
+**(c) `DAU_LLM_BACKEND=groq` de sızıyormuş.** `monkeypatch.delenv` **var
+olmayan** bir değişken için geri alma kaydı tutmuyor; `install_mock_llm`'in
+`setdefault`'u onu sonra yaratıyor. İki test bunu bırakıyordu, ve backend groq
+olunca **I0.7 "uygulanamaz"a** düşüyor (disk yolu yalnız local). Sonuç: kapı
+sırf test sırası yüzünden kapanabiliyordu.
+
+⇒ (b) ve (c) **A1'in kendi ürünü değil**, A1'in ortaya çıkardığı şeyler. İkisi
+de kaynağında düzeltildi (§2.11: sessizce birini seçme).
+
+### 4. Mutasyon kontrolü (§2.4) — beş mutasyon, beşi de **doğru testi** kırdı
+
+| mutasyon | kırılan test |
+|---|---|
+| I0.7 kapısı silindi | `test_a_stale_founder_adapter_aborts_before_any_life_runs` |
+| faz 0'dan sonraki `enforce()` silindi | aynı test — ⭐ ve **yalnız o**: I0.3 testi geçmeye devam etti, çünkü ikinci `enforce()` yine abort ediyor. Ayırt eden şey *"koşum başlamadan önce"* iddiası (`lives == []`) |
+| I1.1 (faz 2) silindi | üç I1.1 testi |
+| `inherit_adapter` sırası eskiye alındı | `…refuses_a_stale_heir_even_with_no_parent_adapter` |
+| `**gate.block()` sonuca yazılmadı | `test_results_carry_the_invariant_block…` |
+
+### 5. Bilerek alınan sertlik — ve bedeli
+
+I1.1 **ABORT** (mock'ta FLAG), multigen ile aynı. Popülasyon yolunda
+**çeşitlilik kapısı yok** ⇒ `gated` hiç işaretlenmiyor ⇒ hayatı hiç kullanılabilir
+tercih çifti üretmeyen **tek** ajan bütün koşumu düşürür.
+⚠ Gevşek alternatif (çift sayısına bakıp muaf tutmak) **kasten reddedildi**:
+kapının kendi belgesi *"kapılanmış kol ile sessizce başarısız olan kol aynı
+sıfırı raporlar"* diyor — muafiyeti sayıdan türetmek kapıyı kapatmak olurdu.
+⚠ Ölçülmüş taban: D-103/D-104 koşumlarında çift sayısı **7–20**, ve eğitilen
+**her** ajan `lora_B`'yi oynatmış ⇒ risk gerçek ama bugüne kadar hiç gerçekleşmedi.
+
+⚠ Abort sonrası **JSON yazılmıyor** — 20 saatlik ana koşumda bu, koşumun
+kaybı demektir. Multigen'in sözleşmesi bu ve **değiştirilmedi**; farklı bir
+politika (ör. `*.aborted.json`) istenirse **ayrı bir karardır**.
+
+### 6. Kanıt
+
+- Suite **502 passed** (önce 493; +9 yeni test), çalışma ağacı temiz.
+- Duman koşumu (mock, `--no-lora`, tohum 9801): PYTHONHASHSEED **yokken**
+  `Preflight ABORT — results will not be written: I0.3` ve **dosya yazılmadı**;
+  `PYTHONHASHSEED=0` ile `run_quality=mock`, blok
+  `I0.3=True · I0.6=True · I0.7=None (backend local değil) · I1.1=None (LoRA kapalı)`.
+  ⭐ `None` ile `True`'nun ayrı tutulması burada görülüyor: koşamayan kapı
+  **geçmiş sayılmıyor**.
