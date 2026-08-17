@@ -7182,3 +7182,82 @@ penceresinin **dışına**. *"Havuz korunuyor"* denemez, **"pencere içinde
   soydan soya değişken. Model D-081'inkiyle **aynı** tutuldu ki karşılaştırma
   anlamlı olsun.
 - **Hiçbir karar verilmedi, hiçbir sabit değişmedi.**
+
+---
+
+## D-094 · 2026-08-17 · **P2/P3/P4 kilitlendi** ve E4 yazıldı — `w` artık değişken olabiliyor
+
+**Durum:** üç tasarım kararı (Yasin) + kod (`374906c`) · **Etiket:** karar +
+uygulama · suite **`435 passed, 2 deselected`** · ⚠ **modül henüz bağlı değil**
+
+### 1. Yasin'in üç kararı
+
+| # | Karar | Seçilen | Reddedilen ve neden |
+|---|---|---|---|
+| **P2** | Seçilim şeması | ⭐ **Turnuva, k = 2** (Goldberg & Deb 1991) | **Kesme (üst %50)**: en yakın yayımlanmış analog bunu kullanıyor (Vallinder & Hughes 2024) ama N=8'i iki nesilde tek soya indirir · **Uygunlukla orantılı**: ölçülen dar `F_agent` bandında (0.279–0.518, D-093) baskı üretmez |
+| **P3** | Popülasyon boyutu | ⭐ **Sabit N + turnuva** — ölen her ajanın yerine turnuva kazananından bir varis ⇒ `w ∈ {0,1,2,…}` | **Ölüm-doğum dengesi (dalgalanan N)**: D-093'te 12 soyun **8'i** havuzu hâlâ öldürüyor ⇒ popülasyonun sıfıra inmesi gerçek risk; bütçe de öngörülemez olur |
+| **P4** | Price'ın `w`'si | ⭐ **Üç katman ayrı**: `F_agent` (girdi) → `w` (varis sayısı) → `z` (landmark drift, K5) | **`F_agent` doğrudan `w`**: D-071'den beri `F_agent`'ın %30'u gerçekleşmiş hayatta kalma; aynı sayı hem üremeyi belirler hem sonuç olarak raporlanırsa Mills & Beatty totolojisi geri gelir (D-075) |
+
+⭐ **P2'nin gerekçesi çeşitlilik değil ölçülebilirlik**, ve bu D-093'ün
+sayısına dayanıyor: `F_agent` yayılımı **0.239** ölçüldü, tavanı 0.518. Orantılı
+şema bu bandı baskıya çeviremez; turnuva `k` ile çevirebilir.
+
+### 2. Ne yazıldı — `dau/generation/reproduction.py`
+
+| parça | ne yapıyor |
+|---|---|
+| `tournament_winner` | k aday çekilir, `F_agent`'ı en yüksek olan kazanır. **Eşitlik `agent_id` ile kırılır** — liste sırasına bırakmak D-042'nin konum kusurunun aynısı olurdu |
+| `allocate_heirs` | `n_slots` boşluğu turnuvayla doldurur, **her ebeveyni** döndürür (kazanmayanlar `w = 0`) — sıfırları düşürmek kovaryansı kazananlara doğru saptırırdı |
+| `price_partition` | `Δz̄ = (1/w̄)·Cov(w,z) + (1/w̄)·E(w·Δz)`, **alan alan** |
+| `reproduction_report` | geçerlilik kapısı girdileri: `F_agent` yayılımı, `Var(w)`, `w`'nin farklı değer sayısı, `selection_measurable` |
+
+**İki ölçüm kararı açıkça ilan edildi:**
+
+1. **Price terimleri popülasyon momentleriyle** (N bölen, N−1 değil). Bu bir
+   üslup seçimi değil: ayrışma **ancak** popülasyon momentleriyle bir cebirsel
+   kimlik. ⚠ Rice 2008'in *"kestirim küçük N'de yanlı"* uyarısı (D-082/§P)
+   **iddia tarafında bir sınır**, bölen değiştirme gerekçesi değil.
+2. **`z` vektör kalıyor**, ayrışma alan alan dönüyor. Norma indirmek
+   (‖z‖, ya da tek alan seçmek) **etkiyi görüp uç nokta seçmek** olurdu ⇒ L9.
+
+**Ve bir semantik karar:** drift bayrağı hiç yanmamış bir alan için magnitude
+**0.0** sayılıyor (`DRIFT_ABSENT_MAGNITUDE`). Yokluk veri, eksik değer değil —
+aksi halde o ebeveyn o alanın kovaryansından **düşerdi**.
+
+### 3. Mutasyon kontrolü (§2.4) — dört mutasyon, dördü de doğru testi kırdı
+
+| mutasyon | kırılan test |
+|---|---|
+| `w = 0` ebeveynleri sonuçtan düş | `test_allocate_heirs_keeps_the_losers` |
+| kovaryansta N−1 böleni | **`test_price_identity_holds_exactly`** |
+| eşitlik kırıcıyı kaldır (liste sırası kazanır) | `test_tournament_tie_breaks_on_agent_id_not_list_order` |
+| `selection_measurable` her zaman `True` | `test_report_flags_the_degenerate_case` |
+
+⭐ **Yük taşıyan test `test_price_identity_holds_exactly`:** ayrışmanın toplamı,
+varislerden doğrudan hesaplanan `Δz̄` ile **birebir** eşleşmek zorunda. Bölen,
+ağırlık ya da `w = 0` işlemesi kayarsa makul görünen bir sayı değil
+**uyuşmazlık** çıkıyor.
+
+### 4. ⚠ Bağlanmadı, ve bilerek
+
+`run_cprime_multigen` bu modülü **çağırmıyor**. Sırada E1/E5 (ortak havuzu
+akışların dışına al) ve E2 (N ajanı ilerleten dış döngü) var, **ikisi de
+P1/P6'ya bağlı ve ikisi de karara bağlanmadı**.
+
+⚠ **`TOURNAMENT_K` bilerek `tool_identity`'ye eklenmedi.** Koşmayan bir ayarı
+raporlamak U2/D-024'ün **tersi** hatası olurdu (§2.8: rapor aleti takip etmeli).
+⇒ **Borç:** E4 bağlandığı anda `TOURNAMENT_K` + `HEIRS_PER_TOURNAMENT_WIN` alet
+kimliğine girer.
+
+### 5. Bugün kapanan ve açık kalan
+
+✅ **Linçpin teknik olarak çözüldü:** `w` değişken olabiliyor, `Cov(w,z)`
+tanımlı, kimlik testle korunuyor.
+
+⛔ **Ama hâlâ hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar. Kalan
+üç karar **Yasin'in**: **P1** (kol başına ayrı havuz mu tek havuz mu) · **P6**
+(iki faz korunsun mu) · **P7** (N/G/tohum zarfı, ⚠ literatür burada sayı
+vermedi, D-076/§M.4).
+
+⚠ **E2 için tasarım belgesinin uyarısı yerinde:** *"N ajanı olay bazında
+ilerleten dış döngü **denetimsiz yapılmaz**"*.
