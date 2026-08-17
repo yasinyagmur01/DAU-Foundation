@@ -6838,3 +6838,89 @@ varisler **doğuştan** miras drift ve anı taşıyor — yani bu bölgeye eskis
   eseri**, bir bulgu değil.
 - Enerji havzasının kenarları tırtıklı ⇒ bir kısmı kaotik duyarlılık olabilir.
 - **Hiçbir karar verilmedi, hiçbir kod değişmedi.**
+
+---
+
+## D-091 · 2026-08-17 · ⛔ *"Davranış çöküşü"* büyük ölçüde **ölçüm aletinin eseri** olabilir
+
+**Durum:** ölçüm (gerçek model, greedy, çevrimdışı) · **Etiket:** ⚠ **keşifsel**
+· `DAU_LORA_ENABLED=0`, **kod değişmedi, sabit değişmedi** · 36 çağrı,
+177.7 sn · ham `scratchpad/kw_audit.json`
+
+### Nasıl bulundu
+
+Yasin *"yerel model erişimi kapandı"* diye bir mail almış. Kontrol edildi:
+model **15 GB diskte**, ve `HF_HUB_OFFLINE=1` altında **24 sn'de yüklenip
+karar üretti** ⇒ koşumlar etkilenmiyor. (Meta'nın kapattığı **Llama API
+Public Preview**, 2026-07-06; ağırlıklar değil. Biz o servisi hiç
+kullanmadık.) ⭐ **Ama o testin çıktısı kusuru gösterdi.**
+
+### ⛔ Bulgu 1 — eşleme koruma dilini `defect` sayıyor
+
+`decision_to_outcome` **DEFECT anahtarlarını en önce** sınıyor
+(`extraction.py:100`), ve `"take"` bir DEFECT anahtarı. Deterministik
+kanıt:
+
+| metin | sınıf |
+|---|---|
+| *"I need to **conserve** energy. I will **take** a short rest to recover."* | **defect 8.0** |
+| *"I choose to **cooperate** and **share** what I **gathered**."* | **defect 8.0** |
+| *"I will **restrain** myself and **take** only what I need."* | **defect 8.0** |
+
+⭐ İkincisinde *"cooperate"* **birebir geçiyor** ve yine `defect` — çünkü
+`"gathered"` önce sınanıyor.
+
+### ⛔ Bulgu 2 — gerçek çıktılarda oran **yüksek**
+
+36 çağrı, 35'i `defect`:
+
+| | sayı |
+|---|---|
+| `defect` sayılan | **35 / 36** |
+| bunlardan **koruma/işbirliği dili de içeren** | **31 / 35** |
+| saf `defect` (yalnız DEFECT anahtarı) | **4 / 35** |
+| *"take a moment / take time"* **deyimi** içeren | **30 / 35** |
+| *"extract/gather **information**"* (kaynak değil) | **6 / 35** |
+| ⭐ **gerçek hasat ifadesi HİÇ olmayan** | **14 / 35** |
+
+Tetikleyen anahtarlar: **`take` 32** · `extract` 23 · `gather` 3.
+
+Örnek: *"I will **take a moment** to assess my internal state… I will
+**extract** as much **information** as possible"* → **hasat 8.0**.
+
+### ⛔⛔ Bulgu 3 — `SYSTEM_PROMPT` sınıflandırıcının anahtarlarını **dikte ediyor**
+
+```
+"Prefer plain English words such as resource, extract, take,
+ social, talk, or cooperate when those actions apply."
+```
+
+⇒ Prompt modele *"**extract** ve **take** kullan"* diyor; ikisi de **DEFECT
+anahtarı** ve prompt'un listesinde **en önde**. **GAP-5 / L14'ün
+(lexicon priming) somut ve ölçülmüş hâli** — artık kuramsal risk değil.
+
+### ⇒ Neye dokunuyor
+
+*"Olayların %94–100'ü DEFECT"* ifadesi **güvenli değil**. Ona dayanan her
+okuma yeniden değerlendirilmeli:
+
+- **D-060** `f_agent`/`fitness_class` dejenerasyonunun kök nedeni
+- **D-068** davranış çöküşü
+- **D-084** karar kanalı doygunluğu · **D-090** 35/36 `defect`
+- **D-081/082** havuz aritmetiği — hepsi `d = 8.0`/olay varsayıyor
+- ⚠ **K7** *"çöküş bir bulgudur, müdahale etme"* dedi. **Öncülü sarsıldı:**
+  çöküşün bir kısmı bulgu değil **artefakt** olabilir.
+
+⚠ **İddia sınırı:** gösterilen şey, `defect` sınıflamalarının **31/35'inin
+çelişkili dil taşıdığı** ve **14/35'inde hiçbir gerçek hasat ifadesi
+bulunmadığı**. *"Şu kadarı yanlış sınıflandı"* **denmiyor** — her metni
+tek tek yargılamak gerekir, ve bunu bir LLM'e yaptırmak **yasak**
+(2. Değiştirilemez Yasak). ⇒ Kusurun **varlığı** ve **büyüklük mertebesi**
+ölçüldü; kesin oran ölçülmedi.
+
+### Sınırlar
+
+Sentetik prompt taraması (katman fonksiyonları gerçek, değerler benim), tek
+karar bağlamı, 36 örnek. Canlı koşum metinleri `dau_runs/*.json`'da **yok**
+(yalnız hash var) ⇒ geçmiş koşumlara geriye dönük uygulanamadı.
+**Hiçbir karar verilmedi, hiçbir kod değişmedi.**

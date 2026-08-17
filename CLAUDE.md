@@ -19,13 +19,13 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-14) — ⛔ **P0 KARARI BEKLİYOR**
+# 1. Şu An Neredeyiz (2026-08-17) — ⛔ **P0 KARARI BEKLİYOR**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. `origin/main` ile senkron (`6201dd5`).
 - **Suite:** `419 passed, 2 deselected`. Çalışma ağacı temiz, **push edildi** (`6201dd5`).
-- **Son D-kaydı: D-090.** Sıradaki kayıt **D-091** olarak açılır.
+- **Son D-kaydı: D-091.** Sıradaki kayıt **D-092** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -37,7 +37,41 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — ⚠ **P0'dan önce: aletin iki ölü kanalı (D-085)**
+## ▶▶ SIRADAKİ İŞ — ⛔ **D-091: davranış çöküşü artefakt olabilir**
+
+⚠ **2026-08-17.** Yasin *"yerel model erişimi kapandı"* diye mail almış.
+✅ **Kontrol edildi, bizi etkilemiyor:** model **15 GB diskte**,
+`HF_HUB_OFFLINE=1` altında 24 sn'de yüklenip karar üretti. Meta'nın
+kapattığı şey **Llama API Public Preview** (2026-07-06), ağırlıklar değil —
+ve biz o servisi hiç kullanmadık. ⚠ **Ağırlıkları silme:** yeniden indirmek
+kapılı depo + lisans onayı ister.
+
+⛔ **Ama o kontrol daha ciddi bir şey buldu (D-091).**
+
+`decision_to_outcome` **DEFECT anahtarlarını en önce** sınıyor ve `"take"`
+bir DEFECT anahtarı. 36 gerçek çıktıda ölçüldü:
+
+| | sayı |
+|---|---|
+| `defect` sayılan | **35 / 36** |
+| bunlardan **koruma/işbirliği dili de içeren** | **31 / 35** |
+| *"take a moment"* **deyimi** içeren | **30 / 35** |
+| ⭐ **gerçek hasat ifadesi HİÇ olmayan** | **14 / 35** |
+
+⛔⛔ Ve `SYSTEM_PROMPT` sınıflandırıcının anahtarlarını **dikte ediyor**:
+*"Prefer plain English words such as resource, **extract**, **take**…"* —
+ikisi de DEFECT anahtarı. **GAP-5 / L14'ün ölçülmüş hâli.**
+
+⇒ ⚠ ***"Olayların %94–100'ü DEFECT"* güvenli değil.** D-060 · D-068 · D-084 ·
+D-090 · D-081/082 — hepsi buna dayanıyor. Ve **K7'nin öncülü sarsıldı**:
+çöküşün bir kısmı bulgu değil **artefakt** olabilir.
+
+⚠ **Karar Yasin'in** ve önce o verilmeli — çünkü C/D/E'nin üçü de bu
+sayının doğru olduğunu varsayıyor.
+
+---
+
+## ▶ ÖNCEKİ SIRADAKİ İŞ — aletin iki ölü kanalı (D-085) ✅ kapandı
 
 ⭐ **Doğrulama koşumu yapıldı (D-085, N=4 tohum, ~29 dk).** Bugünkü aletle
 **ilk kez** uçtan uca soy koşuldu. **Ölçüm makinesi çalışıyor** — landmark
