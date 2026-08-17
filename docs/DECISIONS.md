@@ -8223,3 +8223,99 @@ Ve `test_three_generations_are_not_stamped` ters yönü tutuyor: damga
 S5'i: *"kaç nesil = birikimli kalıtım"*) hâlâ ikinci ön-kaydın ve P7-a'nın
 konusu; ⚠ DR #6'nın kendi içinde çelişkili olduğu yer de burasıydı (§5 G=5–10
 derken §6 sentezi G=3 öneriyordu).
+
+---
+
+## D-108 · 2026-08-17 · ⛔ **B1'in ilk denemesi düşecekti** — I1.1 sessiz bir *yaşamı* reddediyordu, sessiz bir *aleti* değil
+
+**Nasıl bulundu:** B1 pilotu koşarken (N=8, G=3, 30 olay, tohum 9901) log'a iki
+uyarı düştü:
+
+```
+[WARN] pop-lived-s9901-a6-g2-h1: no training happened (no preference pairs)
+[WARN] pop-lived-s9901-a6-g2-h2: no training happened (no preference pairs)
+```
+
+48 ajanın **ikisi** hiç kullanılabilir tercih çifti üretemedi; diğerleri **5–12**
+çift üretti. Bu iki ajanın `lora_B`'si okunmadan kaldı ⇒ **I1.1 koşumun sonunda
+ABORT edecekti** ⇒ JSON hiç yazılmayacak, **~1.5 saatlik pilot** ve diğer 46
+ajanın verisi birlikte kaybolacaktı.
+
+⭐ Bu tam olarak **D-105 §5'te kayda geçirdiğim risk**: *"popülasyon yolunda
+çeşitlilik kapısı yok ⇒ hayatı hiç kullanılabilir çift üretmeyen tek ajan bütün
+koşumu düşürür… risk gerçek ama bugüne kadar hiç gerçekleşmedi."* **İlk gerçek
+pilotta gerçekleşti.**
+
+**Karar (Yasin, koşum sırasında):** *"şimdi öldür, düzeltmeyi uygula, yeniden
+koş"* ⇒ 13 dk GPU kaybedildi, ~1.3 saat kurtarıldı.
+
+### 1. Kapı neden haksızdı — ve gerekçe ölçüm değil **taraflılık**
+
+> Hayatı sessiz geçen bir ajan yüzünden koşumu düşürmek, **hangi koşumların
+> rapor edilebileceğine bir seçilim etkisi** koyar: her ajanı zengin yaşamış
+> koşumlar geçer, sessiz yaşamlı koşumlar **hiç yazılmaz**. Kapının koruduğu
+> riskten daha büyük bir zarar.
+
+Ve *"hiç çift üretmemek"* aletin arızası değil, **yaşamın özelliğidir**: kısa
+ömür + düşük PE çeşitliliği + polarite filtresi ⇒ boş küme. Bu **veridir**.
+
+### 2. ⛔ Sayıya bakarak muaf tutmak **reddedildi** — ve sebebi ölçüldü
+
+`_train_adapter`'ın beş erken çıkışının **dördü** de sıfır çift raporluyor:
+
+| çıkış | sıfır çift mi | muaf mı |
+|---|---|---|
+| LoRA env kapalı | evet | (zaten `lora_enabled=False` ile ele alınıyor) |
+| `lora_update` import hatası | **evet** | ⛔ **hayır** |
+| çift kurucu exception attı | **evet** | ⛔ **hayır** |
+| eğitim exception attı | **evet** | ⛔ **hayır** |
+| eğitici *"no preference pairs"* dedi | evet | ✅ **evet** |
+
+⇒ Sayı bunları **ayırt etmiyor**; e4c026b'nin sahte eğitimi tam bu delikten
+geri girerdi. **Sebep ayırt ediyor.**
+
+### 3. Uygulama — saf aletleme, hesaba dokunulmadı
+
+| ne | nerede |
+|---|---|
+| `TrainOutcome.reason` alanı eklendi | `run_protocol_c_prime.py` — ⚠ **kilitli yol**, ama §2.10'un izin verdiği *"hesaplamayı değiştirmeyen raporlama eklemesi"*: tek soy yolunda **hiçbir şey okumuyor** |
+| beş çıkışın her birine ayırt edici sebep | aynı dosya, isimli sabitler |
+| eğiticinin kendi sebebi geçirildi | `result["reason"]` → `TrainOutcome.reason` |
+| `TRAIN_SKIP_NO_PAIRS` **tek yerde** | `constraints.py` (Kural 4). ⚠ Kapı artık **bu dizgi üzerinde dallanıyor**; iki dosyada iki literal, birinin yeniden yazıldığı gün **sessizce çalışmayı bırakan** bir dal demektir |
+| muafiyet | `training_sections` `gated=True` yalnız o sebep için; `reason` sonuç JSON'una da yazılıyor |
+
+### 4. ⭐ Muafiyet bir **off-switch değil**
+
+Her ajan muaf tutulursa kapı **yine abort ediyor** — `"no ungated train arm to
+check"`. Gerekçe: hiçbir şeyin eğitilmediği bir koşum Kanal 2 hakkında hiçbir
+şey göstermez ve `lived`/`shuffle`/`null` yalnız **isimde** ayrışır.
+⚠ Bu davranış **tasarlanmadı, keşfedildi**: testi *"bütün ajanlar muaf"* biçiminde
+yazdım, abort etti, ve **doğru cevap oydu** ⇒ ayrı bir testle sabitlendi.
+
+### 5. ⚠⚠ Mutasyon kontrolü **ilk turda iki mutasyonu kaçırdı** — ve sebebi öğretici
+
+| mutasyon | ilk tur | sebebi |
+|---|---|---|
+| muafiyet **sayıya** bağlandı | ⛔ **kaçtı** | test popülasyonunun **hepsi** aynı sonucu döndürüyordu ⇒ kapı zaten *"hiç eğitilmiş kol yok"* diye abort ediyordu ⇒ test **yanlış sebeple** geçiyordu |
+| muafiyet **her sebebe** açıldı | ⛔ **kaçtı** | aynı |
+
+⇒ Test **karışık popülasyona** çevrildi (bir ajan bozuk, diğerleri sağlıklı).
+Şimdi dört mutasyonun dördü de yakalanıyor.
+⭐ **§2.4'ün asıl dersi bir kez daha:** *"bir test kırıldı mı"* değil, **hangi
+testin, hangi sebeple** kırıldığı. Bu oturumda ikinci kez oldu (ilki A1'de
+`enforce()` mutasyonuydu).
+
+### 6. Kanıt ve sınırlar
+
+- Suite **538 passed** (önce 529; +9 test).
+- ⚠ **Tohum 9901 yeniden kullanıldı.** Düşen denemeden **görülen tek şey** alet
+  sağlığıydı: çift sayıları (5–12 ve iki kez 0) ve uyarı satırları. **Hiçbir uç
+  nokta görülmedi** — `z` yok, Price yok, kol karşılaştırması yok, JSON hiç
+  yazılmadı. Aynı tohumla devam etmenin **lehine** bir gerekçe de var:
+  düzeltmenin, onu doğuran senaryonun **tam üstünde** sınanması.
+- Düşen denemenin adapter'ları (24 dizin) **silindi**, yoksa I0.7 yeniden
+  koşumu abort ederdi.
+- ⚠ **Kalan borç:** *"kaç ajan çift üretemedi"* artık sonuç dosyasında
+  görünüyor ama **hiçbir kapı bunu sınırlamıyor**. Yarısı çift üretemeyen bir
+  koşum bugün `clean` damgası alır. Eşik **kalibre edilmemiş** olurdu (§2.7)
+  ⇒ ikinci ön-kayıta gider.
