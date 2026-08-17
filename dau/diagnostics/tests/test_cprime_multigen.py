@@ -1328,6 +1328,13 @@ def test_install_mock_llm_pins_groq_when_backend_unset(
         assert os.environ[LLM_BACKEND_ENV] == LLM_BACKEND_GROQ
     finally:
         multigen_mod.restore_llm_builder(previous)
+        # monkeypatch cannot undo this one: delenv on an ABSENT variable records
+        # nothing to restore, and install_mock_llm's setdefault then creates it.
+        # The value outlived the test and every later test in the process ran on
+        # the groq backend — which silently turns I0.7 into "not applicable",
+        # because switch_adapter's disk path is local-only. Caught by the
+        # population runner's stale-adapter test once A1 wired that gate in.
+        os.environ.pop(LLM_BACKEND_ENV, None)
 
 
 def test_install_mock_llm_does_not_override_explicit_backend(
@@ -2156,6 +2163,12 @@ def test_landmark_survives_a_real_graph_stream(
         "dau.foundation.graph._prediction_error",
         lambda expected, actual: 0.25 + (len(str(actual)) % 7) * 0.05,
     )
+    # install_mock_llm setdefaults the backend to groq and nothing takes it back
+    # out; in a real run the process ends, in a test it leaks into every test
+    # that follows. See test_install_mock_llm_pins_groq_when_backend_unset.
+    from dau.foundation.graph import LLM_BACKEND_ENV
+
+    previous_backend = os.environ.get(LLM_BACKEND_ENV)
     previous = multigen_mod.install_mock_llm()
     try:
         arm_result, _state, _store, tmp = run_gen1_arm_lineage(
@@ -2165,6 +2178,10 @@ def test_landmark_survives_a_real_graph_stream(
         )
     finally:
         multigen_mod.restore_llm_builder(previous)
+        if previous_backend is None:
+            os.environ.pop(LLM_BACKEND_ENV, None)
+        else:
+            os.environ[LLM_BACKEND_ENV] = previous_backend
 
     try:
         assert arm_result.events_lived_phase1 == LANDMARK_E2E_EVENTS
