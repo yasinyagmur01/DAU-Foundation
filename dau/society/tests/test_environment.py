@@ -244,3 +244,56 @@ def test_realized_extraction_at_reads_one_event(
     assert first == pytest.approx(EXTRACTION_COOPERATE)
     assert second == pytest.approx(EXTRACTION_DEFECT)
     assert agent_delta_pool(env, "a") == pytest.approx(first + second)
+
+
+# ---------------------------------------------------------------------------
+# Carrying capacity scales with N (D-081, fixed after D-102)
+# ---------------------------------------------------------------------------
+
+CAPACITY_POPULATION: int = 4
+PER_CAPITA_REQUEST: float = EXTRACTION_DEFECT
+CAPACITY_STEPS: int = 12
+
+
+def test_capacity_defaults_to_the_module_constant() -> None:
+    """Every existing single-agent run must be untouched by the new field."""
+
+    assert EnvironmentState().capacity == POOL_MAX
+    assert get_pool_ratio(EnvironmentState(pool=POOL_MAX / 2)) == pytest.approx(0.5)
+
+
+def test_per_capita_trajectory_is_identical_under_scaling() -> None:
+    """⭐ D-081's whole point: N agents on an N-times pasture live the N=1 life.
+
+    Same per-capita request, same per-capita stock, same capacity per head — so
+    the ratio the crisis threshold and F_agent's pool term read must match step
+    for step. Before the capacity field this diverged immediately: the
+    population grazed a single-agent pasture and simply starved (D-102).
+    """
+
+    solo = EnvironmentState(pool=POOL_INIT)
+    crowd = EnvironmentState(
+        pool=POOL_INIT * CAPACITY_POPULATION,
+        capacity=POOL_MAX * CAPACITY_POPULATION,
+    )
+    crowd_ids = [f"grazer-{index}" for index in range(CAPACITY_POPULATION)]
+
+    for _ in range(CAPACITY_STEPS):
+        solo = step_pool(solo, {"grazer-0": PER_CAPITA_REQUEST})
+        crowd = step_pool(
+            crowd, {agent_id: PER_CAPITA_REQUEST for agent_id in crowd_ids}
+        )
+        assert get_pool_ratio(crowd) == pytest.approx(get_pool_ratio(solo))
+        assert crowd.collapsed is solo.collapsed
+
+
+def test_capacity_survives_a_step() -> None:
+    """step_pool returns a new state; losing capacity would silently shrink it."""
+
+    scaled = EnvironmentState(
+        pool=POOL_INIT * CAPACITY_POPULATION,
+        capacity=POOL_MAX * CAPACITY_POPULATION,
+    )
+    stepped = step_pool(scaled, {"grazer-0": PER_CAPITA_REQUEST})
+
+    assert stepped.capacity == POOL_MAX * CAPACITY_POPULATION

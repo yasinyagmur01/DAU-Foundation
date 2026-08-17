@@ -163,3 +163,28 @@ def test_max_events_global_is_restored(monkeypatch) -> None:
         seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
     )
     assert graph_mod.MAX_EVENTS == MAX_EVENTS_SENTINEL
+
+
+def test_shared_pasture_scales_stock_and_capacity_with_n() -> None:
+    """D-081: per-capita numbers held constant, so the trajectory is the N=1 one."""
+
+    from dau.society.environment import POOL_MAX
+
+    from dau.diagnostics.run_population_experiment import shared_pasture
+
+    founders = build_arm_population(ARM_ORDER[0], SEED, N_AGENTS)
+    pasture = shared_pasture(founders)
+
+    assert pasture.capacity == pytest.approx(POOL_MAX * N_AGENTS)
+    assert pasture.pool == pytest.approx(founders[0].env_state.pool * N_AGENTS)
+
+
+def test_shared_pasture_keeps_the_seed_dependent_niche_stock() -> None:
+    """Two seeds must not collapse onto one default starting stock."""
+
+    from dau.diagnostics.run_population_experiment import shared_pasture
+
+    one = shared_pasture(build_arm_population(ARM_ORDER[0], SEED, N_AGENTS))
+    other = shared_pasture(build_arm_population(ARM_ORDER[0], SEED + 1, N_AGENTS))
+
+    assert one.pool != pytest.approx(other.pool)

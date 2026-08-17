@@ -27,20 +27,12 @@ yet**. They are E2-4b-2, kept separate because that is where D-033 (adapters
 surviving across runs → I0.7) and D-067 (the vault clock) both live, and mixing
 them in would make a failure impossible to attribute.
 
-⛔ AND ONE CONTRADICTION WITH A LOCKED DECISION, declared rather than patched
-over (§2.11). D-081 decided the commons SCALES WITH N — per-capita capacity and
-starting stock stay at today's numbers (100 / 80) so that a per-capita trajectory
-in a population is identical to the N=1 universe. This wrapper cannot honour that
-yet: ``POOL_MAX`` is a module constant that ``step_pool`` grows toward and
-``get_pool_ratio`` divides by, so scaling the stock without scaling the capacity
-would push the ratio above 1 and break the crisis threshold instead of modelling
-a bigger pasture. Threading capacity through ``dau/society/environment.py`` is a
-change to the physics and gets its own step.
-
-⇒ Until then every run through here has per-capita capacity 100/N, N times
-scarcer than D-081 specifies, and ``tool_identity`` says so
-(``pool_capacity_scaled: False``). The smoke run showed the consequence: with
-N=4 the pasture is dead by generation 2.
+✅ D-081 honoured (fixed after D-102 measured the contradiction): the pasture
+scales with N. ``EnvironmentState.capacity`` carries the carrying capacity, so N
+agents graze a pasture N times larger and their per-capita trajectory is the N=1
+universe's, unchanged. The starting stock comes from the founders' own niche —
+they share it under P0-① — multiplied by N, so seed-to-seed variation survives
+the scaling instead of being replaced by a flat default.
 
 ⚠ Exploratory. Nothing here is pre-registered; the second pre-registration is
 still a draft and P7-a (the budget) is still open.
@@ -76,7 +68,7 @@ from dau.generation.reproduction import (
     TOURNAMENT_K,
     Candidate,
 )
-from dau.society.environment import EnvironmentState, get_pool_ratio
+from dau.society.environment import POOL_MAX, EnvironmentState, get_pool_ratio
 
 # ---------------------------------------------------------------------------
 # Identifiers and output keys (no magic strings in logic)
@@ -137,6 +129,27 @@ def build_arm_population(
         _initial_state(founder_id(arm, seed, index), seed)
         for index in range(FIRST_FOUNDER_INDEX, FIRST_FOUNDER_INDEX + n_agents)
     ]
+
+
+def shared_pasture(founders: list[DAUAgentState]) -> EnvironmentState:
+    """One pasture for the whole arm, scaled to the population (D-081).
+
+    Per-capita stock and capacity stay at the single-agent numbers, so the
+    per-capita trajectory of a population of N is the N=1 universe's. The stock
+    is taken from the founders' niche rather than from POOL_INIT: under P0-①
+    every founder shares one niche, and that niche's pool is seed-dependent —
+    replacing it with the module default would quietly delete the seed-to-seed
+    variation the run is replicated over.
+    """
+
+    if not founders:
+        raise ValueError("shared_pasture needs at least one founder")
+    per_capita_stock = float(founders[0].env_state.pool)
+    n_agents = len(founders)
+    return EnvironmentState(
+        pool=per_capita_stock * n_agents,
+        capacity=POOL_MAX * n_agents,
+    )
 
 
 def score_generation(
@@ -223,8 +236,8 @@ def run_arm(
     _lock_seeds(seed)
     rng = random.Random(seed)
     app = graph_mod.build_event_graph()
-    env = EnvironmentState()
     states = build_arm_population(arm, seed, n_agents)
+    env = shared_pasture(states)
 
     generations: list[dict[str, Any]] = []
     previous_plan: GenerationPlan | None = None
@@ -362,10 +375,8 @@ def run_population_experiment(
                 "p0_niche": P0_NICHE_LABEL,
                 "inheritance_wired": False,
                 "adapter_training_wired": False,
-                # D-081 wants per-capita capacity held constant as N grows.
-                # POOL_MAX is a module constant, so it is not honoured yet and
-                # the flag says so rather than letting a reader assume it is.
-                "pool_capacity_scaled": False,
+                # D-081: per-capita capacity held constant as N grows.
+                "pool_capacity_scaled": True,
             }
         },
     )

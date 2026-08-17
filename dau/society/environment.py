@@ -53,12 +53,20 @@ class EnvironmentState:
     event_counter: int = 0
     collapsed: bool = False
     extraction_history: list[dict] = field(default_factory=list)
+    # Carrying capacity of THIS pasture. A field rather than the module
+    # constant because D-081 decided the commons scales with N while per-capita
+    # capacity stays at today's number: N agents graze a pasture N times
+    # larger, so their per-capita trajectory is the N=1 universe's, unchanged.
+    # Reading POOL_MAX directly would have made a bigger population simply
+    # poorer (measured: with N=4 the pasture died by generation 2, D-102).
+    # The default keeps every existing single-agent run byte-identical.
+    capacity: float = POOL_MAX
 
 
-def _clamp_pool(value: float) -> float:
-    """Keep pool level inside [POOL_MIN, POOL_MAX]."""
+def _clamp_pool(value: float, capacity: float = POOL_MAX) -> float:
+    """Keep pool level inside [POOL_MIN, capacity]."""
 
-    return max(POOL_MIN, min(POOL_MAX, value))
+    return max(POOL_MIN, min(float(capacity), value))
 
 
 def realized_extractions(
@@ -108,10 +116,11 @@ def step_pool(
     """
 
     pool = float(env.pool)
-    regenerated = pool + POOL_REGEN_RATE * pool * (1.0 - pool / POOL_MAX)
+    capacity = float(env.capacity)
+    regenerated = pool + POOL_REGEN_RATE * pool * (1.0 - pool / capacity)
     granted = realized_extractions(regenerated, extractions)
     total_extraction = sum(granted.values())
-    pool_next = _clamp_pool(regenerated - total_extraction)
+    pool_next = _clamp_pool(regenerated - total_extraction, capacity)
 
     event_counter = int(env.event_counter) + 1
     history = list(env.extraction_history)
@@ -127,15 +136,22 @@ def step_pool(
     return EnvironmentState(
         pool=pool_next,
         event_counter=event_counter,
-        collapsed=pool_next <= POOL_MAX * COLLAPSE_EPSILON,
+        collapsed=pool_next <= capacity * COLLAPSE_EPSILON,
         extraction_history=history,
+        capacity=capacity,
     )
 
 
 def get_pool_ratio(env: EnvironmentState) -> float:
-    """Return pool / POOL_MAX — scarcity signal for T_cognitive and F_agent."""
+    """Return pool / capacity — scarcity signal for T_cognitive and F_agent.
 
-    return float(env.pool) / POOL_MAX
+    Divides by the pasture's OWN capacity, so the ratio means the same thing to
+    one agent and to a population of N sharing an N-times-larger commons: the
+    crisis threshold, the collapse floor and F_agent's pool term all keep their
+    calibration as N changes (D-081).
+    """
+
+    return float(env.pool) / float(env.capacity)
 
 
 def realized_extraction_at(
