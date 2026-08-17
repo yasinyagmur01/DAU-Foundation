@@ -7362,3 +7362,73 @@ verisine bakılmadan**.
 *"seçilim çalışıyor"* denemeyecek; denebilecek olan *"seçilim terimi ölçüldü,
 şu büyüklükte, ve `w`'de şu kadar varyans vardı"*. K5'in ve P1'in sınırlarının
 yanına yazılacak.
+
+---
+
+## D-097 · 2026-08-17 · **E1/E5 uygulandı** — havuz adımı N ajana çıktı, N=1 yolu birebir korundu
+
+**Durum:** kod (`43b4220`) · **Etiket:** davranış korumalı yeniden düzenleme ·
+suite **`441 passed, 2 deselected`** · doğrulama ham
+`scratchpad/mock_before.json` + `mock_after.json` + `mock_after2.json`
+
+D-095'in denetimi onaylanınca uygulandı.
+
+### 1. Ne yapıldı
+
+`advance_commons(env, [CommonsRequest, …]) → (env, {agent_id: CommonsOutcome})`
+[graph.py](dau/foundation/graph.py). `pool_step_node` artık bunun **N=1
+çağıranı**.
+
+**Sıra birebir korundu** (bu yük taşıyor): yenile + yarala → **tur için bir kez**
+`pool_ratio` → ajan başına defteri oku, havuz satırını yaz, metabolik krediyi
+uygula, beden satırını yaz.
+
+⭐ **`CommonsRequest.event_counter` ajanın saati, ortamın değil.** N ajan bir
+merayı paylaştığında havuz **tur başına bir tik** atıyor ama her yaşam **kendi
+olayını** sayıyor; satırın ortamın sayacını ödünç almaması gerekiyor. M1
+mutasyonu tam bunu yakaladı.
+
+### 2. Davranış korunumu — iki bağımsız yol
+
+| # | yöntem | sonuç |
+|---|---|---|
+| **1** | Tam suite | **441 passed** (435 + 6 yeni). Mevcut testler N=1 fiziğini **zaten pinliyordu**: `pool == step_pool`, enerji kredisi, defter satırları, kriz eşiği |
+| **2** | `--mock-llm`, aynı tohum (8801), refactor **öncesi ve sonrası** | üç kolda da **`arm_digest` · gen2 `pe_list` · `f_agent` · `extraction_by_event` birebir aynı** |
+
+Kalan **19 fark** yalnızca: `wall_seconds` · `tool_identity/argv` (çıktı yolu) ·
+`inherited_memory_ids`.
+
+### 3. ⚠ Yan bulgu — anı kayıt id'leri deterministik değil
+
+Üçüncü grup şüpheli göründüğü için ayrıca ölçüldü: **aynı kodun iki koşumu** da
+farklı `inherited_memory_ids` üretiyor. Kaynak `uuid4()`
+([store.py:213](dau/memory/store.py:213), `:281`).
+
+| | |
+|---|---|
+| **etkilemediği** | `arm_digest` üç kolda da aynı · anı **sayısı** aynı (2/2) · hiçbir uç nokta id kullanmıyor |
+| **etkilediği** | ⚠ `inherited_memory_ids` **replay karşılaştırmasında kullanılamaz** — I4.1 zaten digest üzerinden çalışıyor, ama bir okuyucu bu alanı determinizm kanıtı sanabilir |
+
+⇒ **Bir kusur olarak açılmadı**, ilan edilmiş bir sınır olarak kaydedildi.
+D-037'nin determinizm iddiası **digest üzerinden** kurulu ve o tutuyor.
+
+### 4. Mutasyon kontrolü (§2.4) — üç mutasyon, üçü de doğru testi kırdı
+
+| mutasyon | kırılan |
+|---|---|
+| ajan saati yerine havuz sayacı | **üç** satır-sayacı testi (ikisi refactor'dan önce de vardı) |
+| herkesi ilk ajanın hasadıyla besle | oransal paylaştırma + kendi-hasadı testleri |
+| tekrar eden `agent_id` kontrolünü kaldır | tekrar testi |
+
+### 5. Sıradaki iş ve sınırlar
+
+⬜ **E2 kaldı** — N ajanı olay bazında ilerleten dış döngü. ⚠ Tasarım belgesinin
+uyarısı yerinde: **denetimsiz yapılmaz**. `advance_commons` onun çağıracağı
+arayüz olarak hazır.
+
+⚠ **Hâlâ hiçbir şey N ajanla koşmuyor.** Bu kayıt bir **yetenek** ekledi, bir
+koşum değil: `advance_commons` N girişle test edildi ama üretim yolu hâlâ
+N=1'den geçiyor.
+
+⚠ `TOURNAMENT_K` / `HEIRS_PER_TOURNAMENT_WIN` **hâlâ `tool_identity`'de değil**
+(D-094'ün borcu) — E2 bağlanınca girecek.
