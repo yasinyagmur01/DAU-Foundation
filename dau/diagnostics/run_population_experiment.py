@@ -76,18 +76,22 @@ from dau.diagnostics.preflight import (
     MODE_FLAG,
     Preflight,
     PreflightAbort,
+    arm_digest,
     check_determinism_settings,
     check_no_stale_adapters,
     check_pythonhashseed,
+    check_replay_identical,
     check_training_moved_weights,
 )
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
+    _decisions,
     _landmark_reading,
     install_mock_llm,
     mock_llm_enabled,
 )
 from dau.diagnostics.run_protocol_c_prime import (
+    ARM_LIVED,
     ARM_NULL,
     ARM_ORDER,
     ARM_SHUFFLE,
@@ -164,6 +168,22 @@ ROTATE_ACT_ORDER: bool = True
 SECTION_ARM_KEY: str = "arm"
 SECTION_SEED_KEY: str = "seed"
 SECTION_DELTA_KEY: str = "lora_b_abs_sum_delta"
+# I4.1 (A2). The replay is an arm in its own right, run under its own label so
+# its founders get their own ids: re-using the original ids would make the
+# second pass load the adapters the first one just wrote, and phase 1 would run
+# adapted where the original ran bare — a divergence that is not
+# non-determinism. Same reasoning as the multigen runner's replay_agent_id.
+REPLAY_ARM_LABEL: str = "replay"
+REPLAY_OF_ARM: str = ARM_LIVED
+# ⚠ Depth, and it is DERIVED, not chosen. Founders are born with no adapter, so
+# generation 1's decisions come from the base policy: replaying it alone could
+# not see the failure I4.1 exists to catch (D-037 — the same seed and code
+# producing different ADAPTERS between runs). The first generation whose
+# decisions depend on trained weights is generation 2, because that is when the
+# heir inherits its parent's adapter. So 2 is the smallest depth that can see
+# it, and a deeper replay would only buy more of the same at ~1 arm-generation
+# of GPU time each.
+REPLAY_GENERATIONS: int = 2
 
 
 def planned_founder_ids(
@@ -176,12 +196,17 @@ def planned_founder_ids(
     Only founders: heir ids are decided by the tournament and cannot be known
     before the run. The heirs are covered at birth instead, by
     ``inherit_adapter`` refusing a directory that is already there.
+
+    The replay arm's founders are in here too, and they are not an afterthought:
+    a leftover ``pop-replay-…`` adapter would make the second pass start adapted
+    where the first started bare, and I4.1 would report DIVERGED for a reason
+    that has nothing to do with determinism.
     """
 
     return [
         founder_id(arm, seed, index)
         for seed in seeds
-        for arm in arms
+        for arm in tuple(arms) + (REPLAY_ARM_LABEL,)
         for index in range(FIRST_FOUNDER_INDEX, FIRST_FOUNDER_INDEX + n_agents)
     ]
 
@@ -371,6 +396,34 @@ def score_generation(
             )
         )
     return rows
+
+
+def generation_digest(states: dict[str, DAUAgentState]) -> str:
+    """sha256(decisions ++ PE) for one generation of one arm — I4.1's unit.
+
+    Built through ``preflight.arm_digest`` so the population runner and the
+    multigen one hash the same way; what changes is only that a generation has
+    N agents instead of one. Agents are concatenated in id order, and that is
+    stable across the replay even though the replay runs under a different arm
+    label: every id inside one arm shares the prefix ``pop-{arm}-s{seed}``, so
+    the ordering is decided by the suffix, which the label does not touch.
+
+    Per GENERATION rather than per arm, because that is what makes a divergence
+    readable: a replay that matches generation 1 and differs at generation 2
+    says the drift is in the inherited adapter, not in the life.
+    """
+
+    pe_rows = graph_mod.get_pe_event_log()
+    decisions: list[str] = []
+    pe_values: list[float] = []
+    for agent_id in sorted(states):
+        decisions.extend(_decisions(states[agent_id]))
+        pe_values.extend(
+            float(row["prediction_error"])
+            for row in pe_rows
+            if row["agent_id"] == agent_id
+        )
+    return arm_digest(decisions, pe_values)
 
 
 def candidates_from_rows(rows: list[AgentGenerationRow]) -> list[Candidate]:
@@ -657,6 +710,10 @@ def _run_arm_generations(
         )
         env = outcome.env_state
         rows = score_generation(outcome.states, events_budget)
+        # Read here, before training and birth touch anything: the digest must
+        # describe the life this generation lived, not what was done with it
+        # afterwards.
+        digest = generation_digest(outcome.states)
         candidates = candidates_from_rows(rows)
 
         # D-101: the partition for the PREVIOUS transition can only be closed
@@ -703,6 +760,7 @@ def _run_arm_generations(
             {
                 "generation": generation,
                 "n_agents": len(rows),
+                "arm_digest": digest,
                 "pool_ratio_end": get_pool_ratio(env),
                 "hit_round_cap": outcome.hit_round_cap,
                 "agents": [
@@ -786,6 +844,100 @@ def _run_arm_generations(
     return {"arm": arm, "seed": seed, "generations": generations}
 
 
+def chain_digest(digests: list[str]) -> str:
+    """One string for a sequence of generation digests, order included.
+
+    check_replay_identical compares two strings, so the sequence has to become
+    one. Chained through the same primitive rather than joined by hand: a
+    reordering must change the result, and ``arm_digest`` already guarantees
+    that (it separates its inputs with a null byte).
+    """
+
+    return arm_digest(digests, [])
+
+
+def run_replay_arm(
+    *,
+    seed: int,
+    n_agents: int,
+    events_budget: int,
+    pasture_carryover: bool,
+    recorded: list[str],
+    skip: bool,
+) -> dict[str, Any] | None:
+    """I4.1 (A2) — run the lived arm a second time and compare the digests.
+
+    Runs LAST, after every arm of the experiment has finished, so nothing
+    downstream can consume the adapters this pass writes.
+
+    Costs one arm of ``REPLAY_GENERATIONS`` generations. That is the whole
+    price of being able to SAY the run is deterministic: within a single pass
+    each agent is trained exactly once, so there is nothing to compare it
+    against, and every other gate stayed green through D-037 while the same
+    seed and code were producing different adapters between runs.
+
+    ⚠ Only the first ``REPLAY_GENERATIONS`` generations of the recorded arm are
+    compared, because that is all the replay runs. It is a prefix, not a
+    sample: the generations run in sequence, so generation 3 cannot change what
+    generation 2 did.
+    """
+
+    if skip or not recorded:
+        return None
+    print(
+        f"[POPULATION][I4.1] replaying seed={seed} arm={REPLAY_OF_ARM} "
+        f"as {REPLAY_ARM_LABEL} for {REPLAY_GENERATIONS} generation(s) …",
+        flush=True,
+    )
+    replayed = run_arm(
+        REPLAY_ARM_LABEL,
+        seed,
+        n_agents,
+        REPLAY_GENERATIONS,
+        events_budget,
+        pasture_carryover=pasture_carryover,
+    )
+    replay_digests = [row["arm_digest"] for row in replayed["generations"]]
+    recorded_digests = recorded[: len(replay_digests)]
+    replay = {
+        "seed": seed,
+        "arm": REPLAY_OF_ARM,
+        "arm_label": REPLAY_ARM_LABEL,
+        "n_generations": REPLAY_GENERATIONS,
+        "recorded_digest": chain_digest(recorded_digests),
+        "replay_digest": chain_digest(replay_digests),
+        # Kept alongside the chain so a divergence names the generation it
+        # started in — the chain alone only says "somewhere".
+        "recorded_per_generation": recorded_digests,
+        "replay_per_generation": replay_digests,
+        # The whole second pass, kept rather than summarised: it is a trained
+        # arm, so I1.1 has to see it, and a reader comparing two digests will
+        # want the run behind the second one.
+        "arm_result": replayed,
+    }
+    verdict = (
+        "identical"
+        if replay["recorded_digest"] == replay["replay_digest"]
+        else "DIVERGED"
+    )
+    print(f"[POPULATION][I4.1] {verdict}", flush=True)
+    return replay
+
+
+def recorded_digests_for(
+    arm_results: list[dict[str, Any]],
+    *,
+    seed: int,
+    arm: str,
+) -> list[str]:
+    """The per-generation digests of one arm of one seed, in order."""
+
+    for result in arm_results:
+        if result["arm"] == arm and int(result["seed"]) == int(seed):
+            return [row["arm_digest"] for row in result["generations"]]
+    return []
+
+
 def run_population_experiment(
     seeds: list[int],
     n_agents: int,
@@ -851,12 +1003,32 @@ def run_population_experiment(
         for seed in seeds
         for arm in arms
     ]
+    replay = run_replay_arm(
+        seed=seeds[0],
+        n_agents=n_agents,
+        events_budget=events_budget,
+        pasture_carryover=pasture_carryover,
+        recorded=recorded_digests_for(arm_results, seed=seeds[0], arm=REPLAY_OF_ARM),
+        # A canned LLM replays trivially — the check would assert nothing and
+        # the arm would still cost its GPU time.
+        skip=use_mock,
+    )
     # Phase 2 can only be judged now — the weights move during the run. It is
     # still ABORT, so a run whose training silently did nothing writes no JSON.
+    # The replay arm's agents are included: it is a real trained arm, and a
+    # train step that silently did nothing there would make the digests match
+    # for the wrong reason.
     run_population_phase2(
         gate,
-        sections=training_sections(arm_results),
+        sections=training_sections(
+            arm_results + ([replay["arm_result"]] if replay else [])
+        ),
         lora_enabled=(lora_choice == LORA_CHOICE_ON),
+    )
+    gate.check(
+        "I4.1",
+        lambda: check_replay_identical(replay),
+        mode=MODE_FLAG if use_mock else MODE_ABORT,
     )
     gate.enforce()
     return {
@@ -868,6 +1040,7 @@ def run_population_experiment(
         "seeds": list(seeds),
         "tool_identity": identity,
         **gate.block(),
+        "replay": replay,
         "arms": arm_results,
     }
 

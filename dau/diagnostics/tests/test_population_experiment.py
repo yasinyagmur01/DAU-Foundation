@@ -29,7 +29,7 @@ MAX_EVENTS_SENTINEL: int = 137
 # What A1 wired in. Named so the test asserts the SET, not just that some
 # invariants block exists: a gate quietly dropped from run_population_phase0
 # would otherwise leave a healthy-looking block behind.
-GATED_INVARIANTS: tuple[str, ...] = ("I0.3", "I0.6", "I0.7", "I1.1")
+GATED_INVARIANTS: tuple[str, ...] = ("I0.3", "I0.6", "I0.7", "I1.1", "I4.1")
 
 
 @pytest.fixture(autouse=True)
@@ -632,10 +632,14 @@ def test_i0_7_covers_every_arm_and_seed_not_just_the_first(monkeypatch) -> None:
 
     planned = pop_mod.planned_founder_ids([SEED, SEED + 1], 2, tuple(ARM_ORDER))
 
-    assert len(planned) == len(ARM_ORDER) * 2 * 2
+    # +1 arm: the replay's founders count too. A leftover pop-replay adapter
+    # would make the second pass start adapted and I4.1 would read DIVERGED for
+    # a reason that is not non-determinism.
+    assert len(planned) == (len(ARM_ORDER) + 1) * 2 * 2
     assert len(set(planned)) == len(planned)
     for arm in ARM_ORDER:
         assert pop_mod.founder_id(arm, SEED + 1, 1) in planned
+    assert pop_mod.founder_id(pop_mod.REPLAY_ARM_LABEL, SEED, 0) in planned
 
 
 def test_i1_1_aborts_when_a_trained_agent_never_moved_its_weights(
@@ -726,3 +730,160 @@ def test_training_sections_speak_the_key_i1_1_reads(monkeypatch) -> None:
             section[pop_mod.SECTION_DELTA_KEY] = 1.0
     passed, detail = check_training_moved_weights(sections, lora_enabled=True)
     assert passed is False and "null" in detail
+
+
+# ---------------------------------------------------------------------------
+# A2 — I4.1 replay for the population runner (D-106)
+# ---------------------------------------------------------------------------
+
+
+def test_replay_runs_and_lands_on_the_same_digest(monkeypatch) -> None:
+    """⭐ I4.1: the only way this runner can CLAIM determinism.
+
+    Inside a single pass each agent is trained once, so there is nothing to
+    compare it against — every other gate stayed green through D-037 while the
+    same seed and code produced different adapters between runs.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=N_GENERATIONS, events_budget=EVENTS
+    )
+    replay = results["replay"]
+
+    assert replay is not None, "the replay never ran"
+    assert results["invariants"]["I4.1"] is True
+    assert replay["recorded_digest"] == replay["replay_digest"]
+    # A prefix of the recorded arm, not a sample of it: generations run in
+    # sequence, so a later one cannot change what an earlier one did.
+    assert len(replay["replay_per_generation"]) == pop_mod.REPLAY_GENERATIONS
+    assert (
+        replay["recorded_per_generation"] == replay["replay_per_generation"]
+    )
+
+
+def test_a_diverging_replay_aborts_the_run(monkeypatch) -> None:
+    """The gate has to bite, or it is decoration.
+
+    The divergence is injected into the SECOND pass's digests rather than into
+    the check, so what is under test is the wiring: a run whose two passes
+    disagree must not be written.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    real_run_arm = pop_mod.run_arm
+
+    def _diverging(arm, *args, **kwargs):
+        result = real_run_arm(arm, *args, **kwargs)
+        if arm == pop_mod.REPLAY_ARM_LABEL:
+            for row in result["generations"]:
+                row["arm_digest"] = "diverged-" + row["arm_digest"]
+        return result
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "run_arm", _diverging)
+
+    with pytest.raises(PreflightAbort, match="I4.1"):
+        run_population_experiment(
+            seeds=[SEED], n_agents=2, n_generations=N_GENERATIONS,
+            events_budget=EVENTS,
+        )
+
+
+def test_replay_runs_last_and_under_its_own_arm_label(monkeypatch) -> None:
+    """Two properties, and both are load-bearing.
+
+    Its own label, because re-using the original ids would make the second pass
+    load the adapters the first one just wrote — phase 1 adapted where the
+    original ran bare. Last, because otherwise a later arm could consume the
+    adapters the replay leaves behind.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    real_run_arm = pop_mod.run_arm
+    order: list[str] = []
+
+    def _recording(arm, *args, **kwargs):
+        order.append(arm)
+        return real_run_arm(arm, *args, **kwargs)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "run_arm", _recording)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=N_GENERATIONS, events_budget=EVENTS
+    )
+
+    assert order[-1] == pop_mod.REPLAY_ARM_LABEL
+    assert order.count(pop_mod.REPLAY_ARM_LABEL) == 1
+    assert set(order[:-1]) == set(ARM_ORDER)
+    replayed_ids = {
+        agent["agent_id"]
+        for row in results["replay"]["arm_result"]["generations"]
+        for agent in row["agents"]
+    }
+    lived_ids = {
+        agent["agent_id"]
+        for arm in results["arms"]
+        for row in arm["generations"]
+        for agent in row["agents"]
+    }
+    assert replayed_ids and not (replayed_ids & lived_ids)
+
+
+def test_the_replay_arm_is_checked_by_i1_1_too(monkeypatch) -> None:
+    """It is a trained arm: a silent no-op there makes the digests match.
+
+    Two passes that both trained nothing agree perfectly, so I4.1 would report
+    "identical" about a run in which Channel 2 never fired.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=N_GENERATIONS, events_budget=EVENTS
+    )
+    sections = pop_mod.training_sections(
+        results["arms"] + [results["replay"]["arm_result"]]
+    )
+
+    assert pop_mod.REPLAY_ARM_LABEL in {
+        section[pop_mod.SECTION_ARM_KEY] for section in sections
+    }
+
+
+def test_replay_is_skipped_under_a_canned_llm(monkeypatch) -> None:
+    """A mock replays trivially — the check would assert nothing and still cost.
+
+    None, not True: a gate that could not run must never read as one that
+    passed.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "mock_llm_enabled", lambda: True)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    assert results["replay"] is None
+    assert results["invariants"]["I4.1"] is None
+    assert results["run_quality"] == "mock"
+
+
+def test_chain_digest_notices_the_order_of_the_generations(monkeypatch) -> None:
+    """Two generations that swapped places are a divergence, not a match."""
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    forward = pop_mod.chain_digest(["a", "b"])
+
+    assert forward != pop_mod.chain_digest(["b", "a"])
+    assert forward != pop_mod.chain_digest(["ab"])
+    assert forward == pop_mod.chain_digest(["a", "b"])
+
