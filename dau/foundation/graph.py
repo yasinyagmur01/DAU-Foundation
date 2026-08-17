@@ -1482,6 +1482,55 @@ def build_graph(checkpointer: SqliteSaver | None = None) -> Any:
     return graph.compile()
 
 
+def build_event_graph(checkpointer: SqliteSaver | None = None) -> Any:
+    """One event of one life, commons excluded: social_pre → agent → evaluator → meta.
+
+    E2 of the population design, first step. The production graph closes its
+    loop through ``pool_step_node`` and keeps cycling until the life ends. That
+    is right for one agent and wrong for N: the pasture must tick ONCE per
+    round, after every agent has acted, not once per agent. So two things move
+    out to the caller — the commons step (``advance_commons``, E1/E5) and the
+    loop itself (``should_continue`` decides who lives on).
+
+    ⚠ This is the production cycle with wiring removed, NOT a second
+    implementation: the same node functions run in the same order, and
+    ``agent_node`` is still read from the module at build time so the Protocol
+    C monkeypatch keeps working exactly as it does for ``build_graph``.
+    """
+
+    graph = StateGraph(DAUAgentState)
+    graph.add_node(NODE_SOCIAL_PRE, social_pre_node)
+    graph.add_node(NODE_AGENT, agent_node)
+    graph.add_node(NODE_EVALUATOR, evaluator_node)
+    graph.add_node(NODE_META_OBSERVER, meta_observer_node)
+    graph.set_entry_point(NODE_SOCIAL_PRE)
+    graph.add_edge(NODE_SOCIAL_PRE, NODE_AGENT)
+    graph.add_edge(NODE_AGENT, NODE_EVALUATOR)
+    graph.add_edge(NODE_EVALUATOR, NODE_META_OBSERVER)
+    graph.add_edge(NODE_META_OBSERVER, END)
+    if checkpointer is not None:
+        return graph.compile(checkpointer=checkpointer)
+    return graph.compile()
+
+
+def step_agent_once(state: DAUAgentState, app: Any) -> DAUAgentState:
+    """Advance one agent by exactly one event; the commons is not touched.
+
+    ``app`` is a compiled ``build_event_graph``. Building it once and passing it
+    in is deliberate: an outer loop over N agents and many rounds would
+    otherwise recompile the same graph thousands of times, and a per-call build
+    would also re-read ``agent_node`` mid-run, which is exactly the kind of
+    quiet drift D-042 had to chase out of the adapter path.
+    """
+
+    result = app.invoke(state)
+    if isinstance(result, DAUAgentState):
+        return result
+    if isinstance(result, dict):
+        return DAUAgentState.model_validate(result)
+    raise TypeError(f"unexpected event-graph result type: {type(result)!r}")
+
+
 def _state_to_plain(values: Any) -> dict[str, Any]:
     """Normalize graph state values into a JSON-serializable dict."""
 
