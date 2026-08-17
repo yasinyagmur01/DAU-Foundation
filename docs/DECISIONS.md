@@ -8319,3 +8319,101 @@ testin, hangi sebeple** kırıldığı. Bu oturumda ikinci kez oldu (ilki A1'de
   görünüyor ama **hiçbir kapı bunu sınırlamıyor**. Yarısı çift üretemeyen bir
   koşum bugün `clean` damgası alır. Eşik **kalibre edilmemiş** olurdu (§2.7)
   ⇒ ikinci ön-kayıta gider.
+
+---
+
+## D-109 · 2026-08-18 · **B1 koştu** — ⭐ makine `clean`, ⛔ **uç nokta dejenere**: `z` sekiz ajanda tek değer
+
+**Koşum:** tohum 9901 · N=8 · G=3 · 30 olay · `--lora` · taze mera · üç kol +
+replay · **~1 sa 15 dk** · `dau_runs/b1_pilot_n8_g3.json` ·
+rapor `dau_runs/b1_pilot_n8_g3_report.md` (analiz aracıyla, D-107 sonrası).
+⚠ **Keşifsel** — hipotez testi değil (P7-b/D-096).
+
+⚠ Üçüncü deneme. Birincisi **I1.1'den düşecekti** (D-108), ikincisi **elektrik
+kesintisi** (bilgisayar kapandı). ⇒ **C1 için ders:** koşum sonuna kadar hiçbir
+şey diske yazmıyor; 20 saatlik ana koşumda bu kabul edilemez. **Checkpoint
+önerisi Yasin'e sunuldu, karar bekliyor.**
+
+### 1. ✅ Seviye 0 — makine tarafı geçti
+
+| | |
+|---|---|
+| `run_quality` | **clean** |
+| kapılar | I0.3 ✅ I0.6 ✅ I0.7 ✅ **I1.1 ✅** I4.1 ✅ |
+| **I4.1** | ⭐ **identical**, iki nesil bit düzeyinde |
+| `Var(w)` | **1.00 – 1.75**, `w ∈ {0,1,2,3}` her kolda ⇒ **linçpin çalışıyor** |
+| **D-108 muafiyeti** | ⭐ **canlıda çalıştı**: üç ajan *"no preference pairs"* ile muaf tutuldu, koşum **düşmedi** ve 48 adapter yazıldı |
+
+⭐ **Süreçler arası determinizmin dördüncü teyidi:** düşen deneme, elektrik
+kesilen deneme ve bu koşum — üçünde de **aynı iki ajan** (`…-a6-g2-h1/h2`) çift
+üretemedi ve ilk çift sayıları birebir aynı çıktı.
+
+### 2. ⛔ Ama seviye 0'ın ikinci yarısı **kapalı** — ve bu her şeyi belirliyor
+
+| ölçüm | değer | anlamı |
+|---|---|---|
+| **farklı `z` sayısı** | **8 ajanda 1** (yalnız `shuffle` gen3'te 3) | ⛔ `z`'nin varyansı **sıfır** |
+| `z`'nin kendisi | **`{}`** — 24 kol-neslinin 23'ünde | landmark'ta **hiç drift bayrağı yok** ⇒ gerçek bir sıfır okuması |
+| `F_agent` yayılımı gen1 | **0.0000** (üç kolda da) | turnuva **yazı-tura**; `Var(w)` rastgelelikten geldi, uygunluktan değil |
+
+⇒ **D-104'ün *"8 ajanda 4 farklı `z`"* bulgusu bu tohumda TEKRARLANMADI.**
+⚠ Bu, D-104'ü çürütmüyor — farklı tohum, ve orası da tek tohumdu. Söylediği
+şey: **simetri kırılması tohuma bağlı ve güvenilir değil.**
+⭐ Bu projede coşkuyla yazılan bulguların ikinci ölçümü sağ atlatmama deseninin
+**dördüncü** örneği (D-090, D-092, D-059'dan sonra).
+
+### 3. Seviye 1 / 2 / 3 — dördü de boş, ve **sebebi ölçüldü**
+
+| seviye | sonuç |
+|---|---|
+| **1 — seçilim** | Altı geçişin **beşinde** Price partition'ı **boş** (`z` hiç alan taşımıyor). Altıncısında (`shuffle` gen3, `energy`) **`selection = +0.000000`**. ⇒ `Cov(w,z)` **yapı gereği sıfır**: sabit bir `z` üzerinde kovaryans tanım gereği sıfırdır |
+| **2 — birikim** | `shuffle`/`energy`: gen2 `0.0` → gen3 `0.0`. Yok |
+| **3 — kol farkı** | gen1 ve gen2'de **üç mesafe de 0.000000**. gen3'te `‖lived−null‖ = 0.000` · `‖lived−shuffle‖ = ‖null−shuffle‖ = 0.2585` ⇒ ⚠ **ters yön**: hareket eden kol **kontrol** (`shuffle`), ve deney kolu eğitilmemiş kolla **özdeş** |
+
+⚠ **Tek tohum ⇒ seviye 1 iddiası zaten mümkün değildi** (işaretin tohumlar
+arası tutarlılığı sorulamıyor). Rapor bunu sayının yanına basıyor.
+
+### 4. ⭐⭐ Uç noktanın **görmediği** şey — ve bu bulgunun asıl değeri
+
+Ömürler (ortalama, parantez içi aralık):
+
+| kol | gen1 | gen2 | gen3 |
+|---|---|---|---|
+| `lived` | 10.0 (10–10) | **17.0 (10–30)** | **24.8 (23–30)** |
+| `shuffle` | 10.0 (10–10) | **17.8 (10–30)** | **28.2 (22–30)** |
+| **`null`** | 10.0 (10–10) | **11.0 (11–11)** | **10.0 (10–10)** |
+
+⇒ **Eğitilen kollar kontrolün 2–3 katı yaşıyor**, ve ömürleri **yayılıyor**;
+`null` 10–11'de **düz** kalıyor. Kol digest'leri gen2'den itibaren **3/3
+farklı**. `F_agent` `lived`'de nesiller boyunca **0.41 → 0.51–0.68 → 0.65–0.69**
+yükseliyor.
+
+⇒ **Kanal 2 büyük bir etki yapıyor, ama seçilen uç nokta (landmark drift) buna
+kör** — çünkü `z` herkeste boş.
+
+⚠ **`lived` ile `shuffle` arasında fark yok** (17.0 vs 17.8 · 24.8 vs 28.2, ve
+`shuffle` **daha uzun**). ⇒ Uzayan ömür *"doğru"* adapter'dan değil,
+**adapter'ın varlığından** geliyor. **B2'nin deseninin birebir tekrarı**
+(D-053: *"`shuffle` de aynı ölçüde değiştiriyor"*).
+
+### 5. ⛔ Şimdi yapılmayacak şey — ve neden
+
+**Uç noktayı ömre çevirmek YASAK.** Ömrün hareket ettiğini **gördükten sonra**
+onu uç nokta yapmak, L9'un tam olarak yasakladığı post-hoc seçimdir — ve bu
+projede aynı hata D-044'te (yörünge uç noktası) bilerek reddedilmişti.
+⇒ Ömür gözlemi **ikinci ön-kayıta girdi olarak** taşınır; oraya **koşumdan önce**
+yazılır ve **taze tohumla** sınanır.
+
+### 6. Bundan sonrası için ölçülmüş girdiler
+
+| soru | bu koşumun verdiği sayı |
+|---|---|
+| kaç ajan çift üretemez | **43'ün 3'ü (%7)**, hepsi 2.–3. nesil |
+| bir pilotun maliyeti | N=8·G=3·30 olay·üç kol + replay = **~1 sa 15 dk**, 48 adapter (~670 MB) |
+| replay'in payı | 64 eğitimin 16'sı ⇒ **~%25** |
+| `z`'nin çalışma noktası | bu nişte **tamamen boş** — landmark'ta travma bayrağı yok |
+
+⚠ **En kritik açık soru artık uç nokta:** `z = landmark drift` (K5) bu evrende
+**ölçülebilir bir şey üretmiyor**. Bunun üç olası sebebi var (travma hiç
+tetiklenmiyor · landmark çok erken · drift bayrağı çok seyrek) ve **hiçbiri bu
+koşumdan ayırt edilemez**. Bu bir **tasarım kararıdır (D-007) ve Yasin'indir.**
