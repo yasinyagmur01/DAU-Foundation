@@ -23,14 +23,14 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **`origin/main`'in önünde beş commit** (`17a13f4`) — push edilmedi.
-- **Suite:** `423 passed, 2 deselected`. Çalışma ağacı temiz (`17a13f4`).
-- **Son D-kaydı: D-093.** Sıradaki kayıt **D-094** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde sekiz commit** (`e39d747`) — push edilmedi.
+- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`e39d747`).
+- **Son D-kaydı: D-094.** Sıradaki kayıt **D-095** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı (D-092)** · ⭐ **havuz aritmetiği yeniden hesaplandı, davranış ilk kez ortamı değiştiriyor (D-093)**.
+- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı (D-092)** · ⭐ **havuz aritmetiği yeniden hesaplandı, davranış ilk kez ortamı değiştiriyor (D-093)** · ⭐⭐ **P2/P3/P4 kilitlendi ve E4 yazıldı (D-094)**.
 - **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
@@ -102,16 +102,24 @@ yapmadı).
 
 ### 🎯 Kuşak 2 — asıl hedef, hiç dokunulmadı
 
-| # | İş | Bağlı |
+| # | İş | Durum / bağlı |
 |---|---|---|
-| E1/E5 | Ortak havuzu akışların dışına al; `pool_step_node` N talebi toplasın | C |
-| E2 | N ajanı olay bazında ilerleten dış döngü | ⚠ **denetimsiz yapılmaz** |
-| **E4** ⭐⭐ | **Üreme: turnuva, `w` sayacı, varis üretimi** | ⭐ **LİNÇPİN** |
-| — | Price aletlemesi `Cov(w,z)` | E4 |
+| ~~**E4**~~ ⭐⭐ | **Üreme: turnuva k=2, `w` sayacı, varis üretimi + Price ayrışması** | ✅ **D-094** (`374906c`) — `dau/generation/reproduction.py`, 12 test, dört mutasyon ⚠ **bağlı değil** |
+| E1/E5 | Ortak havuzu akışların dışına al; `pool_step_node` N talebi toplasın | ⛔ **P1** |
+| E2 | N ajanı olay bazında ilerleten dış döngü | ⛔ **P1 + P6** · ⚠ **denetimsiz yapılmaz** |
+| — | E4'ü orkestrasyona bağla + `TOURNAMENT_K`'yı alet kimliğine ekle | E1/E5 + E2 |
 
-⭐ **E4 olmadan hiçbir şey seçilim ölçmez:** bugün her ebeveynin **tam olarak
-bir** varisi var ⇒ `w` sabit ⇒ `Cov(w,z)` **tanımsız**. D-086/088/089 kalıtımı
-ve uygunluğu onardı, **seçilimi değil**.
+⭐ **Linçpin teknik olarak çözüldü:** `w` artık değişken olabiliyor ve Price
+kimliği testle korunuyor (`test_price_identity_holds_exactly`). ⛔ **Ama hâlâ
+hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar.
+
+### ⛔ Sıradaki üç karar — **Yasin'in**, E1/E5 ve E2 bunlara bağlı
+
+| # | Karar | Not |
+|---|---|---|
+| **P1** | Kol başına **ayrı havuz** mu, tek havuz mu | Öneri: **ayrı** (Hudgens & Halloran 2008 + Xiao vd. 2023 aynı yerde; `null` bir referans suş). ⚠ Bedeli: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
+| **P6** | İki faz korunsun mu | Öneri: **tek faz** — karşılaştırma nesiller arası. ⚠ Bedeli: `delta_pe` uç noktası **kaybolur**, S3/S4 yeniden yazılır |
+| **P7** | N / G / tohum zarfı | ⚠ **Literatür sayı vermedi** (D-076/§M.4, DR kendi içinde çelişti). Öneri: **G ≥ 5** taban, sonra bütçe. 10 tohum × N=8 × G=5 ≈ **32.7 sa** |
 
 ### 📋 Kuşak 3 — ikinci ön-kayıta ertelendi
 
