@@ -13,10 +13,13 @@ from dau.diagnostics.run_population_experiment import (
     run_population_experiment,
 )
 from dau.diagnostics.run_protocol_c_prime import ARM_ORDER
+from dau.foundation.local_llm import ADAPTER_CONFIG_FILE
 from dau.foundation.lod import NPC_ACTION_EXTRACT_MODERATE
 from dau.foundation.state import DAUAgentState
 
 SEED: int = 9301
+SHUFFLE_MARKER: str = "-shuffle-"
+NULL_MARKER: str = "-null-"
 N_AGENTS: int = 3
 N_GENERATIONS: int = 3
 EVENTS: int = 3
@@ -236,3 +239,170 @@ def test_arm_vault_unbinds_every_agent_it_bound(monkeypatch) -> None:
 
     assert graph_mod._memory_stores == {}
     assert graph_mod._memory_written == {}
+
+
+# ---------------------------------------------------------------------------
+# Channel 2 — per-arm training and adapter inheritance (step 3/4)
+# ---------------------------------------------------------------------------
+
+
+def _fake_adapter(base, agent_id: str):
+    """A directory adapter_exists() recognises: it looks for the config file."""
+
+    path = base / agent_id
+    path.mkdir()
+    (path / ADAPTER_CONFIG_FILE).write_text("{}", encoding="utf-8")
+    (path / "adapter_model.safetensors").write_bytes(b"weights")
+    return path
+
+
+def test_null_arm_never_trains(monkeypatch) -> None:
+    """P5: the arm IS the training rule, and null's whole job is to stay blank."""
+
+    from dau.diagnostics.run_population_experiment import train_generation
+    from dau.diagnostics.run_protocol_c_prime import ARM_LIVED, ARM_NULL
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+    by_arm = {arm["arm"]: arm for arm in results["arms"]}
+
+    for row in by_arm[ARM_NULL]["generations"]:
+        assert row["trained"] == {}
+    assert train_generation(ARM_NULL, [], {}) == {}
+    # The trained arms get a row per agent even when the LoRA gate is closed:
+    # "trained nothing" and "was never asked to train" must not read alike.
+    for row in by_arm[ARM_LIVED]["generations"][:-1]:
+        assert set(row["trained"]) == {a["agent_id"] for a in row["agents"]}
+
+
+def test_inherit_adapter_copies_the_parent_directory(monkeypatch, tmp_path) -> None:
+    """⭐ Channel 2 crosses generations: the heir starts from ancestor weights."""
+
+    from dau.foundation import local_llm
+
+    from dau.diagnostics.run_population_experiment import inherit_adapter
+
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    _fake_adapter(tmp_path, "parent-x")
+
+    assert inherit_adapter("parent-x", "heir-x") is True
+    assert (tmp_path / "heir-x" / ADAPTER_CONFIG_FILE).exists()
+    assert (
+        tmp_path / "heir-x" / "adapter_model.safetensors"
+    ).read_bytes() == b"weights"
+
+
+def test_inherit_adapter_is_a_noop_without_a_parent_adapter(
+    monkeypatch, tmp_path
+) -> None:
+    """A founder has no ancestor; an untrained arm never wrote one."""
+
+    from dau.foundation import local_llm
+
+    from dau.diagnostics.run_population_experiment import inherit_adapter
+
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    assert inherit_adapter("nobody", "heir-y") is False
+    assert not (tmp_path / "heir-y").exists()
+
+
+def test_inherit_adapter_refuses_an_existing_heir_directory(
+    monkeypatch, tmp_path
+) -> None:
+    """D-033 / I0.7: a leftover adapter is how a fresh arm inherits an old run."""
+
+    from dau.foundation import local_llm
+
+    from dau.diagnostics.run_population_experiment import inherit_adapter
+
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    _fake_adapter(tmp_path, "parent-z")
+    (tmp_path / "heir-z").mkdir()
+
+    with pytest.raises(ValueError, match="already exists"):
+        inherit_adapter("parent-z", "heir-z")
+
+
+def test_cli_requires_an_explicit_lora_choice() -> None:
+    """A forgotten flag must not read as a deliberately untrained run (D-004)."""
+
+    from dau.diagnostics.run_population_experiment import build_arg_parser
+
+    with pytest.raises(SystemExit):
+        build_arg_parser().parse_args(
+            ["--seeds", "1", "--n-agents", "2", "--n-generations", "2",
+             "--events", "3", "--results", "/tmp/x.json"]
+        )
+
+
+def test_heirs_actually_receive_the_grafted_adapter(monkeypatch, tmp_path) -> None:
+    """The call site, not just the helper: skipping the graft must be visible.
+
+    Measured gap — with the LoRA gate closed no adapter exists, so deleting the
+    inherit_adapter call changed nothing observable and every test still passed.
+    Founders are given a fake adapter here so the graft has something to carry.
+    """
+
+    from dau.foundation import local_llm
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(local_llm, "ADAPTER_BASE_DIR", str(tmp_path))
+    for index in range(2):
+        for arm in ARM_ORDER:
+            _fake_adapter(tmp_path, pop_mod.founder_id(arm, SEED, index))
+
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    grafted = [
+        birth["adapter_inherited"]
+        for arm in results["arms"]
+        for row in arm["generations"]
+        for birth in row["birth"]
+    ]
+    assert grafted, "no heirs were born at all"
+    assert all(grafted), "a heir was born without its ancestor's weights"
+
+
+def test_shuffle_arm_trains_with_the_preference_direction_shuffled(
+    monkeypatch,
+) -> None:
+    """`shuffled` is what makes shuffle a control rather than a second lived arm.
+
+    Measured gap — with the LoRA gate closed _train_adapter returns before it
+    ever looks at the flag, so passing shuffled=False everywhere was invisible.
+    A spy is used rather than a real train step: what is under test is which
+    rule each arm is asked for, not whether the gradient landed (I1.1 owns that).
+    """
+
+    from dau.diagnostics.run_protocol_c_prime import TrainOutcome
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    seen: list[tuple[str, bool]] = []
+    untrained = TrainOutcome(0, 0, -1.0)
+
+    def _spy(agent_id: str, examples, shuffled: bool = False) -> TrainOutcome:
+        seen.append((agent_id, bool(shuffled)))
+        return untrained
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "_train_adapter", _spy)
+    run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    counts = {True: 0, False: 0}
+    for agent_id, shuffled in seen:
+        counts[shuffled] += 1
+        assert (SHUFFLE_MARKER in agent_id) is shuffled, (
+            f"{agent_id} trained with shuffled={shuffled}"
+        )
+    assert counts[True] > 0, "the shuffle arm never trained"
+    assert counts[False] > 0, "the lived arm never trained"
+    assert not any(NULL_MARKER in agent_id for agent_id, _ in seen)

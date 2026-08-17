@@ -20,9 +20,24 @@ parent is consolidated at the end of its life and each heir is birthed through
 ``apply_generation``, so inherited engrams, drift and somatic scales reach the
 newborn before it takes its first event.
 
-⚠ SCOPE — per-arm ADAPTER TRAINING (Channel 2) is still not wired. Until it is,
-the three arms differ only in name and no arm contrast may be read off this
-runner. That step is where D-033 (adapters outliving their runs → I0.7) lives.
+✅ Channel 2 (the LoRA adapter) is wired too, and one locked decision was
+REVERSED to make it mean anything. The single-lineage design said "3A: no parent
+LoRA adapter load" — the heir started parametrically blank — which was coherent
+while a generation had two phases: the agent trained and then lived again with
+its own adapter. P6 removed the second phase, and with 3A still in force the
+adapter would be trained at the end of a life and consumed by nobody: Channel 2
+would compute and then evaporate, and `lived` / `shuffle` / `null` would differ
+only in name.
+
+⇒ Yasin chose (2026-08-17): **the heir inherits its parent's adapter.** The
+parent's adapter directory is COPIED to the heir's id at birth, so the heir
+starts from its ancestor's weights and then trains on top of its own life. The
+copy is not waste — it is the heir's own adapter, and writing into the parent's
+directory instead would corrupt the ancestor a later replay still needs.
+
+⚠ This narrows nothing quietly: it changes what D-002's birth-drift endpoint
+means (inheritance is no longer symbolic-only), and the second pre-registration
+must declare it.
 
 ✅ D-081 honoured (fixed after D-102 measured the contradiction): the pasture
 scales with N. ``EnvironmentState.capacity`` carries the carrying capacity, so N
@@ -42,6 +57,7 @@ import contextlib
 import json
 import os
 import random
+import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,9 +66,15 @@ from typing import Any
 import dau.foundation.graph as graph_mod
 from dau.diagnostics.run_cprime_multigen import _landmark_reading, mock_llm_enabled
 from dau.diagnostics.run_protocol_c_prime import (
+    ARM_NULL,
     ARM_ORDER,
+    ARM_SHUFFLE,
     _initial_state,
     _lock_seeds,
+)
+from dau.diagnostics.run_protocol_c_prime import (  # noqa: E402
+    _build_lived_examples,
+    _train_adapter,
 )
 from dau.diagnostics.tool_identity import build_tool_identity, resolve_lora_choice
 from dau.foundation.drift import DriftState
@@ -301,12 +323,77 @@ def consolidate_parents(
     }
 
 
+def inherit_adapter(parent_id: str, heir_id: str) -> bool:
+    """Copy the parent's adapter to the heir's id — Channel 2 across generations.
+
+    A copy rather than a symlink or a shared directory: the heir trains on top
+    of what it inherited, so a shared directory would rewrite the ancestor's
+    weights and destroy the only parametric record of a life that already ended
+    (and that I4.1 may still want to replay). One directory per agent also keeps
+    ``adapter_exists``/``switch_adapter`` honest — they answer about an agent,
+    not about a lineage.
+
+    Returns whether anything was inherited. False is normal, not a failure: a
+    founder has no parent adapter and an untrained arm never writes one.
+    """
+
+    try:
+        from dau.foundation.local_llm import adapter_dir, adapter_exists
+    except ImportError:  # torch/peft absent — the arm simply stays untrained
+        return False
+    if not adapter_exists(parent_id):
+        return False
+    target = adapter_dir(heir_id)
+    if target.exists():
+        raise ValueError(
+            f"{heir_id}: adapter directory already exists — refusing to graft "
+            "onto it (D-033 / I0.7: a leftover adapter is how a fresh arm "
+            "silently inherits a previous run)"
+        )
+    shutil.copytree(adapter_dir(parent_id), target)
+    return True
+
+
+def train_generation(
+    arm: str,
+    rows: list[AgentGenerationRow],
+    states: dict[str, DAUAgentState],
+) -> dict[str, dict[str, Any]]:
+    """Channel 2 for one generation of one arm.
+
+    The arm IS the training rule (P5): ``lived`` trains on the agent's own
+    PE-ranked pairs, ``shuffle`` trains on the same pairs with the preference
+    direction shuffled, and ``null`` never trains. `_train_adapter` is the same
+    function the single-lineage path calls — including its own
+    ``DAU_LORA_ENABLED`` guard — so the two runners cannot drift apart on what
+    "trained" means (§2.8).
+    """
+
+    if arm == ARM_NULL:
+        return {}
+    pe_rows = graph_mod.get_pe_event_log()
+    trained: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        agent_rows = [r for r in pe_rows if r["agent_id"] == row.agent_id]
+        examples = _build_lived_examples(states[row.agent_id], agent_rows)
+        outcome = _train_adapter(
+            row.agent_id, examples, shuffled=(arm == ARM_SHUFFLE)
+        )
+        trained[row.agent_id] = {
+            "n_pairs_trained": int(outcome.n_pairs_trained),
+            "n_pairs_rejected": int(outcome.n_pairs_rejected),
+            "lora_b_abs_sum_delta": float(outcome.lora_b_abs_sum_delta),
+        }
+    return trained
+
+
 def _heir_states(
     plan: GenerationPlan,
     parents: dict[str, DAUAgentState],
     records: dict[str, GenerationRecord],
     store: MemoryStore,
     seed: int,
+    adapter_inherited: dict[str, bool] | None = None,
 ) -> list[DAUAgentState]:
     """Birth the planned heirs WITH their parent's inheritance (Channel 1).
 
@@ -326,6 +413,9 @@ def _heir_states(
         parent = parents[assignment.parent_id]
         blank = _initial_state(assignment.heir_id, seed)
         heir = apply_generation(blank, records[assignment.parent_id], store)
+        grafted = inherit_adapter(assignment.parent_id, assignment.heir_id)
+        if adapter_inherited is not None:
+            adapter_inherited[assignment.heir_id] = grafted
         born.append(heir.model_copy(update={"opponent_id": parent.opponent_id}))
     return born
 
@@ -411,6 +501,12 @@ def _run_arm_generations(
                  for row in rows},
             )
 
+        # Channel 2 first, then Channel 1. Order matters: training reads the
+        # life's PE rows, which reset_pe_event_log clears at the top of the next
+        # generation, and consolidation walks the vault, which training never
+        # touches. Doing it the other way round would still work today, but the
+        # PE rows are the fragile half and they are consumed here.
+        trained = train_generation(arm, rows, outcome.states)
         # Channel 1: end-of-life consolidation for every parent, before any
         # heir exists. The record is what the heir inherits; building it after
         # birth would let a newborn's own events into its ancestry.
@@ -423,10 +519,13 @@ def _run_arm_generations(
                 generation + 1, candidates, rng, n_slots=n_agents
             )
         )
+        adapter_inherited: dict[str, bool] = {}
         heirs = (
             []
             if plan is None
-            else _heir_states(plan, outcome.states, records, vault.store, seed)
+            else _heir_states(
+                plan, outcome.states, records, vault.store, seed, adapter_inherited
+            )
         )
         generations.append(
             {
@@ -451,6 +550,7 @@ def _run_arm_generations(
                     }
                     for row in rows
                 ],
+                "trained": trained,
                 "n_inherited_by_parent": {
                     agent_id: len(record.inherited_memories)
                     for agent_id, record in sorted(records.items())
@@ -485,6 +585,9 @@ def _run_arm_generations(
                             isinstance(entry, dict) and SOMATIC_SCALE_KEY in entry
                             for entry in heir.retrieval_context
                         ),
+                        "adapter_inherited": adapter_inherited.get(
+                            heir.agent_id, False
+                        ),
                         "birth_drift_flags": dict(heir.drift_state.flags)
                         if isinstance(heir.drift_state, DriftState)
                         else {},
@@ -508,6 +611,7 @@ def run_population_experiment(
     n_agents: int,
     n_generations: int,
     events_budget: int,
+    lora: bool = False,
 ) -> dict[str, Any]:
     """Every arm × every seed. Each arm keeps its own population and pasture."""
 
@@ -522,7 +626,7 @@ def run_population_experiment(
     # letting resolve_lora_choice exit on an unset flag would be right for the
     # pre-registered runner and wrong here, where there is no choice to make yet.
     identity = build_tool_identity(
-        lora_choice=resolve_lora_choice(False, mock=mock_llm_enabled()),
+        lora_choice=resolve_lora_choice(bool(lora), mock=mock_llm_enabled()),
         seeds=list(seeds),
         extra={
             "reproduction": {
@@ -530,7 +634,7 @@ def run_population_experiment(
                 "heirs_per_tournament_win": HEIRS_PER_TOURNAMENT_WIN,
                 "p0_niche": P0_NICHE_LABEL,
                 "inheritance_wired": True,
-                "adapter_training_wired": False,
+                "adapter_training_wired": True,
                 # D-081: per-capita capacity held constant as N grows.
                 "pool_capacity_scaled": True,
             }
@@ -561,6 +665,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--n-generations", type=int, required=True)
     parser.add_argument("--events", type=int, required=True)
     parser.add_argument("--results", type=Path, required=True)
+    # Mirrors the multigen runner: no default, so a forgotten flag can never be
+    # mistaken for a deliberately untrained run (D-004 pattern).
+    lora = parser.add_mutually_exclusive_group(required=True)
+    lora.add_argument("--lora", dest="lora", action="store_true", default=None)
+    lora.add_argument("--no-lora", dest="lora", action="store_false", default=None)
     return parser
 
 
@@ -571,6 +680,7 @@ def main(argv: list[str] | None = None) -> None:
         n_agents=int(args.n_agents),
         n_generations=int(args.n_generations),
         events_budget=int(args.events),
+        lora=bool(args.lora),
     )
     args.results.parent.mkdir(parents=True, exist_ok=True)
     args.results.write_text(json.dumps(results, indent=1), encoding="utf-8")
