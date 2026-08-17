@@ -7649,3 +7649,90 @@ kusurunun ikinci bir kopyasını açardı.
 ⚠ **Üretim yolu bu kayıtta da değişmedi.** `build_graph`, `pool_step_node` ve
 `_collect_pe_events` olduğu gibi duruyor; hiçbir koşum `run_population`'ı
 kullanmıyor.
+
+---
+
+## D-101 · 2026-08-17 · **E2-4 ikiye bölündü** · nesil defteri yazıldı — ⭐ Price **bir nesil gecikmeli** okunur
+
+**Durum:** kapsam kararı (Claude Code) + kod (`e9d07a9`) · **Etiket:** yeni
+yetenek, üretim yolu değişmedi · suite **`463 passed, 2 deselected`**
+
+### 1. Kapsam kararı — neden bölündü
+
+D-098 E2'yi dört adıma bölmüştü. Dördüncüsüne girerken **tek adımda iki ayrı
+risk sınıfının karıştığı** görüldü:
+
+| | ne | risk |
+|---|---|---|
+| **E2-4a** | nesil döngüsü defteri + Price'ın kapatılması | **saf**, test edilebilir, üretim yoluna dokunmaz |
+| **E2-4b** | koşum sarmalayıcısına bağlama | ⛔ **ön-kayıtlı yola dokunuyor** ve **kasa + adapter yaşam döngüsünü N ajana açıyor** |
+
+⚠ E2-4b, **D-033'ün** (adapter'lar koşumlar arası diskte kalıyordu ⇒ I0.7) ve
+**D-067'nin** (kasa saati, faz-yerel sayaç) tam kavşağında duruyor. İkisini bir
+commit'te götürmek, ikisinin hangisinin bozduğunu ayırt edilemez yapardı.
+
+⇒ Bu kayıt **(a)**. (b) ayrı adım, ayrı onay.
+
+### 2. ⭐ İki nesillik bağımlılık — bu katmanın var olma nedeni
+
+Price, `Δzᵢ` için **varislerin** z'sine ihtiyaç duyuyor:
+
+```
+Δz̄ = (1/w̄)·Cov(wᵢ, zᵢ) + (1/w̄)·E(wᵢ·Δzᵢ)
+```
+
+⇒ **g → g+1 geçişinin ayrışması, g'nin sonunda hesaplanamaz.** Hiçbir koşum
+*bitirdiği* nesil için *"seçilim terimi"* raporlayamaz; ancak **bir nesil
+gecikmeyle** raporlayabilir.
+
+**Sonuçları:**
+
+- G = 5 nesil ⇒ **4 geçiş** ⇒ Price ayrışması **4 kez** okunur, 5 değil.
+  (P7-a'nın *"kol başı 40 epizod"* hesabı bunu **zaten** böyle sayıyordu — 10
+  tohum × (G−1) = 40. Tutarlı.)
+- Son nesil **hiçbir Price satırı üretmez** — varisi yok. Bütçede o nesil
+  *"terim üretmeyen ama `z` sağlayan"* nesil.
+- ⚠ Bunu unutan bir okuyucu **yanlış sayı çiftini** yan yana koyar. Bu yüzden
+  plan sonradan `agent_id`'lerden yeniden kurulmuyor, **açık bir nesne** olarak
+  tutuluyor (`GenerationPlan`).
+
+### 3. Ne yazıldı — `dau/generation/population.py`
+
+| parça | ne |
+|---|---|
+| `plan_next_generation(...)` | Bir neslin uygunluğunu, sonraki neslin **soy ağacına** çevirir. P3 gereği `n_slots` = **bütün popülasyon** (nesil = ajan başına bir yaşam, sonunda her yuva yenilenir) |
+| `close_transition(plan, heir_z)` | Varisler yaşadıktan sonra geçişin Price ayrışmasını **alan alan** kapatır |
+| `heir_id(parent, generation, ordinal)` | Deterministik varis kimliği |
+
+⭐ **Varis id'sindeki sıralayıcı yük taşıyor:** iki turnuva kazanan ebeveynin
+**iki ayrı** varis kimliği olmalı, ve `w` tam olarak onların sayısı. Ebeveyn
+adıyla isimlendirmek ikisini **sessizce birleştirir** ve `Var(w)`'yi sıfıra
+düşürür — yani katmanın var olma sebebi olan **dejenere durum** geri gelir.
+
+### 4. Mutasyon kontrolü (§2.4) — üç mutasyon
+
+| mutasyon | kırılan |
+|---|---|
+| varis id'sinden sıralayıcı kaldırıldı | **dört** test (Price kimliği dahil) |
+| eksik varisi sessizce atla | eksik-varis testi |
+| bütün varisleri ilk ebeveyne yaz (soy ağacı bozuk) | **Price kimlik testi** |
+
+⚠ Üçüncüsü için plan bilerek **asimetrik `w`** ile kuruldu ve test bunu
+assert ediyor (*"seed gave a flat w; pick another"*). Her ebeveyne bir varis
+düşseydi yanlış gruplama da dengelenir ve test **bozuk bir soy ağacına karşı
+geçerdi** — D-099'da yakalanan zayıflık sınıfının aynısı.
+
+### 5. Kalan tek adım — E2-4b
+
+| ne | not |
+|---|---|
+| `run_population` + `plan_next_generation`'ı koşum sarmalayıcısına bağla | ⚠ **ilk kez üretim yolu değişir** |
+| Kasa + adapter yaşam döngüsünü N ajana aç | ⛔ D-033 / I0.7 ve D-067 tam burada |
+| `TOURNAMENT_K` + `HEIRS_PER_TOURNAMENT_WIN` → `tool_identity` | **D-094'ün borcu**, bağlanma anında ödenir |
+| Price satırlarını koşum çıktısına yaz | bir nesil gecikmeli, §2 |
+
+⚠ **Öneri:** E2-4b'yi mevcut `run_cprime_multigen`'i **değiştirerek** değil,
+**yeni bir sarmalayıcı** olarak yazmak. Gerekçe: multigen koşucusu gen1 → aktarım
+→ gen2 şemasına ve üç kola göre kurulu; popülasyon şeması (P1: kol başına ayrı
+popülasyon **ve** ayrı havuz, P6: tek faz) farklı bir iskelet. Değiştirmek
+B2'nin koştuğu yolu geri dönüşsüz biçimde karıştırır. ⚠ **Karar Yasin'in.**
