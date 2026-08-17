@@ -23,9 +23,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **`origin/main`'in önünde sekiz commit** (`e39d747`) — push edilmedi.
-- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`e39d747`).
-- **Son D-kaydı: D-094.** Sıradaki kayıt **D-095** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde on commit** (`4ab1f04`) — push edilmedi.
+- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`4ab1f04`).
+- **Son D-kaydı: D-095.** Sıradaki kayıt **D-096** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -113,13 +113,29 @@ yapmadı).
 kimliği testle korunuyor (`test_price_identity_holds_exactly`). ⛔ **Ama hâlâ
 hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar.
 
-### ⛔ Sıradaki üç karar — **Yasin'in**, E1/E5 ve E2 bunlara bağlı
+### ✅ P1 ve P6 kilitlendi (D-095) — ⛔ P7'de **iki** soru açık
 
-| # | Karar | Not |
+| # | Karar | Durum |
 |---|---|---|
-| **P1** | Kol başına **ayrı havuz** mu, tek havuz mu | Öneri: **ayrı** (Hudgens & Halloran 2008 + Xiao vd. 2023 aynı yerde; `null` bir referans suş). ⚠ Bedeli: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
-| **P6** | İki faz korunsun mu | Öneri: **tek faz** — karşılaştırma nesiller arası. ⚠ Bedeli: `delta_pe` uç noktası **kaybolur**, S3/S4 yeniden yazılır |
-| **P7** | N / G / tohum zarfı | ⚠ **Literatür sayı vermedi** (D-076/§M.4, DR kendi içinde çelişti). Öneri: **G ≥ 5** taban, sonra bütçe. 10 tohum × N=8 × G=5 ≈ **32.7 sa** |
+| ~~P1~~ | Havuz paylaşımı | ✅ **kol başına ayrı havuz.** ⚠ İlan edilecek sınır: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
+| ~~P6~~ | İki faz | ✅ **tek faz.** ⛔ Bedeli: **`delta_pe` uç noktası kaybolur**, S3/S4 yeniden yazılır |
+| **P7-a** | **Bütçe tavanı (kaç saat GPU)** | ⛔ **Yasin'in.** Üçlü (tohum/N/G) tavandan + kısıtlardan **türetilir**, seçilmez (§2.7): G ≥ 5 ← D-014/D-074 · N ≥ 8 ← `Var(w)>0` + Rice 2008 · tohum ← tekrar (D-076) |
+| **P7-b** ⭐ | **Hipotez testi mi, kestirim koşumu mu** | ⛔ **Yasin'in, ve kilitten ÖNCE.** `Cov(w,z)` için güç hesabı bir etki tahmini ister, elimizde yok, bakmak yasak (L9). Öneri: **kestirim** — B2'nin dersi (*"neden göremediğimizi ölçtük"*) |
+
+### ⬜ E1/E5 — denetim bitti, **uygulama onay bekliyor** (D-095)
+
+⭐ **İş sanıldığından küçük:** `step_pool` / `realized_extractions` /
+`step_pool_with_crisis` **zaten N girişli sözlük** alıyor. Tek ajanlı olan şey
+`pool_step_node` ([graph.py:1237](dau/foundation/graph.py:1237)) — tek girişli
+sözlük geçiyor. ⇒ Yapılacak: ajan başına defter işini N üzerinde dönen bir
+fonksiyona çıkarmak, `pool_step_node` **N=1 çağıranı** olarak kalır.
+
+⚠ **Neden onay bekliyor:** davranış korumalı ama **üretim grafiğinin
+ön-kayıtlı yoluna** dokunuyor, ve D-092 o yolun davranışını bugün **zaten
+değiştirdi** ⇒ sessiz bir kayma bugünün iki koşumunu karşılaştırma tabanı
+olarak geçersiz kılar. Doğrulama şartı yazıldı: N=1 yolu **aynı env / drift /
+internal state ve aynı defter satırlarını** üretecek, testi mutasyon
+kontrolünden geçecek.
 
 ### 📋 Kuşak 3 — ikinci ön-kayıta ertelendi
 
