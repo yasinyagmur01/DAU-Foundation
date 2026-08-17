@@ -1,0 +1,487 @@
+"""Read a population run and report it against the reading rules — nothing else.
+
+Written because the alternative is reading the JSON by eye, and this project has
+a documented history of that going wrong in one specific way: a number is seen,
+it looks like a result, and the sentence written about it claims more than the
+measurement can carry. D-090's drift threshold, D-092's band narrowing and
+D-059's clipping lever were all read that way and all three died.
+
+⭐ The reading rules are NOT invented here. They were fixed in CLAUDE.md BEFORE
+any population run, and this module implements them literally:
+
+    level 0 — gate       Var(w) > 0                  claim: NOTHING, it is a
+                                                     precondition
+    level 1 — selection  Cov(w, z) != 0, sign        claim: "selection acted on
+                         consistent across seeds     landmark drift"
+    level 2 — accumulation  the term does not decay  claim: "the effect is
+                         across generations          cumulative"
+    level 3 — arm contrast  lived != shuffle != null claim: the Lamarckian
+                                                     channel
+
+⚠ The most likely mistake, named in CLAUDE.md: Price gives SELECTION, the arm
+comparison gives INHERITANCE. Level 1 can be full while level 3 is empty — in
+B2 the three arms came out equidistant. This module therefore never merges the
+two, and prints level 3 even when level 1 is empty.
+
+⛔ NO HYPOTHESIS TEST IS PERFORMED, deliberately (P7-b / D-096): the first run
+is an ESTIMATION run. No p-value is computed here, so no report produced by
+this module can say "significant". The forbidden claims are printed alongside
+the numbers rather than left to the reader's memory.
+
+⚠ Exploratory. This reads a run that is itself exploratory; it changes no
+constant, and it is not on the pre-registered analysis path.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import statistics
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from dau.generation.reproduction import (
+    DRIFT_ABSENT_MAGNITUDE,
+    PRICE_KEY_DELTA_ZBAR,
+    PRICE_KEY_SELECTION,
+    PRICE_KEY_TRANSMISSION,
+    REPORT_KEY_F_AGENT_SPREAD,
+    REPORT_KEY_SELECTION_MEASURABLE,
+    REPORT_KEY_W_DISTINCT,
+    REPORT_KEY_W_VARIANCE,
+)
+
+# Keys the runner writes. Imported where they already exist (above) and named
+# here where they do not: reading the wrong one is silent — the section comes
+# back empty and the report looks like a measured zero (§2.8, and the exact
+# failure D-102 shipped with `landmark_drift_magnitudes`).
+RUN_KEY_ARMS: str = "arms"
+RUN_KEY_REPLAY: str = "replay"
+RUN_KEY_SEEDS: str = "seeds"
+RUN_KEY_QUALITY: str = "run_quality"
+RUN_KEY_INVARIANTS: str = "invariants"
+RUN_KEY_INFORMATIVE: str = "generations_informative"
+GEN_KEY_PRICE: str = "price_for_previous_transition"
+GEN_KEY_REPRODUCTION: str = "reproduction_report"
+GEN_KEY_AGENTS: str = "agents"
+GEN_KEY_DIGEST: str = "arm_digest"
+AGENT_KEY_LANDMARK: str = "landmark"
+LANDMARK_KEY_DRIFT: str = "landmark_drift_magnitudes"
+LANDMARK_KEY_REACHED: str = "landmark_reached"
+
+NOT_EVALUABLE: str = "not evaluable"
+# A level-1 claim asks for the sign to hold across seeds. One seed cannot
+# answer that, and saying so is the point: a single-seed run is where this
+# project's dead findings came from.
+MIN_SEEDS_FOR_SIGN_CONSISTENCY: int = 2
+# Level 2 asks whether the term decays across generations, which needs at least
+# two transitions to compare — i.e. G >= 3, which is A3/D-107's floor arriving
+# from the other direction.
+MIN_TRANSITIONS_FOR_PERSISTENCE: int = 2
+
+
+@dataclass
+class ArmGenerationView:
+    """One arm's one generation, in the shape the reading rules ask for."""
+
+    arm: str
+    seed: int
+    generation: int
+    digest: str
+    w_variance: float | None
+    w_n_distinct: int | None
+    f_agent_spread: float | None
+    selection_measurable: bool | None
+    price: dict[str, dict[str, float]] | None
+    z_by_agent: dict[str, dict[str, float]] = field(default_factory=dict)
+    landmark_reached: int = 0
+    n_agents: int = 0
+    events_lived: list[int] = field(default_factory=list)
+
+
+def load_run(path: Path) -> dict[str, Any]:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def arm_views(run: dict[str, Any]) -> list[ArmGenerationView]:
+    """Flatten the run into one row per arm per generation."""
+
+    views: list[ArmGenerationView] = []
+    for arm in run.get(RUN_KEY_ARMS, []):
+        for row in arm.get("generations", []):
+            report = row.get(GEN_KEY_REPRODUCTION) or {}
+            agents = row.get(GEN_KEY_AGENTS, [])
+            # ⚠ Only agents that REACHED the landmark go in, and an empty dict
+            # from one that did is kept as an all-zero vector rather than
+            # dropped. The two look identical in the JSON — `{}` — and they are
+            # opposites: a reached landmark with no flags is a real reading of
+            # zero drift (D-002's "an unflagged domain counts as 0"), while a
+            # life that ended at event 6 has NO reading and must never be
+            # imputed (D-073 removed LOCF for exactly this).
+            # Measured: conflating them made the first version of this module
+            # report "not evaluable" for every arm contrast of a run in which
+            # all 12 agents had a perfectly good reading.
+            z_by_agent: dict[str, dict[str, float]] = {}
+            reached = 0
+            for agent in agents:
+                landmark = agent.get(AGENT_KEY_LANDMARK) or {}
+                if not landmark.get(LANDMARK_KEY_REACHED):
+                    continue
+                reached += 1
+                z_by_agent[agent["agent_id"]] = dict(
+                    landmark.get(LANDMARK_KEY_DRIFT) or {}
+                )
+            views.append(
+                ArmGenerationView(
+                    arm=str(arm.get("arm")),
+                    seed=int(arm.get("seed", -1)),
+                    generation=int(row.get("generation", -1)),
+                    digest=str(row.get(GEN_KEY_DIGEST, "")),
+                    w_variance=report.get(REPORT_KEY_W_VARIANCE),
+                    w_n_distinct=report.get(REPORT_KEY_W_DISTINCT),
+                    f_agent_spread=report.get(REPORT_KEY_F_AGENT_SPREAD),
+                    selection_measurable=report.get(REPORT_KEY_SELECTION_MEASURABLE),
+                    price=row.get(GEN_KEY_PRICE),
+                    z_by_agent=z_by_agent,
+                    landmark_reached=reached,
+                    n_agents=len(agents),
+                    events_lived=[int(a.get("events_lived", 0)) for a in agents],
+                )
+            )
+    return views
+
+
+def z_signature(z: dict[str, float]) -> tuple[tuple[str, float], ...]:
+    """A hashable form of one agent's z, for counting distinct outcomes.
+
+    Rounded nowhere: two agents whose drift differs in the twelfth decimal
+    ARE different, and D-103's finding was precisely that eight agents came out
+    bit-identical. Rounding here would have hidden it.
+    """
+
+    return tuple(sorted((str(k), float(v)) for k, v in z.items()))
+
+
+def distinct_z(view: ArmGenerationView) -> int:
+    return len({z_signature(z) for z in view.z_by_agent.values()})
+
+
+def mean_z(view: ArmGenerationView, domains: list[str]) -> dict[str, float]:
+    """Arm-level z, over the agents that HAVE a reading.
+
+    Agents whose life ended before the landmark are already absent from
+    ``z_by_agent`` and so contribute nothing rather than a zero: the landmark
+    reader refuses to impute (D-073 removed LOCF), and averaging in a
+    fabricated zero here would put it back. An agent that DID reach the
+    landmark with no drift flags contributes its zeros, because that is a
+    measurement.
+    """
+
+    rows = list(view.z_by_agent.values())
+    if not rows:
+        return {}
+    return {
+        domain: statistics.fmean(
+            float(z.get(domain, DRIFT_ABSENT_MAGNITUDE)) for z in rows
+        )
+        for domain in domains
+    }
+
+
+def all_domains(views: list[ArmGenerationView]) -> list[str]:
+    domains: set[str] = set()
+    for view in views:
+        for z in view.z_by_agent.values():
+            domains.update(z)
+        for domain in (view.price or {}):
+            domains.add(domain)
+    return sorted(domains)
+
+
+def l2(a: dict[str, float], b: dict[str, float], domains: list[str]) -> float:
+    """Distance over the union of domains, absent = 0.
+
+    The absent-is-zero rule is the endpoint's own definition (an unflagged
+    domain really has no accumulated magnitude), not a convenience.
+    """
+
+    return math.sqrt(
+        sum(
+            (
+                float(a.get(d, DRIFT_ABSENT_MAGNITUDE))
+                - float(b.get(d, DRIFT_ABSENT_MAGNITUDE))
+            )
+            ** 2
+            for d in domains
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
+# The four levels
+# ---------------------------------------------------------------------------
+
+
+def level0_gate(run: dict[str, Any], views: list[ArmGenerationView]) -> list[str]:
+    """Var(w) > 0, and the run-health facts a reader needs before anything else.
+
+    ⚠ Claims NOTHING. Every line here is a precondition: if this section fails
+    the sections below are not weak evidence, they are undefined.
+    """
+
+    lines = [
+        f"run_quality = {run.get(RUN_KEY_QUALITY)}",
+        f"invariants  = {run.get(RUN_KEY_INVARIANTS)}",
+    ]
+    informative = run.get(RUN_KEY_INFORMATIVE)
+    if informative is None:
+        lines.append(
+            "generations_informative: ABSENT — this run predates A3/D-107; "
+            "check G by hand"
+        )
+    elif not informative:
+        lines.append(
+            "⛔ generations_informative = false — G < 3, so the only transition "
+            "this run has is the one whose selection term is zero BY "
+            "CONSTRUCTION (D-107). Levels 1-2 below cannot mean anything."
+        )
+    replay = run.get(RUN_KEY_REPLAY)
+    if replay is None:
+        lines.append("I4.1 replay: not run — determinism is not demonstrated")
+    else:
+        same = replay.get("recorded_digest") == replay.get("replay_digest")
+        lines.append(
+            f"I4.1 replay: {'identical' if same else 'DIVERGED'} over "
+            f"{replay.get('n_generations')} generation(s)"
+        )
+
+    lines.append("")
+    lines.append("Var(w) per arm per transition — the gate itself:")
+    for view in views:
+        if view.w_variance is None:
+            lines.append(
+                f"  {view.arm:<8} gen{view.generation}: no transition "
+                "(final generation produces no heirs)"
+            )
+            continue
+        verdict = "OPEN" if view.selection_measurable else "⛔ CLOSED"
+        lines.append(
+            f"  {view.arm:<8} gen{view.generation}: Var(w)={view.w_variance:.4f} "
+            f"distinct(w)={view.w_n_distinct} "
+            f"F_agent spread={view.f_agent_spread:.4f} → {verdict}"
+        )
+    lines.append("")
+    lines.append("Distinct z per generation (D-104 compared 1/8 vs 4/8):")
+    for view in views:
+        lines.append(
+            f"  {view.arm:<8} gen{view.generation}: {distinct_z(view)} distinct "
+            f"among {len(view.z_by_agent)} reading(s), landmark reached "
+            f"{view.landmark_reached}/{view.n_agents}"
+        )
+    return lines
+
+
+def level1_selection(
+    run: dict[str, Any], views: list[ArmGenerationView]
+) -> list[str]:
+    """Cov(w, z) per domain, and whether the sign question is even askable."""
+
+    n_seeds = len(run.get(RUN_KEY_SEEDS, []))
+    lines: list[str] = []
+    for view in views:
+        if view.price is None:
+            continue
+        lines.append(f"  {view.arm:<8} gen{view.generation} closes the previous transition:")
+        for domain in sorted(view.price):
+            part = view.price[domain]
+            lines.append(
+                f"    {domain:<14} selection={part[PRICE_KEY_SELECTION]:+.6f}  "
+                f"transmission={part[PRICE_KEY_TRANSMISSION]:+.6f}  "
+                f"Δz̄={part[PRICE_KEY_DELTA_ZBAR]:+.6f}"
+            )
+        if not view.price:
+            lines.append(
+                "    (empty — z carried no domains; the partition says nothing)"
+            )
+    if not lines:
+        lines.append("  no transition was closed at all")
+    lines.append("")
+    if n_seeds < MIN_SEEDS_FOR_SIGN_CONSISTENCY:
+        lines.append(
+            f"⚠ sign consistency across seeds: {NOT_EVALUABLE} — this run has "
+            f"{n_seeds} seed. A level-1 claim REQUIRES the sign to hold across "
+            "seeds, so no level-1 claim is available from this run however "
+            "large the term is."
+        )
+    else:
+        lines.append(
+            f"sign consistency across seeds: {n_seeds} seeds present — compare "
+            "the per-seed signs above by hand; this module does not test."
+        )
+    return lines
+
+
+def level2_persistence(views: list[ArmGenerationView]) -> list[str]:
+    """Does the term survive across transitions? Reported, never tested."""
+
+    lines: list[str] = []
+    by_arm: dict[str, list[ArmGenerationView]] = {}
+    for view in views:
+        if view.price is not None:
+            by_arm.setdefault(view.arm, []).append(view)
+
+    for arm, rows in sorted(by_arm.items()):
+        if len(rows) < MIN_TRANSITIONS_FOR_PERSISTENCE:
+            lines.append(
+                f"  {arm:<8}: {len(rows)} closed transition — {NOT_EVALUABLE}, "
+                f"persistence needs at least {MIN_TRANSITIONS_FOR_PERSISTENCE}"
+            )
+            continue
+        domains = sorted({d for row in rows for d in (row.price or {})})
+        for domain in domains:
+            series = [
+                (row.generation, (row.price or {}).get(domain, {}).get(
+                    PRICE_KEY_SELECTION, 0.0))
+                for row in rows
+            ]
+            shown = " → ".join(f"gen{g}:{v:+.6f}" for g, v in series)
+            lines.append(f"  {arm:<8} {domain:<14} {shown}")
+    if not lines:
+        lines.append("  nothing to compare")
+    lines.append("")
+    lines.append(
+        "⚠ Read as a sequence, not a trend: no slope is fitted and none may be "
+        "claimed. 'Does not decay' is a description of these numbers only."
+    )
+    return lines
+
+
+def level3_arm_contrast(views: list[ArmGenerationView]) -> list[str]:
+    """lived vs shuffle vs null, per generation. The INHERITANCE question.
+
+    ⚠ Kept separate from level 1 on purpose. Price measures selection inside an
+    arm; only this section can speak about the channel, and in B2 all three
+    arms came out equidistant while the machinery looked healthy.
+    """
+
+    domains = all_domains(views)
+    by_generation: dict[int, dict[str, ArmGenerationView]] = {}
+    for view in views:
+        by_generation.setdefault(view.generation, {})[view.arm] = view
+
+    lines: list[str] = []
+    for generation in sorted(by_generation):
+        arms = by_generation[generation]
+        lines.append(f"  gen{generation}:")
+        digests = {arm: view.digest[:12] for arm, view in sorted(arms.items())}
+        distinct = len(set(digests.values()))
+        lines.append(
+            f"    digests {digests} → "
+            f"{distinct}/{len(digests)} distinct"
+            + (
+                "  ⚠ identical arms cannot differ in ANY endpoint"
+                if distinct == 1
+                else ""
+            )
+        )
+        means = {arm: mean_z(view, domains) for arm, view in arms.items()}
+        names = sorted(means)
+        for i, first in enumerate(names):
+            for second in names[i + 1:]:
+                if not means[first] or not means[second]:
+                    lines.append(
+                        f"    ‖{first} − {second}‖ = {NOT_EVALUABLE} "
+                        "(an arm has no landmark reading)"
+                    )
+                    continue
+                lines.append(
+                    f"    ‖{first} − {second}‖ = "
+                    f"{l2(means[first], means[second], domains):.6f}"
+                )
+    lines.append("")
+    lines.append(
+        "⚠ Equal distances are the outcome to watch for: B2 measured "
+        "0.3852 / 0.3812 / 0.3814 and that pattern is a NULL, not a signal."
+    )
+    return lines
+
+
+def health(views: list[ArmGenerationView]) -> list[str]:
+    """Descriptive only — the facts that decide whether the above is readable."""
+
+    lines: list[str] = []
+    for view in views:
+        lived = view.events_lived
+        if not lived:
+            continue
+        lines.append(
+            f"  {view.arm:<8} gen{view.generation}: lifespans "
+            f"min={min(lived)} max={max(lived)} mean={statistics.fmean(lived):.1f} "
+            f"n={len(lived)}"
+        )
+    return lines
+
+
+FORBIDDEN: tuple[str, ...] = (
+    '"significant" — no test was run (P7-b: this is an estimation run, D-096)',
+    "anything at the individual level — P1 makes this a GROUP-level design "
+    "(Chevin 2011)",
+    '"LLM agents inherit Lamarckian traits" — one model, one niche family, '
+    "n = 1 experiment",
+    "anything via delta_pe — P6 removed that endpoint",
+    '"inheritance flowed" from level 1 — Price gives SELECTION; inheritance is '
+    "level 3",
+)
+
+
+def format_report(run: dict[str, Any], path: Path) -> str:
+    views = arm_views(run)
+    out: list[str] = [
+        f"# Population run report — {path.name}",
+        "",
+        f"note: {run.get('note')}",
+        f"seeds={run.get(RUN_KEY_SEEDS)} N={run.get('n_agents')} "
+        f"G={run.get('n_generations')} events={run.get('events_budget')}",
+        "",
+        "## Level 0 — gate (claims NOTHING; this is a precondition)",
+        *level0_gate(run, views),
+        "",
+        "## Level 1 — selection: Cov(w, z)",
+        *level1_selection(run, views),
+        "",
+        "## Level 2 — accumulation across generations",
+        *level2_persistence(views),
+        "",
+        "## Level 3 — arm contrast (the INHERITANCE question)",
+        *level3_arm_contrast(views),
+        "",
+        "## Health (descriptive)",
+        *health(views),
+        "",
+        "## ⛔ May NOT be claimed from this report",
+    ]
+    out.extend(f"  - {item}" for item in FORBIDDEN)
+    return "\n".join(out)
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument("--out", type=Path, default=None)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_arg_parser().parse_args(argv)
+    report = format_report(load_run(args.results), args.results)
+    if args.out is not None:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(report + "\n", encoding="utf-8")
+        print(f"wrote {args.out}")
+    print(report)
+
+
+if __name__ == "__main__":
+    main()
