@@ -428,7 +428,7 @@ def test_mock_llm_flag_installs_the_canned_llm(monkeypatch, tmp_path) -> None:
     pop_mod.main(
         [
             "--seeds", str(SEED), "--n-agents", "2", "--n-generations", "2",
-            "--events", "3", "--no-lora", "--mock-llm",
+            "--events", "3", "--no-lora", "--mock-llm", "--fresh-pasture",
             "--results", str(tmp_path / "out.json"),
         ]
     )

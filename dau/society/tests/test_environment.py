@@ -17,6 +17,8 @@ from dau.society.environment import (
     POOL_MIN,
     POOL_REGEN_RATE,
     EnvironmentState,
+    realized_extractions,
+    realized_extractions_sequential,
     agent_delta_pool,
     apply_crisis_trauma,
     get_pool_ratio,
@@ -297,3 +299,60 @@ def test_capacity_survives_a_step() -> None:
     stepped = step_pool(scaled, {"grazer-0": PER_CAPITA_REQUEST})
 
     assert stepped.capacity == POOL_MAX * CAPACITY_POPULATION
+
+
+# ---------------------------------------------------------------------------
+# Sequential service — P0-① as decided (D-103 measured why it is needed)
+# ---------------------------------------------------------------------------
+
+SEQUENTIAL_STOCK: float = 10.0
+SEQUENTIAL_REQUEST: float = 8.0
+
+
+def test_sequential_service_favours_the_earlier_position() -> None:
+    """⭐ The half of P0-① that breaks symmetry: order decides who goes short.
+
+    Under the proportional split identical requests get identical shares, so
+    identical agents stay identical forever — the D-103 pilot measured exactly
+    that, with eight bit-identical founders and Cov(w, z) zero by construction.
+    """
+
+    requests = {"first": SEQUENTIAL_REQUEST, "second": SEQUENTIAL_REQUEST}
+    granted = realized_extractions_sequential(SEQUENTIAL_STOCK, requests)
+
+    assert granted["first"] == pytest.approx(SEQUENTIAL_REQUEST)
+    assert granted["second"] == pytest.approx(SEQUENTIAL_STOCK - SEQUENTIAL_REQUEST)
+    assert granted["first"] > granted["second"]
+
+
+def test_sequential_service_never_overdraws_the_stock() -> None:
+    """The pasture cannot give what it does not have, in any order."""
+
+    requests = {f"a{i}": SEQUENTIAL_REQUEST for i in range(4)}
+    granted = realized_extractions_sequential(SEQUENTIAL_STOCK, requests)
+
+    assert sum(granted.values()) == pytest.approx(SEQUENTIAL_STOCK)
+    assert all(value >= 0.0 for value in granted.values())
+
+
+def test_sequential_and_proportional_agree_when_there_is_enough() -> None:
+    """Order only matters under scarcity; a full pasture serves everyone alike."""
+
+    requests = {"first": 2.0, "second": 3.0}
+    assert realized_extractions_sequential(
+        SEQUENTIAL_STOCK, requests
+    ) == realized_extractions(SEQUENTIAL_STOCK, requests)
+
+
+def test_step_pool_sequential_flag_changes_who_gets_served() -> None:
+    """The flag has to reach step_pool, not just exist on the helper."""
+
+    env = EnvironmentState(pool=SEQUENTIAL_STOCK, capacity=POOL_MAX)
+    requests = {"first": SEQUENTIAL_REQUEST, "second": SEQUENTIAL_REQUEST}
+    ordered = step_pool(env, requests, sequential=True)
+    shared = step_pool(env, requests, sequential=False)
+
+    got_ordered = {row["agent_id"]: row["amount"] for row in ordered.extraction_history}
+    got_shared = {row["agent_id"]: row["amount"] for row in shared.extraction_history}
+    assert got_ordered["first"] > got_ordered["second"]
+    assert got_shared["first"] == pytest.approx(got_shared["second"])

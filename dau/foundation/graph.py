@@ -1269,6 +1269,7 @@ class CommonsOutcome:
 def advance_commons(
     env_state: EnvironmentState,
     requests: list[CommonsRequest],
+    sequential: bool = False,
 ) -> tuple[EnvironmentState, dict[str, CommonsOutcome]]:
     """Regenerate, serve N announced withdrawals, then feed and scar each agent.
 
@@ -1301,6 +1302,7 @@ def advance_commons(
         env_state,
         {r.agent_id: float(r.requested) for r in requests},
         {r.agent_id: r.drift_state for r in requests},
+        sequential=sequential,
     )
     pool_ratio = get_pool_ratio(new_env)
     outcomes: dict[str, CommonsOutcome] = {}
@@ -1555,6 +1557,7 @@ def run_round(
     env_state: EnvironmentState,
     states: list[DAUAgentState],
     app: Any,
+    sequential: bool = False,
 ) -> RoundOutcome:
     """One round: every agent acts once, THEN the pasture ticks exactly once.
 
@@ -1591,7 +1594,7 @@ def run_round(
             raise ValueError(f"{state.agent_id}: no commons request after its event")
         requests.append(request)
 
-    new_env, outcomes = advance_commons(env_state, requests)
+    new_env, outcomes = advance_commons(env_state, requests, sequential=sequential)
     updated: dict[str, DAUAgentState] = {}
     alive: list[str] = []
     for state in stepped:
@@ -1630,6 +1633,8 @@ def run_population(
     states: list[DAUAgentState],
     app: Any,
     max_rounds: int,
+    sequential: bool = False,
+    rotate: bool = False,
 ) -> PopulationOutcome:
     """Run rounds until nobody can continue, or the round guard is spent.
 
@@ -1661,7 +1666,15 @@ def run_population(
     granted_by_round: list[dict[str, float]] = []
     n_rounds = 0
     while living and n_rounds < max_rounds:
-        result = run_round(env, living, app)
+        # P0-① rotates the act order so no position is permanently first. The
+        # rotation is by ROUND, not by generation: a fixed order inside a life
+        # would hand the same agent every scarce event, which is the permanent
+        # advantage Suleiman et al. (1996) measured and rotation exists to
+        # prevent (§N.1, D-083).
+        if rotate and living:
+            offset = n_rounds % len(living)
+            living = living[offset:] + living[:offset]
+        result = run_round(env, living, app, sequential=sequential)
         env = result.env_state
         final.update(result.states)
         granted_by_round.append(result.granted)

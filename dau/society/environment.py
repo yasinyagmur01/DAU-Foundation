@@ -99,9 +99,43 @@ def realized_extractions(
     }
 
 
+def realized_extractions_sequential(
+    regenerated: float,
+    requested: dict[str, float],
+) -> dict[str, float]:
+    """Serve the announced withdrawals IN ORDER, each from what is left (P0-①).
+
+    Biology analogy: the herd reaches the water one after another, and the last
+    animal drinks what the others left.
+
+    This is what "sequential access" in P0 option ① actually means, and it is
+    the half that breaks the symmetry: under the proportional split every agent
+    that asks for the same amount gets the same amount, so identical agents stay
+    identical forever — measured in the D-103 pilot, where eight founders came
+    out bit-identical and Cov(w, z) was zero by construction.
+
+    Order is the caller's, carried by the insertion order of ``requested``: the
+    act order is a physics decision that has to be declared (D-079), and ① adds
+    that it should ROTATE so no position is permanently advantaged.
+
+    Regeneration is NOT repeated per agent — the pasture still grows once per
+    round. Only the service is sequential.
+    """
+
+    available = max(POOL_MIN, float(regenerated) - POOL_MIN)
+    granted: dict[str, float] = {}
+    for agent_id, amount in requested.items():
+        want = max(0.0, float(amount))
+        take = min(want, available)
+        granted[agent_id] = take
+        available -= take
+    return granted
+
+
 def step_pool(
     env: EnvironmentState,
     extractions: dict[str, float],
+    sequential: bool = False,
 ) -> EnvironmentState:
     """Advance the commons one event: regenerate, extract, record, tick.
 
@@ -118,7 +152,11 @@ def step_pool(
     pool = float(env.pool)
     capacity = float(env.capacity)
     regenerated = pool + POOL_REGEN_RATE * pool * (1.0 - pool / capacity)
-    granted = realized_extractions(regenerated, extractions)
+    granted = (
+        realized_extractions_sequential(regenerated, extractions)
+        if sequential
+        else realized_extractions(regenerated, extractions)
+    )
     total_extraction = sum(granted.values())
     pool_next = _clamp_pool(regenerated - total_extraction, capacity)
 
@@ -218,10 +256,11 @@ def step_pool_with_crisis(
     env_state: EnvironmentState,
     extractions: dict[str, float],
     drift_states: dict[str, DriftState],
+    sequential: bool = False,
 ) -> tuple[EnvironmentState, dict[str, DriftState]]:
     """Advance the pool, then apply somatic crisis trauma to each agent."""
 
-    new_env = step_pool(env_state, extractions)
+    new_env = step_pool(env_state, extractions, sequential=sequential)
     pool_ratio = get_pool_ratio(new_env)
     updated_drifts = {
         agent_id: apply_crisis_trauma(ds, pool_ratio)

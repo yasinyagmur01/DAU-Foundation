@@ -383,3 +383,83 @@ def test_run_population_rejects_a_nonsense_guard(monkeypatch) -> None:
             build_event_graph(),
             max_rounds=0,
         )
+
+
+def test_run_population_passes_the_sequential_flag_down(monkeypatch) -> None:
+    """The flag has to reach the pasture, not just sit on run_population.
+
+    Measured gap — deleting the pass-through left every test green, because
+    nothing above advance_commons looked at who got served first.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setitem(STUB_DECISION_BY_AGENT, SECOND_ID, NPC_ACTION_COOPERATE)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", 1)
+    app = build_event_graph()
+
+    ordered = run_population(
+        EnvironmentState(pool=POOL_THIN),
+        [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
+        app,
+        max_rounds=1,
+        sequential=True,
+    )
+    shared = run_population(
+        EnvironmentState(pool=POOL_THIN),
+        [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
+        app,
+        max_rounds=1,
+        sequential=False,
+    )
+
+    first_ordered = ordered.granted_by_round[0]
+    first_shared = shared.granted_by_round[0]
+    assert first_ordered[AGENT_ID] > first_ordered[SECOND_ID]
+    assert first_ordered != first_shared, "sequential and proportional agreed"
+
+
+def test_rotation_moves_the_front_of_the_queue(monkeypatch) -> None:
+    """P0-①: no position may be permanently first (D-083 / Suleiman 1996).
+
+    The queue ORDER is asserted rather than the harvest it produces: scarcity
+    empties the pasture in the round it bites, so by the next round everyone is
+    served zero and the outcomes stop distinguishing the orders. Order is also
+    the thing rotation is actually about.
+    """
+
+    real_run_round = graph_mod.run_round
+    seen: list[list[str]] = []
+
+    def _spy(env_state, states, app, sequential=False):
+        seen.append([state.agent_id for state in states])
+        return real_run_round(env_state, states, app, sequential=sequential)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", 3)
+    monkeypatch.setattr(graph_mod, "run_round", _spy)
+    app = build_event_graph()
+
+    run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
+        app,
+        max_rounds=3,
+        sequential=True,
+        rotate=True,
+    )
+    rotated = list(seen)
+    seen.clear()
+    run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
+        app,
+        max_rounds=3,
+        sequential=True,
+        rotate=False,
+    )
+    fixed = list(seen)
+
+    assert len(rotated) == len(fixed) == 3
+    assert len({tuple(order) for order in fixed}) == 1, "a fixed queue must not move"
+    assert len({tuple(order) for order in rotated}) > 1, "rotation did not move the queue"
+    assert rotated[0][0] != rotated[1][0], "the front of the queue never changed"

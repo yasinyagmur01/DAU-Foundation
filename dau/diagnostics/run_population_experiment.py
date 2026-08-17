@@ -127,6 +127,13 @@ P0_NICHE_LABEL: str = "shared-per-seed (P0 option 1)"
 # no domains and returns {}, and every generation reports a Price row that says
 # nothing. That is exactly what happened on the first full-chain run.
 LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
+# P0-① as decided (2026-08-17): sequential service in a rotating order. The
+# D-103 pilot measured what the simultaneous, proportional version does — eight
+# founders came out bit-identical, z had zero variance, and Cov(w, z) was zero
+# BY CONSTRUCTION in every arm. These are module constants rather than CLI flags
+# because ① is the declared physics of this experiment, not a knob.
+SEQUENTIAL_ACCESS: bool = True
+ROTATE_ACT_ORDER: bool = True
 
 
 @dataclass(frozen=True)
@@ -436,6 +443,7 @@ def run_arm(
     n_agents: int,
     n_generations: int,
     events_budget: int,
+    pasture_carryover: bool,
 ) -> dict[str, Any]:
     """One arm: G generations of N agents on that arm's own pasture (P1)."""
 
@@ -460,6 +468,7 @@ def run_arm(
                 vault=vault, generations=generations, previous_plan=previous_plan,
                 previous_parents=previous_parents, n_agents=n_agents,
                 n_generations=n_generations, events_budget=events_budget,
+                pasture_carryover=pasture_carryover, founders=states,
             )
     finally:
         graph_mod.MAX_EVENTS = original_max_events
@@ -480,6 +489,8 @@ def _run_arm_generations(
     n_agents: int,
     n_generations: int,
     events_budget: int,
+    pasture_carryover: bool,
+    founders: list[DAUAgentState],
 ) -> dict[str, Any]:
     """The generation loop of one arm; run_arm owns the global it borrows."""
 
@@ -494,6 +505,8 @@ def _run_arm_generations(
             states,
             app,
             max_rounds=int(events_budget) + ROUND_GUARD_SLACK,
+            sequential=SEQUENTIAL_ACCESS,
+            rotate=ROTATE_ACT_ORDER,
         )
         env = outcome.env_state
         rows = score_generation(outcome.states, events_budget)
@@ -614,6 +627,14 @@ def _run_arm_generations(
         previous_plan = plan
         states = heirs
         vault.bind([state.agent_id for state in states])
+        # Whether the next generation inherits the pasture its parents left, or
+        # is born into a fresh one. 1A chose fresh for the single-lineage design
+        # so that the arm contrast could not be contaminated by the environment
+        # each arm had made; the population case is an open decision and is
+        # carried explicitly rather than settled by whichever the loop happened
+        # to do (D-103 found it was carrying over, undeclared).
+        if not pasture_carryover:
+            env = shared_pasture(founders)
 
     return {"arm": arm, "seed": seed, "generations": generations}
 
@@ -624,6 +645,8 @@ def run_population_experiment(
     n_generations: int,
     events_budget: int,
     lora: bool = False,
+    pasture_carryover: bool = False,
+    arms: tuple[str, ...] = ARM_ORDER,
 ) -> dict[str, Any]:
     """Every arm × every seed. Each arm keeps its own population and pasture."""
 
@@ -645,6 +668,9 @@ def run_population_experiment(
                 "tournament_k": TOURNAMENT_K,
                 "heirs_per_tournament_win": HEIRS_PER_TOURNAMENT_WIN,
                 "p0_niche": P0_NICHE_LABEL,
+                "sequential_access": SEQUENTIAL_ACCESS,
+                "rotate_act_order": ROTATE_ACT_ORDER,
+                "pasture_carryover": pasture_carryover,
                 "inheritance_wired": True,
                 "adapter_training_wired": True,
                 # D-081: per-capita capacity held constant as N grows.
@@ -661,9 +687,12 @@ def run_population_experiment(
         "seeds": list(seeds),
         "tool_identity": identity,
         "arms": [
-            run_arm(arm, seed, n_agents, n_generations, events_budget)
+            run_arm(
+                arm, seed, n_agents, n_generations, events_budget,
+                pasture_carryover=pasture_carryover,
+            )
             for seed in seeds
-            for arm in ARM_ORDER
+            for arm in arms
         ],
     }
 
@@ -677,6 +706,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--n-generations", type=int, required=True)
     parser.add_argument("--events", type=int, required=True)
     parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument("--arms", nargs="+", default=list(ARM_ORDER))
+    pasture = parser.add_mutually_exclusive_group(required=True)
+    pasture.add_argument(
+        "--pasture-carryover", dest="carryover", action="store_true", default=None
+    )
+    pasture.add_argument(
+        "--fresh-pasture", dest="carryover", action="store_false", default=None
+    )
     parser.add_argument(
         "--mock-llm",
         action="store_true",
@@ -703,6 +740,8 @@ def main(argv: list[str] | None = None) -> None:
         n_generations=int(args.n_generations),
         events_budget=int(args.events),
         lora=bool(args.lora),
+        pasture_carryover=bool(args.carryover),
+        arms=tuple(args.arms),
     )
     args.results.parent.mkdir(parents=True, exist_ok=True)
     args.results.write_text(json.dumps(results, indent=1), encoding="utf-8")
