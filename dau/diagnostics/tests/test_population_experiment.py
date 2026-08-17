@@ -887,3 +887,50 @@ def test_chain_digest_notices_the_order_of_the_generations(monkeypatch) -> None:
     assert forward != pop_mod.chain_digest(["ab"])
     assert forward == pop_mod.chain_digest(["a", "b"])
 
+
+# ---------------------------------------------------------------------------
+# A3 — G >= 3 as a structural requirement (D-107)
+# ---------------------------------------------------------------------------
+
+
+def test_two_generations_are_stamped_uninformative(monkeypatch, capsys) -> None:
+    """⛔ A3: a run that can only report zero must not read as one that measured it.
+
+    Under P0-① the founders are identical, so the ONLY transition a G=2 run has
+    is the one whose z has no variance — Cov(w, z) is zero however the
+    tournament goes. G=2 is still accepted (Price is defined, and it is what a
+    smoke run wants), so the guard is a stamp, not a refusal.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    assert results["generations_informative"] is False
+    assert "zero BY CONSTRUCTION" in capsys.readouterr().out
+
+
+def test_three_generations_are_not_stamped(monkeypatch) -> None:
+    """The other side: the stamp has to distinguish, not always fire."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=3, events_budget=EVENTS
+    )
+
+    assert results["generations_informative"] is True
+
+
+def test_one_generation_is_still_refused() -> None:
+    """The two floors are different things: undefined is an error, uninformative is a stamp."""
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    assert (
+        pop_mod.MINIMUM_GENERATIONS_DEFINED < pop_mod.MINIMUM_GENERATIONS_INFORMATIVE
+    )
+    with pytest.raises(ValueError, match="n_generations must be"):
+        run_population_experiment(
+            seeds=[SEED], n_agents=2, n_generations=1, events_budget=EVENTS
+        )

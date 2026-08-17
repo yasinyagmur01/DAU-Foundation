@@ -46,6 +46,14 @@ universe's, unchanged. The starting stock comes from the founders' own niche —
 they share it under P0-① — multiplied by N, so seed-to-seed variation survives
 the scaling instead of being replaced by a flat default.
 
+⛔ G >= 3 IS STRUCTURAL (A3, D-107). Under P0-① the founders are bit-identical,
+so generation 1 enters its transition with no variance in z and Cov(w, z) is
+zero however the tournament goes. A G=2 run has exactly one transition and it
+is that one: it can only report zero. The runner still ACCEPTS G=2 — that is a
+legitimate smoke configuration and Price is well defined there — but it says so
+on the console and stamps ``generations_informative`` into the results, because
+a run that can only report zero must not be read as one that measured zero.
+
 ✅ The preflight gates are wired (A1, D-105). Until then this wrapper had ZERO
 of them while the multigen runner had nine, and the missing one that mattered
 most was I0.7: with the adapter now COPIED from parent to heir, a leftover
@@ -184,6 +192,21 @@ REPLAY_OF_ARM: str = ARM_LIVED
 # it, and a deeper replay would only buy more of the same at ~1 arm-generation
 # of GPU time each.
 REPLAY_GENERATIONS: int = 2
+# ⚠ A3 (D-107) — two different floors, and conflating them is the mistake.
+#
+# DEFINED: with a single generation there is no transition at all, so Price is
+# undefined. This one is an error.
+#
+# INFORMATIVE: under P0-① every founder is born into the same niche, identical
+# down to the bit. Generation 1 therefore enters its transition with NO variance
+# in z, and Cov(w, z) over a constant z is zero however the tournament goes —
+# not "small", not "we failed to detect it", zero BY CONSTRUCTION. Measured in
+# D-104: gen1 gave 1 distinct z out of 8 agents while gen2 and gen3 gave 4.
+# ⇒ A G=2 run has exactly one transition, and it is the one that can only
+# report zero. G >= 3 is therefore a STRUCTURAL requirement of the design, not
+# a power or budget preference — and P7-a may not trade it away.
+MINIMUM_GENERATIONS_DEFINED: int = 2
+MINIMUM_GENERATIONS_INFORMATIVE: int = 3
 
 
 def planned_founder_ids(
@@ -710,9 +733,12 @@ def _run_arm_generations(
         )
         env = outcome.env_state
         rows = score_generation(outcome.states, events_budget)
-        # Read here, before training and birth touch anything: the digest must
-        # describe the life this generation lived, not what was done with it
-        # afterwards.
+        # Read before training and birth, so the digest describes the life this
+        # generation lived rather than what was done with it afterwards.
+        # ⚠ Hygiene, not a guard: measured — moving this read below the training
+        # and birth calls changes no digest today, because neither writes to the
+        # PE log or to a parent's event log. It is placed here so that stays
+        # true by construction rather than by accident.
         digest = generation_digest(outcome.states)
         candidates = candidates_from_rows(rows)
 
@@ -954,10 +980,24 @@ def run_population_experiment(
     before any GPU work, and the block it renders is written into the results.
     """
 
-    if n_generations < 2:
+    if n_generations < MINIMUM_GENERATIONS_DEFINED:
         raise ValueError(
-            "n_generations must be >= 2: with one generation there is no "
-            "transition and Price is undefined (D-101)"
+            f"n_generations must be >= {MINIMUM_GENERATIONS_DEFINED}: with one "
+            "generation there is no transition and Price is undefined (D-101)"
+        )
+    if n_generations < MINIMUM_GENERATIONS_INFORMATIVE:
+        # Not an error: G=2 is well defined and is what a smoke run wants. It
+        # is announced because a run that can only report zero must not be read
+        # as a run that measured zero (§2.9 — the state that cannot be
+        # determined makes noise instead of passing quietly).
+        print(
+            f"[POPULATION][WARN] n_generations={n_generations} < "
+            f"{MINIMUM_GENERATIONS_INFORMATIVE}: under P0-① the founders are "
+            "identical, so the first transition has no variance in z and its "
+            "selection term is zero BY CONSTRUCTION (D-104). This run can "
+            "produce no non-zero selection term at all — smoke only, never a "
+            "result (A3/D-107).",
+            flush=True,
         )
     use_mock = mock_llm_enabled()
     # Resolved before anything runs: it is what sets DAU_LORA_ENABLED, and the
@@ -1036,6 +1076,11 @@ def run_population_experiment(
         "protocol": PROTOCOL_NAME,
         "n_agents": n_agents,
         "n_generations": n_generations,
+        # A3/D-107. In the file, not only on the console: a reader who opens
+        # this JSON a month from now has no terminal scrollback, and "the first
+        # transition's selection term is zero by construction" is exactly the
+        # kind of thing that gets read as a finding.
+        "generations_informative": n_generations >= MINIMUM_GENERATIONS_INFORMATIVE,
         "events_budget": events_budget,
         "seeds": list(seeds),
         "tool_identity": identity,
