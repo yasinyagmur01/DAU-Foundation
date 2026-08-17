@@ -17,6 +17,7 @@ from dau.foundation.social import (
     OUTCOME_DEFECT,
 )
 from dau.society.environment import EnvironmentState
+from dau.society.extraction import strip_non_harvest_usages
 from dau.society.run_convention_pilot import (
     CONVENTION_MODAL_SHARE_MIN,
     CONVENTION_STREAK_MIN,
@@ -51,6 +52,66 @@ def test_decision_to_outcome_keyword_and_unknown() -> None:
     assert decision_to_outcome("I announce harvest of 27%") == OUTCOME_DEFECT
     assert decision_to_outcome("I choose to cooperate and share") == OUTCOME_COOPERATE
     assert decision_to_outcome("xyz unexplained mutter") == OUTCOME_DEADLOCK
+
+
+def test_non_harvest_idiom_is_not_a_withdrawal() -> None:
+    """"take a moment / take a rest" announces no act on the pool (D-092)."""
+
+    assert (
+        decision_to_outcome(
+            "Given the current state, I will take a moment to assess and talk "
+            "to my surroundings."
+        )
+        == OUTCOME_COOPERATE
+    )
+    assert (
+        decision_to_outcome(
+            "I need to conserve energy. I will take a short rest to recover."
+        )
+        == OUTCOME_COORDINATE
+    )
+
+
+def test_non_commons_object_is_not_a_withdrawal() -> None:
+    """Extracting *information* withdraws nothing from the commons (D-092)."""
+
+    assert (
+        decision_to_outcome(
+            "I will extract as much information as possible and cooperate "
+            "with any potential allies."
+        )
+        == OUTCOME_COOPERATE
+    )
+    assert decision_to_outcome("I will gather more data about my state.") == (
+        OUTCOME_DEADLOCK
+    )
+
+
+def test_real_harvest_still_defects_after_stripping() -> None:
+    """The repair must not blind the sensor to an actual withdrawal (D-092)."""
+
+    assert (
+        decision_to_outcome(
+            "I will take a moment to assess. I will also extract some "
+            "resources to increase my energy levels."
+        )
+        == OUTCOME_DEFECT
+    )
+    assert (
+        decision_to_outcome("I should prioritize resource extraction.")
+        == OUTCOME_DEFECT
+    )
+    assert decision_to_extraction(
+        "I will take a moment, then take 8 units of the resource."
+    ) == pytest.approx(8.0)
+
+
+def test_strip_removes_only_the_verb() -> None:
+    """Stripping the whole phrase would delete CONSERVE evidence (D-092)."""
+
+    stripped = strip_non_harvest_usages("I will take a short rest to recover.")
+    assert "take" not in stripped.lower()
+    assert "rest" in stripped.lower()
 
 
 def test_decision_to_extraction_amounts() -> None:

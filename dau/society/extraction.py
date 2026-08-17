@@ -71,6 +71,79 @@ CONSERVE_KEYWORDS: tuple[str, ...] = (
     "spare",
 )
 
+# ---------------------------------------------------------------------------
+# Non-harvest usages of DEFECT keywords — stripped before matching (D-092)
+# ---------------------------------------------------------------------------
+# D-091 measured the defect: DEFECT keywords fired on announcements that
+# withdrew nothing at all (14 of 35 `defect` calls carried no harvest
+# expression whatsoever). Two usages carried nearly all of it, and both are
+# about what the verb is applied to, not about what the organism decided:
+#
+#   "I will take a moment to assess"      -> English idiom, no object
+#   "extract as much information as I can" -> object is not the commons
+#
+# Both are removed before keyword matching, so the DEFECT branch fires only on
+# a surviving harvest expression. The branch ORDER below is deliberately
+# unchanged: an announced withdrawal is physical, and cooperation language
+# standing next to it does not put the units back. Two alternatives were
+# measured on the same 36 real completions and rejected (D-092): "most
+# keywords wins" rewards verbosity, "first act announced wins" rewards the
+# opening sentence — both tie the harvest to rhetoric rather than to the act.
+#
+# Only the VERB is removed, never its surroundings (lookahead, not a span
+# match): "take a short rest" must lose `take` and keep `rest`, otherwise the
+# fix would silently delete CONSERVE evidence while repairing DEFECT.
+NON_HARVEST_VERB_FORMS: str = r"tak(?:e|es|en|ing)"
+NON_HARVEST_IDIOM_OBJECTS: tuple[str, ...] = (
+    "moment",
+    "minute",
+    "second",
+    "breath",
+    "step back",
+    "stock",
+    "note",
+    "care",
+    "time",
+    "account",
+    "rest",
+    "break",
+    "look",
+    "chance",
+    "turn",
+)
+NON_COMMONS_VERB_FORMS: str = r"(?:extract|gather|collect|harvest|take)\w*"
+NON_COMMONS_OBJECTS: tuple[str, ...] = (
+    "information",
+    "data",
+    "insight",
+    "knowledge",
+    "detail",
+    "context",
+    "feedback",
+    "input",
+)
+NON_HARVEST_DETERMINERS: str = r"(?:a |an |some |the |few |several |my |its )*"
+NON_HARVEST_ADJECTIVE: str = r"(?:\w+ )?"
+NON_HARVEST_QUANTIFIERS: str = (
+    r"(?:as much |as many |some |more |additional |any |all |the |further )*"
+)
+
+NON_HARVEST_IDIOM_RE: re.Pattern[str] = re.compile(
+    rf"\b{NON_HARVEST_VERB_FORMS}\b(?=\s+{NON_HARVEST_DETERMINERS}"
+    rf"{NON_HARVEST_ADJECTIVE}(?:{'|'.join(NON_HARVEST_IDIOM_OBJECTS)})s?\b)",
+    re.IGNORECASE,
+)
+NON_COMMONS_OBJECT_RE: re.Pattern[str] = re.compile(
+    rf"\b{NON_COMMONS_VERB_FORMS}(?=\s+{NON_HARVEST_QUANTIFIERS}"
+    rf"(?:{'|'.join(NON_COMMONS_OBJECTS)})s?\b)",
+    re.IGNORECASE,
+)
+NON_HARVEST_PATTERNS: tuple[re.Pattern[str], ...] = (
+    NON_HARVEST_IDIOM_RE,
+    NON_COMMONS_OBJECT_RE,
+)
+NON_HARVEST_REPLACEMENT: str = " "
+
 # Parse explicit harvest quantities from free-text LLM announcements
 HARVEST_UNITS_RE: re.Pattern[str] = re.compile(
     r"(\d+(?:\.\d+)?)\s*(?:units?|of the resource)",
@@ -91,12 +164,27 @@ def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in lowered for keyword in keywords)
 
 
+def strip_non_harvest_usages(text: str) -> str:
+    """Remove DEFECT-keyword usages that announce no withdrawal (D-092).
+
+    Idiomatic ("take a moment") and non-commons ("extract information") uses of
+    a harvest verb are not physical acts on the pool, so they must not reach the
+    keyword match. Deterministic regex only — no LLM judge (2nd prohibition).
+    """
+
+    stripped = text
+    for pattern in NON_HARVEST_PATTERNS:
+        stripped = pattern.sub(NON_HARVEST_REPLACEMENT, stripped)
+    return stripped
+
+
 def decision_to_outcome(decision: str) -> str:
     """Map free-text / NPC decision to OUTCOME_* (deterministic, no LLM judge)."""
 
     token = decision.strip().lower()
     if token in DECISION_TO_OUTCOME:
         return DECISION_TO_OUTCOME[token]
+    token = strip_non_harvest_usages(token)
     if _contains_any(token, DEFECT_KEYWORDS):
         return OUTCOME_DEFECT
     if _contains_any(token, COOPERATE_KEYWORDS):
