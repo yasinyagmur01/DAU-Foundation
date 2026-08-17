@@ -19,7 +19,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-17) — ⛔ **P0 KARARI BEKLİYOR**
+# 1. Şu An Neredeyiz (2026-08-17) — ⛔ **D-091 BLOKAJI**
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
@@ -30,6 +30,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
   **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
+- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** (aşağıda).
 - **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
 - ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
   (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
@@ -66,8 +67,61 @@ ikisi de DEFECT anahtarı. **GAP-5 / L14'ün ölçülmüş hâli.**
 D-090 · D-081/082 — hepsi buna dayanıyor. Ve **K7'nin öncülü sarsıldı**:
 çöküşün bir kısmı bulgu değil **artefakt** olabilir.
 
-⚠ **Karar Yasin'in** ve önce o verilmeli — çünkü C/D/E'nin üçü de bu
-sayının doğru olduğunu varsayıyor.
+### ✅ Yasin'in kararları (2026-08-17, üçü de onaylandı)
+
+| | Karar | Seçilen |
+|---|---|---|
+| **0a** | Eşleme nasıl düzeltilsin | ⭐ **Öncelik + deyim ayıklama.** DEFECT'in mutlak önceliği kalkar, *"take a moment/time"* gibi deyimler hasat sayılmaz. **Prompt'a dokunulmaz** ⇒ koşumlar geçersiz olmaz |
+| **0b** | `SYSTEM_PROMPT`'un kelime dayatması | ⏸ **Şimdi karar verme.** Eşleme düzeldikten sonra davranış oranı yeniden ölçülür; prompt'un etkisi o zaman **rakamla** görünür |
+| — | Yasin yokken ne yapılacak | ✅ **Düzeltmeyi uygula + etkilenen ölçümleri yenile** (D-090 taraması + bir doğrulama koşumu) |
+
+---
+
+## ▶ ADIM ADIM KALAN İŞ — soğuk oturum buradan devam eder
+
+### 🚧 Kuşak 0 — D-091 blokajı *(her şeyin önünde)*
+
+| # | İş | Durum |
+|---|---|---|
+| **0a** | Eşleme düzeltmesi + mutasyon kontrollü test + D-092 | ✅ **onaylandı**, uygulanacak |
+| **0a-2** | D-090 taraması yeniden koşulur (36 çağrı, ~3 dk) | 0a'dan sonra |
+| **0a-3** | Bir doğrulama koşumu (N=1–2, ~6–12 dk) — davranış oranı, `delta_pool`, ömür | 0a-2'den sonra |
+| **0b** | `SYSTEM_PROMPT` kelime dayatması | ⏸ **ertelendi**, 0a-3'ün sayısına bakılacak |
+
+⚠ **Neden bloke ediyor:** *"olayların %94–100'ü DEFECT"* sayısı **C, D ve
+E'nin üçünün de** altında duruyor. Ve **K7'nin öncülü** (*"çöküş bir
+bulgudur"*) bu sayıya dayanıyor.
+
+### ⛔ Kuşak 1 — evrenin fiziği *(üçü de Yasin'in, 0a bitmeden sorulmaz)*
+
+| # | Karar | Not |
+|---|---|---|
+| **D** ⭐ | **Çıkarımın bedeli olsun mu** | D-090'dan sonra **en umut verici**. ⚠ Ölçümü **yarıda kaldı**: gen2 enerji yörüngesi gerçek veriden yeniden kuruldu (`pe_list` + `extraction_by_event`), bedelin bandı nasıl kaydırdığı **hesaplanmadı** |
+| **C** | Hasat kuralı — sabit kota / **Holling II** (+ `h`) | Ölçüldü (D-082/083), hazır. ⚠ 0a ve D bunu değiştirebilir |
+| **E** | **P0 = ①** + aksiyom sorusu | ⚠ D-090 çerçeveyi değiştirdi: *"özdeş karar veren ajanlar"* **zorunlu değilmiş** |
+
+### 🎯 Kuşak 2 — asıl hedef, hiç dokunulmadı
+
+| # | İş | Bağlı |
+|---|---|---|
+| E1/E5 | Ortak havuzu akışların dışına al; `pool_step_node` N talebi toplasın | C |
+| E2 | N ajanı olay bazında ilerleten dış döngü | ⚠ **denetimsiz yapılmaz** |
+| **E4** ⭐⭐ | **Üreme: turnuva, `w` sayacı, varis üretimi** | ⭐ **LİNÇPİN** |
+| — | Price aletlemesi `Cov(w,z)` | E4 |
+
+⭐ **E4 olmadan hiçbir şey seçilim ölçmez:** bugün her ebeveynin **tam olarak
+bir** varisi var ⇒ `w` sabit ⇒ `Cov(w,z)` **tanımsız**. D-086/088/089 kalıtımı
+ve uygunluğu onardı, **seçilimi değil**.
+
+### 📋 Kuşak 3 — ikinci ön-kayıta ertelendi
+
+`fitness_class`'ın boş `high` bandı · `landmark_energy` doygunluğu (1/6
+tavanda) · KTO kararı · `lr` bandı · uç nokta seçimi · DTW · MAP-Elites
+
+### ⚠ Ölçüm borcu — D-091 doğruysa yeniden ölçülecekler
+
+**D-068** (çöküş) · **D-084/D-090** (karar kanalı) · **D-081/D-082** (havuz
+aritmetiği — hepsi `d = 8.0`/olay varsayıyor)
 
 ---
 
