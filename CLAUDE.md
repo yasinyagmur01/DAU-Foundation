@@ -23,9 +23,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ⚠ **`origin/main`'in önünde on commit** (`4ab1f04`) — push edilmedi.
-- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`4ab1f04`).
-- **Son D-kaydı: D-095.** Sıradaki kayıt **D-096** olarak açılır.
+  etiketinde. ⚠ **`origin/main`'in önünde on iki commit** (`9f5918e`) — push edilmedi.
+- **Suite:** `435 passed, 2 deselected`. Çalışma ağacı temiz (`9f5918e`).
+- **Son D-kaydı: D-096.** Sıradaki kayıt **D-097** olarak açılır.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
   tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
@@ -119,8 +119,8 @@ hiçbir koşum seçilim ölçmüyor** — modül bağlanana kadar.
 |---|---|---|
 | ~~P1~~ | Havuz paylaşımı | ✅ **kol başına ayrı havuz.** ⚠ İlan edilecek sınır: iddia birey düzeyinden **grup düzeyine** kayar (Chevin 2011) |
 | ~~P6~~ | İki faz | ✅ **tek faz.** ⛔ Bedeli: **`delta_pe` uç noktası kaybolur**, S3/S4 yeniden yazılır |
-| **P7-a** | **Bütçe tavanı (kaç saat GPU)** | ⛔ **Yasin'in.** Üçlü (tohum/N/G) tavandan + kısıtlardan **türetilir**, seçilmez (§2.7): G ≥ 5 ← D-014/D-074 · N ≥ 8 ← `Var(w)>0` + Rice 2008 · tohum ← tekrar (D-076) |
-| **P7-b** ⭐ | **Hipotez testi mi, kestirim koşumu mu** | ⛔ **Yasin'in, ve kilitten ÖNCE.** `Cov(w,z)` için güç hesabı bir etki tahmini ister, elimizde yok, bakmak yasak (L9). Öneri: **kestirim** — B2'nin dersi (*"neden göremediğimizi ölçtük"*) |
+| **P7-a** | **Bütçe tavanı (kaç saat GPU)** | ⛔ **tek kalan sayı sorusu, Yasin'in.** Üçlü tavandan **türetilir**, seçilmez (§2.7). Üç eksen ayrı iş yapıyor: **N** → Price kestiriminin *yanlılığı* (Rice 2008) · **G ≥ 5** → birikimli kalıtım iddiası (D-014/D-074) · **tohum** → *kesinlik* (D-076: tekrar > N) |
+| ~~P7-b~~ ⭐ | Hipotez testi mi, kestirim mi | ✅ **kestirim (D-096).** ⇒ en küçük anlamlı etki ilan etmek **gerekmiyor** · birincil slot **test değil kestirim** · geçiş kapısı **`Var(w) > 0`** (tanım, kalibre eşik değil) · **null sonuç meşru çıktı** · bütçe artık *"ne harcayabiliriz"* sorusu |
 
 ### ⬜ E1/E5 — denetim bitti, **uygulama onay bekliyor** (D-095)
 
