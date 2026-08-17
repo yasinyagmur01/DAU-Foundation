@@ -7065,3 +7065,120 @@ kez iki bant birden doluyordu, şimdi **6/6 `normal`**. `F_agent` bandı
 - **0b hâlâ ertelenmiş.** `SYSTEM_PROMPT`'un *"prefer … extract, take"*
   dayatması **kaldırılmadı** (prompt'a dokunulmadı ⇒ koşumlar geçersiz olmadı).
   Artık rakam var: bu oranlar **hâlâ o prompt'un altında** alındı.
+
+---
+
+## D-093 · 2026-08-17 · Havuz aritmetiği yeniden hesaplandı · **`fitness_class` daralması tohum etkisiymiş** · ⭐ davranış ilk kez ortamı değiştiriyor
+
+**Durum:** üç ölçüm (0c · 0d-1 · 0d-2) · **Etiket:** ⚠ **keşifsel, ön-kayıtlı
+değil** · **kod değişmedi, sabit değişmedi** · ham
+`dau_runs/validate_d093_n4.json` (N=4, seed 5010–5013, `--lora`,
+`run_quality = flagged`, I4.1 replay **identical**)
+
+D-092'nin açtığı iki ölçüm borcunun kapanışı.
+
+### 1. 0c — havuz aritmetiği, `d = 8.0` varsayımı olmadan
+
+D-081 ve D-082'nin bütün hesabı *"her ajan her olayda 8.0 alır"*a
+dayanıyordu. Ölçülen ortalama **5.951** (D-092) / **6.402** (N=4).
+
+| kişi başı talep | kıtlık anı | çöküş anı |
+|---|---|---|
+| **8.0** — D-081/082'nin varsayımı | 17 | 16 |
+| 6.896 — D-089'un ölçtüğü | 21 | 20 |
+| **5.951** — D-092'nin ölçtüğü | **28** | 27 |
+| 4.95 — koşumdaki en düşük soy | 45 | 44 |
+| **3.75 = `r·K/4`** (azami sürdürülebilir verim) | **hiç** | hiç |
+
+⇒ **D-081'in derdi kapanmadı, büyüdü.** *"Kıtlık anı landmark'tan (10) sonra
+geliyor ⇒ ölçüm anında ajanlar özdeş"* problemindeki boşluk **7 olaydan 18
+olaya** çıktı.
+
+**Ve kapasite karar tablosu kaydı.** D-081'in ilan ettiği eşitsizlik
+(*"kıtlık anı < `LANDMARK_EVENT`, ve bunu sağlayan en büyük kapasite"*) aynen
+korunarak yeniden çözüldü:
+
+| talep | eşitsizliği sağlayan **en büyük** kişi başı kapasite | kıtlık anı |
+|---|---|---|
+| d = 8.0 (D-081'in hesabı) | **67** | 9 |
+| **d = 5.951 (ölçülen)** | **50** | 9 |
+
+⚠ **Hiçbir sabit değiştirilmedi.** Bu bir **karar girdisi** (D-007, Yasin'in);
+burada yapılan yalnız D-081'in kendi eşitsizliğini yeni ölçülen talebe
+uygulamaktır. Değer **etkiye bakılarak seçilmedi** (§2.7).
+
+### 2. ⛔ 0d-1'in okuması **çürütüldü** (kendi ölçümümle)
+
+D-092'nin N=2 koşumunda `F_agent` yayılımı 0.210 → **0.046**'ya düşmüştü.
+Ayrıştırdım: girdi terimlerinin **hiçbiri** daralmamıştı (`delta_pool`
+40.3 → 71.8, `t_survived` 9 → 18 **büyümüştü**), ama terimler arası
+korelasyon **+0.73 → −0.97**'ye dönmüştü. **Okuma:** *"davranış çeşitlendi,
+gerçek bir ödünleşme doğdu, `0.4/0.3/0.3` ağırlıkları eş-uygunluk çizgisine
+oturuyor ⇒ yapısal, E4 turnuvası yazı-tura olur."*
+
+⛔ **N=4 bunu desteklemedi:**
+
+| | D-089 (N=2, eski eşleme) | D-092 (N=2, yeni) | **D-093 (N=4, yeni)** |
+|---|---|---|---|
+| `F_agent` yayılımı | 0.210 | **0.046** | **0.239** |
+| `fitness_class` | 4 `normal` · 2 `low` | 6 `normal` | **10 `normal` · 2 `low`** |
+| korelasyon E~S | +0.73 | **−0.97** | **−0.31** |
+| korelasyon E~P | +0.27 | −0.87 | −0.33 |
+
+⇒ **Daralma tohum etkisiymiş.** D-092'nin ilan ettiği sınır (*"farklı
+tohumlar, tohum etkisi dışlanamaz"*) haklı çıktı, ve **altı soyluk bir
+korelasyondan yapısal iddia çıkarmak hataydı**. Anti-korelasyon 12 soyda
+**−0.31**'e iniyor: zayıf, yapısal değil.
+
+⚠ **Açık madde A yerinde:** `high` bandı (≥0.70) **12/12'de yine boş**;
+`F_agent` tavanı 0.518. Ama **iki bant birden doluyor** ⇒ turnuva için ayrım
+var. `landmark_energy` tavanda **1/12** (D-085'te 5/12).
+
+### 3. ⭐ 0d-2 — davranış oranı N=4'te doğrulandı, **ve ortamı değiştiriyor**
+
+| | D-089 (eski eşleme) | D-092 (N=2) | **D-093 (N=4)** |
+|---|---|---|---|
+| gen2 `defect` (8.0) | 78.4 % | 53.3 % | **50.5 %** |
+| gen2 `cooperate` (2.0) | 2.0 % | 30.5 % | **29.9 %** |
+| ortalama hasat | 6.896 | 5.951 | **6.402** |
+| **20 olayda havuzu çökmeyen soy** | **0 / 6** | 1 / 6 | **4 / 12** |
+| aktarılan anı | 23 / 6 soy | 19 / 6 | **42 / 12**, hiç almayan **0/12** |
+
+⭐⭐ **Asıl bulgu bu:** eski eşlemede **altı soyun altısı** havuzu öldürüyordu.
+Şimdi 12 soyun **4'ü** 20 olay boyunca öldürmüyor, ve fark davranıştan
+geliyor — çökmeyen soyların ortalama hasadı **4.612**, çökenlerinki **7.411**.
+
+En temiz örnek **seed 5011 `lived` ve `null`**: olay başına **2.625**,
+`cooperate` oranı **%56**, havuz sonunda **0.791** — ortak kaynak fiilen
+korunmuş.
+
+⇒ ⭐ **①'in aradığı simetri kırılması ilk kez görünüyor:** ajanlar **farklı
+karar veriyor** ve bu **ortamın karnesine** yansıyor. D-084'ün
+*"karar kanalı doygun, ayrım ancak Holling II gibi bir ortam kuralıyla
+gelir"* öncülü **artık zorunlu değil**.
+
+⚠ **Ama sürdürülebilir değil.** Çökmeyen soyların 4.612'si de MSY'nin (3.75)
+üstünde; o talepte kıtlık **45. olaya** düşüyor, yani 20 olaylık gen2
+penceresinin **dışına**. *"Havuz korunuyor"* denemez, **"pencere içinde
+çökmüyor"** denir.
+
+### 4. Neye dokunuyor
+
+| kayıt | durum |
+|---|---|
+| **D-081** (kıtlık anı, kapasite tablosu) | ⚠ **sayıları geçersiz** — kıtlık 17 → 28, kapasite 67 → 50 |
+| **D-082** (Holling II tablosu) | ⚠ `d = 8.0`/olay üzerine kurulu ⇒ **yeniden hesaplanmalı** |
+| **D-084** (karar kanalı doygun) | ⛔ **öncülü düştü** — davranış ayrışıyor ve ortamı değiştiriyor |
+| **D-092 §6'nın `fitness_class` uyarısı** | ⛔ **çürütüldü** — tohum etkisiymiş |
+| Açık madde **A** (`high` bandı boş) | ⚠ **yerinde**, 12/12 |
+| Açık madde **B** (`landmark_energy` doygunluğu) | ⭐ **düştü** — 1/12 |
+
+### 5. Sınırlar
+
+- **N=4, 12 soy, tek koşum.** Hipotez testi değil, `run_quality = flagged`.
+- Çökme/çökmeme **20 olaylık gen2 penceresine** göre tanımlı; MSY hesabı
+  dördünün de uzun vadede çökeceğini söylüyor.
+- 0c'nin bütün tablosu **sabit talep** modeli — gerçek talep dağılımlı ve
+  soydan soya değişken. Model D-081'inkiyle **aynı** tutuldu ki karşılaştırma
+  anlamlı olsun.
+- **Hiçbir karar verilmedi, hiçbir sabit değişmedi.**
