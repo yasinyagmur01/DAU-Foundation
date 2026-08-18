@@ -1603,3 +1603,95 @@ sebebi krizin gücü değil, **bireysel kanalın sessizliği**.
 - *"CONSORT 2025"* ve *"Standard Parameter Identification Theory"* künyeleri.
 - ⚠ **Wooldridge/Lynch & Walsh bölüm alıntıları** — kitap, doğrulayamadım;
   yön olarak not, kanıt olarak **hayır**.
+
+---
+
+# §T — **DR #11 mutabakatı** (2026-08-19, D-132)
+
+## T.0 Kaynak sicili — ⚠ **DOI disiplini geriledi**, ve 14. kimlik hatası
+
+| DR'nin verdiği | Crossref | karar |
+|---|---|---|
+| Huberman & Glance 1993, `10.1073/pnas.90.16.7716` | ✅ doğru | **alındı** |
+| Dohare ve ark. 2024, `10.1038/s41586-024-07711-7` | ✅ doğru | **alındı** |
+| Arthur 1989, `10.2307/2234208` | ✅ doğru | alındı (yan) |
+| ❌ **"El-Horbaty ve ark."**, *Permutation Tests for Random Effects in LMM* | ⛔ o makale **Lee & Braun 2012**, *Biometrics*, `10.1111/j.1541-0420.2011.01675.x` | **künye düzeltildi**, iddia alındı |
+| ⚠ Caravaggio ve ark. 2021, *"non-linear **dynamic** model"* | gerçek başlık *"non linear **marketing** model"*, `10.1007/s10203-021-00339-6` | ⚠ **alan farkı önemli** — düopol pazarlama modeli |
+| Flache & Macy 2011 (DOI yok) | `10.1080/0022250X.2010.532261`, *Small Worlds and Cultural Polarization* | ⚠ **alıntı kaynaktan değil**, başka makalenin onları anlatan cümlesinden |
+| *"Spontaneous Formation of Stereotypes…"* (DOI yok) | Martin ve ark. 2014, `10.1177/0956797614541129` | künye tamamlandı |
+| Ash & Adams 2020 · Lyle 2023 · Wang 2025 · "Churn and Plasticity" · "Dual Nature of Plasticity Loss" · "Probability for Data Science" · "Local Interactions and Heterogeneity…" | **DOI verilmedi**, doğrulanamadı | **kanıt olarak alınmadı** |
+
+⚠ **~15 iddianın yalnız 3'ünde DOI vardı** ⇒ D-080'den beri istediğimiz 1.
+şart bu turda **tutmadı**. (DR #9 ve #10'da tutuyordu.)
+✅ Buna karşılık **boşluk ilanı iki kez yapıldı** (argmax+eşik bileşimi ·
+evrensel nesil alt sınırı) ⇒ 3. şart **tuttu**.
+
+## T.1 ⛔ Alıntısı iddiasını taşımayan iki yer
+
+1. *"analyzing differences in treatment induced variance rather than species
+   numbers"* — aynı LMM özetine atfedilmiş, ama **"species numbers"** ekoloji
+   terimi; bir LMM permütasyon-testi özetinde bulunamaz. ⇒ **alınmadı**.
+2. *"Probability for Data Science" §5.8:* *"Dimensionality reduction can thus
+   be achieved by… only keeping the larger coefficients."* Bu **katsayı
+   seçme** hakkında; bizim **eksenler üzerinde argmax** yapımızı desteklemiyor.
+   ⇒ **alınmadı** (2. hata biçimi: gerçek kaynak, taşımadığı iddia).
+
+## T.2 ⛔ İç çelişki — ve bizim için en riskli madde
+
+DR, Q5'te **boşluk ilan ediyor**: *"No specific claim was found… establishing a
+single universal mathematical minimum generation threshold…"* — ama hemen
+ardından **normatif bir tablo** basıyor: *"1–3 nesil ⇒ birikimli kalıtım iddia
+edilemez · 8+ nesil ⇒ edilir."*
+
+⚠ Tek dayanağı **Martin ve ark. 2014**'ün sekizli zincirleri, ki o **bir
+çalışmanın tasarımı**, standart değil. ⇒ **Normatif tablo alınmadı**;
+⚠ **ama uyarısı alındı:** tasarımımız **G=3** ve *"birikimli"* kelimesi
+üçüncü ön-kayıtta **ilan edilmiş sınırla** kullanılmalı.
+
+## T.3 ⭐ Alınanlar
+
+### (a) **Loss of Plasticity** — D-130 §12'nin adı bulundu
+Dohare ve ark. 2024 (*Nature*, doğrulandı): *"standard deep-learning methods
+gradually lose plasticity in continual-learning settings until they learn no
+better than a shallow network."*
+⇒ Adapter sönümümüz (6/6 dizide 1.8×–4.8×) **adı konmuş bir olgu**.
+⚠ **Bizim eklediğimiz çekince:** LoP *"öğrenme yeteneğini yitirme"*dir; bizde
+gözlenen **güncelleme büyüklüğünün küçülmesi** olabilir ki bu **yakınsama** da
+olabilir. Ayırt etmek için güncelleme büyüklüğü değil **öğrenme sonucu**
+ölçülmeli. DR bu ayrımı yapmadı; sınır olarak yazıldı.
+
+### (b) Sıfır-varyanslı kolun istatistiği
+Lee & Braun 2012 (künye düzeltilmiş): varyans bileşeni **parametre uzayının
+sınırında** olduğunda standart LRT asimptotiği çöker; çözüm **karışım χ²**
+(`0.5χ²_q + 0.5χ²_{q+1}`) ya da **permütasyon testi**.
+⚠ Bizi **şimdi** bağlamıyor (P7-b: kestirim, test değil) ama doğrulayıcı
+koşumun test bölümüne girecek.
+
+## T.4 ⛔ Alınmayan — ve **neden**: Q2'nin iki mekanizması bizde zaten var ya da uygulanamaz
+
+| DR'nin önerisi | bizdeki durum |
+|---|---|
+| **Asenkron güncelleme** (Huberman & Glance, doğrulandı) | ⚠ **Zaten var**: havuz sırayla ve **rotasyonla** hizmet ediyor. İşe yaramamasının sebebi asenkronluk eksikliği değil, **karar fonksiyonunun basamak olması** — D-084: davranış eşlemesinin **tek soğurucu çıktısı** var, 1e-9'luk girdi farkı bile çıktıyı oynatmıyor |
+| **Birlikte var olan çekiciler / kaotik ayrışma** (Caravaggio) | ⚠ Sürekli, duyarlı dinamik gerektiriyor; bizim karar haritamız **ayrık ve soğurucu**. Ayrıca kaynak **düopol pazarlama modeli** |
+
+## T.5 ⭐⭐ Turun **gerçek** kazancı — hiç düşünmediğimiz kaldıraç
+
+DR'nin Q2 cevaplarının **hepsi** (uzamsal topoloji · yerel etkileşim ·
+aspirasyon karşılaştırması) tek bir şeye dayanıyor: **ajanların birbiriyle
+etkileşmesi**.
+
+⛔ **Bizim popülasyonumuzda ajanlar birbirleriyle hiç etkileşmiyor** (D-130
+§9): sekizinin de `opponent_id`'si **aynı NPC**, ve tek ortaklıkları mera.
+
+⇒ **Ajan-ajan etkileşimi**, kıtlıktan **bağımsız** ve C1'i **ihlal etmeyen**
+(hiçbir trait atanmıyor) bir simetri kırma kaldıracı — ve bugüne kadar
+tasarımda hiç yer almadı.
+⚠ Bedeli: en az iki yeni sabit (kim kiminle, hangi sıklıkta) ⇒ **üçüncü
+ön-kayıtın konusu**, bu koşumun değil.
+
+## T.6 ⇒ D-131 **ayakta**
+
+DR'de D-131'i çürüten hiçbir şey yok; dolaylı olarak **destekliyor** (dejenere
+kontrol parametrik testi geçersiz kılar ⇒ kolu betimleyiciye indirmek tutarlı).
+⭐ **Eklenen tek şey:** ajan-ajan etkileşimi, kontrolü yeniden değişken
+yapabilecek **en güçlü aday** olarak kayda giriyor.
