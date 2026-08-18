@@ -8600,3 +8600,80 @@ ama **ön-kayıtlı sabitlerdir** ve eğitimi değiştirir ⇒ D-kaydı + Yasin 
 
 Koşum sürerken **ara sonuca bakıldı** (120 yaşamda %18.3). Kayda geçiyor.
 **N değiştirilmedi**, koşum ne durduruldu ne uzatıldı.
+
+---
+
+## D-115 · 2026-08-18 · ⛔⛔ **D-114 düzeltiliyor** — `z`'yi yazan **iki** yol var, aletim yalnız **birini** ölçüyordu · ⭐ mekanizma **sıfır GPU** ile bulundu
+
+**Nasıl bulundu:** Yasin *"tekrar koşmadan bilimsel olarak bulgularımızı nasıl
+inceliyoruz"* diye sordu. Mevcut veri **yeniden ölçülmeden ayrıştırıldı** (yedi
+analiz, hiç GPU harcanmadı) ve dördüncüsü bir **iç çelişki** verdi:
+
+> tohum 9904'te **hiçbir yaşam** travma eşiğini geçmemiş, ama **72/72 ajanın
+> `z`'si dolu**.
+
+Aletim doğru niceliği okusaydı bu **imkânsızdı**.
+
+### 1. ⛔ Kök neden: drift'i yazan iki yol, biri günlüğe hiç girmiyor
+
+| yol | nerede | tetik | PE günlüğüne yazıyor mu |
+|---|---|---|---|
+| **bireysel şaşırma** | `graph.py:1190` | ajanın kendi `DeltaRecord`'u, `magnitude ≥ 0.7` | ✅ evet — D-112 bunu görüyor |
+| ⛔ **ortak havuz krizi** | `environment.py:252` | `pool_ratio < POOL_CRISIS_THRESHOLD = 0.30` ⇒ `dummy_delta`, `magnitude × CRISIS_TRAUMA_MULTIPLIER = 2.5`, alan **`resource`** | ❌ **hayır** — `update_drift`'i doğrudan çağırıyor |
+
+⇒ **D-112'nin *"travma eşiğine mesafe"* profili yalnız bireysel kanalı
+ölçüyor.** §2.8'in tam olarak uyardığı hata: *"rapor aleti takip etmeli, aleti
+tekrar etmemeli"* — ben `delta_magnitude`'ı PE günlüğünden okuyup onun
+`update_drift`'in gördüğü şeyle **aynı** olduğunu varsaydım; ikinci yolda değil.
+
+### 2. ⭐⭐ Mekanizma — tohum farklılığının tamamı bununla açıklanıyor
+
+| tohum | havuz oranı (nesil sonu) | kriz? | `z`'nin kaynağı | eşik geçişi (bireysel) | `z` dolu |
+|---|---|---|---|---|---|
+| **9903** | 0.729 · 0.743 · 0.761 | ⛔ **hiç** (hep > 0.30) | **bireysel** (`energy`) | **26/72** | 48/72 |
+| **9902** | 0.238 · 0.000 · 0.353 | ✅ kısmen | **karışık**: 48 `resource` + 8 `energy` | 6/72 | 48/72 |
+| **9904** | 0.000 · 0.000 · 0.000 | ✅ **her nesilde** | **yalnız kriz** (`resource`) | **0/72** | **72/72** |
+| *(9901/B1)* | — | — | `energy` ×3 | 3/72 | 3/72 |
+
+⇒ ⭐ **D-114'ün *"oran %0–%36, uç noktanın ölçülebilirliği tohuma bağlı"*
+cümlesi YANLIŞ.** `z` üç tohumun **üçünde de** ajanların çoğunda **dolu**.
+Değişen şey ölçülebilirlik değil, **hangi kanalın onu doldurduğu**.
+
+### 3. ⭐ Asıl tasarım sonucu — ve bu bir öncekinden daha ciddi
+
+Kriz **kolun tamamına aynı anda** vuruyor ⇒ sekiz ajan **aynı** drift'i alıyor:
+
+| nesil-hücresi | farklı `z` / 8 ajan |
+|---|---|
+| 9904 (yalnız kriz) | **1 · 2 · 2** |
+| 9902 (karışık) | **1 · 2 · 3** |
+| **9903 (yalnız bireysel)** | **1 · 3 · 5** |
+
+⇒ **`z` yalnız BİREYSEL kanal sürdüğünde ajanlar arası varyans taşıyor.**
+Kriz sürdüğünde `Cov(w, z)` yine sıfıra gidiyor — ama *"hiçbir şey olmadı"*
+diye değil, ***"herkese aynı şey oldu"*** diye. İki sıfırın sebebi **zıt**, ve
+sonuç dosyasından ayırt edilemiyorlardı.
+
+⚠ **Bu, P0-①'in altını oyuyor:** ortak havuz, ajanları ayrıştırması beklenen
+mekanizmanın (kıtlık) kendisi — ama kıtlık **kriz eşiğini** geçtiğinde
+uç noktayı **eşitliyor**.
+
+### 4. Çürütülen okumalar — üçü de benim
+
+| ne demiştim | ne çıktı |
+|---|---|
+| D-109: *"uç nokta dejenere"* | ⛔ hayır — B1'in tohumunda **iki kanal da** sessizdi, uç nokta değil |
+| Ara rapor: *"oran dört kat yüksek, A'yı işaret ediyor"* | ⛔ farklı kanalı sayıyordum |
+| D-114: *"ölçülebilirlik tohuma bağlı, %0–%36"* | ⛔ ölçülebilirlik değil, **kanal kimliği** değişiyor |
+| Ara rapor: *"uzun yaşam = daha çok geçiş fırsatı"* | ⛔ **ölçüldü, tutmadı**: geçenlerin ömrü 20.4, geçmeyenlerin 20.1 |
+
+### 5. Kalan borç
+
+1. ⛔ **D-112 eksik:** kriz yolunun büyüklüğü **hiçbir yere yazılmıyor**.
+   `environment.py`'deki `crisis_magnitude` de günlüğe girmeli — saf raporlama
+   (§2.10), ama **yapılmadı**, Yasin'in sırasını bekliyor.
+2. ⚠ `headroom_n8_g3_s3.json.partial.json` **kapısız**, ve bu kayıttaki bütün
+   sayılar oradan geliyor ⇒ **hiçbiri ön-kayıtlı sonuç değil**.
+3. ⚠ **n = 4 tohum.** Niş parametreleriyle (`social_pressure` 0.516 ↔ en yüksek
+   oran) ilişki **gözlem**, iddia değil; dört noktadan parametre seçmek tam
+   olarak §2.7'nin yasakladığı şey olur.
