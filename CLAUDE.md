@@ -19,29 +19,22 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-17) — ✅ **popülasyon makinesi kuruldu, linçpin kapandı**
+# 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
-- **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
-  `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
-  etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `582 passed, 2 deselected`. Çalışma ağacı temiz. ✅ **`origin/main` ile senkron — push edildi.**
-- **Son D-kaydı: D-122.** Sıradaki kayıt **D-123** olarak açılır.
-- 🔒 **İKİNCİ ÖN-KAYIT KİLİTLİ** — `docs/PREREGISTRATION_2.md`, commit `72df476ebd54`. Dört slot kapalı: uç nokta **A** · ikincil **yok** · bütçe **3 tohum · N=8 · G=3 · 30 olay** · tohumlar **9911–9913**.
-  ⛔ **Kilitten sonra kod/eşik/uç nokta/test değişirse sonuç post-hoc olur.** Yalnız saf raporlama meşru (§2.10).
-- ▶ **KOŞUM UÇUŞTA** (2026-08-18 15:04 başladı): `dau_runs/c2_population_n8_g3_s3.json`, log `dau_runs/logs/c2_run.log`.
-  ⚠ **Oturum koparsa:** checkpoint `*.partial.json`'a bak (D-111), koşum sürüyorsa `pgrep -f run_population_experiment`. Sonraki iş **analiz**: `python -m dau.diagnostics.analyze_population_run --results dau_runs/c2_population_n8_g3_s3.json`.
-  ⚠ **Koşum sürerken `pytest` KOŞMA** — test oturumu CUDA'yı başlatıyor, 8 GB kartta canlı koşumla yarışır.
-- ⭐⭐ **KARAR 1 VERİLDİ (D-121, Yasin):** `z` **korunuyor** (seçenek A) + **dejenere hücre ilanı** + **pozitif kontrol**. ⛔ D elendi: ölçüm gösterdi ki dejenere hücre **14/27 → en az 21/27** olurdu, ve kriz müdahale-sonrası olduğu için budamak *bad control* riski taşıyordu. ⇒ **İkinci ön-kayıtta Slot 1 kapandı.**
-- **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
-- **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
-  (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
-  tarama (D-069, §K) · yedi kilit karar (D-070) · **K4-b (D-071)** ·
-  **landmark aletlemesi (D-072)** · **LOCF kaldırıldı (D-073)** · **sıralama: ② kilitten önce (D-074)** · **popülasyon taraması (D-075, §L)**.
-- **2026-08-17:** model erişimi kontrol edildi (**etkilenmiyoruz**) · ⛔ **davranış çöküşü artefakt olabilir (D-091)** · Yasin **üç kararı verdi** · ✅ **eşleme onarıldı (D-092)** · ⭐ **havuz aritmetiği yeniden hesaplandı, davranış ilk kez ortamı değiştiriyor (D-093)** · ⭐⭐ **P2/P3/P4 kilitlendi ve E4 yazıldı (D-094)**.
-- **2026-08-14:** DR #6 mutabakatı (**D-076**, §M) · ② tasarım önerisi + **P0 bulgusu (D-077)** · **P0 ölçüldü ve E3 uygulandı (D-078)** · **P0 taraması (D-079, §N)** · **DR #7 mutabakatı (D-080, §O)** · **havuz aritmetiği + landmark önerisi geri çekildi (D-081)** · **DR #8 mutabakatı: Holling II üçüncü yol (D-082, §P)** · **rotasyon ölçüldü + prompt kanalı tam duyarlı (D-083)** · ⛔ **karar kanalı doygun çıktı (D-084)** · ⭐ **doğrulama koşumu: uygunluk kapısı kalıtımın %90'ını kesiyor (D-085)** · ✅ **`F_agent` enerji terimi düzeltildi (D-086)** · ⛔ **aktarım eşiği yanlış niceliğe uygulanmış + D-086'nın yan hasarı (D-087)** · ✅ **salience çıtası geri verildi (D-088)** · ⭐ **kalıtım akıyor, doğrulandı (D-089)** · ⭐⭐ **karar kanalı ölü değil: drift ekseninde temiz eşik (D-090)**.
-- ⚠ **Evrenin fiziği değişti (D-066/D-067), sonra ölçüm aleti değişti
-  (D-071/D-072/D-073).** `dau_runs/`'daki **hiçbir** koşum bugünün aletiyle
-  karşılaştırılamaz.
+- **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
+- **Suite:** `590 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-134.** Sıradaki kayıt **D-135** olarak açılır.
+- 🗺 **"devam et" ⇒ `docs/EXECUTION_QUEUE.md`** — fazlar ve eski borçlar tek sırada.
+- 🔒 **İkinci ön-kayıt KİLİTLİ ve KOŞULDU** — `docs/PREREGISTRATION_2.md`
+  (`72df476ebd54`); tek koşumu **C2** (tohum 9911–9913). Sonuç: **evren null'ı**
+  (D-123). ⇒ Bu ön-kayıt **kapanmış bir bölümdür**; sıradaki iş **üçüncü**
+  ön-kayıt.
+- **Koşum dosyaları:** `dau_runs/c2_population_n8_g3_s3.json` (+ `_report.md`) ·
+  sonda-2 `dau_runs/probe2_endpoint_window_s9915.json` (keşifsel).
+- ⚠ **Evrenin fiziği ve alet defalarca değişti.** `dau_runs/` altındaki
+  **hiçbir** eski koşum bugünün aletiyle karşılaştırılamaz.
+- 📋 **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` (her nicelik: kim yazıyor ·
+  ne besliyor · **ne zaman dejenere**) · `docs/ROADMAP.md` (Yön 3'e geçiş).
 
 ---
 
