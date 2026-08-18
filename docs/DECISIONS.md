@@ -9247,3 +9247,54 @@ sorulabilir hâle **gelmedi**).
    ateşleme oranı** ve **`F_agent` ayrımı**. ⚠ İkisi de **sabit değişikliği**
    ister ⇒ §2.7: değer etkiye bakılarak değil, **sabitlerden türetilen bir
    eşitsizlikle** seçilir, ve **üçüncü ön-kayıta** yazılır.
+
+---
+
+## D-125 · 2026-08-18 · 🔒 **ÖN-TAAHHÜT** — sonda koşulmadan önce yazıldı
+
+⚠ **Bu kayıt, sondadan ÖNCE commit edilmiştir.** Sırası kasıtlıdır: sonra
+yazılsaydı, sayıyı görüp kriteri ona göre seçmiş olurdum (§2.7 / L9). Commit
+sırası bunun kanıtıdır.
+
+### 1. Sonda ne yapacak
+
+| | |
+|---|---|
+| amaç | `to_landmark` penceresindeki **bireysel** kanal büyüklüklerinin, uç nokta olarak **tanımlı** olup olmadığını ölçmek |
+| yapılandırma | tohum **9914** · N=8 · G=2 · 30 olay · **`--no-lora`** · `--fresh-pasture` |
+| neden `--no-lora` | maliyetin ~%90'ı DPO eğitimi; sorulan soru **yaşamların ürettiği dağılım**, eğitim değil ⇒ eğitim kapatılınca cevap değişmez, süre 6 saatten ~20 dakikaya iner |
+| neden G=2 | tanımlılık **hücre içi** bir özellik; bir nesil yeter. Üreme/Price bu sorunun parçası değil |
+| damga | **keşifsel** — sonuç değil, bir sonraki ön-kayıtın girdisi. Tohum 9914 deneyde **kullanılmaz** |
+
+### 2. ⛔ Sondadan **yalnız** şu okunacak
+
+`Var(z') > 0` olan hücrelerin oranı, `z'` = pencere içi **bireysel** kanalın
+tepe değeri (`to_landmark.max`).
+
+⛔ **Hesaplanmayacaklar:** `Cov(w, z')` · kol karşıtlığı · etki büyüklüğü ·
+herhangi bir işaret. Bunlara bakmak uç noktayı **etkiye göre** seçmek olurdu.
+
+### 3. 🔒 Karar kuralı — **şimdi** yazıldı
+
+> **Yeni uç nokta ancak `Var(z') > 0` oranı hücrelerin ⅔'ünde veya daha
+> fazlasında sağlanırsa aday olarak üçüncü ön-kayıta girer.**
+
+- **≥ ⅔** ⇒ aday **girer**; nihai karar yine Yasin'in (D-007).
+- **< ⅔** ⇒ ⛔ **girmez.** Bugünkü `z` ile devam edilir ya da tasarım
+  yeniden açılır. ⚠ *"Az kalmıştı, biraz daha tohum atalım"* **geçersizdir** —
+  kural şimdi yazıldı.
+
+**Karşılaştırma tabanı** (D-123'ten, ölçülmüş): bugünkü `z` **4/18 = %22**.
+Ömür-boyu vekilleri: `delta_profile.max` %39 · `mean` %72. ⚠ Vekiller uç nokta
+**olamaz** (sabit yaşta okuma ilkesini bozarlar, K2/K3) — sondanın ölçtüğü şey
+gerçek pencere.
+
+### 4. Elenen adaylar ve **neden** (bu kaydın parçası, sonradan tartışılmaz)
+
+| aday | tanımlılık | ⛔ eleme sebebi |
+|---|---|---|
+| `hasat (delta_pool)` | %72 | `F_agent`'ın **girdisi** ⇒ `Cov(w,z)` kısmen totoloji (Mills & Beatty, D-075) |
+| `energy_mean_over_life` | %72 | **Pozitif kontrolümüz** (D-121) — uç nokta olursa kontrol işlevini kaybeder |
+| `ömür` | %39 | Post-hoc tuzağı (D-122'de reddedildi) + `F_agent`'ın hayatta kalma terimi |
+| `landmark_energy` | %33 | Sabit yaşta ✅ ama düşük, ve enerji zaten `F_agent`'ta |
+| `delta_profile.max/mean` | %39/%72 | **Ömür boyu** ⇒ sabit yaşta okuma ilkesini bozar |
