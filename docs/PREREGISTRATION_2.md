@@ -1,10 +1,14 @@
-# Popülasyon C″ — İkinci Ön-Kayıt · ⚠ **TASLAK, KİLİTLİ DEĞİL**
+# Popülasyon C″ — İkinci Ön-Kayıt
 
-**Durum: ✍️ taslak · 2026-08-18 · açık slot: 0** — kilitlenmeye hazır (D-121, D-122)
+**Durum: 🔒 KİLİTLİ · 2026-08-18 · commit `KILIT_HASH`**
 
-⚠ **Bu belge henüz bir ön-kayıt değildir.** Slotlar kapanmadan hiçbir koşum
-"doğrulayıcı" sayılmaz. Kapanma anında bu satır **🔒 KİLİTLİ** ile değişir,
-commit hash'i yazılır ve alet kimliği §12'de dondurulur.
+**Dört slotun dördü kapalı.** Bu andan itibaren bu belgedeki hiçbir madde
+değişmez. Değişiklik gerekirse **yeni bir ön-kayıt** açılır ve bu belge
+*superseded* işaretlenir.
+
+⚠ **Alet değişikliği penceresi KAPANDI** (§2.10). Kilitten sonra
+`constraints.py` eşiği, uç nokta, test, çift kurma stratejisi ya da herhangi
+bir ön-kayıtlı protokol maddesi değişirse sonuç **post-hoc** olur.
 
 ⚠ **Birinci ön-kayıt (`PREREGISTRATION.md`) yürürlükte kalır** — o kilit
 Protocol C′'nin tek-soy koşumunu bağlar (B2, `p = 0.9914`, alet null'ı).
@@ -269,11 +273,59 @@ belirlenir, sonuçtan sonra seçilmez.
 
 ---
 
-## 12. Alet kimliği — kilitte dondurulacak
+## 12. Alet kimliği — 🔒 **DONDURULDU**
 
-Koşum sırasında `tool_identity` bloğu sonuç JSON'una yazılıyor ve şunları
-**sabitlerden okuyor** (§2.8): backend · model · quantization · DPO ayarları ·
-LoRA · metabolizma · fitness ağırlıkları · landmark ordinali · sampling ·
-üreme kuralı · **CUDA tahsis edici** (D-116) · tohumlar · kütüphane sürümleri.
+Koşumdan önce, koşumun kullanacağı sabitlerden **okunarak** üretildi (§2.8).
+Sonuç JSON'u aynı bloğu kendisi de yazar; **ikisi ayrışırsa koşum geçersizdir.**
 
-⚠ Kilit anında buraya **commit hash + ölçülen değerler** yazılır.
+```json
+{
+ "backend": "local",
+ "model_id": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+ "quantization": {"load_in_4bit": true, "quant_type": "nf4",
+                  "compute_dtype": "torch.float16", "double_quant": true,
+                  "device_map": "auto"},
+ "dpo": {"beta": 0.1, "learning_rate": 1e-06, "epochs": 1, "batch_size": 1,
+         "gradient_accumulation_steps": 4, "effective_batch_size": 4,
+         "max_sequence_tokens": 512, "max_grad_norm": 1.0},
+ "lora": {"choice": "explicit_on", "rank": 8, "alpha": 16},
+ "metabolism": {"gain_max": 0.5, "gain_half_saturation": 2.0,
+                "grace_events": 10, "calibrated": false,
+                "death_on_exhaustion": true},
+ "fitness": {"w_energy": 0.4, "w_pool": 0.3, "w_survival": 0.3,
+             "pool_term_per_event_max": 8.0,
+             "energy_reading": "mean_over_life"},
+ "endpoints": {"landmark_event": 10},
+ "sampling": {"do_sample": false, "temperature": 0.2, "max_new_tokens": 64},
+ "cuda_allocator": {"env": "PYTORCH_CUDA_ALLOC_CONF",
+                    "value": "expandable_segments:True", "applied": true},
+ "seeds": {"n": 3, "list": [9911, 9912, 9913]},
+ "versions": {"python": "3.14.6", "torch": "2.13.0",
+              "transformers": "5.14.1", "peft": "0.20.0",
+              "bitsandbytes": "0.50.0", "accelerate": "1.14.0",
+              "numpy": "2.4.5", "scipy": "1.18.0"}
+}
+```
+
+⚠ **Okuma notları:**
+
+- `temperature: 0.2` **ama `do_sample: false`** ⇒ üretim **greedy**; sıcaklık
+  okunuyor, kullanılmıyor (D-026).
+- `calibrated: false` — üç metabolik sabit **kalibre edilmedi**, olduğu gibi
+  kilitlendi (K4/D-070). Ölçülmüş gibi okunamaz.
+- `n_agent_dirs` dondurulmadı: koşum sırasında **büyüyor**, ve I0.7 zaten
+  planlanan id'lere bakıyor.
+- `argv` dondurulmadı: koşuma özgüdür, sonuç dosyası kendi argv'sini yazar.
+
+---
+
+## 13. Koşum komutu — tam olarak bu
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9911 9912 9913 --n-agents 8 --n-generations 3 --events 30 \
+  --lora --fresh-pasture \
+  --results dau_runs/c2_population_n8_g3_s3.json
+```
+
+⚠ `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez** — `main()` kuruyor (D-116).
