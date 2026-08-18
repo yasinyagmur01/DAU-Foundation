@@ -9510,3 +9510,84 @@ tahminim tutmamıştı.
 **4 hücrenin en az 3'ünde** (`≥ ⅔`) `Var(to_landmark.max) > 0` ⇒ aday üçüncü
 ön-kayıta girer. Aksi hâlde **girmez**. ⛔ Kovaryans · kol karşıtlığı · etki
 büyüklüğü **hesaplanmayacak**.
+
+---
+
+## D-129 · 2026-08-19 · 🔒 **SONDA-2 OKUNDU: aday GİRMEZ (2/4)** — ve sondanın asıl bulgusu uç nokta değil, **`null` kolunun donmuş olması**
+
+**Koşum:** `dau_runs/probe2_endpoint_window_s9915.json` · tohum 9915 · N=8 ·
+G=3 · 30 olay · `--lora` · `--arms lived null` · **~2 sa 20 dk** ·
+`run_quality = clean` · **6/6 kapı** · I4.1 **identical** · `complete: true`.
+
+### 1. D-125'in kuralı — aynen uygulandı
+
+| kol · nesil | `Var(to_landmark.max)` | farklı değer / 8 | aralık | sonuç |
+|---|---|---|---|---|
+| `lived` gen2 | 0.01246979 | 3 | 0.3918–0.6270 | **TANIMLI** |
+| `lived` gen3 | 0.00995394 | 3 | 0.3952–0.6358 | **TANIMLI** |
+| ⛔ `null` gen2 | **0.00000000** | **1** | 0.6050 | **DEJENERE** |
+| ⛔ `null` gen3 | **0.00000000** | **1** | 0.7797 | **DEJENERE** |
+
+⇒ **2/4.** Kural **≥ ¾** istiyordu (D-125, koşumdan önce yazıldı).
+⛔ **ADAY GİRMEZ.** *"Eğitimli kolda çalışıyor, yeter"* denmedi; kural
+yazıldığı gibi uygulandı.
+
+⚠ **Kovaryans · kol karşıtlığı · etki büyüklüğü hesaplanmadı.**
+
+### 2. ⭐⭐ Asıl bulgu — sorun uç noktada değil, **`null` kolunda**
+
+`null` kolunda ajanlar **hiçbir nicelikte** ayrışmıyor. Üç nesilde de:
+
+| nicelik | `lived` gen2/gen3 yayılımı | `null` gen2/gen3 yayılımı |
+|---|---|---|
+| hasat (`delta_pool`) | 96.0 / 114.0 | **0.0 / 0.0** |
+| enerji | 0.496 / 0.404 | **0.0 / 0.0** |
+| ömür | 29–30 / 30–30 | **30–30 / 30–30** |
+| `F_agent` | 0.092 / 0.022 | **0.0 / 0.0** |
+| pencere tepesi | 0.235 / 0.241 | **0.0 / 0.0** |
+
+**Mekanizma ölçüldü:**
+
+| kol · nesil | havuz sonu oranı | kriz olayı | eksik alan ajan |
+|---|---|---|---|
+| `lived` gen2 | **0.000** | 62 | ✅ 6 farklı hasat |
+| `lived` gen3 | 0.225 | 24 | ✅ 3 farklı |
+| `null` gen2 | **0.593** | **0** | ❌ hepsi eşit |
+| `null` gen3 | **0.611** | **0** | ❌ hepsi eşit |
+
+⇒ **Zincir:** adapter → farklı davranış → farklı talep → **mera kıtlaşır** →
+sıralı erişim ısırır → ayrışma.
+
+⛔ **P0-① yalnızca kıtlık varken ayrım üretiyor.** Bolluk varken sıralı erişim
+**işlemsiz**: herkes istediğini tam alır, sıra hiçbir şeyi değiştirmez. Adapter
+olmadan varisler klon kalıyor, aynı talebi yapıyor, mera hiç kıtlaşmıyor.
+
+⇒ `null`, *"parametrik mirası olmayan kontrol"* değil; bu nişte **donmuş bir
+klon popülasyonu**: `Var(F_agent) = 0` ⇒ turnuva saf yazı-tura, ve **hangi uç
+nokta seçilirse seçilsin** `Var(z) = 0`.
+
+### 3. ⇒ Bu, uç nokta sorusunu **kapatıyor ve yerine daha derinini açıyor**
+
+*"Hangi nicelik uç nokta olsun"* yanlış soruymuş. Doğru soru:
+
+> ⛔ **`null` kolu ajanlarını nasıl ayrıştıracak — yoksa yapısal olarak
+> ayrıştıramayacağını ilan mı edeceğiz?**
+
+⚠ Bu, D-123'ün **V2 düşüşlerini de açıklıyor**: C2'de `F_agent` yayılımı sıfır
+çıkan beş geçişin **üçü `null` kolundaydı**.
+
+### 4. ⭐ Kol seçimi kararı kendini doğruladı
+
+D-128'de `null`'ı **bilerek** dahil etmiştim (C2'de 3/6 ile en zayıf koldu).
+⚠ **Yalnız `lived` koşulsaydı sonuç 2/2 = %100 çıkacak, aday "geçti" diye
+ilan edilecek ve gerçek deneyde `null` hücreleri yine boş çıkacaktı.**
+Bu, D-126'nın hatasının tekrarı olurdu.
+
+### 5. Sınırlar
+
+1. ⚠ **Tek tohum, tek niş.** C2'de `null` bazı hücrelerde ayrışmıştı (3/6) ⇒
+   donmuşluk **nişe bağlı**, evrensel değil.
+2. ⚠ Sonda **keşifsel**; tohum 9915 deneyde kullanılmaz.
+3. ⚠ Süre: **~2 sa 20 dk** — tahminim önce *"1 sa 40 dk"*, sonra *"3.5–4 sa"*
+   demişti. ⇒ K4'e ek: maliyet tahmini tabanın **yayılımını** taşımalı
+   (nişler arası toplam-olay farkı **2.3 kat**: 104 ↔ 240).
