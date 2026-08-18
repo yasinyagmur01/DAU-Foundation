@@ -19,6 +19,22 @@ sütunu içeriğe göre verildi, tarihe göre değil.**
 | **REGRESYON** | Alet doğrulaması; güncel aletle koşuldu, hipotez testi değil. Kullanılabilir |
 | **KEŞİFSEL** | Güncel aletle (D-042 sonrası) koşulan **keşifsel** ölçüm. Sonuç iddiası taşımaz ama sayıları bugünkü aletten |
 | **ESKİ ALET** | D-036 / D-037 / D-042 öncesi. Bugünkü sayılarla karşılaştırılamaz |
+| ⛔ **SONUÇ DEĞİL** | Checkpoint (`*.partial.json`) — hiçbir kapı geçmedi, `complete:false`. Analiz aracı **reddeder**, elle incelenir (D-111) |
+
+⚠ **Evrenin fiziği ikinci kez değişti (D-066/D-067), sonra deneyin kendisi
+değişti (popülasyon, D-094…D-104).** Aşağıdaki `pop-`/`b1_`/`headroom_`/`c2_`
+dosyaları **popülasyon evreninden**; tek-soy dosyalarıyla (B2 ve öncesi)
+**karşılaştırılamazlar** — farklı deney, farklı uç nokta.
+
+## Popülasyon dönemi dosyaları (2026-08-17/18)
+
+| Dosya | Durum | Not |
+|---|---|---|
+| b1_pilot_n8_g3.json | KEŞİFSEL | **D-109** — B1 pilotu, tohum 9901, kapılı ve `run_quality=clean`, I4.1 identical. ⚠ *"uç nokta dejenere"* okuması **D-115'te çürütüldü** |
+| b1_pilot_n8_g3_report.md | KEŞİFSEL | B1'in dört seviyeye göre raporu |
+| headroom_n8_g3_s3.json.partial.json | ⛔ **SONUÇ DEĞİL** | **D-114/D-115/D-120**'nin bütün sayıları buradan (216 yaşam, tohum 9902–9904). **Kapısız checkpoint** — kestirim olarak bile ihtiyatla okunur |
+| c2_population_n8_g3_s3.json | GEÇERLİ (ön-kayıtlı) | **İkinci ön-kayıtın doğrulayıcı koşumu** — `PREREGISTRATION_2.md`, kilit `72df476ebd54`; tohum 9911–9913, N=8, G=3, 30 olay, `--lora` |
+| logs/c2_run.log | — | Yukarıdaki koşumun konsol günlüğü |
 
 | Dosya | Tarih | Durum | Not |
 |---|---|---|---|
