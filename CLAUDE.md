@@ -24,9 +24,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `573 passed, 2 deselected`. Çalışma ağacı temiz. ✅ **`origin/main` ile senkron — push edildi.**
-- **Son D-kaydı: D-119.** Sıradaki kayıt **D-120** olarak açılır.
-- ⛔ **BEKLEYEN: DR #10'un cevabı** (`docs/research/2026-08-18_common-shock-endpoint_PLAIN.txt`). Yasin getirince **karar 1 kesinleşecek**. ⭐ Yerel tarama önden yapıldı (**§R**, D-119): **seçenek D zayıfladı, E (ayrıştırma) öne geçti**.
+- **Suite:** `582 passed, 2 deselected`. Çalışma ağacı temiz. ✅ **`origin/main` ile senkron — push edildi.**
+- **Son D-kaydı: D-121.** Sıradaki kayıt **D-122** olarak açılır.
+- ⭐⭐ **KARAR 1 VERİLDİ (D-121, Yasin):** `z` **korunuyor** (seçenek A) + **dejenere hücre ilanı** + **pozitif kontrol**. ⛔ D elendi: ölçüm gösterdi ki dejenere hücre **14/27 → en az 21/27** olurdu, ve kriz müdahale-sonrası olduğu için budamak *bad control* riski taşıyordu. ⇒ **İkinci ön-kayıtta Slot 1 kapandı.**
 - **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
@@ -80,9 +80,9 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 
 | # | karar | dayanağı hazır mı |
 |---|---|---|
-| **1** ⛔⛔ | **`z` uç noktası ne olacak** | ⭐ **Evet, artık mekanizma biliniyor** (D-115), ve ⭐ **D-117'den sonra hangi kanalın yazdığı koşum sırasında raporlanıyor.** Üç yol: **A** koru + krizin uç noktayı eşitlediğini ilan et · **B** okuma anını kaydır (⚠ sansürleme bedeli, D-081'de bir kez reddedildi) · **C** değiştir (⚠ B2 sıfırdan yazılır). ⭐ **Yeni dördüncü seçenek:** `z`'yi **yalnız bireysel kanaldan** okumak — kriz kaynaklı drift'i uç noktadan dışla. Tohum 9903 (kriz hiç olmayan) bunun çalıştığını gösteriyor: 8 ajanda **5 farklı `z`** |
+| ~~**1**~~ ✅ | **`z` uç noktası** | ✅ **KAPANDI (D-121): seçenek A.** `z` korunuyor; `Var(z)=0` hücre *"seçilim tanımsız"* raporlanıyor (Rothenberg 1971) + `energy_mean_over_life` üzerinde **pozitif kontrol**. ⛔ Sorun ortak şok değilmiş: **bireysel kanal landmark'tan önce ateşlenmiyor** (D-120) |
 | **2** | Ömür uç nokta olsun mu | ⚠ **Post-hoc tuzağı** — hareket ettiğini gördükten sonra seçilemez (L9). Meşru tek yol: ikinci ön-kayıta **koşumdan önce** yazmak, **taze tohumla** sınamak. ⚠ Ve bugünkü hâliyle `lived ≈ shuffle` ⇒ Lamarckçı kanalın kanıtı **olamaz** |
-| **3** | **P7-a bütçesi** | ✅ **Biçimi karara bağlandı (D-110):** *"kaç saat"* değil ***"olay oranını hangi kesinlikle"***. ⚠ Ama D-115 sonrası **oran yeniden tanımlanmalı** — hangi kanalın oranı? |
+| **3** ⛔ | **P7-a bütçesi** — ⭐ **sıradaki karar** | ✅ **Nicelik belli (D-121): bilgilendirici hücre oranı** = `Var(z)>0` olan hücrelerin payı, bugünkü kestirim **13/27 ≈ %48**. Kalan soru: **hangi kesinlikle** bilmek istiyorsun, ya da kaç bilgilendirici hücre hedefliyorsun ⇒ tohum sayısı aritmetikle çıkar |
 | **4** | Eşdeğerlik testi (TOST) | ⏸ **Ertelendi (D-110/D-113).** Aralık kestirimi alındı, TOST alınmadı: *"en küçük anlamlı etki"* isimlendirmeyi şart koşuyor (DR #1'den beri açık) |
 
 ---
