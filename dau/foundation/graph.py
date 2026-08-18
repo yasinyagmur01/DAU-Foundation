@@ -28,6 +28,7 @@ from dau.society.environment import (
     EnvironmentState,
     get_pool_ratio,
     realized_extraction_at,
+    crisis_trauma_magnitude,
     step_pool_with_crisis,
 )
 from dau.society.extraction import decision_to_extraction, metabolic_gain
@@ -321,6 +322,7 @@ def _record_pool_event(
     requested: float,
     pool_ratio: float,
     crisis: bool,
+    crisis_magnitude: float | None,
 ) -> None:
     """Append one commons row: harvest amount and the pool state it produced.
 
@@ -332,6 +334,14 @@ def _record_pool_event(
     agent announced. Both are kept: their gap is the only visible trace of an
     exhausted pool, and it is what makes over-extraction cost something
     (D-066).
+
+    ``crisis_magnitude`` is the scar this event wrote into the drift map, or
+    None when there was no crisis (D-117). It comes from
+    ``crisis_trauma_magnitude`` — the same function the universe scars with —
+    because ``update_drift`` has two callers and this was the silent one: with
+    only the boolean here, a run could not say whether an agent's drift came
+    from its own surprise or from the commons collapsing on everybody at once,
+    and D-115 spent a whole session finding that out from the outside.
     """
 
     _pool_event_log.append(
@@ -342,6 +352,9 @@ def _record_pool_event(
             "requested": float(requested),
             "pool_ratio": float(pool_ratio),
             "crisis": bool(crisis),
+            "crisis_magnitude": (
+                None if crisis_magnitude is None else float(crisis_magnitude)
+            ),
         }
     )
 
@@ -1322,6 +1335,7 @@ def advance_commons(
             requested=float(request.requested),
             pool_ratio=pool_ratio,
             crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
+            crisis_magnitude=crisis_trauma_magnitude(pool_ratio),
         )
         # Eat now, act on it next event: the evaluator already spent this
         # event's energy, so crediting here keeps the metabolic loop one tick

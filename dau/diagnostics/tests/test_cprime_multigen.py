@@ -2437,6 +2437,7 @@ def test_graph_writes_the_owner_onto_every_event_row() -> None:
         requested=1.0,
         pool_ratio=0.5,
         crisis=False,
+        crisis_magnitude=None,
     )
     graph_mod._record_pe_event(
         agent_id=AGENT_A,

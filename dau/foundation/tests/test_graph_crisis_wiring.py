@@ -26,6 +26,7 @@ from dau.society.environment import (
     EnvironmentState,
     get_pool_ratio,
     step_pool,
+    crisis_trauma_magnitude,
 )
 from dau.society.extraction import (
     EXTRACTION_COOPERATE,
@@ -621,3 +622,51 @@ def test_advance_commons_rejects_an_empty_round() -> None:
 
     with pytest.raises(ValueError, match="at least one"):
         advance_commons(EnvironmentState(pool=POOL_ABOVE_CRISIS), [])
+
+
+def test_advance_commons_logs_the_scar_the_famine_actually_wrote() -> None:
+    """⭐ D-117: the crisis path must leave its magnitude on the commons row.
+
+    ``update_drift`` has two callers and this is the one that was silent: a
+    famine scars EVERY agent at once, and with only a boolean on the row the
+    run could not say whether an agent's drift came from its own surprise or
+    from the pasture collapsing on everybody. D-115 had to reconstruct that
+    from outside the results file.
+
+    Mutation check (§2.4): passing ``crisis_magnitude=None`` at the call site
+    broke NO test until this one — the unit test calls the recorder directly,
+    so it never saw the wiring.
+    """
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    env = EnvironmentState(pool=POOL_MIN_STOCK)
+    advance_commons(
+        env,
+        [_request(AGENT_ID, BIG_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF)],
+    )
+    row = graph_mod.get_pool_event_log()[-1]
+    graph_mod.reset_pool_event_log()
+
+    assert row["crisis"] is True, "the pasture was not in crisis — test is blind"
+    # Read from the universe's own function, not restated: a literal here would
+    # be the reporting drift §2.8 keeps catching.
+    assert row["crisis_magnitude"] == pytest.approx(
+        crisis_trauma_magnitude(row["pool_ratio"])
+    )
+
+
+def test_a_healthy_pasture_writes_no_scar_on_the_row() -> None:
+    """No crisis, no magnitude: None says 'nobody was scarred here'."""
+
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+    advance_commons(
+        _state_with_env(pool=POOL_ABOVE_CRISIS).env_state,
+        [_request(AGENT_ID, SMALL_REQUEST, FIRST_AGENT_EVENT, ENERGY_HALF)],
+    )
+    row = graph_mod.get_pool_event_log()[-1]
+    graph_mod.reset_pool_event_log()
+
+    assert row["crisis"] is False
+    assert row["crisis_magnitude"] is None

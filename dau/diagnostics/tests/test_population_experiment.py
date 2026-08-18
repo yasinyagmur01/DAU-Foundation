@@ -20,6 +20,9 @@ from dau.foundation.state import DAUAgentState
 
 SEED: int = 9301
 CUDA_ALLOC_UNSET: str = ""
+# A pasture that never fell below the crisis floor: the commons channel of
+# delta_profile has nothing to report (D-117).
+NO_CRISIS: list[dict[str, Any]] = []
 SHUFFLE_MARKER: str = "-shuffle-"
 NULL_MARKER: str = "-null-"
 N_AGENTS: int = 3
@@ -1307,7 +1310,7 @@ def test_delta_profile_reports_the_headroom_to_the_trauma_threshold() -> None:
         {"agent_id": "a", "delta_magnitude": 0.68},
         {"agent_id": "b", "delta_magnitude": 0.90},
     ]
-    profile = delta_profile("a", rows)
+    profile = delta_profile("a", rows, NO_CRISIS)
 
     assert profile["n_events"] == 2, "another agent's events leaked in"
     assert profile["max"] == pytest.approx(0.68)
@@ -1323,7 +1326,7 @@ def test_delta_profile_counts_a_crossing_and_reports_negative_headroom() -> None
     from dau.diagnostics.run_population_experiment import delta_profile
 
     profile = delta_profile(
-        "a", [{"agent_id": "a", "delta_magnitude": 0.9}]
+        "a", [{"agent_id": "a", "delta_magnitude": 0.9}], NO_CRISIS
     )
 
     assert profile["n_at_or_above_trauma"] == 1
@@ -1340,7 +1343,9 @@ def test_delta_profile_of_a_life_with_no_events_is_not_zero() -> None:
 
     from dau.diagnostics.run_population_experiment import delta_profile
 
-    profile = delta_profile("ghost", [{"agent_id": "a", "delta_magnitude": 0.9}])
+    profile = delta_profile(
+        "ghost", [{"agent_id": "a", "delta_magnitude": 0.9}], NO_CRISIS
+    )
 
     assert profile["n_events"] == 0
     assert profile["max"] is None
@@ -1384,7 +1389,9 @@ def test_delta_profile_counts_the_boundary_the_same_way_the_universe_does() -> N
     from dau.diagnostics.run_population_experiment import delta_profile
 
     exact = DELTA_THRESHOLD_DEEP
-    profile = delta_profile("a", [{"agent_id": "a", "delta_magnitude": exact}])
+    profile = delta_profile(
+        "a", [{"agent_id": "a", "delta_magnitude": exact}], NO_CRISIS
+    )
 
     assert profile["n_at_or_above_trauma"] == 1
     assert profile["headroom_to_trauma"] == pytest.approx(0.0)
@@ -1563,3 +1570,130 @@ def test_main_applies_the_allocator_setting(
     )
 
     assert os.environ[CUDA_ALLOC_CONF_ENV] == CUDA_ALLOC_CONF_EXPANDABLE
+
+
+# ---------------------------------------------------------------------------
+# D-117 — the second writer of z: the commons crisis
+# ---------------------------------------------------------------------------
+
+
+def test_delta_profile_sees_the_crisis_channel_when_the_individual_one_is_empty(
+) -> None:
+    """⭐ Seed 9904's exact shape: 0 individual crossings, every agent scarred.
+
+    This is the case D-115 could not read from the results file. The commons
+    crisis calls update_drift for every agent at once, so `z` is full while the
+    individual channel reports nothing came close. Before D-117 this profile
+    said "headroom 0.6, no crossing" about a life whose drift map had been
+    rewritten.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    quiet_pe = [{"agent_id": "a", "delta_magnitude": 0.10}]
+    famine = [
+        {"agent_id": "a", "crisis": True, "crisis_magnitude": 1.0},
+        {"agent_id": "b", "crisis": True, "crisis_magnitude": 1.0},
+    ]
+    profile = delta_profile("a", quiet_pe, famine)
+
+    # The individual channel is unchanged — and still says "nothing close".
+    assert profile["n_at_or_above_trauma"] == 0
+    assert profile["channel"] == "individual"
+    # The commons channel is where this life's drift actually came from.
+    assert profile["crisis"]["n_crisis_events"] == 1, "another agent's famine leaked"
+    assert profile["crisis"]["n_at_or_above_trauma"] == 1
+    assert profile["crisis"]["headroom_to_trauma"] < 0
+    assert profile["n_at_or_above_trauma_either_channel"] == 1
+
+
+def test_delta_profile_keeps_the_two_channels_apart() -> None:
+    """Pooling them would rebuild exactly the blindness D-115 diagnosed.
+
+    A crisis scars the whole arm simultaneously, so its magnitude carries no
+    between-agent information; the individual channel is the only one that can.
+    Summed into one number, a seed whose z came from famine and one whose z
+    came from surprise look identical again.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    profile = delta_profile(
+        "a",
+        [{"agent_id": "a", "delta_magnitude": 0.20}],
+        [{"agent_id": "a", "crisis": True, "crisis_magnitude": 1.0}],
+    )
+
+    assert profile["max"] == pytest.approx(0.20), "crisis magnitude leaked into it"
+    assert profile["n_events"] == 1, "crisis events counted as individual ones"
+    assert profile["crisis"]["max"] == pytest.approx(1.0)
+
+
+def test_quiet_pasture_rows_are_not_read_as_crises() -> None:
+    """A row with crisis_magnitude None is an event that scarred nobody."""
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    profile = delta_profile(
+        "a",
+        [{"agent_id": "a", "delta_magnitude": 0.20}],
+        [{"agent_id": "a", "crisis": False, "crisis_magnitude": None}],
+    )
+
+    assert profile["crisis"]["n_crisis_events"] == 0
+    assert profile["crisis"]["max"] is None
+    assert profile["n_at_or_above_trauma_either_channel"] == 0
+
+
+def test_recorded_crisis_magnitude_is_the_one_the_universe_scarred_with() -> None:
+    """⭐ §2.8: the reporter must not recompute the scar, it must read it.
+
+    The recorder takes the number from ``crisis_trauma_magnitude``, the same
+    function ``apply_crisis_trauma`` scars with — so the log cannot describe a
+    different universe than the one that ran. Checked against update_drift's
+    own threshold rather than a literal: the point is whether the scar the
+    commons writes is a trauma, and both sides must say so together.
+    """
+
+    from dau.foundation.delta import DELTA_THRESHOLD_DEEP
+    from dau.foundation.drift import DriftState
+    from dau.society.environment import (
+        POOL_CRISIS_THRESHOLD,
+        apply_crisis_trauma,
+        crisis_trauma_magnitude,
+    )
+
+    below = POOL_CRISIS_THRESHOLD / 2.0
+    magnitude = crisis_trauma_magnitude(below)
+
+    assert magnitude is not None
+    assert magnitude >= DELTA_THRESHOLD_DEEP, "the commons scar must be a trauma"
+    assert crisis_trauma_magnitude(POOL_CRISIS_THRESHOLD) is None, "boundary is safe"
+
+    # And the universe agrees: at this ratio drift actually moves.
+    scarred = apply_crisis_trauma(DriftState(), below)
+    assert scarred != DriftState()
+    assert apply_crisis_trauma(DriftState(), POOL_CRISIS_THRESHOLD) == DriftState()
+
+
+def test_pool_event_rows_carry_the_crisis_magnitude(monkeypatch) -> None:
+    """The wiring: the graph's commons recorder writes it, not just the flag."""
+
+    import dau.foundation.graph as g
+    from dau.society.environment import POOL_CRISIS_THRESHOLD, crisis_trauma_magnitude
+
+    g.reset_pool_event_log()
+    ratio = POOL_CRISIS_THRESHOLD / 2.0
+    g._record_pool_event(
+        agent_id="a",
+        event_counter=1,
+        extraction=0.0,
+        requested=8.0,
+        pool_ratio=ratio,
+        crisis=True,
+        crisis_magnitude=crisis_trauma_magnitude(ratio),
+    )
+    row = g.get_pool_event_log()[-1]
+    g.reset_pool_event_log()
+
+    assert row["crisis_magnitude"] == pytest.approx(crisis_trauma_magnitude(ratio))

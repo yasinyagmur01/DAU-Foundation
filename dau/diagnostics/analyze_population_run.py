@@ -77,6 +77,9 @@ LANDMARK_KEY_DRIFT: str = "landmark_drift_magnitudes"
 LANDMARK_KEY_REACHED: str = "landmark_reached"
 
 AGENT_KEY_DELTA_PROFILE: str = "delta_profile"
+# The commons-crisis sub-block D-117 added to the profile. Absent in every
+# run before it, which the report says out loud rather than reading as zero.
+PROFILE_KEY_CRISIS: str = "crisis"
 
 NOT_EVALUABLE: str = "not evaluable"
 # D-113. Dienes (2014) lists three ways to read a non-significant result:
@@ -274,24 +277,46 @@ def trauma_headroom(run: dict[str, Any]) -> list[str]:
     peaks: list[float] = []
     crossings = 0
     lives = 0
+    # The SECOND writer of z (D-115/D-117): a famine scars every agent of an
+    # arm at the same event, so it fills z while leaving the individual channel
+    # empty. Counted apart and never pooled — pooled, the two are exactly as
+    # indistinguishable as they were before D-117.
+    crisis_lives = 0
+    crisis_crossings = 0
+    crisis_channel_present = False
     for arm in run.get(RUN_KEY_ARMS, []):
         for row in arm.get("generations", []):
             for agent in row.get(GEN_KEY_AGENTS, []):
                 profile = agent.get(AGENT_KEY_DELTA_PROFILE) or {}
-                if not profile or profile.get("max") is None:
+                if not profile:
+                    continue
+                crisis = profile.get(PROFILE_KEY_CRISIS)
+                if crisis is not None:
+                    crisis_channel_present = True
+                    if int(crisis.get("n_crisis_events", 0)) > 0:
+                        crisis_lives += 1
+                    if int(crisis.get("n_at_or_above_trauma", 0)) > 0:
+                        crisis_crossings += 1
+                if profile.get("max") is None:
                     continue
                 lives += 1
                 peaks.append(float(profile["max"]))
                 if int(profile.get("n_at_or_above_trauma", 0)) > 0:
                     crossings += 1
-    if not lives:
+    if not lives and not crisis_channel_present:
         return [
             "  no delta profile in this run — it predates D-112, so how close "
             "the universe came to the trigger cannot be read from it"
         ]
+    if not lives:
+        return [
+            "  no individual-channel reading in this run",
+            *_crisis_lines(crisis_channel_present, crisis_lives, crisis_crossings),
+        ]
     peaks.sort()
     point, low, high = wilson_interval(crossings, lives)
     return [
+        "  individual channel — the agent's OWN surprise (graph, PE path):",
         f"  lives with a reading: {lives}",
         f"  peak delta magnitude: min={peaks[0]:.4f} "
         f"median={peaks[len(peaks) // 2]:.4f} max={peaks[-1]:.4f}",
@@ -306,6 +331,30 @@ def trauma_headroom(run: dict[str, Any]) -> list[str]:
         "⚠ An interval, not a test: no significance test is computed here and "
         "none may be quoted. This says how precisely the RATE is known, and "
         "nothing about whether the arms differ.",
+        "",
+        *_crisis_lines(crisis_channel_present, crisis_lives, crisis_crossings),
+    ]
+
+
+def _crisis_lines(present: bool, lives: int, crossings: int) -> list[str]:
+    """The commons-crisis channel, reported beside the individual one (D-117)."""
+
+    if not present:
+        return [
+            "  commons-crisis channel: ABSENT — this run predates D-117, so a "
+            "life scarred by famine is indistinguishable in it from a life "
+            "nothing happened to (that is the D-115 reading error itself)"
+        ]
+    return [
+        "  commons channel — a famine that scars EVERY agent at once:",
+        f"  lives that saw a crisis event: {lives}",
+        f"  lives the crisis scarred at or above the trauma threshold: "
+        f"{crossings}",
+        "",
+        "⚠ A crisis hits the whole arm simultaneously, so its contribution to "
+        "z carries NO between-agent information: it can fill z and leave "
+        "Cov(w, z) at zero. Read the two channels apart — a run whose z came "
+        "only from here has an endpoint the arms cannot differ on (D-115).",
     ]
 
 

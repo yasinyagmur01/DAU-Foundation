@@ -547,3 +547,77 @@ def test_a_run_without_delta_profiles_says_so_instead_of_reporting_zero() -> Non
 
     assert "predates D-112" in lines
     assert "0/0" not in lines
+
+
+# ---------------------------------------------------------------------------
+# D-117 — the commons channel in the report
+# ---------------------------------------------------------------------------
+
+
+def _with_crisis(arms, n_crisis_lives: int):
+    """Give the first ``n_crisis_lives`` agents a famine and nothing else.
+
+    Deliberately the shape of seed 9904: the individual channel says nothing
+    came close, while every one of those lives carries drift.
+    """
+
+    from dau.foundation.delta import DELTA_THRESHOLD_DEEP
+
+    left = n_crisis_lives
+    for arm in arms:
+        for gen in arm["generations"]:
+            for agent in gen["agents"]:
+                scarred = left > 0
+                left -= 1 if scarred else 0
+                agent["delta_profile"] = {
+                    "n_events": 5,
+                    "max": 0.10,
+                    "mean": 0.05,
+                    "n_at_or_above_trauma": 0,
+                    "headroom_to_trauma": DELTA_THRESHOLD_DEEP - 0.10,
+                    "channel": "individual",
+                    "crisis": {
+                        "n_events": 1 if scarred else 0,
+                        "n_crisis_events": 1 if scarred else 0,
+                        "max": 1.0 if scarred else None,
+                        "mean": 1.0 if scarred else None,
+                        "n_at_or_above_trauma": 1 if scarred else 0,
+                        "headroom_to_trauma": (
+                            DELTA_THRESHOLD_DEEP - 1.0 if scarred else None
+                        ),
+                    },
+                    "n_at_or_above_trauma_either_channel": 1 if scarred else 0,
+                }
+    return arms
+
+
+def test_the_report_names_the_channel_that_filled_z() -> None:
+    """⭐ D-115's blind spot, closed in the reader as well as the log.
+
+    Individual crossings are zero here and lives are still scarred. A report
+    that showed only the first channel would say "nothing came close" about a
+    universe that rewrote every agent's drift map — which is exactly what it
+    said about seed 9904.
+    """
+
+    from dau.diagnostics.analyze_population_run import trauma_headroom
+
+    lines = "\n".join(trauma_headroom(_run(_with_crisis(_three_arms(PRICE), 4))))
+
+    assert "lives that saw a crisis event: 4" in lines
+    assert "lives the crisis scarred at or above the trauma threshold: 4" in lines
+    assert "individual channel" in lines and "commons channel" in lines
+    assert "NO between-agent information" in lines
+    assert "p =" not in lines and "p-value" not in lines
+
+
+def test_a_run_without_the_crisis_block_says_so_instead_of_reporting_zero() -> None:
+    """The headroom runs predate D-117; silence would repeat the same error."""
+
+    from dau.diagnostics.analyze_population_run import trauma_headroom
+
+    run = _run(_with_profiles(_three_arms(PRICE), peak=0.68, crossings=1))
+    lines = "\n".join(trauma_headroom(run))
+
+    assert "predates D-117" in lines
+    assert "lives that saw a crisis event" not in lines

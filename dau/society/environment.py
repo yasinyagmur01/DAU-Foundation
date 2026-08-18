@@ -224,6 +224,33 @@ def agent_delta_pool(env: EnvironmentState, agent_id: str) -> float:
     )
 
 
+def crisis_trauma_magnitude(
+    pool_ratio: float,
+    base_magnitude: float = CRISIS_BASE_MAGNITUDE,
+) -> float | None:
+    """The magnitude a famine at this pool_ratio scars with, or None for no crisis.
+
+    Split out of ``apply_crisis_trauma`` by D-117 so the run can REPORT this
+    number instead of a reader inferring it. D-115 is why: ``z`` is written by
+    two paths — the agent's own DeltaRecord and this one — and the second wrote
+    nothing to any log, so D-112's "distance to the trauma threshold" profile
+    described only half the universe and made a seed where 0 of 72 lives
+    crossed the individual threshold look identical to one where nothing
+    happened, while 72 of 72 of its agents carried drift.
+
+    Kept as the single authority rather than duplicated in the recorder: a
+    reporter that multiplied the two constants itself would be §2.8's error,
+    which is the error D-115 punished.
+    """
+
+    if pool_ratio >= POOL_CRISIS_THRESHOLD:
+        return None
+    return max(
+        METRIC_MIN,
+        min(METRIC_MAX, float(base_magnitude) * CRISIS_TRAUMA_MULTIPLIER),
+    )
+
+
 def apply_crisis_trauma(
     drift_state: DriftState,
     pool_ratio: float,
@@ -235,13 +262,10 @@ def apply_crisis_trauma(
     not a label, but a permanent domain shift via update_drift.
     """
 
-    if pool_ratio >= POOL_CRISIS_THRESHOLD:
+    crisis_magnitude = crisis_trauma_magnitude(pool_ratio, base_magnitude)
+    if crisis_magnitude is None:
         return drift_state
 
-    crisis_magnitude = max(
-        METRIC_MIN,
-        min(METRIC_MAX, float(base_magnitude) * CRISIS_TRAUMA_MULTIPLIER),
-    )
     dummy_delta = DeltaRecord(
         timestamp=CRISIS_EVENT_COUNTER,
         magnitude=crisis_magnitude,

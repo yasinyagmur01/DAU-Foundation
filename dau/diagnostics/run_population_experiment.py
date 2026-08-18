@@ -489,28 +489,9 @@ def shared_pasture(founders: list[DAUAgentState]) -> EnvironmentState:
     )
 
 
-def delta_profile(agent_id: str, pe_rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """How close this life came to the trauma threshold — D-112, pure reporting.
+def _magnitude_summary(magnitudes: list[float]) -> dict[str, Any]:
+    """max / mean / crossings / headroom for one channel's magnitudes."""
 
-    ⚠ The endpoint `z` is written by ONE thing: update_drift, and update_drift
-    fires on ONE condition, ``is_trauma``, which is ``delta.magnitude >=
-    DELTA_THRESHOLD_DEEP`` (0.7). B1 measured z as empty in 23 of 24 arm-by-
-    generation cells, and from the results file alone there was no way to tell
-    whether the universe was missing the threshold by 0.02 or by 0.5. Those two
-    situations call for opposite decisions and the run could not distinguish
-    them.
-
-    Nothing is computed here: ``delta_magnitude`` is already written on every PE
-    event row by graph.record_pe_event. This only aggregates what the run
-    already recorded, which is why it changes no number the experiment produces
-    (§2.10) — and why it could be added after B1 without invalidating it.
-    """
-
-    magnitudes = [
-        float(row["delta_magnitude"])
-        for row in pe_rows
-        if row["agent_id"] == agent_id
-    ]
     if not magnitudes:
         return {
             "n_events": 0,
@@ -534,6 +515,61 @@ def delta_profile(agent_id: str, pe_rows: list[dict[str, Any]]) -> dict[str, Any
     }
 
 
+def delta_profile(
+    agent_id: str,
+    pe_rows: list[dict[str, Any]],
+    pool_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """How close this life came to the trauma threshold — D-112, pure reporting.
+
+    ⚠ The endpoint `z` is written by ONE function, ``update_drift``, on ONE
+    condition, ``is_trauma`` (``magnitude >= DELTA_THRESHOLD_DEEP``) — but that
+    function has TWO callers, and D-112 could only see one of them:
+
+    * **individual** — the agent's own DeltaRecord (graph, PE path). Every one
+      of these is on a PE row.
+    * **commons crisis** — ``apply_crisis_trauma``, fired for EVERY agent at
+      once when ``pool_ratio`` falls below the crisis floor (environment). It
+      called ``update_drift`` directly and wrote nothing anywhere.
+
+    D-115 is what the gap cost: seed 9904 had 0 of 72 lives cross the
+    individual threshold and 72 of 72 agents carrying drift, and the profile
+    said "nothing came close". It also explains the endpoint's real problem —
+    a crisis hits the whole arm simultaneously, so eight agents receive the
+    same scar, ``z`` has no within-cell variance and ``Cov(w, z)`` is zero not
+    because nothing happened but because the same thing happened to everyone.
+    Keeping the channels apart is the whole point: pooled, they are again
+    indistinguishable.
+
+    Nothing is computed here: the individual magnitudes are already on the PE
+    rows and the crisis magnitude is written by ``_record_pool_event`` from the
+    universe's own ``crisis_trauma_magnitude``. This only aggregates what the
+    run recorded, so it changes no number the experiment produces (§2.10).
+    """
+
+    individual = [
+        float(row["delta_magnitude"])
+        for row in pe_rows
+        if row["agent_id"] == agent_id
+    ]
+    crisis = [
+        float(row["crisis_magnitude"])
+        for row in pool_rows
+        if row["agent_id"] == agent_id and row.get("crisis_magnitude") is not None
+    ]
+    profile = _magnitude_summary(individual)
+    # The individual channel keeps the top-level keys D-112 defined, so a
+    # reader (and analyze_population_run) sees the same field meaning the same
+    # thing. The second channel is added beside it, never summed into it.
+    profile["channel"] = "individual"
+    profile["crisis"] = _magnitude_summary(crisis)
+    profile["crisis"]["n_crisis_events"] = len(crisis)
+    profile["n_at_or_above_trauma_either_channel"] = (
+        profile["n_at_or_above_trauma"] + profile["crisis"]["n_at_or_above_trauma"]
+    )
+    return profile
+
+
 def score_generation(
     states: dict[str, DAUAgentState],
     events_budget: int,
@@ -548,6 +584,7 @@ def score_generation(
 
     body_rows = graph_mod.get_body_event_log()
     pe_rows = graph_mod.get_pe_event_log()
+    pool_rows = graph_mod.get_pool_event_log()
     rows: list[AgentGenerationRow] = []
     for agent_id in sorted(states):
         state = states[agent_id]
@@ -565,7 +602,7 @@ def score_generation(
                 threat_marker=float(
                     self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0)
                 ),
-                delta_profile=delta_profile(agent_id, pe_rows),
+                delta_profile=delta_profile(agent_id, pe_rows, pool_rows),
             )
         )
     return rows
