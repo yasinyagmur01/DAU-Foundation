@@ -22,8 +22,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Suite:** `590 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-134.** Sıradaki kayıt **D-135** olarak açılır.
+- **Suite:** `599 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-136.** Sıradaki kayıt **D-137** olarak açılır.
+- ⛔ **Yasin'in önünde bekleyen karar: GAP-10 / asimetrik spillover matrisi**
+  — D-136 §6 tetikledi, gerekçesi ilk kez bir sayı, ve pencere hâlâ açık.
 - 🗺 **"devam et" ⇒ `docs/EXECUTION_QUEUE.md`** — fazlar ve eski borçlar tek sırada.
 - 🔒 **İkinci ön-kayıt KİLİTLİ ve KOŞULDU** — `docs/PREREGISTRATION_2.md`
   (`72df476ebd54`); tek koşumu **C2** (tohum 9911–9913). Sonuç: **evren null'ı**
@@ -99,6 +101,8 @@ Verilmeden güç hesabı, dolayısıyla Faz 3'ün tohum sayısı **bilinemez**.
 | **D-131** | ⭐ **Tasarım kararı** — iki fizik kaldıracı aritmetikle elendi |
 | **D-132** | DR #11 mutabakatı — **14. kimlik hatası**, ve ajan-ajan etkileşimi |
 | **D-133/134** | 🗺 **Yol haritası** ve **yürütme kuyruğu** |
+| **D-135** | ⛔ Kuyruk 0.1 — ajan-ajan etkileşimi de simetriyi **kırmıyor**; **Faz 1 iptal** |
+| **D-136** | ⭐ Kuyruk 0.2 — `z`'nin dört ekseni raporlanıyor. `social`/`uncertainty` **ölü değil**, ⛔ ama spillover **tekdüze** ⇒ dört sayı **dört boyut değil** ⇒ **GAP-10 tetiklendi** |
 
 ### ⚠ Bu oturumun beş dersi (K1–K5'e dönüştü)
 
@@ -827,6 +831,7 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 
 | GAP | Tetik | Neden o an optimal | Nasıl çözülür |
 |---|---|---|---|
+| **GAP-10** (spillover) | ⛔ **ATEŞLENDİ — 2026-08-19, D-136 §6** | Bugüne kadar *"süresi dolmuş erteleme"* idi, **gerekçesi yoktu**; artık gerekçe bir sayı (`z`'nin üç boyutu skaler spillover yüzünden kopya). Ve pencere **hâlâ açık** — üçüncü ön-kayıt kilitlenmedi, kilitlenince §2.10 kapatır | Yasin kararı: skaler kalsın mı, domain-özgü matris mi. Değer §2.7 gereği **etkiye bakılarak seçilemez** ⇒ ya literatürden ya sabitlerden türetilen bir eşitsizlikle |
 | ~~GAP-18~~ | ✅ **ÖLÇÜLDÜ (B2)** — `uniq_rejected` **100 / 94** · `uniq_chosen` 1025 / 971 · `max_rejected_reuse` **47 / 45** · `texts_in_both_roles` 28 / 51, 1707+1741 çift üzerinde. Şiddet artık sayıyla biliniyor: reddedilen taraf 10 kat daha az çeşitli. ⚠ **KTO kararı ikinci ön-kayıta** — kilit kapalı | ikinci ön-kayıt |
 | ~~GAP-17~~ | ✅ **RAPORDA NOT EDİLDİ** — `docs/B2_RESULTS.md` §6, "açıklanmadı" olarak. Bisect yapılmadı; 08-09 tabanı `tool_identity` öncesi olduğu için delil değeri yok | kapandı (not olarak) |
 
@@ -1271,8 +1276,12 @@ bare `0.5` (shuffle), default `k: int = 5`. **Cursor'a uygun**, Faz C.
   kilitlenince 0.3–0.4 yapılmalı" denmişti; koşul gerçekleşti, dönülmedi.
 - **Negation kural sarmalayıcı yok** — NLI yalnızca tercih çiftlerinde,
   **PE sensörünün kendisinde değil**.
-- **Asimetrik spillover matrisi** — kod skaler `CROSS_AXIS_SPILLOVER = 0.20`
-  kullanıyor; brief domain-özgü matris öneriyor.
+- ⭐ **Asimetrik spillover matrisi** — kod skaler `CROSS_AXIS_SPILLOVER = 0.20`
+  kullanıyor; brief domain-özgü matris öneriyor. **D-136 §5 bedelini ölçtü:**
+  birincil olmayan her eksen `PE × 0.20` alıyor ⇒ `z`'nin üç boyutu
+  birincilin **ölçekli kopyası**. Uç noktanın tek boyutluluğunun asıl sebebi
+  argmax değil, **bu skaler**. ⛔ **Karar Yasin'in** — sabit ailesi
+  değişikliği (D-007), ve §2.7: değer etkiye bakılarak seçilemez.
 
 ---
 

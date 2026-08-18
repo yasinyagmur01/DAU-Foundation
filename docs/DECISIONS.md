@@ -9840,3 +9840,114 @@ kırıyor — bizde **C1** yasaklıyor; ya da **stokastik güncellemeyle** — b
 *"Nasıl ayrıştırırız"* sorusu kapandı: **ayrıştıran şey müdahaledir**, ve bu
 kabul edilmiş durumda (D-131). Geriye kalan tek açık teknik iş, uç noktanın
 **tek boyuta çökmesi** (D-130 §9) — yani kuyruğun **0.2** maddesi.
+
+---
+
+## D-136 · 2026-08-19 · **Kuyruk 0.2: uç noktanın dört ekseni raporlanıyor** — ve ölçüm, tek boyutluluğun sebebini **argmax'tan spillover'a** taşıyor
+
+**İş:** `EXECUTION_QUEUE.md` madde 0.2. **Saf raporlama, hesap değişmedi,
+GPU yok.** Borç: PROVENANCE_AUDIT §9 (D-130).
+
+### 1. Borç neydi
+
+`z` = landmark drift, dört alan taşıyor. Alanı seçen `_primary_affected_domain`
+**en çok oynayan ekseni** alıyor ve kalan üçünü **atıyor** — hesapladıktan bir
+satır sonra. C2'de (216 yaşam) `z` bayraklarında yalnız `energy` ve `resource`
+göründü, `social`/`uncertainty` **sıfır kez**.
+
+⛔ Ama bu **tag hakkında** bir cümledir, ve tag bir argmax'tır. Dosyada
+*"o eksen hiç oynamadı"* ile *"oynadı ve argmax'ı kaybetti"* **ayırt
+edilemiyordu**.
+
+### 2. Ne yapıldı — üç dosya, sıfır hesap değişikliği
+
+| yer | ne |
+|---|---|
+| `graph.py` · `_axis_deltas` (yeni) | dört eksenin `\|after−before\|` değeri; `_primary_affected_domain` **artık bunun üstünde** argmax alıyor ⇒ tek otorite korunuyor (§2.8) |
+| `graph.py` · `_record_pe_event` | PE satırı `affected_domain` **ve** `axis_deltas` taşıyor — kazananın **yanına**, yerine değil |
+| `run_population_experiment.py` · `_axis_profile` (yeni) | eksen başına `max`/`mean`/`n_events` + `wins` (argmax sayacı); `delta_profile["axes"]` ve `to_landmark["axes"]` |
+
+⚠ **`_magnitude_summary` bilerek kullanılmadı.** İki nicelik **farklı kapıya**
+karşı ölçülüyor: `delta_magnitude` skarın **yazılıp yazılmayacağına** karar
+veriyor (`is_trauma`, ≥ 0.70), eksen deltası yalnız **hangi alana**
+dosyalanacağına. Bir eksene `headroom_to_trauma` yazmak, evrenin hiç
+hesaplamadığı bir eşiği raporlamak olurdu — §2.8'in tam hatası.
+
+⚠ **Aletlenmemiş satır sıfır sayılmıyor, atlanıyor** — *"kaydedilmedi"* ile
+*"oynamadı"* aynı şey değil (D-121'in `z` için çizdiği ayrım).
+
+### 3. K1–K5
+
+| | |
+|---|---|
+| **K2** | eksen bloğu **iki ajanla** test edildi; filtresiz hâli "a"ya "b"nin 0.99'unu yazıyor |
+| **K3** | `run_population_experiment` üzerinden **uçtan uca**: alan sonuç dosyasında, ve `n_events > 0` |
+| **K5** | **altı mutasyon**, her birinin md5'i okundu (öncesi → sonrası → geri yükleme), `-p no:cacheprovider`. Altısı da **doğru testi** kırdı |
+| **K4** | aşağıdaki sayıların hepsi çıktıdan **okundu**; koşum **keşifsel ve karar-stub'lı**, öyle etiketlendi |
+
+Mutasyonlar: eksenlerden üçünü at · ajan filtresini kaldır · aletlenmemiş
+satırı sıfır say · pencereyi landmark'ın ötesine taşır · tag'i yeniden türet ·
+bloğu hiç yazma.
+
+### 4. ⭐⭐ Ölçüm — ve borcun cevabı **beklenenden farklı** çıktı
+
+⚠ **Keşifsel, ön-kayıtlı değil.** Kararlar **stub** (LLM yok), tohum 9301,
+3 ajan × 6 olay, `lived`, nesil 0. Bu koşum **davranış** hakkında hiçbir şey
+söylemez; söylediği şey **PE → InternalState eşlemesinin yapısı**.
+
+| eksen | max | mean | argmax kazancı |
+|---|---|---|---|
+| `energy` | 0.826 | 0.500 | **5/6** |
+| `resource` | 0.856 | 0.167 | **1/6** |
+| `social` | **0.200** | 0.190 | **0/6** |
+| `uncertainty` | **0.171** | 0.136 | **0/6** |
+
+⇒ **`social` ve `uncertainty` ölü değil — oynuyorlar.** C2'nin *"sıfır kez"*i
+bir **argmax artefaktı**, eksik hareket değil. Borç bu haliyle kapandı:
+dosya artık farkı söyleyebiliyor.
+
+### 5. ⛔ Ama sayının mekanizması sorulduğunda kazanç daralıyor
+
+`social` max'ı **tam 0.200** ve `CROSS_AXIS_SPILLOVER = 0.20`
+(`constraints.py:31`). `_apply_prediction_error` (`graph.py:802–809`) birincil
+olmayan her eksene **`PE × 0.20`** veriyor — **tekdüze**.
+
+⇒ ⛔ **Dört sayıyı geri kazanmak dört boyut geri kazanmıyor.** `social` ve
+`uncertainty`, birincil ekseni süren **aynı PE'nin sabit katı**; bağımsız
+bilgi taşımıyorlar. Aralarındaki fark (0.200 vs 0.171) yalnız **setpoint
+kırpmasından** (`max(setpoint, …)`) geliyor, ayrı bir kanaldan değil.
+
+⚠ Bu koşumda `source=fallback` ⇒ PE **her olayda 1.000**. Gerçek koşumda PE
+değişir, ama **tekdüzelik yapısaldır**, koşuma bağlı değil.
+
+⇒ **Uç noktanın tek boyutluluğunun sebebi teşhis değiştirdi:** argmax'ın
+kazanan-hepsini-alır olması **ikincil**; asıl sebep **spillover'ın tekdüze
+olması**. Argmax düzeltilse bile üç eksen birbirinin ölçekli kopyası kalırdı.
+
+### 6. ⭐ Bu, açık bir GAP'i tam zamanında tetikliyor — **GAP-10**
+
+GAP-10'un üçüncü maddesi: *"asimetrik spillover matrisi — kod skaler
+`CROSS_AXIS_SPILLOVER = 0.20` kullanıyor; brief domain-özgü matris
+öneriyor."* §5 tam olarak bunun bedelini ölçtü.
+
+⭐ **Neden şimdi optimal:** GAP-10 bugüne kadar *"süresi dolmuş ölçüm
+ertelemesi"* olarak duruyordu, **gerekçesi yoktu**. Artık var, ve gerekçe bir
+sayı: uç noktanın üç boyutu, spillover skaler olduğu için birbirinin
+kopyası. Ve zamanlama doğru — **üçüncü ön-kayıt henüz açık** (Faz 2), yani
+sabit değişikliği hâlâ meşru; kilitlendikten sonra olmayacak (§2.10).
+
+⚠ **Karar Yasin'in (D-007).** Bu bir **sabit ailesi** değişikliğidir
+(skaler → matris) ⇒ Claude Code tek başına vermez. Ve §2.7 bağlayıcı: değer
+**etkiye bakılarak seçilemez**.
+
+### 7. Sınırlar
+
+- Koşum **keşifsel**, kararlar **stub**, PE sabit 1.000 ⇒ tablo **büyüklük
+  dağılımı** hakkında değil, **yapı** hakkında delildir.
+- Üç ajan **birebir aynı** sayıları üretti — D-129/D-135'in klon sonucu,
+  **yeni bir bulgu değil**, tutarlılık kontrolü.
+- Eksen bloğu **hiçbir hesaba girmiyor**; ondan uç nokta seçmek **üçüncü
+  ön-kaydın** işidir ve **etkiye bakılarak yapılamaz** (L9).
+- `z`'nin `resource` girdisi ağırlıkla **krizden** geliyor
+  (`CRISIS_AFFECTED_DOMAIN` sabit) — eksen bloğu **bireysel kanalı** ölçer,
+  kriz kanalını değil; ikisi `delta_profile`'da zaten ayrı.

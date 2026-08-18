@@ -34,7 +34,23 @@ eşleştirmeyi de tanımlayıp tanımlayamayacağı **hesapla** gösterilir.
 D-kaydında, aritmetiğiyle. **GPU yok. Kod değişmez.**
 </details>
 
-## ⬜ 0.2 · Uç noktanın boyutunu geri kazan (saf raporlama)
+## ✅ 0.2 · Uç noktanın boyutunu geri kazan — **D-136**, ve teşhis değişti
+✅ **Bitti:** PE satırı `affected_domain` + `axis_deltas` taşıyor; sonuç
+dosyasında `delta_profile["axes"]` ve `to_landmark["axes"]`. Hesap değişmedi.
+K2 ✅ · K3 ✅ · K5 ✅ (**6 mutasyon, 6 doğru test**, md5'li).
+
+⭐ **Ölçüm borcu kapattı ama cevabı ters çevirdi:** `social`/`uncertainty`
+**ölü değil** (max 0.200 / 0.171) — C2'nin *"sıfır kez"*i bir **argmax
+artefaktı**. ⛔ **Ama dört sayı dört boyut değil:** spillover **tekdüze**
+(`PE × 0.20`) ⇒ üç eksen birincilin **ölçekli kopyası**. Tek boyutluluğun
+asıl sebebi argmax değil, **skaler spillover**.
+
+⇒ ⛔ **GAP-10 tetiklendi (D-136 §6): asimetrik spillover matrisi.** Gerekçesi
+ilk kez bir sayı, ve pencere hâlâ açık (üçüncü ön-kayıt kilitlenmedi).
+**Karar Yasin'in** — sabit ailesi değişikliği (D-007, §2.7).
+
+<details><summary>özgün madde</summary>
+
 **Borç:** D-130 §9 — `z` dört alanlı görünüyor, **tek kullanılabilir boyutu
 var** (`energy`, 216 okumanın 11'inde). `social`/`uncertainty` **sıfır kez**
 yazıldı, çünkü `_primary_affected_domain` (`graph.py:842`) **en çok oynayan**
@@ -43,6 +59,7 @@ ekseni seçiyor ve enerji her olayda metabolizmayla oynuyor.
 yerine değil. Hesap **değişmez**.
 **Bitti sayılır:** yeni alan sonuç dosyasında · **K2** (çok-ajanlı test) ·
 **K3** (çağrı yeri testi) · **K5** (md5'li mutasyon, 4 mutasyon 4 doğru test).
+</details>
 
 ## ⬜ 0.3 · `precision_weight` raporlansın
 **Borç:** L13 *"Precision-PE atıl"* — D-130 §10 ölçtü ki nicelik **sonuç
