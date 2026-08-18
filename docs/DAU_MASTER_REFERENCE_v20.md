@@ -1,9 +1,9 @@
 # DAU — Master Reference
 
-**Versiyon 2.4.4** · 2026-08-13
+**Versiyon 2.5** · 2026-08-18
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
 *(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.4.3'te kaldı** — v2.4.4'ün
-§26'sı orada **yok**. `.md` tek güncel kaynaktır.
+§26'sı ve v2.5'in §27'si orada **yok**. `.md` tek güncel kaynaktır.
 Önceki üretim v2.4.3'te yapılmıştı —
 pandoc; PDF'te emoji'ler metin karşılığına çevrildi (`✅` → `[OK]` vb.)
 çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF'in görüntüsü
@@ -1456,3 +1456,107 @@ değiştirdi. Bu daha büyük bir kırılmadır.
 | **D-063** | S5 aletlendi (hasat + `pool_ratio` + kriz bayrağı `Gen2Result`'a giriyor). **S6 kol olarak üretilmedi:** denetim birincilin `F_agent`'ı **hiçbir yoldan göremediğini** gösterdi ⇒ gölge kayıt |
 | **D-064** | Uç nokta çözünürlük envanteri (21 aday). Dördü **yapı gereği kör** |
 | **D-065** | DR #4 mutabakatı (§J). Bir DOI yanlış makaleye atıflı (yedinci kimlik hatası), bir "kimlik" dergi ISSN'i, *"N=20–50"* kaynaksız ⇒ kullanılmadı |
+
+---
+
+## 27. D-069…D-122: popülasyon makinesi ve ikinci ön-kayıt (v2.5 — yeni)
+
+⚠ **Bu bölüm §26'nın devamıdır ve belgenin geri kalanının hangi kısımlarının
+artık *deney tarihçesi* olduğunu söyler.** §26 evrenin fiziğinin değiştiğini
+anlatıyordu; burada anlatılan şey **deneyin kendisinin değiştiği**: tek soy
+yerine **popülasyon**, sabit `w` yerine **değişken `w`**, ve ölçülen şey
+*"bir varis nasıl doğdu"* değil ***"kim varis bıraktı"***.
+
+### 27.1 Linçpin — neden popülasyon zorunluydu
+
+Price eşitliği `Cov(wᵢ, zᵢ)` ister ve bu ancak `w` **değişkense** tanımlıdır.
+Birinci ön-kayıtta her ebeveynin **tam olarak bir** varisi vardı ⇒ `w` sabit ⇒
+**seçilim ölçülemez**. Popülasyonun asıl işi ajan sayısını artırmak değil,
+`w`'yi değişken yapmaktı; gerisi altyapıdır.
+
+⚠ **Üç katman ayrı tutulur** (P4/D-094), yoksa Mills & Beatty'nin totolojisi
+geri gelir: `F_agent` (**girdi**) → `w` (**varis sayısı**) → `z` (**sonuç**).
+`F_agent`'ın içinde D-071'den beri gerçekleşmiş hayatta kalma var, o yüzden
+doğrudan `w` yapılamaz.
+
+### 27.2 Tasarım — kilitli kararlar
+
+| # | Karar | Kayıt |
+|---|---|---|
+| **P0** | ① sıralı erişim, **tur başına rotasyon** — ajanlar karar vererek değil **farklı yaşayarak** ayrışır | D-104 |
+| **P1** | kol başına **ayrı popülasyon ve ayrı mera** (kol kirlenmesi kapatıldı) | D-095 |
+| **P2/P3** | turnuva **k=2**; sabit N, ölenin yerine varis ⇒ `w ∈ {0,1,2,…}` | D-094 |
+| **P5** | havuz kapasitesi **N ile ölçeklenir**, kişi başı yörünge N=1 evreninin aynısı | D-081 |
+| **P6** | tek faz; `delta_pe` uç noktası **kayboldu** | D-095 |
+| **P7-b** | ilk koşum **kestirimdir, hipotez testi değildir** | D-096 |
+| — | mera her nesilde **taze**; Kanal 2 **varise miras kalır** (3A tersine çevrildi) | D-104 · D-102 |
+| — | Price **bir nesil gecikmeli**: G nesil ⇒ **G−1** satır | D-101 |
+| — | **G ≥ 3 yapısal** — G=2 yalnız sıfır raporlayabilir | D-107 |
+
+### 27.3 ⛔ Uç nokta krizi ve çözülmesi — bu dönemin en pahalı dersi
+
+Koşumlar `Cov(w,z) = 0` verdi ve **dört ayrı okuma sırayla çürüdü**. Son
+teşhis zinciri:
+
+1. **D-115:** `z`'yi **iki yol** yazıyor — ajanın kendi `DeltaRecord`'u ve
+   **ortak havuz krizi**. Kriz kolun **tamamına aynı anda** vuruyor.
+2. **D-117:** kriz yolu hiçbir günlüğe yazmıyordu ⇒ D-112'nin *"eşiğe kalan
+   mesafe"* profili evrenin **yarısını** görüyordu. Kapatıldı; iki kanal artık
+   **ayrı** raporlanıyor (havuzlanmıyor: kriz ajanlar arası bilgi taşımaz).
+3. **D-120:** ⛔ **Ve asıl teşhis burada değişti.** DR #10'a *"her ajan özdeş
+   bir artış alır"* diye yazmıştık; **kod öyle demiyor** —
+   `current + magnitude·exp(−current/BASE)` ⇒ artış ajanın **kendi drift'ine**
+   bağlı, harita **monoton ama sıkıştırıcı** (~10.7×), ve türev **tam `z=0`'da
+   sıfır**. Ölçüm seçeneği tersine çevirdi: *"yalnız bireysel kanaldan oku"*
+   dejenere hücreyi **14/27 → en az 21/27** yapardı.
+   ⇒ ⭐ **Sorun ortak şok değil, bireysel kanalın landmark'tan önce
+   ateşlenmemesi.**
+4. **D-121 (karar, Yasin):** `z` **korunur**; eklenen şey **okuma kuralı** —
+   `Var(z)=0` olan hücre *"sıfır seçilim ölçtük"* değil ***"seçilim
+   tanımsız"*** raporlanır (Rothenberg 1971, `10.2307/1913267`), ve krizden
+   bağımsız bir nicelikte (`energy_mean_over_life`) **pozitif kontrol** koşulur.
+
+⚠ **Genel ders (§2.2'nin dördüncü teyidi):** bir sayıya bakıp cümle kurmadan
+önce **hangi mekanizmanın** onu ürettiği sorulur. Bu dönemde tek tohumdan
+yazılan hiçbir cümle ayakta kalmadı.
+
+### 27.4 Alet: bu dönemde eklenenler
+
+| Kayıt | Ne | Neden saf raporlama |
+|---|---|---|
+| **D-105/106/107** | kapılar sarmalayıcıya (I0.3·I0.6·I0.7·I1.1·I4.1), nesil başına replay digest'i, `generations_informative` damgası | hesaba dokunmuyor |
+| **D-108** | I1.1 muafiyeti **sebebe** bağlandı, sayıya değil — beş erken çıkışın dördü sıfır çift raporluyor | — |
+| **D-111** | **checkpoint**: her nesilden sonra kısmi sonuç. ⚠ `complete:false`, analiz aracı **reddeder** | bir gecede üç kez veri kurtardı |
+| **D-113** | aralık kestirimi **Wilson** (Wald nadir olayda bozuluyor) | test değil |
+| **D-116** | `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`; tahsis ediciye ulaştığı **ölçüldü** (`is_expandable` True ↔ ayarsız False) | tahsisi değiştirir, aritmetiği değil |
+| **D-118** | **I0.4** popülasyona bağlandı — kapı aynı, **parser çağırana** bırakıldı | `shuffle` permutasyonu id'den çözülen tohumdan gelir ⇒ okunamayan id replay'i götürür |
+| **D-121** | `z_variance` + `selection_estimable` + pozitif kontrol | sayı gizlenmiyor, **etiketleniyor** |
+
+### 27.5 Süreç: mutasyon kuralı sertleşti
+
+⛔ *"Bir test kırıldı mı"* yetmiyor; **hangi** testin kırıldığına bakılıyor —
+ve bu dönemde **dört kez** aynı boşluk çıktı: düzeltme **kod tabanında** var,
+**koşum yolunda** yok (D-116'nın `main()` çağrısı · D-117'nin kayıtçısı ·
+D-118'in kapısı · D-121'in kontrol okuması). ⇒ **Kural:** testin,
+düzeltmenin **çağrıldığı yerden** geçmesi gerekir; fonksiyonu doğrudan çağıran
+test *"repoda var"*ı kanıtlar, *"koşumda var"*ı değil.
+
+### 27.6 DR kanalı: 12 kimlik hatasından sonra ne değişti
+
+Üç şart (DOI · **birebir alıntı** · kaynakça + **boşluk ilanı**) DR #9'da ilk
+kez birlikte tuttu. ⚠ Ama şart listesi kusuru **engellemiyor, yakalanabilir
+kılıyor**: DR #10'da yine bir kimlik hatası çıktı (13.), ve **aynı hata bizde
+de** çıktı (§R) — ikisi de **komşu DOI numarası** deseninde.
+⚠ Ve DR #10'un asıl dersi kaynakta değil **girdide**ydi: sistemi yanlış tarif
+ettiğimiz için cevabın yarısı uygulanamaz çıktı. *"Brief kalitesi girdi
+kalitesiyle sınırlıdır"*, dördüncü kez.
+
+### 27.7 İkinci ön-kayıt — 🔒 kilitli
+
+`docs/PREREGISTRATION_2.md`, commit `72df476ebd54`. Dört slot kapalı:
+uç nokta (**A**) · ikincil uç nokta (**yok** — karar, eksik değil) ·
+bütçe (**3 tohum · N=8 · G=3 · 30 olay ⇒ 18 Price satırı**) ·
+tohumlar (**9911–9913**).
+
+⚠ **Birinci ön-kayıt yürürlükte kalır** — ayrı bir deneyi bağlar, bu belge onu
+geçersiz kılmaz.
