@@ -45,166 +45,77 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-## ▶▶ SIRADAKİ İŞ — ⛔ **UÇ NOKTA KARARI, Yasin'in** (D-115)
+## ▶▶ SIRADAKİ İŞ — 🗺 **`docs/EXECUTION_QUEUE.md`**
 
-⭐ **2026-08-17/18 gecesi + 18 Ağustos sabahı: D-105 … D-115, on bir kayıt.**
-Soğuk oturum buradan devam eder, başka yere bakmaz.
+⛔ **"devam et" denince oraya bakılır, başka yere değil.** Kuyruk, fazları ve
+eski borçları **tek sırada** tutar; her maddede *bitti sayılma ölçütü* ve
+karar gerektirenlerde **⛔ KARAR** işareti vardır.
 
 ### Nerede duruyoruz — dört cümlede
 
-**Makine bitti ve kanıtlandı.** Kapılar bağlı (A1) · I4.1 replay bit düzeyinde
-tekrarlıyor (A2) · G≥3 yapısal (A3) · `Var(w)` 1.0–1.75 ⇒ linçpin çalışıyor.
-Determinizm **dört bağımsız koşumda** doğrulandı.
+**Makine çalışıyor ve kanıtlandı.** C2 koşumu (2026-08-18, tohum 9911–9913,
+5 sa 53 dk): `run_quality=clean` · **6/6 kapı** · I4.1 replay **identical** ·
+pozitif kontrol **hareket etti** ⇒ *"ölçemedik"* ile *"ölçtük, yoktu"* ilk kez
+ayrıldı.
 
-**Koşum artık kayıp vermiyor.** Her nesilden sonra checkpoint yazılıyor
-(D-111) — abort eden ya da çöken koşum bile verisini bırakıyor. Bu bir gecede
-**üç kez** işe yaradı.
+⛔ **Sonuç: evren null'ı (D-123).** Seviye 1 **kurulamadı** — 18 Price
+satırının yalnız **4'ü** ölçülebilir, tanımlı terim **tek tohumda**. Seviye
+3'te desen var ama **kriz maruziyeti confound'u** taşıyor.
 
-**⛔ Ama uç nokta ölçmüyor, ve sebebi bulundu (D-115):** `z`'yi yazan **iki**
-yol var — bireysel şaşırma **ve ortak havuz krizi** — ve **kriz kolun tamamına
-aynı anda vuruyor** ⇒ sekiz ajan aynı drift'i alıyor ⇒ `Cov(w, z)` sıfır.
-Sıfırın sebebi *"hiçbir şey olmadı"* değil, ***"herkese aynı şey oldu"***.
+⭐ **Sebep bulundu (D-129/D-130):** farklılaşmanın tek kaynağı **adapter**.
+Sıralı erişim ancak **kıtlıkta** ısırır, kıtlık ancak davranış farkıyla doğar,
+davranış farkı ancak adapter'la. ⇒ `null` kolu zengin nişte **donmuş klon
+popülasyonu**. Ve `z` dört boyutlu görünüp **tek kullanılabilir boyutu** var.
 
-**⚠ Bu oturumda benim dört okumam çürütüldü** (D-115 §4). Tek tohumdan yazılan
-hiçbir cümle ayakta kalmadı. **Bir sonraki oturum aynı hatayı yapmasın:**
-sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini sor.
+⇒ **Tasarım kararı (D-131):** birincil karşıtlık **`lived ↔ shuffle`**,
+`null` **betimleyici**. İki fizik kaldıracı (kapasite · kriz eşiği)
+**aritmetikle elendi** — kıtlık ile kriz bu evrende **aynı olay** (D-081).
 
----
+⇒ **Yön (D-132/D-133):** DR #11 hiç düşünmediğimiz kaldıracı verdi —
+**ajan-ajan etkileşimi**. Popülasyondaki sekiz ajan **birbiriyle hiç
+etkileşmiyor** (hepsi aynı NPC ile). Mekanizma **kodda mevcut ve test edilmiş**
+(`run_convention_pilot.py:243`), değişecek tek yer `opponent_id`.
 
-### ⏭ ONAYLANMIŞ, HENÜZ YAPILMAMIŞ — buradan başla
+### ⭐ Stratejik karar: **pahalı koşum atlanıyor**
 
-| # | iş | durum | süre |
-|---|---|---|---|
-| ~~**1**~~ | ✅ **KAPANDI (D-117)** — kriz büyüklüğü `crisis_trauma_magnitude()`'dan okunup havuz olay satırına yazılıyor; `delta_profile` ve analiz raporu iki kanalı **ayrı** veriyor (⛔ toplamıyor: kriz kolun tamamına aynı anda vurur ⇒ ajanlar arası bilgi taşımaz) | ✅ | — |
-| ~~**2**~~ | ✅ **KAPANDI (D-116)** — `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` popülasyon koşucusunun `main()`'inde, alet kimliğinde `cuda_allocator` bloğu. ⭐ Tahsis ediciye **ulaştığı ölçüldü** (`is_expandable` True ↔ ayarsız False). ⚠ **Eğitim yükünde OOM azaldı mı ölçülmedi** — kanıtı bir sonraki gerçek koşumun OOM sayısı | ✅ | — |
-| **3** | Kapılı bir koşumla ölçümü tekrarla (⚠ **taze tohum** — 9902–9904 yakıldı) | uç nokta kararına bağlı | ~5.5 sa |
-| ~~**4**~~ | ✅ **I0.4 bağlandı (D-118)** — borç kapandı, parser çağırana bırakıldı | ✅ | — |
-| ~~**5**~~ | ✅ **İkinci ön-kayıt taslağı açıldı** — `docs/PREREGISTRATION_2.md`, **dört slot açık** | ✅ | — |
+Yön 3'e gidiliyorsa bugünkü fizikle 30–80 saatlik doğrulayıcı koşum **boşa
+gider** — sosyal kuplaj evreni değiştirir, sayılar taşınmaz. GPU yalnız
+**geçişten sağ çıkacak** işlere harcanır (`ROADMAP.md`).
 
-### ⛔ Yasin'in vermesi gereken kararlar
+### En eski açık borç
 
-| # | karar | dayanağı hazır mı |
-|---|---|---|
-| ~~**1**~~ ✅ | **`z` uç noktası** | ✅ **KAPANDI (D-121): seçenek A.** `z` korunuyor; `Var(z)=0` hücre *"seçilim tanımsız"* raporlanıyor (Rothenberg 1971) + `energy_mean_over_life` üzerinde **pozitif kontrol**. ⛔ Sorun ortak şok değilmiş: **bireysel kanal landmark'tan önce ateşlenmiyor** (D-120) |
-| **2** | Ömür uç nokta olsun mu | ⚠ **Post-hoc tuzağı** — hareket ettiğini gördükten sonra seçilemez (L9). Meşru tek yol: ikinci ön-kayıta **koşumdan önce** yazmak, **taze tohumla** sınamak. ⚠ Ve bugünkü hâliyle `lived ≈ shuffle` ⇒ Lamarckçı kanalın kanıtı **olamaz** |
-| **3** ⛔ | **P7-a bütçesi** — ⭐ **sıradaki karar** | ✅ **Nicelik belli (D-121): bilgilendirici hücre oranı** = `Var(z)>0` olan hücrelerin payı, bugünkü kestirim **13/27 ≈ %48**. Kalan soru: **hangi kesinlikle** bilmek istiyorsun, ya da kaç bilgilendirici hücre hedefliyorsun ⇒ tohum sayısı aritmetikle çıkar |
-| **4** | Eşdeğerlik testi (TOST) | ⏸ **Ertelendi (D-110/D-113).** Aralık kestirimi alındı, TOST alınmadı: *"en küçük anlamlı etki"* isimlendirmeyi şart koşuyor (DR #1'den beri açık) |
+⛔⛔ **"En küçük anlamlı etki"** — DR #1'den beri açık, **hâlâ verilmedi**.
+Verilmeden güç hesabı, dolayısıyla Faz 3'ün tohum sayısı **bilinemez**.
 
----
-
-### ✅ Bu oturumda kapananlar — D-105 … D-115
+### Bu oturumda kapananlar — D-116 … D-134
 
 | kayıt | ne |
 |---|---|
-| **D-105** | **A1** — kapılar sarmalayıcıya bağlandı (I0.3·I0.6·I0.7·I1.1 + `run_quality`). ~~I0.4 bağlanamadı~~ ✅ **D-118 kapattı** |
-| **D-106** | **A2** — I4.1 replay, nesil başına digest. `REPLAY_GENERATIONS=2` **türetildi** (gen1 adapter'sız koşar) |
-| **D-107** | **A3** — G≥3 **yapısal**; `generations_informative` damgası. ⛔ P7-a bunu kesemez |
-| — | **Analiz aracı** `analyze_population_run.py` — seviye 0/1/2/3, **p-değeri üretmiyor** (test bekçiliğiyle) |
-| **D-108** | ⭐⭐ **I1.1 muafiyeti SEBEBE bağlandı, sayıya değil.** Beş erken çıkışın **dördü** sıfır çift raporluyor ⇒ sayıyla muaf tutmak import/exception hatalarını da geçirirdi. **Üretimde kanıtlandı** (D-114) |
-| **D-109** | **B1 pilotu** — `clean`, I4.1 identical. ⚠ *"uç nokta dejenere"* okuması **D-115'te çürütüldü** |
-| **D-110** | **DR #9 mutabakatı** (§Q) — ⭐ **ilk sıfır kimlik hatalı tur** (5/5 doğrulandı, alıntılar kaynakta). ⭐ **Pilottan uç nokta değiştirmek meşrudur** (Evans 2007): koşum ortasında değiliz |
-| **D-111** | ⭐ **Checkpoint** — her nesilden sonra kısmi sonuç. Sonuç **değil**: `complete:false`, `run_quality` yok, analiz aracı **reddediyor** |
-| **D-112** | `delta.magnitude` profili (eşiğe kalan mesafe). ⚠ **EKSİK'ti** — kriz yolunu görmüyordu (D-115); ✅ **D-117 tamamladı** |
-| **D-113** | Aralık kestirimi (**Wilson**, Wald değil — nadir olayda Wald bozuluyor). Test değil |
-| **D-114** | Headroom koşumu — ⚠ merkezî iddiası **D-115'te düzeltildi** |
-| **D-115** | ⛔⛔ **Kök neden: `z`'yi iki yol yazıyor, aletim birini ölçüyordu** |
+| **D-116** | OOM düzeltmesi; tahsis ediciye ulaştığı **ölçüldü** |
+| **D-117** | Kriz kanalı günlüğe girdi; iki kanal **ayrı** raporlanıyor |
+| **D-118** | **I0.4 bağlandı** (D-105'in borcu) — parser çağırana bırakıldı |
+| **D-119/120** | DR #10 · ⛔ brief'imiz mekanizmayı **yanlış tarif etmişti** · ölçüm **D seçeneğini eledi** |
+| **D-121** | ⭐ **Karar A:** `z` korunuyor + **dejenere hücre ilanı** + **pozitif kontrol** |
+| **D-122** | Son üç slot kapandı (ikincil **yok** · 3 tohum · 9911–9913) |
+| **D-123** | ⭐⭐ **C2 sonucu: evren null'ı** |
+| **D-124** | `to_landmark` penceresi aletlendi |
+| **D-125/126** | Sonda ön-taahhüdü · ⛔ **sonda geçersiz** (`--no-lora` mekanizmayı kapatıyordu) |
+| **D-127** | ⛔ **Dört rapor kusuru** + **K1–K5** bağlayıcı kontroller |
+| **D-128/129** | K1 kontrolü · **sonda-2: aday girmez (2/4)**, ve `null` **donmuş** |
+| **D-130** | 🔍 **Provenans denetimi** — altı dejenerasyon koşulu |
+| **D-131** | ⭐ **Tasarım kararı** — iki fizik kaldıracı aritmetikle elendi |
+| **D-132** | DR #11 mutabakatı — **14. kimlik hatası**, ve ajan-ajan etkileşimi |
+| **D-133/134** | 🗺 **Yol haritası** ve **yürütme kuyruğu** |
 
-### ⭐ Ölçülmüş sayılar — bir sonraki oturum bunları yeniden ölçmesin
+### ⚠ Bu oturumun beş dersi (K1–K5'e dönüştü)
 
-| nicelik | değer | kaynak |
-|---|---|---|
-| Pilot maliyeti (N=8·G=3·30 olay·3 kol + replay) | **~1 sa 15 dk**, 48 adapter ≈ 670 MB | B1 |
-| Replay'in payı | **~%25** | B1 |
-| 3 tohumlu koşum | **~5 sa 20 dk** | D-114 |
-| Çift üretemeyen ajan | **43'te 3 (%7)** | B1 |
-| Bireysel kanaldan eşik geçişi | 9901 %4.2 · 9902 %8.3 · 9903 **%36.1** · 9904 **%0** | D-114 |
-| `z` dolu olan ajan | 9902 48/72 · 9903 48/72 · 9904 **72/72** | D-115 |
-| Hücre içi farklı `z` (8 ajan) | kriz varsa **1–2**, yalnız bireysel kanalsa **3–5** | D-115 |
-| Ömür (gen3) | `lived` 24.8 · `shuffle` 28.2 · **`null` 10.0** | B1 |
-| GPU belleği | 280 OOM uyarısı, **2 ölümcül**, dağılım **düz** ⇒ sızıntı değil **kronik baskı** | D-114 |
+1. **K1** — koşumu ucuzlatırken kapattığın şey, ölçtüğün şeyi üreten mekanizma mı?
+2. **K2** — bir boyut üzerinde toplayan fonksiyonun testinde o boyutta **iki farklı değer** olmalı
+3. **K3** — düzeltmenin testi, **çağrıldığı yerden** geçmeli
+4. **K4** — okunmamış sayı yazılmaz; tahmin **yayılımıyla** verilir
+5. **K5** — mutasyon koşumu **kendini kanıtlar** (md5 + önbelleksiz)
 
-### 📂 Dosya haritası — bu oturumun ürettikleri
-
-| dosya | ne |
-|---|---|
-| `dau_runs/b1_pilot_n8_g3.json` | ✅ **kapılı, `clean`** — B1 pilotu (tohum 9901) |
-| `dau_runs/b1_pilot_n8_g3_report.md` | dört seviyeye göre rapor |
-| `dau_runs/headroom_n8_g3_s3.json.partial.json` | ⚠ **checkpoint, kapısız** — 3 tohum, 216 yaşam. D-114/D-115'in bütün sayıları buradan. **Sonuç değil** |
-| `dau/diagnostics/analyze_population_run.py` | okuma kuralları aracı (+ testleri) |
-| `docs/research/RECONCILIATION.md` §Q | DR #9 mutabakatı |
-
-### ⚠ Yeni oturumun bilmesi gereken **yedi** şey
-
-1. **Popülasyon koşucusu ayrı dosya:** `dau/diagnostics/run_population_experiment.py`.
-   `run_cprime_multigen.py` **değişmedi**, B2'nin yolu olarak duruyor.
-2. **Zorunlu CLI bayrakları:** `--lora/--no-lora` **ve** `--pasture-carryover/--fresh-pasture`,
-   ve **`PYTHONHASHSEED=0`** (I0.3 abort eder). ⭐ `PYTORCH_CUDA_ALLOC_CONF`'u
-   **elle vermeye gerek yok** — `main()` kuruyor (D-116); **farklı** bir değer
-   export edilmişse koşum durur, `unset` et.
-3. **P0 tek fonksiyonda:** `build_arm_population`.
-4. **Price bir nesil GECİKMELİ** (D-101): G nesil ⇒ **G−1** satır.
-5. ⚠ **Mutasyon kontrolü:** *"bir test kırıldı mı"* yetmez, **hangi** testin
-   kırıldığına bakılır. Bu oturumda **beş kez** boş test yakalandı (A1'in
-   `enforce()`'u · D-108'in tek-tip popülasyonu · D-112'nin sınır değeri ·
-   **D-116/D-117'de iki kez aynı boşluk**).
-   ⛔ **Kural sertleşti (D-117):** testin, düzeltmenin **çağrıldığı yerden**
-   geçmesi gerekir. Fonksiyonu doğrudan çağıran test *"kod tabanında var"*ı
-   kanıtlar, ***"koşum yolunda var"***ı değil — iki kez tam bu yüzden
-   düzeltme repoda olup koşumda yoktu.
-6. ⭐ **Checkpoint var** (D-111): koşum çökerse `*.partial.json`'a bak.
-   Analiz aracı onu **reddeder** — elle incelenir.
-7. ⛔ **Bir sayıya bakıp cümle kurmadan önce hangi mekanizmanın onu ürettiğini
-   sor.** Bu oturumda dört okuma tam bu yüzden çürüdü.
-
-### 📖 "Olumlu sonuç" ne demek — dört seviye, **koşumdan önce** tanımlı
-
-| seviye | ne görülür | ne **iddia edilir** | ne **edilmez** |
-|---|---|---|---|
-| **0 — kapı** | `Var(w) > 0` | hiçbir şey; bu **ön koşul** | — |
-| **1 — seçilim** | `Cov(w,z) ≠ 0`, işaret tohumlar arası tutarlı | *"seçilim landmark drift üzerinde etki etti"* | *"kalıtım aktı"* |
-| **2 — birikim** | terim nesiller boyu sönmüyor | *"etki birikimli"* — aksiyomun asıl cümlesi | *"kanal parametrik/sembolik"* |
-| **3 — kol farkı** ⭐ | `lived` ≠ `shuffle` ≠ `null` | **Lamarckçı kanal iddiası** | *"anlamlı"* (test yok, D-096) |
-
-⚠ **En sık yapılacak hata:** Price **seçilimi** verir, kolların karşılaştırması
-**kalıtımı**. Seviye 1 dolup seviye 3 boş çıkabilir — B2'de üç kol **eşit
-uzaklıkta** çıkmıştı.
-
-⛔ **Olumlu sonuçta bile iddia edilemeyecekler:** *"anlamlı"* (kestirim, test
-değil) · birey düzeyi (P1 ⇒ **grup düzeyi**, Chevin 2011) · *"LLM ajanlarında
-Lamarckçı kalıtım vardır"* (tek model, tek niş ailesi, **n = 1 deney**) ·
-`delta_pe` üzerinden hiçbir şey (P6 onu kaldırdı).
-
-### ⏸ Askıya alınanlar — ve neden
-
-| madde | durum |
-|---|---|
-| **Kapasite 100 → 50** | ⏸ **askıda** — D-104 ayrımın kapasiteye **dokunmadan** doğduğunu gösterdi |
-| **0b** — `SYSTEM_PROMPT`'un *"prefer … extract, take"* dayatması | ⏸ **Yasin'in**; rakam artık var (%53) ve oranlar **hâlâ o prompt'un altında** alındı |
-| **K7 yeniden açılması** (davranışsal önsel) | ⏸ **ancak olumlu sonuçtan sonra**; bugün karşılaştırılacak taban yok |
-| `fitness_class` `high` bandı · `landmark_energy` doygunluğu · KTO · `W_SEM` · DTW · MAP-Elites · uzunluk kontrolü | ⏸ ikinci/üçüncü ön-kayıt |
-| Belge borcu (master ref §12/§14, `.html`/`.pdf`) | ⏸ **Cursor'a uygun**, aciliyeti yok |
-
-### ⚠ Yeni oturumun bilmesi gereken beş şey
-
-1. **Popülasyon koşucusu ayrı bir dosya:** `dau/diagnostics/run_population_experiment.py`.
-   `run_cprime_multigen.py` **değişmedi** ve B2'nin yolu olarak duruyor.
-2. **Zorunlu CLI bayrakları:** `--lora/--no-lora` **ve** `--pasture-carryover/--fresh-pasture`.
-   `PYTHONHASHSEED=0` olmadan multigen abort eder; popülasyon koşucusu **henüz etmiyor** (A1).
-3. **P0 tek bir fonksiyonda:** `build_arm_population`. ②/③/⑤ seçilirse **yalnız o değişir**.
-4. **Price bir nesil GECİKMELİ** (D-101): G nesil ⇒ **G−1** satır, son nesil hiç üretmez.
-5. ⚠ **Mutasyon kontrolü kuralı sertleşti** (bu oturumda **beş boş test** yakalandı):
-   *"bir test kırıldı mı"* yetmez, **hangi** testin kırıldığına bakılır; global durum
-   okuyan testler **ayırt edici sentinel** kullanır.
-
-### Kullanılmış tohumlar — ⚠ yeniden kullanma
-
-2001–2043 · 3001–3004 · 4001–4002 · 5001–5013 · 8801–8802 · 9101 · **9301 ·
-9401 · 9501 · 9601 · 9701 · 9702 · 9801 · 9802 · 9901 · 9902 · 9903 · 9904**
-(sonuncular popülasyon; `dau_runs/adapters/` altında `pop-` önekli dizinler
-bıraktılar). ⚠ **9901 = B1 pilotu** (D-109) · **9902–9904 = headroom koşumu**
-(D-114/D-115) · **9802 = A2 replay duman koşumu** (D-106) · **9801 = mock**
-(adapter yazmadı).
-
+---
 
 ## ▶ ÖNCEKİ SIRADAKİ İŞ — aletin iki ölü kanalı (D-085) ✅ kapandı
 
