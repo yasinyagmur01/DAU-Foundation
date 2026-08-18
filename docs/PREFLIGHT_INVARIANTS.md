@@ -9,6 +9,13 @@
 > sütunu bunu gösterir. Kaynak: koşum JSON'unun `invariants` bloğu
 > (`dau_runs/prereg_b2_batch1_2004_2023.json`), **belge değil**.
 >
+> ⚠ **İki koşucu, iki kapı kümesi** (2026-08-18). Popülasyon sarmalayıcısı
+> (`run_population_experiment.py`) **I0.3 · I0.4 · I0.6 · I0.7 · I1.1 · I4.1**
+> koşar; **I0.1/I0.2 bilerek yok** (D-105'te gerekçesi yazılı) ve I0.5 bu yolda
+> tanımlı değil. Multigen koşucusu (`run_cprime_multigen.py`, B2'nin yolu)
+> **değişmedi**. Bir kapının *"kodda"* olması, **her koşucuda** koştuğu
+> anlamına gelmez — koşumun kendi `invariants` bloğuna bakılır.
+>
 > B2'de 23 kapı geçti, **`I1.3b` bayrak kaldırdı** (kırpma %100) — kapının
 > tasarlandığı iş tam olarak buydu. Ayrıntı `docs/B2_RESULTS.md` L18.
 
@@ -45,7 +52,7 @@ Kalibrasyonsuz ABORT, keyfi bir sabitle koşum öldürmek demektir.
 | I0.1 | **Alet kimliği tam.** backend · model id · quantization · `seq_len` · `epochs` · `batch` · accumulation · `DAU_LORA_ENABLED` · adapter dizini · sampling params · seed aralığı · torch/transformers/peft sürümleri. Herhangi biri belirlenemiyorsa dur. | ABORT | D-004; "koşum kendi konfigürasyonunu inkâr edemesin" | ✅ |
 | I0.2 | **LoRA kapısı bilinçli.** `--lora` / `--no-lora` explicit verilmiş ve env ile tutarlı. Default'a düşülmüşse dur. | ABORT | GAP-1 | ✅ |
 | I0.3 | **`PYTHONHASHSEED` sabit.** Set değilse dur (veya runner set edip kendini yeniden başlatsın). | ABORT | GAP-11 | ✅ |
-| I0.4 | **Seed türetmesi doğrulanabilir.** Her `agent_id` için `_seed_from_agent_id` beklenen değeri dönmeli; hash fallback'e düşerse dur. | ABORT | GAP-11 (spesifik) | ✅ |
+| I0.4 | **Seed türetmesi doğrulanabilir.** Her `agent_id` planlanan tohumlardan birini vermeli; okunamayan id'de dur (hash fallback yok). ⚠ **Parser çağırana aittir** (D-118): Protocol C′ `cprime-{arm}-{seed}` (sonda), popülasyon `pop-{arm}-s{seed}-a{index}` (ortada, varis ekleri sona eklenir). | ABORT | GAP-11 (spesifik) | ✅ |
 | I0.5 | **Import-time env tutarlı.** `TEMPERATURE` gibi import anında yakalanan değerler mevcut env ile aynı mı. | ABORT | GAP-15 | ✅ |
 | I0.6 | **Determinizm ayarları aktif.** `CUBLAS_WORKSPACE_CONFIG` · torch deterministic algorithms · cudnn deterministic · **`warn_only` kapalı** (D-037). warn_only altında aynı seed/kod iki koşumda farklı adapter ve 21/50 karar farkı üretti; `null` bit-exact kaldı. Artık raporlanmıyor, **başarısız sayılıyor**. | ABORT | replay kaybı · **D-037** | ✅ |
 | I0.7 | **Hiçbir ajan önceki koşumun adapter'ıyla başlamıyor.** Koşumun `agent_id`'lerinden herhangi birinde kayıtlı adapter varsa dur. `switch_adapter` her yerel kararda diskten yüklüyor ve **`DAU_LORA_ENABLED`'a bağlı değil**, yani `--no-lora` koşumu da kirlenir. Yerel backend dışında **N/A (`None`)**, `True` değil. | ABORT | **D-033** — 08-10 smoke'unda ölçüldü: kollar ayrıştı (`n_unique` 6/7/6), sapma **hipotez lehine** | ✅ |
