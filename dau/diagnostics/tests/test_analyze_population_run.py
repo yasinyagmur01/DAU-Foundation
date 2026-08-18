@@ -459,3 +459,91 @@ def test_a_run_from_before_checkpointing_is_still_reportable() -> None:
     assert "complete" not in run
 
     assert "Level 3" in format_report(run, pathlib.Path("old.json"))
+
+
+# ---------------------------------------------------------------------------
+# D-113 — interval estimates (Dienes' second solution), never a test
+# ---------------------------------------------------------------------------
+
+
+def _with_profiles(arms, peak: float, crossings: int):
+    """Give every agent a delta profile; the first `crossings` of them cross."""
+
+    from dau.foundation.delta import DELTA_THRESHOLD_DEEP
+
+    left = crossings
+    for arm in arms:
+        for gen in arm["generations"]:
+            for agent in gen["agents"]:
+                crossed = left > 0
+                left -= 1 if crossed else 0
+                top = DELTA_THRESHOLD_DEEP + 0.1 if crossed else peak
+                agent["delta_profile"] = {
+                    "n_events": 5,
+                    "max": top,
+                    "mean": top / 2,
+                    "n_at_or_above_trauma": 1 if crossed else 0,
+                    "headroom_to_trauma": DELTA_THRESHOLD_DEEP - top,
+                }
+    return arms
+
+
+def test_wilson_interval_stays_inside_zero_and_one_at_a_rare_rate() -> None:
+    """⭐ Why Wilson and not Wald: the quantity we estimate IS rare.
+
+    Wald's interval runs below zero for small p and its coverage collapses
+    exactly there (McGrath & Burke, arXiv:2109.02516). A lower bound of -0.005
+    would be nonsense printed next to a real measurement.
+    """
+
+    from dau.diagnostics.analyze_population_run import wilson_interval
+
+    point, low, high = wilson_interval(3, 72)
+
+    assert point == pytest.approx(3 / 72)
+    assert 0.0 <= low < point < high <= 1.0
+    # The Wald lower bound for this case is negative; Wilson's is not.
+    wald_low = 3 / 72 - 1.96 * ((3 / 72) * (1 - 3 / 72) / 72) ** 0.5
+    assert wald_low < 0.0 < low
+
+
+def test_zero_crossings_still_produce_an_upper_bound() -> None:
+    """⭐ "It never happened" is not "it cannot happen".
+
+    A run with no crossings must still say how rare the event could be and
+    still be consistent with the data — that upper bound is the whole reason
+    an interval is reported instead of a bare zero.
+    """
+
+    from dau.diagnostics.analyze_population_run import wilson_interval
+
+    point, low, high = wilson_interval(0, 72)
+
+    assert point == 0.0
+    assert low == 0.0
+    assert high > 0.0, "a bare zero would claim impossibility"
+
+
+def test_the_report_shows_headroom_and_never_a_p_value() -> None:
+    """The section must carry the interval AND the refusal to test."""
+
+    from dau.diagnostics.analyze_population_run import trauma_headroom
+
+    run = _run(_with_profiles(_three_arms(PRICE), peak=0.68, crossings=1))
+    lines = "\n".join(trauma_headroom(run))
+
+    assert "Wilson interval" in lines
+    assert "0.6800" in lines, "the near-miss peak has to be visible"
+    assert "An interval, not a test" in lines
+    assert "p =" not in lines and "p-value" not in lines
+
+
+def test_a_run_without_delta_profiles_says_so_instead_of_reporting_zero() -> None:
+    """B1 predates D-112. Silence there would read as "nothing came close"."""
+
+    from dau.diagnostics.analyze_population_run import trauma_headroom
+
+    lines = "\n".join(trauma_headroom(_run(_three_arms(PRICE))))
+
+    assert "predates D-112" in lines
+    assert "0/0" not in lines

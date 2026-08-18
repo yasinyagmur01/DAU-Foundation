@@ -76,7 +76,17 @@ AGENT_KEY_LANDMARK: str = "landmark"
 LANDMARK_KEY_DRIFT: str = "landmark_drift_magnitudes"
 LANDMARK_KEY_REACHED: str = "landmark_reached"
 
+AGENT_KEY_DELTA_PROFILE: str = "delta_profile"
+
 NOT_EVALUABLE: str = "not evaluable"
+# D-113. Dienes (2014) lists three ways to read a non-significant result:
+# power, INTERVAL ESTIMATES, and Bayes factors. Only the middle one needs no
+# threshold to be named, which is why it is the one adopted here: an estimation
+# run (P7-b) should report an interval, and equivalence testing would first
+# require fixing a smallest meaningful effect — the question DR #1 left open.
+# ⚠ This is NOT a hypothesis test and produces no p-value.
+CONFIDENCE_Z: float = 1.96  # two-sided 95%
+CONFIDENCE_LABEL: str = "95%"
 # A level-1 claim asks for the sign to hold across seeds. One seed cannot
 # answer that, and saying so is the point: a single-seed run is where this
 # project's dead findings came from.
@@ -227,6 +237,76 @@ def l2(a: dict[str, float], b: dict[str, float], domains: list[str]) -> float:
 # ---------------------------------------------------------------------------
 # The four levels
 # ---------------------------------------------------------------------------
+
+
+def wilson_interval(successes: int, trials: int) -> tuple[float, float, float]:
+    """Point estimate and Wilson score interval for a proportion.
+
+    Wilson rather than Wald, deliberately: the quantity we are estimating is
+    rare (B1 measured 3/72) and the Wald interval misbehaves exactly there —
+    it can run below zero and its coverage collapses for small p, which is the
+    subject of McGrath & Burke (arXiv:2109.02516). Wilson stays inside [0, 1]
+    and keeps its coverage at small p, and it costs one extra line.
+    """
+
+    if trials <= 0:
+        return (float("nan"), float("nan"), float("nan"))
+    p = successes / trials
+    z2 = CONFIDENCE_Z * CONFIDENCE_Z
+    denom = 1.0 + z2 / trials
+    centre = (p + z2 / (2 * trials)) / denom
+    half = (
+        CONFIDENCE_Z
+        * math.sqrt(p * (1 - p) / trials + z2 / (4 * trials * trials))
+    ) / denom
+    return (p, max(0.0, centre - half), min(1.0, centre + half))
+
+
+def trauma_headroom(run: dict[str, Any]) -> list[str]:
+    """How close the universe came to the endpoint's own trigger (D-112).
+
+    ⚠ This section exists because a run can report an all-zero endpoint for two
+    opposite reasons — the universe never came near the trigger, or it came
+    within a hair of it — and the endpoint decision goes the other way in each
+    case. Before D-112 the results file could not tell them apart.
+    """
+
+    peaks: list[float] = []
+    crossings = 0
+    lives = 0
+    for arm in run.get(RUN_KEY_ARMS, []):
+        for row in arm.get("generations", []):
+            for agent in row.get(GEN_KEY_AGENTS, []):
+                profile = agent.get(AGENT_KEY_DELTA_PROFILE) or {}
+                if not profile or profile.get("max") is None:
+                    continue
+                lives += 1
+                peaks.append(float(profile["max"]))
+                if int(profile.get("n_at_or_above_trauma", 0)) > 0:
+                    crossings += 1
+    if not lives:
+        return [
+            "  no delta profile in this run — it predates D-112, so how close "
+            "the universe came to the trigger cannot be read from it"
+        ]
+    peaks.sort()
+    point, low, high = wilson_interval(crossings, lives)
+    return [
+        f"  lives with a reading: {lives}",
+        f"  peak delta magnitude: min={peaks[0]:.4f} "
+        f"median={peaks[len(peaks) // 2]:.4f} max={peaks[-1]:.4f}",
+        f"  lives that crossed the trauma threshold: {crossings}/{lives}",
+        f"  crossing rate = {point:.4f}, {CONFIDENCE_LABEL} Wilson interval "
+        f"[{low:.4f}, {high:.4f}]",
+        "",
+        # ⚠ Worded WITHOUT the token "p-value" on purpose: the guard that
+        # keeps this module test-free searches the rendered report for that
+        # token, and a disclaimer containing it would trip its own guard —
+        # which it did, the first time this line was written.
+        "⚠ An interval, not a test: no significance test is computed here and "
+        "none may be quoted. This says how precisely the RATE is known, and "
+        "nothing about whether the arms differ.",
+    ]
 
 
 def level0_gate(run: dict[str, Any], views: list[ArmGenerationView]) -> list[str]:
@@ -474,6 +554,9 @@ def format_report(run: dict[str, Any], path: Path) -> str:
         "",
         "## Level 0 — gate (claims NOTHING; this is a precondition)",
         *level0_gate(run, views),
+        "",
+        "## Trauma headroom — can the universe even reach the endpoint? (D-112)",
+        *trauma_headroom(run),
         "",
         "## Level 1 — selection: Cov(w, z)",
         *level1_selection(run, views),
