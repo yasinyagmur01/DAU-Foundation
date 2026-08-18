@@ -1,0 +1,201 @@
+RESEARCH REQUEST: WHEN THE TREATMENT IS ALSO THE ONLY SOURCE OF BETWEEN-UNIT
+VARIANCE, AND THE OUTCOME COLLAPSES TO A SINGLE USABLE DIMENSION
+
+Date: 2026-08-19
+
+
+0. HOW TO READ THIS REQUEST
+
+We ran a simulation experiment, it produced a null, and we then audited the
+machine rather than the result. The audit found three structural facts we did
+not design for. We want to know what the literature calls them, whether the
+design is salvageable, and what is already known about each.
+
+What we need:
+(a) whether an untreated control arm that cannot vary internally is still a
+    valid control, and what that situation is called,
+(b) mechanisms that create within-population heterogeneity WITHOUT being the
+    treatment itself and without assigning traits,
+(c) known pathologies of an outcome that is (i) selected by an argmax over
+    axes and (ii) written only above a threshold,
+(d) whether the shrinking of successive fine-tuning updates, when each
+    generation continues from its parent's weights, is a named phenomenon.
+
+What we do NOT need:
+- Our project history, or a design proposal for our specific system.
+- Any advice that depends on how large our effects are. We have not looked at
+  the between-arm contrast for this purpose and will not: choosing a design by
+  anticipating its effect is post-hoc.
+- Code.
+
+SOURCE DISCIPLINE
+
+Across nine previous requests we hit two failure modes: wrong identity (13
+citations misattributed - DOIs pointing at different papers, invented author
+lists on real arXiv ids, one journal ISSN used as a source) and right source
+but wrong claim (the paper exists, the DOI resolves, the claim is not in it).
+Verifying the DOI does not catch the second one.
+
+So, for every claim:
+1. author, year, DOI or arXiv id;
+2. a VERBATIM quotation plus the section name. Do NOT give line numbers -
+   they do not survive between copies and in an earlier round every one of
+   them pointed at nothing;
+3. a bibliography, and an explicit statement wherever the literature does not
+   answer one of our questions. "No specific claim found in the sources" is
+   more useful to us than a plausible sentence we then discard.
+
+We open every identifier through Crossref and discard claims whose location
+cannot be shown. We have made the same error ourselves: in our own last local
+scan two of our DOIs were wrong (both were the neighbouring article number in
+the same journal and year), which is why we check rather than trust.
+
+ONE MORE THING, FROM THE LAST ROUND. Our previous request described our own
+mechanism incorrectly - we wrote that a shock applied "an identical increment
+to every unit", and the code applies an increment that depends on each unit's
+current state. Half of that answer was therefore unusable. The system
+description below has been checked against the code line by line.
+
+
+1. THE SYSTEM
+
+A simulation of inheritance across generations, structured as a controlled
+experiment with three arms. Each arm has its own population of N = 8 agents
+and its own shared resource pool; arms never interact.
+
+An agent lives a sequence of discrete events. At each event it announces a
+withdrawal from the pool, the pool serves the announced withdrawals ONE AGENT
+AT A TIME in a rotating order, and whatever it actually received feeds it.
+At the end of a generation, agents are ranked by a fitness quantity, winners
+of a size-2 tournament produce heirs, population size stays fixed, and the
+number of heirs per parent is the selection weight w.
+
+Three arms:
+- "lived": the agent's own experience is distilled into a preference dataset
+  and fine-tuned into a small per-agent adapter, which its heir inherits;
+- "shuffle": the SAME data with the preference pairing destroyed, fine-tuned
+  the same way, inherited the same way;
+- "null": no fine-tuning at all. Heirs still inherit the symbolic memory
+  store.
+
+Everything is deterministic: the same seed reproduces bit-for-bit. Different
+seeds are normal (an earlier study ran 40).
+
+
+2. WHAT THE AUDIT FOUND
+
+FINDING 1 - the treatment is the only source of variance.
+
+Agents are born identical within an arm. The intended differentiator was the
+sequential, rotating service of the pool: whoever is served last gets what the
+others left. Measured, that only bites when the pool is actually short. If the
+stock covers every announced withdrawal, order changes nothing and identical
+agents stay identical.
+
+The pool only runs short when the agents demand differently, and they only
+demand differently when their weights differ - that is, when the fine-tuned
+adapter differs. So:
+
+    adapter -> different behaviour -> different demand -> scarcity
+            -> sequential service bites -> heterogeneity
+
+In one probe, the "null" arm's eight agents were identical in EVERY recorded
+quantity across all three generations (harvest spread 0, energy spread 0,
+lifespan all equal, fitness spread 0). Its pool never fell below 59 percent of
+capacity and it never had a scarcity event. The two fine-tuned arms
+differentiated normally in the same seed.
+
+So the untreated control arm can be a frozen clone population: its fitness has
+zero variance, its tournament is a coin flip, and any outcome measured on it
+has zero within-group variance by construction.
+
+FINDING 2 - the outcome has one usable dimension out of four.
+
+The outcome is a "drift" vector with four named domains. Two things reduce it:
+
+(a) the domain is chosen by an argmax over which internal axis moved most in
+    that event. One axis (energy) moves at every single event because of
+    metabolism, so it almost always wins the argmax. Measured over 216 lives,
+    only two of the four domains were ever written, and two were written zero
+    times.
+(b) a domain is written only when the event's magnitude reaches a fixed
+    threshold. Measured, the individual channel crossed that threshold in 11
+    percent of lives; observed peaks sit just below it.
+
+In addition, one of the two domains that IS written is the domain used by a
+group-wide scarcity shock, which writes the same value into every agent of the
+arm at once. So the individually-informative part of the outcome is
+effectively one domain, present in 5 percent of readings.
+
+FINDING 3 - the parametric channel shrinks each generation.
+
+Each heir starts from its parent's adapter weights and then trains on its own
+life. The size of the weight change per generation fell monotonically in six
+of six lineages, by factors of 1.8x to 4.8x over three generations.
+
+
+3. CONSTRAINTS
+
+C1. No trait, disposition or strategy may be assigned to an agent, and the
+    agents' decision rule may not be edited. The claim under test is that
+    structure emerges from living rather than from being told.
+C2. All measurements are deterministic computations; no model-as-judge.
+C3. Any constant we change must be derivable from other constants by a stated
+    inequality, fixed before the run, and never chosen by looking at the
+    outcome.
+C4. Small numbers: 8 agents per arm per generation, 2 selection episodes per
+    seed, and a run costs hours of GPU time.
+
+
+4. THE QUESTIONS
+
+Q1. A CONTROL THAT CANNOT VARY.
+Our untreated arm has zero within-group variance in every measured quantity,
+because the treatment is also what generates heterogeneity. Is such an arm
+still a valid control, and is this situation named in the methodological
+literature (for example as a treatment that affects the variance rather than
+the mean, or as a control condition that is degenerate by construction)? What
+is the accepted way to report a comparison in which one arm's outcome has zero
+variance by construction rather than by measurement?
+
+Q2. TREATMENT-INDEPENDENT HETEROGENEITY.
+What mechanisms are used in agent-based or evolutionary simulation to generate
+within-population heterogeneity among initially identical agents WITHOUT
+assigning traits and WITHOUT the differentiator being the experimental
+treatment itself? We are aware of positional and order effects in sequential
+resource access; our finding is that these are conditional on scarcity. We are
+looking for mechanisms whose differentiating power does not vanish when
+resources are abundant, with sources.
+
+Q3. AN OUTCOME THAT IS BOTH ARGMAX-SELECTED AND THRESHOLDED.
+Our outcome vector records only the axis that moved most, and only when the
+movement exceeds a threshold. Are the pathologies of such a construction
+described anywhere (loss of dimensionality, dominance of a fast-moving axis,
+information destroyed below the threshold)? What alternatives are used when a
+multi-dimensional internal state must be summarised into a comparable outcome,
+and what do they assume?
+
+Q4. SHRINKING SUCCESSIVE UPDATES IN INHERITED PARAMETERS.
+When each generation resumes fine-tuning from its parent's parameters, the
+per-generation weight change shrinks monotonically. Is this a named phenomenon
+(for example loss of plasticity, saturation, or a consequence of repeated
+low-rank updates), what causes it, and what is known about whether the
+transmitted signal itself decays with it?
+
+Q5. MINIMAL EVIDENCE FOR CUMULATIVE INHERITANCE.
+In simulation studies claiming that an acquired change accumulates across
+generations rather than merely appearing once, what is the accepted minimum
+evidence - how many generations, what has to be shown about the control, and
+what claims does that evidence license? We want the reporting standard, not a
+design for our system.
+
+
+5. WHAT AN ANSWER THAT HELPS LOOKS LIKE
+
+- For each question either a sourced answer with a verbatim quotation, or an
+  explicit statement that the literature does not answer it.
+- Where fields disagree, both positions, named.
+- A bibliography with author, year, title, venue, DOI or arXiv id.
+- No recommendation about which option we should take. We need the named
+  phenomena and their assumptions; the choice is ours to defend in a
+  pre-registration.
