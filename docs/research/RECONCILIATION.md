@@ -1304,3 +1304,95 @@ sonuca göre seçmenin **en uç** hâli olurdu.
    kapasite sorusunun yerini alır** — sorun kaybolmuyor, yer değiştiriyor.
 5. ⚠ **Landmark'taki fark %0.76** ve rotasyon onu küçültüyor. **Pilotun ilk
    sorusu bu olmalı.**
+
+---
+
+# §Q — DR brief #9 mutabakatı: ön-kayıtlı uç nokta pilotta ölçülemez çıkarsa (2026-08-18)
+
+**Brief:** *"Revising a pre-registered primary endpoint after a pilot shows the
+endpoint cannot be measured, without turning the change into post-hoc
+selection."* Dört soru (Q1 uç nokta revizyonu · Q2 pozitif kontrol · Q3 nadir
+olayda örneklem · Q4 *"etki yok"* ile *"uç nokta duyarsız"* ayrımı).
+⚠ **Hedef değişti:** Gemini DR çalışmadığı için **ChatGPT Deep Research**
+kullanıldı. Yapı farklı ve **bu iş için daha iyi çalıştı** (aşağıya bak).
+
+## Q.0 ⭐ Kaynak sicili — bu kanalda **ilk kez sıfır kimlik hatası**
+
+Beş kaynağın beşi Crossref/arXiv'den **doğrulandı**: Evans 2007
+(`10.1371/journal.pctr.0020018`) · Harris ve ark. 2020
+(`10.3389/fpsyg.2020.00605`) · Haynes ve ark. 2021 (`10.21105/joss.03118`) ·
+McGrath & Burke (`arXiv:2109.02516`) · Dienes 2014
+(`10.3389/fpsyg.2014.00781`).
+
+⭐ **Ve alıntılar kaynakta var.** Evans'ın *"independent of the data"* ve
+*"cherry-picking"* cümlelerini, Harris'in *"sensitive to variation… novices and
+experts"* cümlesini birebir buldum. ⚠ Bu, **D-076'nın yakaladığı kusur türünün
+(doğru kimlik, yanlış iddia) bu turda çıkmadığı** anlamına gelir — ve onu
+yakalayan şey **DOI değil, S2'nin birebir alıntı şartıydı**.
+
+⇒ **D-080 ve D-082'de eklediğimiz iki süreç şartı ilk kez eksiksiz tuttu:**
+kaynakça verildi, satır numarası yerine alıntı verildi, ve **boşluk ilan
+edildi** (*"Harris 'positive control' terimini kullanmıyor"* — teyit ettim,
+doğru).
+
+⚠ İki eksik künye, kimlik hatası **değil**: Harris ve ark. **beş** yazarlı
+(Samuel J. Vine atlanmış) · McGrath & Burke'ün *"2024"*ü yayın yılı değil **v4
+tarihi** (arXiv'e 2021-09-06'da girmiş).
+
+## Q.1 Mutabakat tablosu
+
+| # | Rapor ne diyor | Kod/tasarım ne yapıyor | Karar |
+|---|---|---|---|
+| 1 | Uç nokta değişikliği **veriden bağımsız** olmalı; bağımsız kurul, körlük açılmadan (Evans) | ⚠ **Brief eksik sordu.** Evans *koşum ortasını* anlatıyor. Kilitli ön-kayıt tek soy çalışmasınındı, **bitti ve null raporlandı**; ikinci ön-kayıt **taslak**; B1 **pilot** (JSON'un ilk alanı: *"exploratory, not pre-registered"*) | **uyumlu** — pilottan uç nokta seçmek pilotun görevidir. ⭐ Evans'ın soyut şartının bizdeki karşılığı **zaten var**: §6 tohum yakma |
+| 2 | Cherry-picking tip-1 hatasını şişirir (Evans) | §2.7 + L9 aynısını söylüyor | **uyumlu**; iki reddi dışarıdan doğruluyor: travma eşiğini indirme · ömrü sonradan uç nokta yapma |
+| 3 | Construct validity = *"gerçekten farklı olanı ayırt edebilme"* (Harris) | ⚠ **DR fazla genelledi** ve kendisi itiraf etti. Harris simülasyonu **gerçek dünyaya** karşı doğruluyor; bizde referans yok | **kısmen uyumlu** — kullanılabilir kısım *simülasyonun gerçekçiliği* değil **aletin duyarlılığı** |
+| 4 | Kesinlik temelli örneklem, etki varsaymadan (Haynes) | Doğrudan uygulanabilir; B1 oranı verdi | **uyumlu ve kullanılabilir** — P7-a'nın sorusunu değiştiriyor |
+| 5 | Çok küçük p'de küçük n sıfır olay verir (McGrath & Burke) | p ≈ 0.042; onların örneği 10⁻⁵ | **uyumlu ama marjinal** |
+| 6 | Anlamsızlık ≠ etki yok; TOST / Bayes faktörü (Dienes) | ⛔ **P7-b ile çarpışıyor** (ilk koşum kestirimdir) ve TOST *"en küçük anlamlı etki"*yi önceden isimlendirmeyi şart koşuyor — **DR #1'in cevaplanmamış sorusu** | **uyumlu ama kapalı bir kararı açıyor** |
+| 7 | Q2'nin çekirdeği (çalışmanın etkisine bakmadan pozitif kontrol) | Harris vermiyor, DR de veremedi | **boşluk, ilan edilmiş** |
+
+## Q.2 ⭐ Bu turun bulduğu gerçek boşluk — alet değil, evren
+
+Harris'in fikrini kodda aradım:
+
+- **Birim düzeyinde pozitif kontrol ZATEN VAR:** `test_drift.py` 0.69'da drift
+  yazılmadığını, **0.70'te yazıldığını** tutuyor; `test_cprime_multigen`
+  landmark okuyucusunun `z` ürettiğini tutuyor.
+- **Sistem düzeyinde YOK:** bugüne kadar hiçbir koşum, **canlı bir ajanın
+  10. olaydan önce 0.7 eşiğini geçtiğini** düzenli biçimde göstermedi.
+
+⇒ **Alet çalışıyor; evren o girdiyi üretmiyor.** D-109'da *"uç nokta bozuk"*
+diye okunabilecek ifade böylece daraltıldı.
+
+## Q.3 P7-a yeniden tanımlandı — saat değil **kesinlik**
+
+B1'in kendi sayısı: landmark'ta `z` dolu olan **ajan-nesli 3/72 = %4.2**.
+Wald yaklaşımıyla (`n = z²p(1−p)/h²`):
+
+| yarı-genişlik | gereken ajan-nesli | B1 hızında |
+|---|---|---|
+| ±0.05 | **61** | ~1.1 sa |
+| ±0.03 | **170** | ~3.0 sa |
+| ±0.02 | **383** | ~6.7 sa |
+
+⚠ **Bu yalnız ORANI kestirir.** Kollar arasında nadir bir olayın farkını
+görmek kat kat fazlasını ister; o hesap ayrıdır ve yapılmadı.
+⚠ Wald aralığı küçük p'de zayıftır (McGrath & Burke'ün konusu) — kesinleşecekse
+Wilson ya da tam aralık kullanılmalı.
+
+## Q.4 Alınmayanlar
+
+- **Dienes'in TOST'u şimdi alınmadı:** *"en küçük anlamlı etki"* isimlendirmeden
+  uygulanamaz ve o değer §2.7 gereği kalibrasyon ister. **Yasin'in kararı.**
+- **Harris'in "gerçek dünyaya karşı doğrulama"sı alınmadı:** karşılığı yok.
+- **DR'ye *"hangi uç noktayı seçelim"* sorulmadı** (bilerek, §9/D-007) ve DR de
+  önermeye kalkışmadı — brief'in *"NOT asking"* bölümü işini yaptı.
+
+## Q.5 Süreç dersi
+
+⭐ **Üç turdur eklenen şartların üçü de bu turda meyve verdi:** DOI (D-065),
+birebir alıntı (D-080), kaynakça + boşluk ilanı (D-082). Sonuç: **doğrulaması
+en kolay, hatası en az DR turu.**
+⚠ **Ama şart listesi kusuru engellemiyor, yakalanabilir kılıyor** — 3 numaralı
+satırdaki aşırı genelleme yine de geçti, ve onu yakalayan şey **kodun kendisiydi**
+(§2.2: belgeye değil dosyaya güven).

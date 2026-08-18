@@ -8417,3 +8417,96 @@ yazılır ve **taze tohumla** sınanır.
 **ölçülebilir bir şey üretmiyor**. Bunun üç olası sebebi var (travma hiç
 tetiklenmiyor · landmark çok erken · drift bayrağı çok seyrek) ve **hiçbiri bu
 koşumdan ayırt edilemez**. Bu bir **tasarım kararıdır (D-007) ve Yasin'indir.**
+
+---
+
+## D-110 · 2026-08-18 · **DR #9 mutabakata bağlandı** (§Q) — ⭐ ilk sıfır-kimlik-hatalı tur · uç nokta değişikliği **meşru** çıktı
+
+**Brief:** *"Ön-kayıtlı birincil uç nokta pilotta ölçülemez çıkarsa, post-hoc
+seçim yapmadan nasıl değiştirilir."* Dört soru. Ham cevap sohbette geldi,
+mutabakat `docs/research/RECONCILIATION.md` **§Q**.
+
+⚠ **Kanal değişti:** Gemini DR çalışmadığı için **ChatGPT Deep Research**.
+⭐ Ve bu iş için **daha iyi çalıştı** — aşağıdaki sicile bak.
+
+### 1. ⭐ Kaynak sicili: **5/5 kimlik doğru, alıntılar kaynakta**
+
+Bu kanalda **ilk kez sıfır kimlik hatası** (önceki turlarda toplam **12** hata
+çıkmıştı, ve D-076'da *"doğru kimlik, yanlış iddia"* diye yeni bir kusur türü
+bulunmuştu). Beş DOI/arXiv kimliği Crossref'ten teyit edildi, ve **Evans ile
+Harris'in alıntıları kaynakta birebir bulundu**.
+
+⇒ **Üç turdur eklenen üç şartın üçü de meyve verdi:** DOI (D-065) · birebir
+alıntı (D-080) · kaynakça + boşluk ilanı (D-082). ⭐ DR **kendi boşluğunu ilan
+etti** (*"Harris 'positive control' terimini kullanmıyor"*) ve teyit edildi.
+
+⚠ Kimlik hatası **değil** ama kayda geçer: Harris ve ark. beş yazarlı (biri
+atlanmış) · McGrath & Burke'ün *"2024"*ü **v4 tarihi**, yayın yılı değil.
+
+### 2. ⛔ En önemli sonuç: **soruyu ben yanlış çerçevelemişim**
+
+Evans'ın kuralı *"koşum sürerken uç nokta değiştirmek"* hakkında. **Biz koşum
+ortasında değiliz:**
+
+- kilitli ön-kayıt (`befd72b4ee57`) **tek soy** çalışmasınındı ⇒ **bitti, null
+  raporlandı** (`B2_RESULTS.md`)
+- ikinci ön-kayıt **taslak**, altında hiç doğrulayıcı veri toplanmadı
+- B1 bir **pilot** — JSON'un ilk alanı: `"exploratory, not pre-registered"`
+
+⇒ ⭐ **Pilottan uç nokta seçmek post-hoc değildir; pilotun görevinin ta
+kendisidir.** Meşru olmayan tek şey, **kilitlendikten sonra** oynatmaktır.
+⭐ Ve Evans'ın soyut şartının (*"veriden bağımsızlık"*) bizdeki operasyonel
+karşılığı **zaten var**: §6'nın tohum yakma politikası.
+
+⇒ **D-109'un *"uç nokta kararı"* maddesi bu yüzden bir engel değil, normal bir
+tasarım adımı.** Değişmeyen tek şart: yeni uç nokta **taze tohumla** ve
+**kilitten önce** yazılır.
+
+### 3. ⭐ Kodda bulunan gerçek boşluk — alet değil, **evren**
+
+Harris'in pozitif kontrol fikri kodda arandı:
+
+| düzey | durum |
+|---|---|
+| **birim** | ✅ **var** — `test_drift.py` 0.69'da drift yazılmadığını, **0.70'te yazıldığını** tutuyor; `test_cprime_multigen` okuyucunun `z` ürettiğini tutuyor |
+| **sistem** | ⛔ **yok** — hiçbir koşum, canlı bir ajanın **10. olaydan önce 0.7 eşiğini geçtiğini** düzenli olarak göstermedi |
+
+⇒ **Alet çalışıyor, evren o girdiyi üretmiyor.** D-109'da *"uç nokta bozuk"*
+diye okunabilecek ifade bununla daraltılıyor.
+
+### 4. P7-a yeniden tanımlandı — **saat değil kesinlik** (Haynes ve ark.)
+
+Ölçülen: landmark'ta `z` dolu olan **ajan-nesli 3/72 = %4.2**.
+`n = z²p(1−p)/h²` ile:
+
+| yarı-genişlik | ajan-nesli | B1 hızında |
+|---|---|---|
+| ±0.05 | 61 | ~1.1 sa |
+| ±0.03 | 170 | ~3.0 sa |
+| ±0.02 | 383 | ~6.7 sa |
+
+⇒ P7-a'nın sorusu artık *"kaç saat"* değil ***"olay oranını hangi kesinlikle
+bilmek istiyoruz"***.
+⚠ **Yalnız ORANI kestirir** — kollar arası farkı görmek kat kat fazlasını ister.
+⚠ Wald aralığı küçük p'de zayıf; kesinleşirse **Wilson/tam aralık** kullanılmalı.
+
+### 5. ⏸ Alınmayan: **Dienes'in eşdeğerlik testi**
+
+*"Anlamsızlık ≠ etki yok"* bizde **zaten ilan edilmiş sınır** (§11'in
+*"ölçemedik"* ≠ *"etki yok"* ayrımı, L9/L10) ⇒ literatür **yeni bir şey
+eklemedi, var olanı doğruladı**.
+
+⛔ TOST/Bayes faktörünü **benimsemek iki kapalı kararı açar**:
+1. **P7-b** — *"ilk koşum kestirimdir, hipotez testi değildir"* (D-096). Analiz
+   aracı kasten **hiç p-değeri üretmiyor** ve bunu bir test bekçiliği tutuyor.
+2. **En küçük anlamlı etki** önceden isimlendirilmeli — **DR #1'in (S4) hâlâ
+   cevaplanmamış sorusu**, ve §2.7 kalibre edilmemiş eşik seçmeyi yasaklıyor.
+
+⇒ **Karar Yasin'in.** Bugün alınmadı.
+
+### 6. Süreç dersi
+
+⚠ **Şart listesi kusuru engellemiyor, yakalanabilir kılıyor.** 3 numaralı
+iddia (Harris'in construct validity'sini *"pozitif kontrol"*e genellemesi)
+şartların hepsini geçti; onu yakalayan şey **kodun kendisi** oldu (§2.2:
+belgeye değil dosyaya güven).
