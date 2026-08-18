@@ -124,11 +124,71 @@ gerçekleşti. Üçüncü ön-kayıtın çözmesi gereken şey budur; uç nokta 
 
 ---
 
-## Bu denetimin **kapatmadığı** yerler
+## 9. ⛔⛔ `z`'nin gerçek boyutu — **dörtte bir**
 
-⚠ Dürüstlük için: aşağısı okunmadı, dolayısıyla sürpriz **hâlâ mümkün**.
+`DriftState` **dört** alan taşıyor (`energy` · `resource` · `social` ·
+`uncertainty`), ama alanı seçen şey `_primary_affected_domain`
+(`graph.py:842`): **en çok oynayan ekseni** alıyor.
 
-- `MemoryStore` / Ebbinghaus silme oranlarının varise ne taşıdığı (GAP-4 açık)
-- `precision_weight`'in PE'ye katkısı (L13: mekanizma atıl)
-- `social` alanının drift'e katkısı (C2'de `social` alanı `z`'de hiç görünmedi)
-- Adapter sönümünün (3.56 → 0.98) uzun soylarda nereye gittiği
+| eksen | her olayda oynuyor mu |
+|---|---|
+| `energy` | ✅ **her olayda** — metabolizma + hasat |
+| `resource` | ✅ havuz yükü |
+| `social` | ⚠ yalnız `opponent_id` varken, **ve delta hesaplandıktan SONRA** (`graph.py:1228` ↔ `1177`) ⇒ bir olay **gecikmeli** |
+| `uncertainty` | ⚠ nadiren |
+
+⇒ Enerji her olayda oynadığı için argmax'ı pratikte **hep o ya da `resource`**
+kazanıyor. **Ölçüldü (C2, 216 yaşam):** `z` bayraklarında görülen alanlar
+**yalnız `energy` ve `resource`** — `social` ve `uncertainty` **sıfır kez**.
+
+⚠ Ve `resource`, krizin **sabit** alanı. ⇒ **Bireysel kanalın kullanılabilir
+tek boyutu `energy`**, ve o da 216 okumanın **11'inde** dolu.
+
+⚠ **Yan olgu:** popülasyondaki sekiz ajanın hepsi **aynı NPC** ile eşleşiyor
+(`opponent_id = "cprime-npc-opponent"`) ⇒ ajanlar birbirleriyle **sosyal olarak
+hiç etkileşmiyor**; ortaklıkları yalnız mera.
+
+## 10. `precision_weight` (π)
+
+Kodda canlı (`graph.py:96–97, 384`) ve PE satırına yazılıyor, ⚠ ama **sonuç
+dosyasına hiç çıkmıyor** — popülasyon koşumunun ajan satırında `precision`
+alanı **yok**. ⇒ L13'ün *"mekanizma atıl"* teşhisi bu koşumdan **doğrulanamaz
+da çürütülemez de**; nicelik dışarı hiç raporlanmıyor.
+
+## 11. Kasa → varis (GAP-4)
+
+Miras alınan anı sayısı nesilden nesle **artıyor** ve **her kolda**:
+
+| kol (s9911) | gen1 | gen2 | gen3 |
+|---|---|---|---|
+| `lived` | 10.0 | 13.6 | 14.6 |
+| `null` | 10.0 | **11.0** | **14.4** |
+| `shuffle` | 10.0 | 14.2 | 15.9 |
+
+⇒ ⚠ **`null` da kasadan miras alıyor** (14.4 anı) **ve yine de ajanları klon
+kalıyor** (D-129). ⇒ **Sembolik kanal tek başına davranışı ayırmıyor** — bu,
+denetimin en doğrudan ölçülmüş sonucu, ve GAP-4'ün *"kasa ile ağırlıklar
+ayrışabilir"* endişesini somutlaştırıyor.
+
+## 12. ⚠ Adapter sönümü — nesilden nesle **azalıyor**, altı koşumun altısında
+
+| kol · tohum | gen1 | gen2 | gen3 |
+|---|---|---|---|
+| `lived` s9911 | 3.563 | 2.140 | **0.977** |
+| `lived` s9912 | 2.040 | 0.563 | **0.422** |
+| `lived` s9913 | 3.673 | 3.038 | **1.991** |
+| `shuffle` s9911 | 3.565 | 2.326 | 1.106 |
+| `shuffle` s9912 | 2.045 | 0.594 | 0.878 |
+| `shuffle` s9913 | 3.675 | 2.371 | 1.128 |
+
+⇒ **6/6 dizide gen1 > gen3**, oran **1.8× – 4.8×**. Mekanizma yapısal: varis
+ebeveynin adapter'ından başlıyor (D-102), yani zaten kısmen eğitilmiş bir
+noktadan; ek adım küçülüyor.
+⚠ **Uzun soylarda parametrik kanalın doygunluğa gitmesi riski** — ölçülmedi,
+ama üç nesilde **tutarlı** azalma var.
+
+## Bu denetimin **hâlâ kapatmadığı** yer
+
+- Ebbinghaus'un **hangi** anıları sildiği ve silinenin LoRA'daki izinin
+  kalması (GAP-4'ün ikinci yarısı) — kasanın **sayısı** ölçüldü, **içeriği**
+  değil.
