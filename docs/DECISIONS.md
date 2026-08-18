@@ -8510,3 +8510,93 @@ eklemedi, var olanı doğruladı**.
 iddia (Harris'in construct validity'sini *"pozitif kontrol"*e genellemesi)
 şartların hepsini geçti; onu yakalayan şey **kodun kendisi** oldu (§2.2:
 belgeye değil dosyaya güven).
+
+---
+
+## D-114 · 2026-08-18 · **Headroom koşumu** — ⛔ abort **doğruydu**, ⭐ checkpoint kurtardı, ⭐⭐ oran **tohuma bağlı: %0 ile %36 arası**
+
+**Koşum:** tohum 9902·9903·9904 · N=8 · G=3 · 30 olay · üç kol + replay ·
+**~5 sa 20 dk** · ilan edilmiş amacı **seviye 0**: travma eşiğini geçme oranı.
+Ham veri `dau_runs/headroom_n8_g3_s3.json.partial.json` ⚠ **checkpoint dosyası,
+sonuç değil** — hiçbir kapı üzerinden geçmedi.
+
+### 1. ⛔ Koşum I1.1'den abort etti — ve **abort doğruydu**
+
+```
+I1.1: 2 train arm(s) never had lora_B read:
+  seed=9903/g2/pop-shuffle-s9903-a1-g2-h1
+  seed=9904/g3/pop-shuffle-s9904-a7-g2-h1-g3-h3
+```
+
+Sebep **"no preference pairs" değil**: `train failed: CUDA out of memory`.
+⇒ Bu **sessiz bir yaşam değil, sessiz bir alet** — tam olarak D-108'in muaf
+tutmayı **reddettiği** durum.
+
+⭐⭐ **D-108'in tasarımı üretimde kendini kanıtladı.** Muafiyeti *sayıya*
+bağlasaydım (reddettiğim kolay sürüm), bu iki OOM hatası **sıfır çift
+raporladığı için** muaf tutulur, koşum `clean` damgalanır ve **hiç eğitilmemiş
+iki ajanla** rapor edilirdi. Muafiyet **sebebe** bağlı olduğu için tuttu.
+
+### 2. ⭐ D-111 beş saatlik koşumu kurtardı
+
+Abort JSON yazmadı — **ama checkpoint diskte:** 301 KB, **9 kolun 9'u**,
+216 yaşamın 216'sı. Dün gece aynı olay ~5 saatlik GPU'yu buharlaştırırdı
+(D-108 ve elektrik kesintisi bunu iki kez yapmıştı).
+
+### 3. Ölçüm — ilan edilmiş amaç
+
+| | değer |
+|---|---|
+| ölçülen yaşam | **216/216** (hedeflenen örneklem tam) |
+| eşiği geçen | **32/216 = %14.8** · %95 **Wilson** [%10.7, %20.2] |
+| ulaşılan yarı-genişlik | **±0.047** ⚠ hedef **±0.03** idi — tutmadı |
+| en yüksek magnitude | min 0.339 · **medyan 0.606** · max 0.820 |
+
+### 4. ⭐⭐ Asıl bulgu: **havuzlanmış sayı yanıltıcı** — tohumlar ortak bir orana sahip değil
+
+| tohum | geçen / yaşam | oran | %95 Wilson |
+|---|---|---|---|
+| 9902 | 6/72 | **%8.3** | [3.9, 17.0] |
+| 9903 | 26/72 | **%36.1** | [26.0, 47.7] |
+| **9904** | **0/72** | **%0.0** | [0.0, 5.1] |
+| *(B1: 9901)* | *3/72* | *%4.2* | — |
+
+⇒ **Oran %0 ile %36 arasında değişiyor**, ve aralıkları **örtüşmüyor**
+(9903 ile 9904). Havuzlanmış %14.8 **ortak bir p varsayıyor ve o varsayım
+tutmuyor** ⇒ tek sayı olarak **kullanılamaz**.
+
+⇒ ⛔ **Uç nokta kararı için asıl sonuç bu:** `z`'nin **ölçülebilirliği tasarımın
+değil, tohumun nişinin özelliği**. Bir nişte 72 yaşamda **hiç** ateşlenmiyor.
+Bu, kollar arası karşılaştırmayı tohumlar arasında **yapısal olarak eşitsiz**
+kılar — ve seviye 1'in *"işaret tohumlar arası tutarlı"* şartı, `z`'nin hiç
+değişmediği bir tohumda **sorulamaz bile**.
+
+⚠ **D-109'un *"uç nokta dejenere"* okuması da, ara sonuçtaki *"dört kat
+yüksek, A'yı işaret ediyor"* okumam da eksikti.** Doğrusu: **uç nokta bazı
+nişlerde çalışıyor, bazılarında hiç çalışmıyor.** ⇒ Bu projede tek tohumla
+yazılan bulgunun düşmesinin **beşinci** örneği, ve bu kez düşen **kendi iki
+okumam**.
+
+### 5. Yan gözlemler — iddia değil
+
+- **Tepe magnitude'lar kuantize:** 0.6002 ×24 · 0.6071 ×24 · 0.82 ×24 · 0.621
+  ×12. **24 = 8 ajan × 3 nesil**, yani **bir kolun bütün ajanları bütün
+  nesillerde aynı tepe değerini** görüyor ⇒ ajanlar tepe olayında **ayrışmıyor**.
+- **`null` kolu da eşiği geçiyor** ⇒ geçmek eğitimin eseri değil.
+
+### 6. ⛔ C1 için gerçek engel: **GPU belleği**
+
+280 OOM uyarısı, **2'si ölümcül**. Log boyunca dağılım düz (dilim başına
+0–52), **artan değil** ⇒ sızıntı değil, **kronik bellek baskısı**: 8 GB'lık
+kartta 4-bit Llama 8B + LoRA eğitimi tavana yakın çalışıyor.
+
+⇒ 20 saatlik ana koşumda bu **kesin** vurur. En güvenli kaldıraç, hatanın
+kendi önerisi: `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` —
+**tahsis edici davranışını** değiştirir, **hesabı değil**.
+⚠ `DPO_BATCH_SIZE` / `DPO_MAX_SEQUENCE_TOKENS` düşürmek de bellek kazandırır
+ama **ön-kayıtlı sabitlerdir** ve eğitimi değiştirir ⇒ D-kaydı + Yasin onayı.
+
+### 7. Disiplin notu (§7)
+
+Koşum sürerken **ara sonuca bakıldı** (120 yaşamda %18.3). Kayda geçiyor.
+**N değiştirilmedi**, koşum ne durduruldu ne uzatıldı.
