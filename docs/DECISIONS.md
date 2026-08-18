@@ -8943,3 +8943,88 @@ uyup uymadığı **okunmadan iddia edilemez**.
 1. ⚠ **Sistematik derleme değil** — adaylar benim bildiklerimden çıktı.
 2. ⚠ **Tam metinler okunmadı**; iddia doğrulaması iki özetle sınırlı.
 3. ⚠ Karar **hâlâ Yasin'in** (D-007). Bu kayıt seçenekleri sıralıyor, seçmiyor.
+
+---
+
+## D-120 · 2026-08-18 · ⛔⛔ **DR #10 mutabakatı: cevap sağlam ama soru yanlış tarif edilmişti** — ve ölçüm **D seçeneğini eledi**
+
+Mutabakat tablosu `RECONCILIATION.md` **§S**. Ham cevap sohbetten alındı.
+
+### 1. Kaynak sicili — 5/6 temiz, **13. kimlik hatası**
+
+❌ **Rothenberg 1971 `10.2307/1913258`** → gerçekte **Kamien & Schwartz**,
+*Limit Pricing and Uncertain Entry*. Doğrusu **`10.2307/1913267`**.
+⚠ Yine **komşu numara** deseni — aynı desen bu turda **bende de** çıkmıştı
+(§R: `10.1086/285447` ↔ `285438`).
+⛔ İki *"kaynak"* alınmadı: *"CONSORT 2025"* (konusu bu değil, künye yok) ve
+*"Standard Parameter Identification Theory"* (kaynak değil, alan adı).
+⚠ Wooldridge ve Lynch & Walsh **kitap** ve bölüm iddiaları doğrulanamadı ⇒
+yön olarak not, **kanıt olarak alınmadı**.
+
+### 2. ⛔⛔ Asıl bulgu: **brief'imiz sistemi yanlış tarif etti**
+
+Brief'e *"her ajan **özdeş** bir artış alır"* yazdım. **Kod öyle demiyor**
+(`drift.py:58`): artış `magnitude × exp(-current / TRAUMA_DECAY_BASE)` ⇒
+**ajanın o anki drift'ine bağlı**.
+
+| `z` öncesi | sonrası | artış |
+|---|---|---|
+| **0.00** | 1.0000 | **1.0000** |
+| 0.20 | 1.0187 | 0.8187 |
+| 1.00 | 1.3679 | 0.3679 |
+
+Harita **monoton** (sıralama hiç tersinmiyor) ama **sıkıştırıcı** (~10.7×), ve
+türev **tam `z=0`'da sıfır**.
+
+⇒ **DR'nin Q1 cevabının tamamı** (TWFE · CWC · `c²` · CCE) *"toplamsal ve
+özdeş şok"* varsayıyor ⇒ **bizde uygulanamaz**. ⚠ DR'nin suçu değil:
+**girdiyi biz yazdık.** *"Brief kalitesi girdi kalitesiyle sınırlı"*
+dersinin **dördüncü** örneği (D-006'dan beri).
+
+### 3. ⭐⭐ Ölçüm seçeneği tersine çevirdi — **D en kötüsü**
+
+27 hücre (3 tohum × 3 kol × 3 nesil), `headroom_n8_g3_s3` checkpoint'i:
+
+| tanım | hücre içi **tek değer** |
+|---|---|
+| bugünkü `z` | **14 / 27** |
+| ⛔ **seçenek D** (yalnız bireysel kanal) | **en az 21 / 27** |
+
+**Sebep koddan okundu:** bireysel kanal `magnitude ≥ 0.7` ile ateşleniyor ve
+landmark'tan (olay 10) **önce neredeyse hiç ateşlenmiyor** ⇒ `z_before` çoğu
+ajanda **tam 0**. Kriz o sıfırları *hepsi 1.0*, D seçeneği *hepsi 0.0* yapıyor.
+
+⇒ ⭐ **Sorun ortak şok değil, bireysel kanalın sessizliği.** Farklar **var
+olduğunda** krize rağmen yaşıyor: 9904'te her nesilde kriz var, yine de bir
+hücrede **4 farklı `z`**.
+
+⚠ **D-115'in okuması daralıyor** (yanlış değil): *"herkese aynı şey oldu"*
+doğru, ama sebebi krizin gücü değil, **ateşlenmeyen bireysel kanal**.
+
+⚠ **Sınır:** D'nin yeniden kurulumu **yaklaşık** — `delta_profile` yaşamın
+**tamamını**, `z` ise **olay 10'u** okuyor. Kesin olan alt sınır: bireysel
+geçişi **0/8** olan hücreler D altında **tam** dejenere ⇒ **21/27**.
+
+### 4. Alınanlar
+
+1. ⭐ **Dejenere uç nokta ilanı** — `Var(z)=0` hücre *"sıfır seçilim ölçtük"*
+   değil ***"seçilim tanımsız"*** raporlanacak (Rothenberg 1971,
+   `10.2307/1913267`, düzeltilmiş künyeyle).
+2. ⭐ **Pozitif kontrol özelliği** — krizden bağımsız değişen bir nicelikte
+   (ör. `energy_mean_over_life`, 0.59–0.86) `Cov(w,·) ≠ 0` gösterilirse
+   seçilim motorunun çalıştığı ayrıca kanıtlanır. ⚠ Koşumdan **önce** ilan
+   edilir, **Lamarckçı iddia değildir**.
+3. ✅ Q4'ün üç sınır koşulu ikinci ön-kayıta girdi.
+4. ✅ Q2 (**içsel şoku çıkarmak = müdahale-sonrası koşullanma riski**) §R ile
+   **bağımsız olarak kesişti** ⇒ D iki yoldan zayıfladı, ölçüm üçüncüsü oldu.
+
+### 5. ⇒ Karar 1 yeniden çerçevelendi
+
+Eski çerçeve *"krizi uç noktadan çıkaralım mı"*ydı. **Yanlış soruymuş.**
+Gerçek soru: **bireysel kanal landmark'tan önce neden ateşlenmiyor, ve bu
+tasarım kararıyla mı yoksa evrenin kendisiyle mi ilgili?**
+
+Yeni seçenek kümesi (karar **Yasin'in**, D-007) sohbette sunuldu.
+⚠ Hiçbiri **etkiye bakılarak** seçilmeyecek (L9); yukarıdaki bütün sayılar
+**hücre içi çeşitlilik** sayıları, **kol karşıtlığı değil** — kol karşıtlığına
+bakılmadı.

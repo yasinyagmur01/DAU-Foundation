@@ -1487,3 +1487,119 @@ söylüyor) doğrulanabildi. Heisler & Damuth'un contextual analysis'inin bizim
    ve müdahale-sonrası koşullanmaya çıkarsa, iki yol aynı yere varmış olur
    (D-065/J20 deseni). Çıkmazsa, **hangisinin eksik olduğu** sorusu açılır.
 4. Ancak ondan sonra **uç nokta kararı** — ve karar **Yasin'in** (D-007).
+
+---
+
+# §S — **DR #10 mutabakatı** (2026-08-18, D-120) · ⛔ **cevap sağlam, ama sorduğumuz sistem yanlış tarif edilmişti**
+
+**Kanal:** Gemini Deep Research (⚠ CLAUDE.md §9 *"ChatGPT DR"* diyordu; **bu tur
+Gemini'ydi** — belge düzeltildi).
+
+## S.0 Kaynak sicili — **beşin dördü temiz, biri 13. kimlik hatası**
+
+| DR'nin verdiği | Crossref | karar |
+|---|---|---|
+| Price 1972, `10.1111/j.1469-1809.1957.tb01874.x` | ✅ **doğru** (1957'li dizge Wiley'nin eski numarası, gerçek) | alındı |
+| Angrist & Pischke, `10.2307/j.ctvcm4j72` | ✅ doğru (kitap) | alındı |
+| Eldridge ve ark. 2016, `10.1136/bmj.i5239` | ✅ doğru | alındı |
+| Cinelli, Forney & Pearl, `10.1177/00491241221099552` | ✅ doğru | alındı |
+| Enders & Tofighi 2007, `10.1037/1082-989X.12.2.121` | ✅ doğru | alındı |
+| Pesaran 2006, `10.1111/j.1468-0262.2006.00692.x` | ✅ doğru | alındı |
+| ❌ **Rothenberg 1971, `10.2307/1913258`** | **Kamien & Schwartz**, *Limit Pricing and Uncertain Entry* | ⛔ **düzeltildi: `10.2307/1913267`** |
+| ⚠ Wooldridge 2010 / Lynch & Walsh 1998 | kitap, DOI verilmedi; **bölüm iddiaları doğrulanamadı** | yön olarak alındı, alıntı olarak **alınmadı** |
+| ⛔ *"CONSORT 2025 Guidelines"* → **pozitif kontrol** satırının kaynağı | künye yok; CONSORT'un konusu bu değil | ⛔ **alınmadı** |
+| ⛔ *"Standard Parameter Identification Theory"* bir kaynak olarak | kaynak değil, alan adı | ⛔ **alınmadı** |
+
+⚠ **Desen tekrar etti:** hatalı DOI, doğru makalenin **komşu numarası**
+(`1913258` ↔ `1913267`). Aynı desen bu turda **bende de** çıkmıştı (§R).
+
+## S.1 ⛔⛔ Turun asıl bulgusu — **brief'imiz sistemi yanlış tarif etti**
+
+Brief §2'de şunu yazdım:
+
+> *"The crisis applies a fixed magnitude to EVERY agent of that arm at the
+> SAME event. The magnitude is a constant, so **every agent receives an
+> identical increment**."*
+
+**Kod böyle demiyor** (`drift.py:58`):
+
+```
+new_magnitudes[domain] = current + magnitude * exp(-current / TRAUMA_DECAY_BASE)
+```
+
+⇒ Uygulanan artış **sabit değil**, ajanın **o anki drift'ine bağlı**. Ölçüldü
+(`m = 1.0`, `TRAUMA_DECAY_BASE = 1.0`):
+
+| `z` (kriz öncesi) | kriz sonrası | artış |
+|---|---|---|
+| **0.00** | 1.0000 | **1.0000** |
+| 0.20 | 1.0187 | 0.8187 |
+| 0.60 | 1.1488 | 0.5488 |
+| 1.00 | 1.3679 | 0.3679 |
+
+⇒ Harita **monoton** (türev ≥ 0, hiç ters dönmüyor) ama **sıkıştırıcı**: 0.20'lik
+bir fark 0.0187'ye iniyor (**~10.7 kat**). ⚠ Ve türev **tam `z=0`'da sıfır** —
+yani sıkıştırma en çok **ajanlarımızın yaşadığı yerde**.
+
+⇒ ⛔ **DR'nin Q1 cevabının tamamı (TWFE · CWC · `c²` · CCE) "şok toplamsal ve
+özdeş" varsayımına dayanıyor** ve bu varsayım **bizde tutmuyor**. DR'nin suçu
+değil — **girdiyi biz yazdık.** Bu, *"brief kalitesi girdi kalitesiyle
+sınırlıdır"* dersinin **dördüncü** örneği.
+
+## S.2 ⭐⭐ Ve ölçüm, seçeneği tersine çevirdi: **D en kötüsü**
+
+27 hücre (3 tohum × 3 kol × 3 nesil), `headroom_n8_g3_s3` checkpoint'inden:
+
+| tanım | hücre içi **tek değer** (dejenere) |
+|---|---|
+| **bugünkü `z`** (iki kanal birlikte) | **14 / 27** |
+| **seçenek D** (yalnız bireysel kanal) | ⛔ **en az 21 / 27** |
+
+**Sebep, koddan:** bireysel kanal `magnitude ≥ 0.7` ile ateşleniyor ve
+**landmark'tan (olay 10) önce neredeyse hiç ateşlenmiyor** ⇒ `z_before` çoğu
+ajanda **tam olarak 0**. Kriz o sıfırları **hepsi 1.0** yapıyor; D seçeneği ise
+**hepsi 0.0** yapıyor. **İkisi de dejenere**, ve D daha sık.
+
+⇒ ⭐ **Sorun ortak şok değil.** Sorun: **bireysel kanal landmark'tan önce
+yeterince ateşlenmiyor.** Kriz bilgi yok etmiyor, **olmayan bilgiyi
+gizlemiyor** — sadece sabit bir değere taşıyor. Farklar **var olduğunda**
+krize rağmen hayatta kalıyor (9904'te, her nesilde kriz olmasına rağmen bir
+hücrede **4 farklı `z`**).
+
+⚠ Bu, D-115'in *"herkese aynı şey oldu"* okumasını **daraltıyor**: doğru, ama
+sebebi krizin gücü değil, **bireysel kanalın sessizliği**.
+
+## S.3 Mutabakat tablosu
+
+| # | DR ne diyor | kod/veri ne diyor | karar |
+|---|---|---|---|
+| 1 | Q1: ortak şoku TWFE/CWC/`c²`/CCE ile ayır | ⛔ hepsi **toplamsal özdeş şok** varsayıyor; bizim artış `m·e^{-z/B}` | **brief yanılmış** (bizim hatamız) ⇒ Q1 **uygulanamaz** |
+| 2 | Q2: içsel şoku çıkarmak *bad control* / müdahale-sonrası koşullanma | ✅ kriz gerçekten içsel (ajan davranışından) | **uyumlu** — ve §R'de bağımsız olarak aynı yere varmıştım (**iki yol kesişti**) |
+| 3 | Q2'nin *"sınanabilir ölçütü"* (`P(Z\|X)=P(Z)` d-ayrılığı) | Cinelli alıntısı **d-ayrılığın tanımını** veriyor, bu ölçütü değil | ⚠ **DR'nin kendi sentezi** — mantığı sağlam, **alıntısı taşımıyor** |
+| 4 | Q3: Price'ın **çok düzeyli** ayrıştırması (gruplar arası + grup içi) | ⚠ Bizde kol başına **tek** popülasyon var; ihtiyacımız **hücre içi** ayrım | **kısmen uyumlu** — kimlik doğru, **bizim yapımıza doğrudan oturmuyor** |
+| 5 | Q3: küçük N için **boşluk ilanı** | — | ✅ **doğru davranış**, D-110'un şartı yine tuttu |
+| 6 | Q3: `Var_j(z)=0` ⇒ örnek kovaryansı **özdeş sıfır** | ✅ ölçüldü: 14/27 hücre | **uyumlu** |
+| 7 | Q4: üç sınır koşulu (pilot verisi ayrı · ön-kayıt · **kol karşıtlığına bakmadan**) | ✅ üçü de zaten bizim disiplinimiz (L9, §2.7) | **uyumlu**, ikinci ön-kayıta yazılacak |
+| 8 | Q5: **dejenere uç nokta ilanı** + **estimability** kontrolü + **pozitif kontrol** | analiz aracımız bugün *"Cov = 0"* yazıyor, *"tanımsız"* demiyor | ⭐ **alındı** — kod işi çıkardı |
+| 9 | Q5'in pozitif kontrol satırının kaynağı *"CONSORT 2025"* | konusu bu değil, künye yok | ⛔ **kaynak alınmadı**, **fikir alındı** |
+
+## S.4 Alınanlar
+
+1. ⭐ **Dejenere uç nokta ilanı** — `Var(z) = 0` olan hücre *"sıfır seçilim
+   ölçtük"* değil ***"bu hücrede seçilim tanımsız"*** diye raporlanacak.
+   Dayanak: **Rothenberg 1971**, `10.2307/1913267` (yerel kimlik düzeltmesiyle).
+2. ⭐ **Pozitif kontrol özelliği** — krizden bağımsız değişen bir nicelik
+   (ör. `energy_mean_over_life`, ölçülen aralık 0.59–0.86) üzerinde
+   `Cov(w, ·) ≠ 0` gösterilirse, seçilim motorunun **çalıştığı** ayrıca
+   kanıtlanır. ⚠ Koşumdan **önce** ilan edilmeli, ve **Lamarckçı iddia değil**.
+3. ✅ **Q4'ün üç sınır koşulu** ikinci ön-kayıta madde olarak girdi.
+4. ✅ **Q2** bağımsız olarak §R ile kesişti ⇒ **D seçeneğinin nedensel riski
+   iki yoldan doğrulandı**, ve ölçüm ayrıca onu **ampirik olarak** da eledi.
+
+## S.5 Alınmayanlar
+
+- **Q1'in dört yordamı** — varsayımı bizde tutmuyor (S.1).
+- **d-ayrılık ölçütünün** alıntıya dayandırılması — sentez olarak not edildi.
+- *"CONSORT 2025"* ve *"Standard Parameter Identification Theory"* künyeleri.
+- ⚠ **Wooldridge/Lynch & Walsh bölüm alıntıları** — kitap, doğrulayamadım;
+  yön olarak not, kanıt olarak **hayır**.
