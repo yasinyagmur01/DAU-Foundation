@@ -1396,3 +1396,94 @@ en kolay, hatası en az DR turu.**
 ⚠ **Ama şart listesi kusuru engellemiyor, yakalanabilir kılıyor** — 3 numaralı
 satırdaki aşırı genelleme yine de geçti, ve onu yakalayan şey **kodun kendisiydi**
 (§2.2: belgeye değil dosyaya güven).
+
+---
+
+# §R — **Yerel tarama: ortak şok bir uç noktayı eşitlerken ne yapılır** (2026-08-18, D-119)
+
+⚠ **Bu bir DR mutabakatı DEĞİL.** DR #10 gönderildi ama cevabı gelmedi. Bu
+bölüm, cevabın **çapraz kontrolü** için önceden yapılmış yerel taramadır —
+D-069 (§K) ve D-075 (§L) ile aynı desen, ve o desen bu projede üç kez DR
+hatası yakaladı.
+
+⚠ **Sistematik derleme değil.** Adaylar benim bildiklerimden çıktı, hepsi
+**Crossref'ten doğrulandı**, ve *"kaynağın kimliği"* ile *"kaynağın iddiayı
+taşıdığı"* ayrı tutuldu.
+
+## R.0 ⭐ Doğrulama ilk iş yapıldı ve **iki kendi hatamı** yakaladı
+
+| verdiğim DOI | gerçekte ne | doğrusu |
+|---|---|---|
+| `10.1086/285447` (Goodnight ve ark. 1992 sanıyordum) | **Stevens 1992**, yükselti gradyanı — aynı dergi, aynı yıl, **komşu numara** | ✅ `10.1086/285438` |
+| `10.1016/j.jtbi.2008.03.008` (Rice 2008 sanıyordum) | **Chattopadhyay ve ark.**, plankton | ✅ `10.1186/1471-2148-8-262` |
+
+⇒ **DR'yi suçladığımız hata biçiminin ikisi de bende çıktı** (*"makaleyi
+biliyor, künyeyi uyduruyor"*). Doğrulanmamış hiçbir kimlik kullanılmadı.
+
+## R.1 Doğrulanmış kimlikler (9/9 Crossref'ten)
+
+| kaynak | DOI | nereye bakıyor |
+|---|---|---|
+| Heisler & Damuth 1987, *Am Nat* | `10.1086/284732` | **contextual analysis** — hiyerarşik popülasyonda seçilim ayrıştırması |
+| Goodnight, Schwartz & Stevens 1992, *Am Nat* | `10.1086/285438` | contextual analysis'in grup seçilimi modellerine uygulanışı |
+| Queller 1992, *Am Nat* | `10.1086/285343` | nicel genetik ↔ kapsayıcı uygunluk ↔ grup seçilimi köprüsü |
+| Rice 2008, *BMC Evol Biol* | `10.1186/1471-2148-8-262` | Price'ın **stokastik** sürümü (küçük N borcu buradan) |
+| Kruuk 2004, *Phil Trans R Soc B* | `10.1098/rstb.2003.1437` | animal model — **ortak çevre varyansı** ayrı bileşen olarak |
+| Enders & Tofighi 2007, *Psych Methods* | `10.1037/1082-989X.12.2.121` | **grup-içi merkezleme** (group-mean centering) |
+| Pesaran 2006, *Econometrica* | `10.1111/j.1468-0262.2006.00692.x` | panelde **ortak faktör** yapısı |
+| ⭐ Montgomery, Nyhan & Torres 2018, *AJPS* | `10.1111/ajps.12357` | **müdahale-sonrası değişkene koşullanma** |
+| ⭐ Cinelli, Forney & Pearl 2022, *Sociol Methods Res* | `10.1177/00491241221099552` | *"iyi ve kötü kontroller"* |
+| Elwert & Winship 2014, *Annu Rev Sociol* | `10.1146/annurev-soc-071913-043455` | collider / içsel seçilim yanlılığı |
+| Evans 2007, *PLoS Clin Trials* | `10.1371/journal.pctr.0020018` | uç noktanın koşum başladıktan sonra değişmesi (D-110'da zaten kullanıldı) |
+| Thabane ve ark. 2010, *BMC Med Res Methodol* | `10.1186/1471-2288-10-1` | pilot çalışma metodolojisi |
+| Temple & Ellenberg 2000, *Ann Intern Med* | `10.7326/0003-4819-133-6-200009190-00014` | **assay sensitivity** — *"çalışma bir farkı görebilir miydi"* |
+
+## R.2 ⛔⛔ Turun en önemli bulgusu — **D seçeneği literatürde adı konmuş bir tuzağa değiyor**
+
+Montgomery, Nyhan & Torres 2018'in **özeti** (Crossref'ten, birebir):
+
+> *"…controlling for posttreatment variables in statistical models,
+> eliminating observations based on posttreatment criteria, or **subsetting
+> the data based on posttreatment variables**."*
+
+⚠ **Bizim durumumuz tam buraya oturuyor:** kriz, ajanların **kendi hasat
+davranışından** doğuyor; davranış adapter'dan (yani **koldan**) etkileniyor
+⇒ kriz **müdahale-sonrası** bir olaydır. `z`'yi *"kriz kaynaklı kısmı hariç"*
+diye yeniden tanımlamak, **müdahale-sonrası bir ölçüte göre uç noktayı
+budamak** olur.
+
+⚠ **Ama birebir aynı değil, ve bunu abartmamak gerekiyor:** biz **hiçbir
+yaşamı elemiyoruz** (örneklem budaması yok) ve regresyona kontrol
+**eklemiyoruz**; uç noktanın **tanımını** daraltıyoruz. Literatürün bu üçüncü
+biçime ne dediği **taramanın cevaplayamadığı yer** — ve DR #10'un **Q2'si tam
+olarak bu.**
+
+⇒ ⭐ **Bu bulgu D ile E arasındaki dengeyi E'ye kaydırıyor:** ayrıştırma
+(contextual analysis deseni) hiçbir şeyi **atmıyor**, iki bileşeni de
+**raporluyor**; budama ise atıyor. Ve ayrıştırmanın evrimsel biyolojide
+**adı ve yerleşik formu var** (Heisler & Damuth 1987; Goodnight ve ark. 1992).
+
+⚠ **İddia değil, yön:** kaynakların **kimliği** doğrulandı, **iddiayı
+taşıdıkları** yalnız iki tanesinde (Montgomery, Cinelli — özetleri açıkça
+söylüyor) doğrulanabildi. Heisler & Damuth'un contextual analysis'inin bizim
+*"hücre-ortak bileşen"*imize uyup uymadığı **okunmadan iddia edilemez**.
+
+## R.3 Soru bazında durum
+
+| soru | yerel taramanın verebildiği | eksik kalan |
+|---|---|---|
+| **Q1** ad ve yordam | Dört ayrı gelenek var: contextual analysis (evrim) · ortak çevre varyansı (nicel genetik) · grup-içi merkezleme (çok düzeyli model) · ortak faktör (panel) | hangisi bizim *"hücre içinde sabit artım"* hâlimize **tam** oturuyor |
+| **Q2** ne zaman geçersiz | ⭐ Müdahale-sonrası koşullanma **adı konmuş bir hata** (Montgomery 2018; Cinelli 2022) | uç nokta **tanımını** daraltmak da aynı sınıfa girer mi |
+| **Q3** ayrıştırma | ✅ **Var ve adı var:** contextual analysis | küçük N'de (8 ajan, 2 epizod) güvenilirliği — Rice 2008 uyarısı bu yöne bakıyor |
+| **Q4** pilottan sonra uç nokta | Evans 2007 (D-110'da alındı) + Thabane 2010 | sınır koşulları: pilot verisi ana analizden çıkar mı |
+| **Q5** *"değişemezdi"* ilanı | **assay sensitivity** (Temple & Ellenberg 2000) kavramsal olarak tam karşılık | simülasyon/ABM literatüründe karşılığı var mı |
+
+## R.4 DR #10 geldiğinde ne yapılacak
+
+1. DR'nin kimliklerini **Crossref'ten** doğrula (bu turda benim iki hatam bu
+   şekilde çıktı).
+2. DR'nin verdiği alıntıları kaynakta **yerini göstererek** kontrol et.
+3. ⭐ **Bu bölümle kesişimi ara:** DR bağımsız olarak contextual analysis'e
+   ve müdahale-sonrası koşullanmaya çıkarsa, iki yol aynı yere varmış olur
+   (D-065/J20 deseni). Çıkmazsa, **hangisinin eksik olduğu** sorusu açılır.
+4. Ancak ondan sonra **uç nokta kararı** — ve karar **Yasin'in** (D-007).
