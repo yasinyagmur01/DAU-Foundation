@@ -1,0 +1,225 @@
+RESEARCH REQUEST: WHEN AN OUTCOME IS WRITTEN BY BOTH AN INDIVIDUAL PATH AND A
+GROUP-WIDE SIMULTANEOUS SHOCK, HOW IS THE OUTCOME DEFINED AND DECOMPOSED
+
+Date: 2026-08-18
+
+
+0. HOW TO READ THIS REQUEST
+
+What we need:
+(a) whether the operation we are considering has an accepted name and an
+    accepted procedure in any quantitative field,
+(b) the named hazards of that operation, in particular the case where the
+    common shock is itself produced by the units under study,
+(c) whether a decomposition exists that keeps both components instead of
+    discarding one,
+(d) established methodology for two procedural questions: redefining an
+    outcome after a pilot, and reporting an outcome that could not vary.
+
+What we do NOT need:
+- Our project history. You have no access to it and it is not the question.
+- A prediction of what our experiment will produce, or advice about which
+  option gives a larger effect. Choosing a design by anticipating its effect
+  is post-hoc and we will not do it. We have deliberately NOT examined the
+  contrast between our experimental groups on this outcome, and we will make
+  this decision without looking at it.
+- Code. We write the implementation ourselves.
+
+SOURCE DISCIPLINE - OUR RECORD IS POOR AND WE KNOW WHY
+
+Across eight previous requests we hit two distinct failure modes.
+
+Failure mode 1, wrong identity. Twelve citations turned out to be
+misattributed: DOIs pointing at a different paper, a journal ISSN used as a
+"source", invented author lists attached to real arXiv numbers, and one dead
+DOI.
+
+Failure mode 2, right source but wrong claim. The sources were real and the
+DOIs resolved, but the claim was not in them. Verifying the DOI does NOT
+catch this.
+
+The last round was the first clean one, because three conditions were met at
+once. We repeat all three:
+
+1. Give author, year and DOI (or arXiv id) for every claim.
+2. Quote verbatim from the source, and give the section name. Do NOT give
+   line numbers: line numbers do not survive between copies of a document,
+   and in an earlier round every one of them pointed at nothing. The verbatim
+   quotation is what makes verification possible.
+3. Give a bibliography, and declare gaps explicitly. If the literature does
+   not contain an answer to one of our questions, say so in those words. An
+   honest "no specific claim found in the sources" is more useful to us than
+   a plausible sentence we then have to discard.
+
+This is not an accusation. We made the same class of error ourselves: in one
+of our own local scans we wrote the wrong DOI for a sampling paper, opened
+it, found a different article, and corrected it.
+
+We open every DOI and arXiv identifier through Crossref, and we do not use a
+claim whose location cannot be shown.
+
+
+1. THE SYSTEM, IN THE MINIMUM DETAIL NEEDED
+
+We run a simulation study of inheritance across generations. It has the
+structure of a controlled experiment with three arms.
+
+- Each arm has its own population of N = 8 agents and its own shared resource
+  pool. The arms never interact.
+- Each agent lives a sequence of discrete events. At each event it announces
+  a withdrawal from the shared pool, receives what the pool can deliver, and
+  its internal state is updated.
+- At the end of a generation, agents are ranked by a fitness quantity,
+  winners of a size-2 tournament produce heirs, population size stays fixed
+  at N, and the number of heirs per parent is the selection weight w. w can
+  be 0, 1, 2 and so on.
+- G = 3 generations, so there are G - 1 = 2 selection episodes per seed.
+- Everything is deterministic: the same seed reproduces the same run
+  bit-for-bit. Different seeds are allowed and normal (an earlier study of
+  ours ran 40 of them). The determinism requirement is about reproducibility,
+  not about running only one seed.
+
+The outcome variable, which we call z, is the magnitude of a permanent
+internal shift ("drift") carried by an agent, read at a FIXED event ordinal
+in every life (event number 10), so that all agents are read at the same age.
+
+Selection is measured with the Price equation: the covariance between w and z
+across the agents of one generation, plus the transmission term.
+
+
+2. THE PROBLEM, STATED PRECISELY
+
+The variable z is written by exactly one internal function, and that function
+fires on exactly one condition: an incoming magnitude at or above a fixed
+threshold. But that function has TWO callers.
+
+Path A, INDIVIDUAL. The agent's own surprise. Each agent computes a
+prediction error from its own experience; when the associated magnitude
+crosses the threshold, that agent's drift is updated. This path is
+agent-specific: two agents in the same arm can and do differ on it.
+
+Path B, COMMON SHOCK. When the shared pool falls below a fixed fraction of
+its capacity, a resource "crisis" fires. The crisis applies a fixed magnitude
+to EVERY agent of that arm at the SAME event. The magnitude is a constant, so
+every agent receives an identical increment, at the same moment, in the same
+internal domain.
+
+Measured consequences, from a run of 216 lives across four seeds:
+
+- In a seed where the pool never entered crisis, the 8 agents of a cell
+  showed 5 distinct values of z.
+- In seeds where the crisis fired, the same cell showed 1 or 2 distinct
+  values of z.
+- In one seed, ZERO of 72 lives crossed the individual threshold, and yet
+  72 of 72 agents had a non-empty z. All of it came from path B.
+
+So the covariance between w and z can be zero not because nothing happened,
+but because the same thing happened to everyone. Path B fills the outcome
+while removing the between-agent variation that the covariance needs.
+
+CRITICALLY, path B IS NOT EXOGENOUS. The pool collapses because the agents
+themselves over-withdraw. The common shock is downstream of the very
+behaviour whose inheritance we are studying. This is the part we are least
+sure about, and it is why we are asking rather than deciding.
+
+
+3. THE OPTIONS WE ARE WEIGHING (for context only - do not choose for us)
+
+1. Keep the outcome as it is, and declare that a common shock can equalise
+   it.
+2. Read the outcome at a different moment, before the crisis can fire.
+3. Replace the outcome with a different quantity.
+4. Define the outcome on path A only, excluding the increment written by the
+   common shock.
+5. Keep the outcome whole, but DECOMPOSE the selection term into a
+   within-cell (individual) component and a cell-common component, and report
+   both.
+
+Option 5 occurred to us late and we do not know whether it has an accepted
+form. Options 4 and 5 are the ones our questions are about.
+
+
+4. CONSTRAINTS - PLEASE DO NOT PROPOSE SOMETHING THAT VIOLATES THESE
+
+If an answer requires violating one of these, that is useful to know, but
+please mark it as such rather than presenting it as an available option.
+
+C1. We may not change the agents' decision rule, or inject any trait,
+    disposition or strategy text into them. The whole claim of the study is
+    that structure emerges from living, not from being told. This forbids
+    "make the agents behave differently so the crisis does not fire".
+C2. All measurements are deterministic computations. No model-as-judge, no
+    human rating.
+C3. The outcome definition must be fixed and written down BEFORE the main
+    run, and it may not be selected by looking at the difference between
+    arms. We are willing to accept a worse-powered design to keep this.
+C4. Constants of the environment are not tuned to produce an effect. A
+    constant may only be changed if the new value follows from other
+    constants by a stated inequality.
+C5. Small numbers: 8 agents per arm per generation, 2 selection episodes per
+    seed. Any method that needs hundreds of units per group is not available
+    to us, though knowing that it is the standard is still useful.
+
+
+5. THE QUESTIONS
+
+Q1. NAME AND PROCEDURE.
+An outcome variable receives contributions from a unit-specific process and
+from a shock that hits all units of a group at the same moment with an
+identical increment. Is there an accepted name and an accepted procedure for
+isolating the unit-specific component? Candidate vocabularies we suspect are
+relevant, but which we may be misapplying: time or period fixed effects in
+panel data; within-group (group-mean) centering in multilevel models;
+partitioning of common environmental variance (often written c-squared) in
+quantitative genetics; removal of a common factor in factor-analytic models.
+For each that genuinely applies, give the source, the verbatim sentence that
+states the procedure, and say what the procedure assumes.
+
+Q2. WHEN IS IT INVALID.
+In our system the common shock is CAUSED by the units' own behaviour: the
+pool collapses because the agents over-withdraw. Does removing or excluding
+such a component constitute conditioning on a post-treatment variable, a
+"bad control", or a collider? What criterion distinguishes a legitimate
+removal of a common shock from an illegitimate one? We would like the
+criterion stated as a testable condition, with its source, not as general
+advice.
+
+Q3. DECOMPOSITION INSTEAD OF EXCLUSION.
+In selection analysis - the Price equation, multilevel or contextual analysis
+of selection, or any equivalent framework - is there a standard decomposition
+that separates a within-group component of an outcome from a group-common
+component while KEEPING both, rather than discarding one? If such a
+decomposition exists, what is it called, what does it assume, and what is
+reported from it? If it exists but is known to be unreliable at our group
+size (8 units, 2 episodes), please say so and give the source for that
+limitation as well.
+
+Q4. REDEFINING AN OUTCOME AFTER A PILOT.
+We ran a pilot. The pilot did not tell us the size of any effect - we have
+not looked at the arm contrast - but it did reveal WHICH MECHANISM writes the
+outcome. Is redefining a primary outcome on mechanistic grounds discovered in
+a pilot an accepted practice, and if so, what conditions must hold for it to
+remain legitimate? We are looking for the boundary conditions specifically:
+must the pilot data be excluded from the main analysis, must the change be
+documented before the main run, and does the reason for the change have to be
+independent of any observed effect?
+
+Q5. REPORTING AN OUTCOME THAT COULD NOT VARY.
+If we keep the outcome as it is and the common shock equalises it within
+every group, our selection term will be zero by construction. Is there an
+established way to report "this outcome could not vary, therefore this
+analysis is uninformative" that is distinguishable from "we measured no
+selection"? We are looking for a named practice - a positive control, a
+degenerate-outcome declaration, an estimability or identifiability check
+performed before the analysis - with a source.
+
+
+6. WHAT AN ANSWER THAT HELPS US LOOKS LIKE
+
+- For each question, either a sourced answer with a verbatim quotation, or an
+  explicit statement that the literature does not answer it.
+- Where two fields disagree, both positions, named.
+- A bibliography with author, year, title, venue, DOI or arXiv id.
+- No recommendation about which of our five options to take. We need the
+  named procedures and their assumptions; the choice is ours to make and to
+  defend in a pre-registration.
