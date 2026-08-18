@@ -9438,3 +9438,75 @@ metni taşımaya devam ediyor** — dosya yeniden yazılmadı; statünün otorit
 varsayımsal değil.
 
 Suite: **590 passed, 2 deselected**.
+
+---
+
+## D-128 · 2026-08-18 · 🔒 **K1 MEKANİZMA KONTROLÜ** — düzeltilmiş sonda, koşumdan önce yazıldı
+
+**Yetki:** Yasin onayladı (2026-08-18), *"bu koşumun sonunda hata ve gözden
+kaçan bir şey istemiyorum"* şartıyla. ⚠ Bu kayıt **koşum başlamadan** commit
+edilmiştir (K1, `CLAUDE.md §2.4-b`).
+
+### (a) Ölçülen niceliği hangi mekanizma üretiyor
+
+`to_landmark.max` = ajanın **kendi** `DeltaRecord` büyüklüklerinin, olay ≤ 10
+penceresindeki tepesi. Ajanlar arası fark şu zincirden doğuyor:
+
+> sıralı erişim + rotasyon → hasat farkı → enerji farkı → **adapter eğitimi
+> (Kanal 2)** → varis farklı ağırlıkla doğuyor → farklı kararlar → farklı PE
+
+⛔ **Zincirin belirleyici halkası Kanal 2.** Ölçüldü (C2, `delta_profile.max`):
+
+| nesil | tanımlı hücre |
+|---|---|
+| gen1 (adapter **henüz yok**) | **0/9** |
+| gen2 | 7/9 |
+| gen3 | 8/9 |
+
+### (b) Seçtiğim bayraklardan hangisi bu mekanizmayı kapatır
+
+| bayrak | mekanizmaya etkisi | kararım |
+|---|---|---|
+| ⛔ `--no-lora` | **Kanal 2'yi tamamen kapatır** ⇒ ölçülecek fark hiç doğmaz | **KULLANILMIYOR** — D-126'da 50 dk buna gitti |
+| ⛔ `--mock-llm` | Model yok ⇒ eğitim yok, kararlar kanned | **KULLANILMIYOR** (yalnız kuru provada) |
+| `--n-generations 3` | gen1 yapısal dejenere ⇒ **2'nin altı hiçbir bilgi vermez** | **3** |
+| `--arms` | ⭐ `null` **eğitim almıyor** ⇒ en zayıf kol. Yalnız `lived` koşulsa **en iyi durum** ölçülürdü | **`lived null`** — en iyi **ve** en kötü birlikte |
+| `--fresh-pasture` | Deneyle aynı (D-104) | **aynı** |
+| `--events 30` · `--n-agents 8` | Deneyle aynı | **aynı** |
+
+⭐ **Kol seçiminin gerekçesi ölçüm** (C2, gen2+gen3): `lived` **6/6** ·
+`shuffle` **6/6** · ⛔ `null` **3/6**. `shuffle` `lived`'ın kopyası gibi
+davrandığı için **alınmadı**; bilgi taşıyan ayrım `lived` ↔ `null`.
+
+### (c) Bu yapılandırmada niceliğin dejenere olmadığının kanıtı
+
+Aynı yapılandırmayla (`--lora`, G=3, N=8) koşulan C2'de ömür-boyu vekil
+gen2/gen3'te **15/18** hücrede tanımlıydı. Sonda, aynı niceliğin **pencere
+içi** hâlini ölçüyor — pencere alt küme olduğu için oran **ancak düşebilir**,
+ve ölçülmek istenen tam olarak **ne kadar düştüğü**.
+
+### Kuru prova (mock, aynı bayraklar) — yapı doğrulandı
+
+2 kol · `lived` eğitiyor / `null` eğitmiyor · `to_landmark` penceresi **10
+olay** · **4** Price satırı · `I1.1` mock'ta **tasarım gereği** FLAG
+(`reason: "no loaded model"`), gerçek koşumda ABORT olarak kalıyor.
+
+### Koşum komutu (tam olarak bu)
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9915 --n-agents 8 --n-generations 3 --events 30 \
+  --lora --fresh-pasture --arms lived null \
+  --results dau_runs/probe2_endpoint_window_s9915.json
+```
+
+⚠ **Dış `timeout` YOK.** D-126'da `timeout 3000` koşumu I4.1 replay sırasında
+kesti ve sonuç dosyası hiç yazılmadı. Beklenen süre **~1 sa 40 dk**
+(C2'den: kol-tohum başına ~39 dk + replay payı) — ⚠ **tahmin**, ve D-126'da
+tahminim tutmamıştı.
+
+### Okuma kuralı — D-125 aynen geçerli
+
+**4 hücrenin en az 3'ünde** (`≥ ⅔`) `Var(to_landmark.max) > 0` ⇒ aday üçüncü
+ön-kayıta girer. Aksi hâlde **girmez**. ⛔ Kovaryans · kol karşıtlığı · etki
+büyüklüğü **hesaplanmayacak**.
