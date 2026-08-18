@@ -1,6 +1,6 @@
 # Popülasyon C″ — İkinci Ön-Kayıt
 
-**Durum: 🔒 KİLİTLİ · 2026-08-18 · commit `KILIT_HASH`**
+**Durum: 🔒 KİLİTLİ · 2026-08-18 · commit `72df476ebd54`**
 
 **Dört slotun dördü kapalı.** Bu andan itibaren bu belgedeki hiçbir madde
 değişmez. Değişiklik gerekirse **yeni bir ön-kayıt** açılır ve bu belge
