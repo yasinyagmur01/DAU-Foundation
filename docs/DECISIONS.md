@@ -9298,3 +9298,83 @@ gerçek pencere.
 | `ömür` | %39 | Post-hoc tuzağı (D-122'de reddedildi) + `F_agent`'ın hayatta kalma terimi |
 | `landmark_energy` | %33 | Sabit yaşta ✅ ama düşük, ve enerji zaten `F_agent`'ta |
 | `delta_profile.max/mean` | %39/%72 | **Ömür boyu** ⇒ sabit yaşta okuma ilkesini bozar |
+
+---
+
+## D-126 · 2026-08-18 · ⛔ **Sonda GEÇERSİZ — tasarım hatası bende**, ve D-125'in kuralı **tetiklenmedi**
+
+**Koşum:** `dau_runs/probe_endpoint_window_s9914.json.partial.json` (checkpoint;
+sonuç dosyası **yok** — dış `timeout 3000` I4.1 replay sırasında kesti, `exit 124`).
+Tohum 9914 · N=8 · G=2 · 30 olay · **`--no-lora`** · ~50 dk GPU.
+
+### 1. Ölçülen
+
+| | gen1 | gen2 |
+|---|---|---|
+| `to_landmark.max` hücre içi | **tek değer** (0.5413) | **tek değer** (0.4139) |
+| `Var(z')` | **0** | **0** |
+| bugünkü `z` | 0 | 0 |
+
+Üç kolun `arm_digest`'i **birebir aynı** (1/3 farklı) ⇒ `--no-lora` altında
+kollar özdeş, yani 6 hücre aslında **2**.
+
+### 2. ⛔ Neden bu bir sonuç değil — mekanizma, mazeret değil
+
+C2'nin **kendi verisinde**, adapter **açıkken**, ömür-boyu tepe büyüklüğünün
+tanımlılığı:
+
+| nesil | tanımlı hücre | farklı değer / 8 |
+|---|---|---|
+| **gen1** | **0/9 = %0** | **1.00** |
+| gen2 | 7/9 = %78 | 3.00 |
+| gen3 | 8/9 = %89 | 3.56 |
+
+⇒ Bu nicelikte ayrışma **gen2'den itibaren** doğuyor: adapter gen1'in
+**sonunda** eğitiliyor ve üreme asimetrisi de o anda başlıyor. `--no-lora`
+sondası evrenin yalnız **gen1 rejimini** örnekleyebilir ⇒ dejenere çıkması
+**yapısal olarak garanti**, ve o rejim hakkında zaten verimiz vardı.
+
+⇒ **Sonda, cevaplaması istenen soruyu göremeyecek biçimde tasarlanmış.**
+Hata bende: maliyeti düşürmek için kapattığım şey, tam da farklılaşmayı
+üreten kanaldı.
+
+### 3. ⚠ D-125'in kuralı neden **uygulanmıyor** — ve bunun neden bahane olmadığı
+
+D-125 *"< ⅔ ⇒ aday girmez"* diyor. **Uygulanmıyor**, çünkü kuralın örtük ön
+koşulu — *"niceliğin değişebileceği koşullarda yapılmış bir ölçüm"* —
+sağlanmadı.
+
+⚠ Bu, güdülenmiş bir okuyucunun yapacağı hamlenin **aynısı** (*"test kötü
+çıktı, demek ki test geçersiz"*). Meşru kılan dört şey, hepsi denetlenebilir:
+
+1. Teşhis **sondadan önce var olan** veriye dayanıyor (C2 gen1 = **0/9**),
+   sonda sonrası üretilmiş bir açıklama değil.
+2. Sorgu **tek satır**, herkes tekrar koşabilir.
+3. Düzeltilmiş sonda **daha pahalı** — kolay yolu seçmiyorum.
+4. Kural **değiştirilmedi**; değişen tek şey **sonda tasarımı**. `≥ ⅔` aynen
+   duruyor ve düzeltilmiş sondaya uygulanacak.
+
+### 4. Bedel ve ders
+
+**~50 dk GPU boşa gitti.** Ders, §2.2'nin bir varyantı:
+
+> **Bir sondayı ucuzlatırken kapattığın şeyin, ölçmek istediğin şeyi üreten
+> mekanizma olup olmadığını sor.**
+
+⚠ Ve maliyet tahminim de yanlıştı: *"15–30 dk"* dedim, `--no-lora` ile bile
+**50 dk**'da bitmedi (48 yaşam × 30 olaya kadar çıkarım). Eğitim maliyetin
+%90'ı **değilmiş** — çıkarım da ciddi bir pay.
+
+### 5. Düzeltilmiş sonda — Yasin'in kararına sunuldu
+
+| | |
+|---|---|
+| yapılandırma | **`--lora`** · `--arms lived` (tek kol) · G=3 · N=8 · 30 olay |
+| bilgilendirici hücre | **gen2 ve gen3** (gen1 yapısal olarak dejenere, biliniyor) |
+| 1 tohum | ~1 sa · **2 hücre** ⇒ `≥ ⅔` kuralı kaba (2/2 geçer, 1/2 kalır) |
+| 2 tohum | ~2 sa · **4 hücre** ⇒ kural anlamlı çözünürlükte |
+
+⚠ Alternatif: sondayı **hiç yapmamak** ve üçüncü ön-kayıtı C2'nin ömür-boyu
+vekiliyle (**15/18 = %83**) gerekçelendirmek. ⛔ Riski açık: pencere ömrün
+**alt kümesi** olduğu için tanımlılık ancak **düşebilir**, ve ne kadar
+düştüğünü bilmeden ön-kayıt yazmış oluruz.
