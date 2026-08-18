@@ -120,7 +120,7 @@ from dau.diagnostics.tool_identity import (
 from dau.foundation.local_llm import apply_cuda_allocator_config
 from dau.foundation.delta import DELTA_THRESHOLD_DEEP
 from dau.foundation.drift import DriftState
-from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
+from dau.foundation.constraints import LANDMARK_EVENT, TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
 from dau.foundation.generation import (
     INHERITED_WARNING_KEY,
@@ -574,6 +574,65 @@ def _magnitude_summary(magnitudes: list[float]) -> dict[str, Any]:
     }
 
 
+def _window_profile(
+    agent_id: str,
+    pe_rows: list[dict[str, Any]],
+    pool_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """The same two channels, but only up to the ordinal `z` is read at (D-124).
+
+    ⚠ Why this exists, measured: the endpoint is a THRESHOLDED quantity —
+    drift is written only when a magnitude reaches DELTA_THRESHOLD_DEEP — and
+    in the C2 run that threshold was crossed by the individual channel in 24 of
+    216 lives, leaving Var(z) = 0 in 14 of 18 transitions. The magnitudes that
+    fell short are not noise: their peaks sat at 0.42–0.62 against a 0.70 gate.
+    Whether a PRE-threshold endpoint would be estimable is therefore a question
+    about the distribution below the gate, and nothing recorded so far could
+    answer it: D-112 summarises the WHOLE life, while `z` is read at a fixed
+    age, so the two are not about the same slice of the life.
+
+    The window is `event_counter <= LANDMARK_EVENT`, inclusive, because the
+    landmark reader takes the row AT that ordinal — the window ends where the
+    endpoint is read, not one event earlier. The ordinal comes from constraints,
+    not from a literal here, so moving the landmark moves this with it (§2.8).
+
+    ⛔ Reporting only. Nothing here feeds any computation, and choosing an
+    endpoint from it is a decision for the NEXT pre-registration — read as
+    estimability (does the quantity vary at all), never as effect (L9).
+    """
+
+    def _in_window(row: dict[str, Any]) -> bool:
+        return (
+            row["agent_id"] == agent_id
+            and int(row.get("event_counter", 0)) <= LANDMARK_EVENT
+        )
+
+    individual = [
+        float(row["delta_magnitude"]) for row in pe_rows if _in_window(row)
+    ]
+    crisis = [
+        float(row["crisis_magnitude"])
+        for row in pool_rows
+        if _in_window(row) and row.get("crisis_magnitude") is not None
+    ]
+    # Did this life actually reach the ordinal the endpoint is read at? A life
+    # that stopped earlier has a TRUNCATED window, and averaging it beside a
+    # complete one would compare different slices while looking identical
+    # (§2.9 — the run says so rather than papering over it).
+    reached = any(
+        row["agent_id"] == agent_id
+        and int(row.get("event_counter", 0)) >= LANDMARK_EVENT
+        for row in pe_rows
+    )
+    window = _magnitude_summary(individual)
+    window["channel"] = "individual"
+    window["crisis"] = _magnitude_summary(crisis)
+    window["crisis"]["n_crisis_events"] = len(crisis)
+    window["window_last_event"] = LANDMARK_EVENT
+    window["window_complete"] = reached
+    return window
+
+
 def delta_profile(
     agent_id: str,
     pe_rows: list[dict[str, Any]],
@@ -626,6 +685,8 @@ def delta_profile(
     profile["n_at_or_above_trauma_either_channel"] = (
         profile["n_at_or_above_trauma"] + profile["crisis"]["n_at_or_above_trauma"]
     )
+    # D-124: the same channels restricted to the slice `z` is read from.
+    profile["to_landmark"] = _window_profile(agent_id, pe_rows, pool_rows)
     return profile
 
 

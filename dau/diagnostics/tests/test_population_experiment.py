@@ -1850,3 +1850,142 @@ def test_the_price_rows_carry_estimability(monkeypatch) -> None:
     ]
     assert parts, "no partition to check"
     assert all(PRICE_KEY_ESTIMABLE in part for part in parts)
+
+
+# ---------------------------------------------------------------------------
+# D-124 — the slice the endpoint is actually read from
+# ---------------------------------------------------------------------------
+
+
+def test_the_window_stops_where_the_endpoint_is_read() -> None:
+    """⭐ Events after the landmark must not enter the window.
+
+    The endpoint is read AT the landmark ordinal, so a summary that swept the
+    whole life would describe a different slice than `z` does — which is
+    exactly why D-112's whole-life profile could not answer whether a
+    pre-threshold endpoint would be estimable.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    rows = [
+        {"agent_id": "a", "event_counter": LANDMARK_EVENT - 1, "delta_magnitude": 0.20},
+        {"agent_id": "a", "event_counter": LANDMARK_EVENT, "delta_magnitude": 0.30},
+        # After the landmark: real, recorded, and OUT of the window.
+        {"agent_id": "a", "event_counter": LANDMARK_EVENT + 1, "delta_magnitude": 0.99},
+    ]
+    window = delta_profile("a", rows, NO_CRISIS)["to_landmark"]
+
+    assert window["n_events"] == 2, "an event past the landmark leaked in"
+    assert window["max"] == pytest.approx(0.30)
+    assert window["window_last_event"] == LANDMARK_EVENT
+    # And the whole-life profile still sees all three — the two answer
+    # different questions and must not collapse into each other.
+    assert delta_profile("a", rows, NO_CRISIS)["n_events"] == 3
+
+
+def test_the_window_is_inclusive_of_the_landmark_ordinal() -> None:
+    """Boundary, pinned from the other side (§2.4).
+
+    `_landmark_reading` takes the row AT LANDMARK_EVENT, so a window that
+    stopped one event earlier would silently describe a slice the endpoint
+    does not come from. Measured: with `<` instead of `<=`, every other test
+    in this group still passed.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    only_at_landmark = [
+        {"agent_id": "a", "event_counter": LANDMARK_EVENT, "delta_magnitude": 0.44}
+    ]
+    window = delta_profile("a", only_at_landmark, NO_CRISIS)["to_landmark"]
+
+    assert window["n_events"] == 1
+    assert window["max"] == pytest.approx(0.44)
+
+
+def test_a_life_that_never_reached_the_landmark_says_so() -> None:
+    """§2.9: a truncated window must not look like a complete one.
+
+    Averaged beside a full window it would compare different slices of life
+    while reporting the same field names.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    short = [
+        {"agent_id": "a", "event_counter": 1, "delta_magnitude": 0.5},
+        {"agent_id": "a", "event_counter": 2, "delta_magnitude": 0.6},
+    ]
+    full = [
+        {"agent_id": "a", "event_counter": LANDMARK_EVENT, "delta_magnitude": 0.6}
+    ]
+
+    assert delta_profile("a", short, NO_CRISIS)["to_landmark"]["window_complete"] is False
+    assert delta_profile("a", full, NO_CRISIS)["to_landmark"]["window_complete"] is True
+
+
+def test_the_window_keeps_the_two_channels_apart_too() -> None:
+    """D-117's separation applies inside the window as well.
+
+    Pooled here, a famine before the landmark would again be indistinguishable
+    from the agent's own surprise — the reading error D-115 diagnosed, just on
+    a narrower slice.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    pe = [{"agent_id": "a", "event_counter": 3, "delta_magnitude": 0.25}]
+    pool = [
+        {"agent_id": "a", "event_counter": 4, "crisis": True, "crisis_magnitude": 1.0},
+        # Past the window: must not be counted.
+        {
+            "agent_id": "a",
+            "event_counter": LANDMARK_EVENT + 5,
+            "crisis": True,
+            "crisis_magnitude": 1.0,
+        },
+    ]
+    window = delta_profile("a", pe, pool)["to_landmark"]
+
+    assert window["max"] == pytest.approx(0.25), "crisis leaked into the individual channel"
+    assert window["crisis"]["n_crisis_events"] == 1, "a crisis past the window leaked in"
+
+
+def test_the_window_reaches_the_results_file(monkeypatch) -> None:
+    """The wiring, not the function (§2.4).
+
+    Fourth time this session that the gap was 'the fix exists in the codebase
+    and not on the run path', so the call-site test is written first now.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=2,
+        n_generations=2,
+        events_budget=LANDMARK_EVENT + 2,
+    )
+
+    profiles = [
+        agent["delta_profile"]
+        for arm in results["arms"]
+        for row in arm["generations"]
+        for agent in row["agents"]
+    ]
+    assert profiles, "no agents to check"
+    for profile in profiles:
+        assert "to_landmark" in profile
+        assert profile["to_landmark"]["window_last_event"] == LANDMARK_EVENT
+        # The window can never see more events than the whole life did.
+        assert profile["to_landmark"]["n_events"] <= profile["n_events"]
