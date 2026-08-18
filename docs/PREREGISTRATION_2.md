@@ -87,35 +87,18 @@ sıfırları *hepsi 1.0*, D *hepsi 0.0* yapardı. ⚠ Ayrıca kriz
 ⚠ **İlan edilen sınır:** bu koşumun bilgilendirici hücre oranı **~%48**
 (13/27, ⚠ kapısız checkpoint'ten kestirim). Bütçe buna göre kurulur (§7).
 
-**Eski hâli (arşiv):** `z` = landmark'taki (olay 10) drift büyüklüğü, sabit
-yaşta okunur.
+⚠ **Kararın verildiği andaki durum (arşiv, D-115 → D-120):** `z`'yi **iki yol**
+yazıyor — ajanın kendi `DeltaRecord`'u (`magnitude ≥ 0.7`) ve ortak havuz krizi
+(`pool_ratio < 0.30`, kolun tamamına aynı anda). Beş seçenek tartışıldı
+(A koru · B okuma anını kaydır · C uç noktayı değiştir · D yalnız bireysel
+kanal · E ayrıştır). **A seçildi**; B **sansürleme** getirdiği için (⚠ `null`
+kolu ~10 olayda ölüyor, landmark 10'da tam bu yüzden), D **ölçümle** ve
+*bad control* riskiyle, E ise **işlevsiz** olduğu için (dejenere hücrede
+ayrıştırma da sıfır verir) alınmadı.
 
-⛔ **Kapanmadan koşum başlayamaz.** Sebep D-115'te ölçüldü: `z`'yi **iki yol**
-yazıyor —
-
-| yol | tetik | ajanlar arası bilgi |
-|---|---|---|
-| bireysel şaşırma | ajanın kendi `DeltaRecord`'u, `magnitude ≥ 0.7` | ✅ taşır (kriz olmayan tohumda 8 ajanda **5 farklı `z`**) |
-| ⛔ ortak havuz krizi | `pool_ratio < 0.30` ⇒ **kolun tamamına aynı anda**, sabit büyüklük | ❌ **taşımaz** (kriz olan tohumda 8 ajanda **1–2 farklı `z`**) |
-
-⇒ Kriz `z`'yi **doldurur ama eşitler**; `Cov(w, z)` sıfır çıkar ve sıfırın
-sebebi *"hiçbir şey olmadı"* değil ***"herkese aynı şey oldu"*** olur.
-
-**Açık seçenekler** (karar Yasin'in, D-007):
-
-| | seçenek | bedeli |
-|---|---|---|
-| A | koru + krizin uç noktayı eşitlediğini ilan et | koşum büyük ihtimalle seviye 1'i boş verir |
-| B | okuma anını kaydır | ⚠ sansürleme bedeli, D-081'de bir kez reddedildi |
-| C | uç noktayı değiştir | B2 sıfırdan yazılır |
-| D | **yalnız bireysel kanaldan oku** | ⚠ *"ortak şoklar uç noktaya girmiyor"* sınırı ilan edilir |
-| E | `Cov(w,z)`'yi **ayrıştır** (hücre-içi + hücre-ortak), ikisini de raporla | ⚠ literatürdeki adı/tuzakları **DR #10'a soruldu** |
-
-⚠ **D-117 sonrası her seçenek ölçülebilir:** hangi kanalın yazdığı artık
-koşum sırasında günlüğe giriyor ve raporda **ayrı** çıkıyor.
-
-⚠ **L9 geçerli:** uç nokta **etkiye bakılarak seçilmez**. Kol karşıtlığına
-bakılmadı ve karar verilene kadar bakılmayacak.
+⚠ **L9 uyuldu:** uç nokta **etkiye bakılarak seçilmedi** — yukarıdaki bütün
+sayılar **hücre içi çeşitlilik**, kol karşıtlığı değil. Kol karşıtlığına
+bakılmadı.
 
 ---
 
@@ -163,8 +146,14 @@ olmadığına** bakılıyor ve kural koşumdan **önce** yazılıyor.
 ## 7. Bütçe ve durma kuralı — ⛔ **SLOT 3, AÇIK (P7-a)**
 
 Biçimi karara bağlandı (D-110): *"kaç saat"* değil ***"olay oranını hangi
-kesinlikle"***. ⚠ **D-115 sonrası oran yeniden tanımlanmalı — hangi kanalın
-oranı?** ⇒ **Slot 1'e bağımlı**, ondan sonra kapanır.
+kesinlikle"***. ⭐ **Aranan nicelik D-121 ile belirlendi: bilgilendirici hücre
+oranı** — yani `Var(z) > 0` olan, dolayısıyla seçiliminin **tanımlı** olduğu
+hücrelerin payı. Bugünkü kestirim **13/27 ≈ %48** (⚠ kapısız checkpoint'ten,
+sonuç değil).
+
+⛔ **Kalan karar:** bu oranı **hangi kesinlikle** bilmek istiyoruz, ya da kaç
+**bilgilendirici hücre** hedefliyoruz. Ondan sonra tohum sayısı aritmetikle
+çıkar.
 
 **Bilinen maliyetler** (ölçüldü):
 
