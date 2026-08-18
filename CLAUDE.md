@@ -1414,7 +1414,21 @@ determinizm, D-042 konum; ayrıca D-044 uç nokta duyarlılığı).
 işaretlenmedi) · §12 kod ağacı `preflight.py`/`tool_identity.py`'yi listelemiyor
 · §11/§14'ün test sayıları eski. Hiçbiri okuyanı yanlış yöne sokmuyor.
 
-# 9. Araştırma Kanalı: Gemini Deep Research
+# 9. Araştırma Kanalı: Deep Research
+
+⚠ **Kanal değişti (2026-08-18, D-110): Gemini DR çalışmıyor, artık ChatGPT
+Deep Research kullanılıyor.** Yapıları farklı ve bu **ölçüldü**: DR #9,
+D-080/D-082'de eklenen üç şartın (DOI · **birebir alıntı** · kaynakça +
+boşluk ilanı) **üçünü birden** eksiksiz tutan **ilk tur** oldu — beş kaynağın
+beşi doğrulandı, alıntılar kaynakta bulundu, ve DR **kendi boşluğunu ilan
+etti**. Önceki turlarda toplam **12 kimlik hatası** çıkmıştı.
+
+⚠ **Brief biçimi:** düz ASCII metin, **tablo ve özel sembol yok** (Yasin
+sohbetten kopyalıyor), ve **İngilizce** — hedef literatür İngilizce.
+
+⚠ **Şart listesi kusuru engellemiyor, yakalanabilir kılıyor.** DR #9'da bir
+aşırı genelleme (construct validity → *"pozitif kontrol"*) üç şartı da geçti;
+onu yakalayan şey **kodun kendisi** oldu (§2.2).
 
 Mimari kararlarda sıkışıldığında veya yeni bir katmana girmeden önce geniş
 literatür taraması **Gemini Deep Research** ile yapılır. Yedek değil, karar
