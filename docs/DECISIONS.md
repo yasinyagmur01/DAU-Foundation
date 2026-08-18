@@ -8764,3 +8764,80 @@ monkeypatch'e bırakıyor ⇒ bir test ayarı bir sonrakine **sızdıramaz**.
 3. Suite: **560 passed, 2 deselected**.
 
 **Commit:** `244b767`.
+
+---
+
+## D-117 · 2026-08-18 · ✅ **D-112 tamamlandı** — krizin yazdığı büyüklük günlüğe giriyor, iki kanal **ayrı** raporlanıyor
+
+**Yetki:** CLAUDE.md §1 ⏭ tablosu madde 1 (D-115'in açtığı iş). Saf raporlama
+(§2.10): **hiçbir hesap değişmiyor**, hiçbir ön-kayıtlı nicelik kaymıyor.
+
+### 1. Kapatılan boşluk
+
+`z`'yi **`update_drift`** yazıyor — ama onun **iki çağırıcısı** var:
+
+| yol | nerede | günlüğe yazıyor muydu |
+|---|---|---|
+| bireysel şaşırma | `graph`, PE yolu | ✅ evet (`delta_magnitude`) |
+| ⛔ **ortak havuz krizi** | `environment.apply_crisis_trauma` | ❌ **hayır** |
+
+⇒ D-112'nin *"travma eşiğine mesafe"* profili evrenin **yarısını** görüyordu.
+Bedeli D-115'te ölçüldü: tohum 9904'te bireysel eşiği geçen yaşam **0/72**,
+`z` dolu olan ajan **72/72**, ve profil *"hiçbir şey yaklaşmadı"* diyordu.
+
+### 2. Ne yapıldı — dört parça
+
+1. **`crisis_trauma_magnitude()` ayrıldı ve tek yetki oldu.**
+   `apply_crisis_trauma` artık onu çağırıyor. ⚠ Kayıtçı çarpımı kendisi
+   yapsaydı (`CRISIS_BASE_MAGNITUDE × CRISIS_TRAUMA_MULTIPLIER`) bu **§2.8'in
+   hatası** olurdu — D-115'in cezalandırdığı hatanın aynısı.
+2. **`graph._record_pool_event` `crisis_magnitude` yazıyor.** Kriz yoksa
+   **`None`**, `0.0` değil: *"kimse yaralanmadı"* ile *"sıfır büyüklükte
+   yaralandı"* bu evrende **zıt** iki şey.
+3. **`delta_profile` iki kanalı AYRI veriyor.** Üst düzey anahtarlar
+   D-112'nin tanımladığı anlamda kalıyor (**bireysel**, `channel` alanıyla
+   açıkça damgalı), kriz **yanına** ekleniyor.
+   ⛔ **Toplanmıyor** — ve bu maddenin gerekçesi kaydın en önemli cümlesi:
+   > **Kriz kolun tamamına aynı anda vuruyor ⇒ ajanlar arası hiçbir bilgi
+   > taşımıyor.** Havuzlanırsa D-115'in körlüğü **aynen geri gelir**.
+4. **`analyze_population_run` raporda ikisini ayrı yazıyor**, ve D-117 öncesi
+   koşumlar için *"blok YOK"* diyor. ⚠ Sıfır raporlamak D-115'in hatasının ta
+   kendisiydi.
+
+### 3. Mutasyon kontrolü — **altı** mutasyon, altısı da **doğru** testi kırdı
+
+| mutasyon | kırılan test |
+|---|---|
+| kriz kanalı hiç okunmuyor | `delta_profile`'ın iki kriz testi |
+| iki kanal toplanıyor | `..._keeps_the_two_channels_apart` |
+| eşik sınırda ters (`>=` → `>`) | `test_recorded_crisis_magnitude_is_the_one_the_universe_scarred_with` |
+| rapor krizi saymıyor | `test_the_report_names_the_channel_that_filled_z` |
+| eski koşumda 0 raporlanıyor | `test_a_run_without_the_crisis_block_says_so...` |
+| ⛔ **çağrı yerinde büyüklük `None`** | `test_advance_commons_logs_the_scar_the_famine_actually_wrote` |
+
+⛔ **Sonuncusu ilk hâlinde hiçbir şeyi kırmadı** — birim testi kayıtçıyı
+**doğrudan** çağırıyordu, dolayısıyla kablolamayı hiç görmüyordu. ⚠ **Bu
+oturumda aynı boşluk ikinci kez çıktı** (diğeri D-116'nın `main()` çağrısı).
+⇒ **Kural sertleşiyor:** bir düzeltmenin testi, düzeltmenin **çağrıldığı
+yerden** geçmeli; fonksiyonu doğrudan çağıran test *"kod tabanında var"*
+demeyi kanıtlar, *"koşum yolunda var"* demeyi değil.
+
+### 4. Doğrulama ve sınırları
+
+- Mock koşum (N=4, G=3, 40 olay, tohum 9307): kriz bloğu **sonuç dosyasında
+  ve raporda** görünüyor, bireysel kanal 36/36 geçiş veriyor.
+- ⚠ **Mock evrende kriz oluşmadı** — mock kararlar havuzu çökertmiyor ⇒ kriz
+  yolunun uçtan uca kanıtı `advance_commons` testinde (üretim çağrı yeri),
+  canlı koşumda değil.
+- ⚠ **Geçmiş koşumlar geriye dönük düzelmiyor.** `headroom_n8_g3_s3` ve B1
+  bu bloğu **taşımıyor**; rapor onlar için *"D-117 öncesi"* diyor.
+- Suite: **569 passed, 2 deselected**.
+
+### 5. ⇒ Uç nokta kararına etkisi (Yasin'in kararı #1)
+
+Bu kayıt kararı **vermiyor**, ama dördüncü seçeneği (*"`z`'yi yalnız bireysel
+kanaldan oku"*) artık **ölçülebilir** kılıyor: bir sonraki koşum, `z`'nin
+hangi kanaldan geldiğini **koşum sırasında** raporlayacak. ⚠ Uç noktanın
+kendisi **değişmedi** — değişmesi ön-kayıt kararıdır (L9).
+
+**Commit:** `85b70fa`.
