@@ -1989,3 +1989,207 @@ def test_the_window_reaches_the_results_file(monkeypatch) -> None:
         assert profile["to_landmark"]["window_last_event"] == LANDMARK_EVENT
         # The window can never see more events than the whole life did.
         assert profile["to_landmark"]["n_events"] <= profile["n_events"]
+
+
+# ---------------------------------------------------------------------------
+# D-136 — the endpoint's dimension, recovered as pure reporting
+# ---------------------------------------------------------------------------
+
+# Two agents whose axes moved differently, so an aggregation that forgot to
+# filter reports numbers neither agent produced (K2). "a" is energy-dominant
+# like the real universe; "b" is the counterfactual the run has never seen.
+AXIS_ROWS_TWO_AGENTS: list[dict[str, Any]] = [
+    {
+        "agent_id": "a",
+        "event_counter": 1,
+        "delta_magnitude": 0.2,
+        "affected_domain": "energy",
+        "axis_deltas": {
+            "energy": 0.40, "resource": 0.10, "social": 0.00, "uncertainty": 0.02
+        },
+    },
+    {
+        "agent_id": "a",
+        "event_counter": 2,
+        "delta_magnitude": 0.3,
+        "affected_domain": "resource",
+        "axis_deltas": {
+            "energy": 0.20, "resource": 0.60, "social": 0.05, "uncertainty": 0.04
+        },
+    },
+    {
+        "agent_id": "b",
+        "event_counter": 1,
+        "delta_magnitude": 0.9,
+        "affected_domain": "social",
+        "axis_deltas": {
+            "energy": 0.01, "resource": 0.02, "social": 0.99, "uncertainty": 0.03
+        },
+    },
+]
+
+
+def test_axis_profile_keeps_the_losing_axes_and_counts_who_won() -> None:
+    """⭐ The debt itself: `z` is one-dimensional and the file could not say so.
+
+    PROVENANCE_AUDIT §9 measured `social` and `uncertainty` at zero appearances
+    across 216 lives — but that is a statement about the TAG, and the tag is an
+    argmax. Whether those axes are dead or merely outvoted is a different
+    question, and answering it decides whether the third pre-registration can
+    use more than one dimension of the endpoint.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    axes = delta_profile("a", AXIS_ROWS_TWO_AGENTS, NO_CRISIS)["axes"]
+
+    assert axes["n_events"] == 2, "another agent's events leaked into the axes"
+    assert axes["wins"] == {
+        "energy": 1, "resource": 1, "social": 0, "uncertainty": 0
+    }
+    # ⭐ The point of the whole item: an axis that won NOTHING still reports how
+    # far it moved. Under the old code this number did not exist.
+    assert axes["deltas"]["social"]["n_events"] == 2
+    assert axes["deltas"]["social"]["max"] == pytest.approx(0.05)
+    assert axes["deltas"]["energy"]["mean"] == pytest.approx(0.30)
+
+
+def test_axis_profile_does_not_pool_two_agents(monkeypatch) -> None:
+    """K2 — the aggregation runs over agents, so its test needs two of them.
+
+    Measured: with the agent filter deleted, "a" reports a social peak of 0.99
+    that belongs to "b", and every single-agent assertion in this file still
+    passes. That is the shape of the two collapse bugs D-127 found.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    a_axes = delta_profile("a", AXIS_ROWS_TWO_AGENTS, NO_CRISIS)["axes"]
+    b_axes = delta_profile("b", AXIS_ROWS_TWO_AGENTS, NO_CRISIS)["axes"]
+
+    assert a_axes["deltas"]["social"]["max"] == pytest.approx(0.05)
+    assert b_axes["deltas"]["social"]["max"] == pytest.approx(0.99)
+    assert b_axes["wins"]["social"] == 1
+    assert a_axes["wins"]["social"] == 0
+
+
+def test_axis_profile_reads_the_recorded_tag_instead_of_recomputing_it() -> None:
+    """⭐ §2.8 — the reporter must follow the universe, not imitate it.
+
+    A reporter that ran its own argmax would agree with `update_drift` today
+    and go on agreeing after the universe changed how it tags — the silent
+    divergence this project has paid for four times. The only way to pin that
+    is a row where the two disagree, which production cannot produce and a
+    fixture can.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    disagreeing = [
+        {
+            "agent_id": "a",
+            "event_counter": 1,
+            "delta_magnitude": 0.5,
+            # Not the argmax of its own deltas — on purpose.
+            "affected_domain": "uncertainty",
+            "axis_deltas": {
+                "energy": 0.90, "resource": 0.10, "social": 0.0, "uncertainty": 0.05
+            },
+        }
+    ]
+
+    axes = delta_profile("a", disagreeing, NO_CRISIS)["axes"]
+
+    assert axes["wins"]["uncertainty"] == 1, "the reporter re-derived the tag"
+    assert axes["wins"]["energy"] == 0
+
+
+def test_axis_profile_skips_uninstrumented_rows_rather_than_calling_them_zero() -> None:
+    """"Not recorded" is not "did not move" — the distinction D-121 drew for `z`.
+
+    Rows written before this field existed carry no axis block. Counting them
+    as four zeros would report a universe where nothing ever moved, which is
+    the most alarming possible reading and a false one.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    legacy = [{"agent_id": "a", "event_counter": 1, "delta_magnitude": 0.68}]
+    profile = delta_profile("a", legacy, NO_CRISIS)
+
+    # The magnitude channel still reports the event — only the axis block abstains.
+    assert profile["n_events"] == 1
+    assert profile["axes"]["n_events"] == 0
+    assert profile["axes"]["deltas"]["energy"]["max"] is None
+    assert profile["axes"]["deltas"]["energy"]["mean"] is None
+    assert profile["axes"]["wins"] == {
+        "energy": 0, "resource": 0, "social": 0, "uncertainty": 0
+    }
+
+
+def test_axis_profile_in_the_window_stops_where_the_endpoint_is_read() -> None:
+    """`z` is read AT the landmark, so the axes that could write it end there.
+
+    A whole-life axis report placed under `to_landmark` would describe swings
+    that happened after the endpoint was already frozen — D-124's confound,
+    reintroduced through a new field.
+    """
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    rows = [
+        {
+            "agent_id": "a",
+            "event_counter": LANDMARK_EVENT,
+            "delta_magnitude": 0.2,
+            "affected_domain": "energy",
+            "axis_deltas": {
+                "energy": 0.3, "resource": 0.1, "social": 0.02, "uncertainty": 0.01
+            },
+        },
+        {
+            "agent_id": "a",
+            "event_counter": LANDMARK_EVENT + 1,
+            "delta_magnitude": 0.9,
+            "affected_domain": "social",
+            "axis_deltas": {
+                "energy": 0.1, "resource": 0.1, "social": 0.95, "uncertainty": 0.01
+            },
+        },
+    ]
+    profile = delta_profile("a", rows, NO_CRISIS)
+
+    assert profile["axes"]["n_events"] == 2, "the whole-life block lost an event"
+    assert profile["axes"]["wins"]["social"] == 1
+    window = profile["to_landmark"]["axes"]
+    assert window["n_events"] == 1, "the window ran past the landmark"
+    assert window["wins"]["social"] == 0
+    assert window["deltas"]["social"]["max"] == pytest.approx(0.02)
+
+
+def test_the_axis_report_reaches_the_results_file(monkeypatch) -> None:
+    """K3 — the field is worthless if the run path never writes it out.
+
+    End to end through the real runner: only `agent_node` is stubbed, so the
+    PE path, the profile and the serialisation are the production ones.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    agents = results["arms"][0]["generations"][0]["agents"]
+    assert agents, "no agents at all"
+    for agent in agents:
+        for block in (agent["delta_profile"]["axes"],
+                      agent["delta_profile"]["to_landmark"]["axes"]):
+            assert set(block["deltas"]) == {
+                "energy", "resource", "social", "uncertainty"
+            }
+            assert set(block["wins"]) == set(block["deltas"])
+        # A live run must have produced instrumented rows, or the block is a
+        # well-formed shell reporting nothing (the failure K3 exists for).
+        assert agent["delta_profile"]["axes"]["n_events"] > 0

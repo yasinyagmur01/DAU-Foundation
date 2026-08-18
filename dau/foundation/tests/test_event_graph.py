@@ -463,3 +463,98 @@ def test_rotation_moves_the_front_of_the_queue(monkeypatch) -> None:
     assert len({tuple(order) for order in fixed}) == 1, "a fixed queue must not move"
     assert len({tuple(order) for order in rotated}) > 1, "rotation did not move the queue"
     assert rotated[0][0] != rotated[1][0], "the front of the queue never changed"
+
+
+# ---------------------------------------------------------------------------
+# D-136 — the endpoint's dimension, recorded beside the tag that hides it
+# ---------------------------------------------------------------------------
+
+
+def test_axis_deltas_reports_all_four_axes_not_only_the_winner() -> None:
+    """⭐ The debt: `z` looks four-dimensional and has one usable dimension.
+
+    `_primary_affected_domain` computes four swings and keeps one — the argmax.
+    In C2 that argmax was `energy` or `resource` in 216 of 216 lives, so
+    `social` and `uncertainty` appear nowhere in the results, and nothing in
+    the file can say whether those axes never moved or moved and lost.
+
+    Measured (§2.4-b/K5): with `_axis_deltas` returning only the winning axis,
+    every other test in this file still passed.
+    """
+
+    before = InternalState(
+        energy=0.5, resource_load=0.1, social_load=0.2, uncertainty_load=0.3
+    )
+    after = InternalState(
+        energy=0.9, resource_load=0.4, social_load=0.25, uncertainty_load=0.31
+    )
+
+    deltas = graph_mod._axis_deltas(before, after)
+
+    assert set(deltas) == {"energy", "resource", "social", "uncertainty"}
+    # The losers are present AND non-zero — a report that kept the keys and
+    # zeroed the values would be the same blindness with more fields.
+    assert deltas["social"] == pytest.approx(0.05)
+    assert deltas["uncertainty"] == pytest.approx(0.01, abs=1e-9)
+    assert graph_mod._primary_affected_domain(before, after) == "energy"
+
+
+def test_the_tag_is_the_argmax_of_exactly_the_recorded_swings() -> None:
+    """One authority for the tag, and the row shows what it decided from.
+
+    The split exists so a reporter never re-derives the argmax (§2.8). That is
+    only safe while the dict the tag comes from IS the dict written to the row,
+    so this pins them to each other on an input where three axes are live.
+    """
+
+    before = InternalState(
+        energy=0.5, resource_load=0.1, social_load=0.2, uncertainty_load=0.3
+    )
+    after = InternalState(
+        energy=0.52, resource_load=0.1, social_load=0.9, uncertainty_load=0.4
+    )
+
+    deltas = graph_mod._axis_deltas(before, after)
+    tag = graph_mod._primary_affected_domain(before, after)
+
+    assert tag == "social", "the argmax moved off the dict it is supposed to read"
+    assert max(deltas, key=deltas.get) == tag
+
+
+def test_a_lived_pe_row_carries_the_tag_and_the_four_swings(monkeypatch) -> None:
+    """K3 — through the node that actually runs, not the helper in isolation.
+
+    `_axis_deltas` can be correct and unreachable: the four numbers matter only
+    if `prediction_error_node` puts them on the row the runners drain. This
+    project has shipped "fixed in the codebase, absent from the run path" four
+    times in one session (§2.4-b/K3).
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", LIFE_EVENTS)
+    graph_mod.reset_pe_event_log()
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+
+    run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state()],
+        build_event_graph(),
+        max_rounds=ROUND_GUARD,
+    )
+    rows = graph_mod.get_pe_event_log()
+
+    assert rows, "the life produced no PE row at all"
+    for row in rows:
+        assert set(row["axis_deltas"]) == {
+            "energy",
+            "resource",
+            "social",
+            "uncertainty",
+        }
+        # The tag on the row must be one the run could actually have chosen,
+        # and it must be the largest swing the same row reports.
+        assert row["affected_domain"] in row["axis_deltas"]
+        assert row["affected_domain"] == max(
+            row["axis_deltas"], key=row["axis_deltas"].get
+        )

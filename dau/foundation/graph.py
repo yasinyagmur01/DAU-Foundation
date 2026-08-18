@@ -368,11 +368,24 @@ def _record_pe_event(
     precision_weight: float,
     delta_magnitude: float,
     delta_class: str,
+    affected_domain: str,
+    axis_deltas: dict[str, float],
 ) -> None:
     """Append one event-level PE row to the overnight-audit buffer.
 
     ``prediction_error`` is precision-weighted PE_w; ``raw_pe`` is the
     unweighted MiniLM error; ``precision_weight`` is π used for that event.
+
+    ``affected_domain`` is the axis the delta was TAGGED with and
+    ``axis_deltas`` are the four swings the tag was chosen from (D-136). Both,
+    not one: the tag alone is what collapsed the endpoint to a single usable
+    dimension in C2 (`social` and `uncertainty` never appeared in 216 lives,
+    PROVENANCE_AUDIT §9), and without the losing magnitudes there is no way to
+    tell "that axis never moved" from "it moved, and lost the argmax".
+
+    Recording only — ``_primary_affected_domain`` still decides the tag, and
+    the numbers written here are the ones it decided from, never re-derived
+    downstream (§2.8).
     """
 
     _pe_event_log.append(
@@ -384,6 +397,10 @@ def _record_pe_event(
             "precision_weight": float(precision_weight),
             "delta_magnitude": float(delta_magnitude),
             "delta_class": str(delta_class),
+            "affected_domain": str(affected_domain),
+            "axis_deltas": {
+                str(axis): float(value) for axis, value in axis_deltas.items()
+            },
         }
     )
 
@@ -839,6 +856,28 @@ def _pe_target_load_domain(state: DAUAgentState) -> str | None:
     return DAERM_DEFAULT_TARGET_DOMAIN
 
 
+def _axis_deltas(
+    before: InternalState,
+    after: InternalState,
+) -> dict[AffectedDomain, float]:
+    """How far each of the four axes swung between before and after.
+
+    Split out of ``_primary_affected_domain`` by D-136 so the run can REPORT
+    the losing axes instead of throwing them away one line after computing
+    them. The argmax still happens in exactly one place, and it happens over
+    the dict this returns — a second copy of these four expressions living in
+    a reporter is precisely the reporting/measuring drift §2.8 has caught four
+    times.
+    """
+
+    return {
+        "energy": abs(after.energy - before.energy),
+        "resource": abs(after.resource_load - before.resource_load),
+        "social": abs(after.social_load - before.social_load),
+        "uncertainty": abs(after.uncertainty_load - before.uncertainty_load),
+    }
+
+
 def _primary_affected_domain(
     before: InternalState,
     after: InternalState,
@@ -849,12 +888,7 @@ def _primary_affected_domain(
     the tagged domain of the physiological delta.
     """
 
-    changes: dict[AffectedDomain, float] = {
-        "energy": abs(after.energy - before.energy),
-        "resource": abs(after.resource_load - before.resource_load),
-        "social": abs(after.social_load - before.social_load),
-        "uncertainty": abs(after.uncertainty_load - before.uncertainty_load),
-    }
+    changes = _axis_deltas(before, after)
     return max(changes, key=changes.get)  # type: ignore[arg-type]
 
 
@@ -1173,6 +1207,11 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         target_domain=target_domain,
     )
 
+    # The tag still comes from _primary_affected_domain — re-running the argmax
+    # here would be the §2.8 error the split was made to avoid. The dict is
+    # recomputed rather than threaded through so that the ONE place deciding
+    # the tag stays the one place deciding it.
+    axis_deltas = _axis_deltas(before, after)
     affected = _primary_affected_domain(before, after)
     record = compute_delta(
         before,
@@ -1195,6 +1234,8 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         precision_weight=float(precision_weight),
         delta_magnitude=float(record.magnitude),
         delta_class=_audit_delta_class(record),
+        affected_domain=str(record.affected_domain),
+        axis_deltas={str(axis): float(value) for axis, value in axis_deltas.items()},
     )
 
     current_drift = state.drift_state

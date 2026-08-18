@@ -118,7 +118,7 @@ from dau.diagnostics.tool_identity import (
     resolve_lora_choice,
 )
 from dau.foundation.local_llm import apply_cuda_allocator_config
-from dau.foundation.delta import DELTA_THRESHOLD_DEEP
+from dau.foundation.delta import DELTA_THRESHOLD_DEEP, DOMAIN_ATTR
 from dau.foundation.drift import DriftState
 from dau.foundation.constraints import LANDMARK_EVENT, TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
@@ -187,6 +187,17 @@ LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
 # over the life. Named here so the choice is visible in one place and cannot be
 # quietly swapped for whichever quantity happens to move (§2.7).
 CONTROL_TRAIT_KEY: str = "energy_mean_over_life"
+# D-136. The two keys the PE row carries the endpoint's dimension under. Named
+# here because reading the wrong one is silent in exactly the way
+# LANDMARK_DRIFT_KEY is: the block comes back empty and the axis report says
+# "nothing moved" about a universe where three axes moved and lost.
+PE_ROW_AFFECTED_DOMAIN_KEY: str = "affected_domain"
+PE_ROW_AXIS_DELTAS_KEY: str = "axis_deltas"
+# The four axes, taken from the universe's own domain table rather than
+# retyped: a literal list here would keep reporting four axes after a fifth was
+# added to InternalState, and the endpoint would lose a dimension in silence —
+# which is the exact failure D-136 is about.
+AXIS_ORDER: tuple[str, ...] = tuple(DOMAIN_ATTR)
 # P0-① as decided (2026-08-17): sequential service in a rotating order. The
 # D-103 pilot measured what the simultaneous, proportional version does — eight
 # founders came out bit-identical, z had zero variance, and Cov(w, z) was zero
@@ -582,6 +593,57 @@ def _magnitude_summary(magnitudes: list[float]) -> dict[str, Any]:
     }
 
 
+def _axis_profile(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Per-axis swing sizes beside the axis that won the tag — D-136.
+
+    ⚠ Why this is not ``_magnitude_summary``: these two quantities are graded
+    against different gates and mixing them would report a threshold that does
+    not apply. ``delta_magnitude`` decides WHETHER a scar is written
+    (``is_trauma``, >= DELTA_THRESHOLD_DEEP); an axis delta decides only WHICH
+    domain the scar is filed under, and no constant in the universe compares
+    against it. A ``headroom_to_trauma`` on an axis would be a number the
+    physics never computes — §2.8's error, reported instead of measured.
+
+    ``wins`` is read off the row's own ``affected_domain``, never re-derived
+    from ``deltas`` here. The two agree by construction today; a reporter that
+    recomputed the argmax would keep agreeing after the universe stopped, and
+    that silence is the failure this project has paid for four times.
+
+    Rows without the block are skipped, not counted as zero: they come from a
+    run made before the field existed, and "not recorded" is not "did not
+    move" (§2.9, the same distinction D-121 drew for `z`).
+
+    ⛔ Reporting only. Nothing here feeds any computation; it exists so the
+    third pre-registration can ask whether `z` has more than one usable
+    dimension with data instead of an argument (PROVENANCE_AUDIT §9: in C2,
+    `social` and `uncertainty` appeared zero times in 216 lives).
+    """
+
+    instrumented = [row for row in rows if row.get(PE_ROW_AXIS_DELTAS_KEY)]
+    per_axis: dict[str, list[float]] = {axis: [] for axis in AXIS_ORDER}
+    wins: dict[str, int] = {axis: 0 for axis in AXIS_ORDER}
+    for row in instrumented:
+        deltas = row[PE_ROW_AXIS_DELTAS_KEY]
+        for axis in AXIS_ORDER:
+            if axis in deltas:
+                per_axis[axis].append(float(deltas[axis]))
+        winner = str(row.get(PE_ROW_AFFECTED_DOMAIN_KEY, ""))
+        if winner in wins:
+            wins[winner] += 1
+    return {
+        "n_events": len(instrumented),
+        "wins": wins,
+        "deltas": {
+            axis: {
+                "n_events": len(values),
+                "max": max(values) if values else None,
+                "mean": (sum(values) / len(values)) if values else None,
+            }
+            for axis, values in per_axis.items()
+        },
+    }
+
+
 def _window_profile(
     agent_id: str,
     pe_rows: list[dict[str, Any]],
@@ -638,6 +700,10 @@ def _window_profile(
     window["crisis"]["n_crisis_events"] = len(crisis)
     window["window_last_event"] = LANDMARK_EVENT
     window["window_complete"] = reached
+    # D-136, restricted to the same slice as everything else in this window —
+    # `z` is read AT the landmark, so the axes that could have written it are
+    # the ones that moved up to there, not the ones that moved afterwards.
+    window["axes"] = _axis_profile([row for row in pe_rows if _in_window(row)])
     return window
 
 
@@ -692,6 +758,12 @@ def delta_profile(
     profile["crisis"]["n_crisis_events"] = len(crisis)
     profile["n_at_or_above_trauma_either_channel"] = (
         profile["n_at_or_above_trauma"] + profile["crisis"]["n_at_or_above_trauma"]
+    )
+    # D-136: which axis carried each delta, and how big the losing axes were.
+    # Beside the magnitude summary, never inside it — a swing on an axis and
+    # the magnitude that decides trauma are different quantities (_axis_profile).
+    profile["axes"] = _axis_profile(
+        [row for row in pe_rows if row["agent_id"] == agent_id]
     )
     # D-124: the same channels restricted to the slice `z` is read from.
     profile["to_landmark"] = _window_profile(agent_id, pe_rows, pool_rows)
