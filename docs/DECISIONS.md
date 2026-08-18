@@ -9028,3 +9028,68 @@ Yeni seçenek kümesi (karar **Yasin'in**, D-007) sohbette sunuldu.
 ⚠ Hiçbiri **etkiye bakılarak** seçilmeyecek (L9); yukarıdaki bütün sayılar
 **hücre içi çeşitlilik** sayıları, **kol karşıtlığı değil** — kol karşıtlığına
 bakılmadı.
+
+---
+
+## D-121 · 2026-08-18 · ✅ **KARAR: `z` uç noktası = seçenek A** (Yasin) — koru, ve *"tanımsız"*ı *"sıfır"*dan ayır
+
+**Yetki:** Yasin, 2026-08-18. Seçenekler D-120'nin ölçümüyle birlikte sunuldu.
+
+### 1. Karar
+
+**`z` bugünkü hâliyle kalır** (iki kanal birlikte, landmark'ta sabit yaşta).
+Değişen şey uç nokta **değil**, onu **okuma kuralı**:
+
+1. ⭐ **Dejenere hücre ilanı** — `Var(z) = 0` olan hücrede `Cov(w,z)` **yapı
+   gereği** sıfırdır ⇒ *"sıfır seçilim ölçtük"* değil ***"seçilim tanımsız"***.
+   Dayanak **Rothenberg 1971** `10.2307/1913267` (⚠ DR'nin verdiği DOI yanlıştı,
+   D-120'de düzeltildi).
+2. ⭐ **Pozitif kontrol** — aynı `w`, krizden **bağımsız** değişen
+   `energy_mean_over_life` ile kovaryans. Taşımayan koşumda **`None`**, `0.0`
+   değil. ⛔ **Uç nokta değil**; işi yalnızca *"seçilim etki etti, ölçemedik"*
+   ile *"bu koşum hiçbir seçilimi ölçemezdi"*yi ayırmak.
+
+### 2. Neden D değil A — **ölçüm, tercih değil**
+
+| tanım | hücre içi tek değer |
+|---|---|
+| **A (bugünkü `z`)** | **14 / 27** |
+| ⛔ **D** | **en az 21 / 27** |
+
+Ve D'nin **nedensel** riski ayrıca vardı: kriz müdahale-sonrası ⇒ budamak
+*bad control* (DR #10 Q2 + §R, **iki bağımsız yol**). ⇒ Üç ayrı gerekçe aynı
+yöne baktı.
+
+⚠ **E (ayrıştırma) reddedilmedi, işlevsiz bulundu:** hücre içi varyans sıfırken
+ayrıştırma da sıfır verir; yalnız zaten çalışan 13 hücreye ek okuma katardı.
+⚠ **B (landmark'ı kaydır) elendi:** `null` kolu ~10 olayda ölüyor
+(B1: `lived` 24.8 · `shuffle` 28.2 · **`null` 10.0**), landmark 10'da tam bu
+yüzden — kaydırmak **sansürleme** getirirdi.
+
+### 3. Uygulama
+
+| yer | ne |
+|---|---|
+| `reproduction.price_partition` | `z_variance` + `selection_estimable` (saf raporlama) |
+| `reproduction.positive_control_partition` | `Cov(w, control)` + varyans + estimability |
+| `Candidate.control` | isteğe bağlı alan; taşınmıyorsa `None` |
+| `run_population_experiment` | kontrolü landmark bloğundan okuyor, satıra yazıyor |
+| `analyze_population_run` | dejenere alanı **⛔ UNDEFINED** diye işaretliyor, kontrolü basıyor, D-121 öncesi koşum için **"YOK"** diyor |
+
+⚠ **Eşik sabit değil, epsilon:** `Z_VARIANCE_EPSILON = 1e-12` — `z` kayan
+noktaların toplamı, tam sıfır tek yol değil.
+
+### 4. Mutasyon kontrolü — beş mutasyon, beşi doğru testi kırdı
+
+⚠ **İkisi bilerek çağrı yerini hedefliyor** (koşucu kontrolü hesaplamıyor ·
+özelliği okumuyor): bu oturumda *"kod var, koşum yolunda yok"* boşluğu
+**dördüncü** kez çıktı (D-116 · D-117 · D-118 · burada), artık **önce o test
+yazılıyor**.
+
+### 5. ⇒ Karar 3 (bütçe) de çözüldü
+
+D-110 *"olay oranını hangi kesinlikle"* demişti; D-115 sonrası *"hangi kanalın
+oranı"* diye açılmıştı. ⭐ **Aranan nicelik belli: bilgilendirici hücre oranı**
+(bugünkü kestirim **13/27 ≈ %48**, ⚠ kapısız checkpoint'ten).
+
+Suite: **582 passed, 2 deselected**. Commit `968c31f`.

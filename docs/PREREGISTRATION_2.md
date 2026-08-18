@@ -1,6 +1,6 @@
 # Popülasyon C″ — İkinci Ön-Kayıt · ⚠ **TASLAK, KİLİTLİ DEĞİL**
 
-**Durum: ✍️ taslak · 2026-08-18 · açık slot: 4**
+**Durum: ✍️ taslak · 2026-08-18 · açık slot: 3** (Slot 1 kapandı, D-121)
 
 ⚠ **Bu belge henüz bir ön-kayıt değildir.** Slotlar kapanmadan hiçbir koşum
 "doğrulayıcı" sayılmaz. Kapanma anında bu satır **🔒 KİLİTLİ** ile değişir,
@@ -60,10 +60,35 @@ Sınanan parça (aksiyomun **tamamı değil**):
 
 ---
 
-## 3. Birincil uç nokta — ⛔ **SLOT 1, AÇIK**
+## 3. Birincil uç nokta — ✅ **SLOT 1 KAPANDI (D-121, Yasin 2026-08-18)**
 
-**Bugünkü hâli:** `z` = landmark'taki (olay 10) drift büyüklüğü, sabit yaşta
-okunur.
+**Karar: seçenek A — `z` bugünkü hâliyle kalır** (iki kanal birlikte),
+**okuma kuralı eklenir**:
+
+| | |
+|---|---|
+| **`z`** | landmark'taki (olay 10) drift büyüklüğü, sabit yaşta, **iki kanal birlikte** |
+| ⭐ **dejenere hücre ilanı** | `Var(z) = 0` olan hücrede `Cov(w,z)` **yapı gereği** sıfırdır ⇒ *"sıfır seçilim ölçtük"* değil ***"seçilim tanımsız"*** raporlanır (Rothenberg 1971, `10.2307/1913267`) |
+| ⭐ **pozitif kontrol** | aynı `w`, krizden **bağımsız** değişen `energy_mean_over_life` ile kovaryans. ⛔ **Uç nokta değil**, hiçbir kalıtım iddiası buna dayanmaz |
+
+**Gerekçe — ölçüldü, seçilmedi** (D-120/D-121):
+
+| tanım | hücre içi tek değer (dejenere) |
+|---|---|
+| **A — bugünkü `z`** | **14 / 27** |
+| ⛔ D — yalnız bireysel kanal | **en az 21 / 27** |
+
+⇒ Bireysel kanal `magnitude ≥ 0.7` ile ateşleniyor ve landmark'tan **önce
+neredeyse hiç** ateşlenmiyor ⇒ `z_before` çoğu ajanda **tam 0**. Kriz o
+sıfırları *hepsi 1.0*, D *hepsi 0.0* yapardı. ⚠ Ayrıca kriz
+**müdahale-sonrası** olduğu için onu budamak *bad control* riski taşıyordu
+(DR #10 Q2 + yerel tarama §R — **iki bağımsız yol**).
+
+⚠ **İlan edilen sınır:** bu koşumun bilgilendirici hücre oranı **~%48**
+(13/27, ⚠ kapısız checkpoint'ten kestirim). Bütçe buna göre kurulur (§7).
+
+**Eski hâli (arşiv):** `z` = landmark'taki (olay 10) drift büyüklüğü, sabit
+yaşta okunur.
 
 ⛔ **Kapanmadan koşum başlayamaz.** Sebep D-115'te ölçüldü: `z`'yi **iki yol**
 yazıyor —
@@ -165,8 +190,12 @@ oranı?** ⇒ **Slot 1'e bağımlı**, ondan sonra kapanır.
    önseli aksiyom gerekçesiyle kapattı; **açık risk** olarak kaydedildi (D-074).
 6. **`fitness_class` `high` bandı boş** · **`landmark_energy` doygunluk riski**
    (6'da 1 tavanda).
-7. **`z`'nin ölçülebilirliği nişe bağlı** — kriz olmayan tohumda bireysel kanal
-   %36, kriz olanda %0 (D-114/D-115).
+7. **`z`'nin ölçülebilirliği nişe bağlı** — bilgilendirici hücre oranı
+   **~%48** (13/27, D-120). ⚠ Sebep krizin gücü değil, **bireysel kanalın
+   landmark'tan önce ateşlenmemesi** (D-120 §S.2).
+11. ⚠ **Pozitif kontrol bir uç nokta değildir** — `Cov(w, energy_mean_over_life)`
+    yalnız *"bu koşum seçilimi ölçebilir miydi"* sorusunu cevaplar; hiçbir
+    kalıtım iddiası ona dayandırılamaz.
 8. ⚠ **Kriz kanalı ile `TRAUMA` sınıfı imprint aynı şey değil** (§2.11/D-063).
 9. **Sabitler kalibre edilmedi** — `METABOLIC_GAIN_CALIBRATED = False`,
    `POLARITY_COSINE_CALIBRATED = False`.
@@ -181,9 +210,9 @@ oranı?** ⇒ **Slot 1'e bağımlı**, ondan sonra kapanır.
 
 | # | slot | durum |
 |---|---|---|
-| **1** | Birincil uç nokta (`z`) | ⛔ **AÇIK** — DR #10 gönderildi, karar Yasin'in |
-| **2** | İkincil uç noktalar | ⛔ **AÇIK** — Slot 1'den sonra |
-| **3** | Bütçe (P7-a) | ⛔ **AÇIK** — Slot 1'e bağımlı |
+| ~~**1**~~ | Birincil uç nokta (`z`) | ✅ **KAPANDI (D-121)** — seçenek A + dejenere ilanı + pozitif kontrol |
+| **2** | İkincil uç noktalar | ⛔ **AÇIK** — Slot 1 kapandı, sıra bunda |
+| **3** | Bütçe (P7-a) | ⛔ **AÇIK** — ⭐ aranan oran artık belli: **bilgilendirici hücre oranı** (~13/27) |
 | **4** | Tohum politikası | ⛔ **AÇIK** — kullanılmış tohumlar yeniden kullanılamaz (I0.7 abort eder) |
 | — | Tasarım (P0–P6) | ✅ kapalı |
 | — | Geçerlilik kriterleri | ✅ kapalı (§5) |
