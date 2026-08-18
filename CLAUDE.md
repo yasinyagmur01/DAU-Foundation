@@ -24,8 +24,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `560 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — bu oturumda **23 commit** yerel.
-- **Son D-kaydı: D-116.** Sıradaki kayıt **D-117** olarak açılır.
+- **Suite:** `569 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — bu oturumda **25 commit** yerel.
+- **Son D-kaydı: D-117.** Sıradaki kayıt **D-118** olarak açılır.
 - **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
@@ -69,7 +69,7 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 
 | # | iş | durum | süre |
 |---|---|---|---|
-| **1** | ⛔ **D-112'yi tamamla: kriz yolunun büyüklüğü günlüğe yazılsın.** `environment.py:252`'deki `crisis_magnitude` hiçbir yere kaydedilmiyor ⇒ `delta_profile` `z`'yi yazan iki yoldan **yalnız birini** görüyor. Saf raporlama (§2.10) | **Yasin'e önerildi, sıra bekliyor** | ~20 dk |
+| ~~**1**~~ | ✅ **KAPANDI (D-117)** — kriz büyüklüğü `crisis_trauma_magnitude()`'dan okunup havuz olay satırına yazılıyor; `delta_profile` ve analiz raporu iki kanalı **ayrı** veriyor (⛔ toplamıyor: kriz kolun tamamına aynı anda vurur ⇒ ajanlar arası bilgi taşımaz) | ✅ | — |
 | ~~**2**~~ | ✅ **KAPANDI (D-116)** — `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` popülasyon koşucusunun `main()`'inde, alet kimliğinde `cuda_allocator` bloğu. ⭐ Tahsis ediciye **ulaştığı ölçüldü** (`is_expandable` True ↔ ayarsız False). ⚠ **Eğitim yükünde OOM azaldı mı ölçülmedi** — kanıtı bir sonraki gerçek koşumun OOM sayısı | ✅ | — |
 | **3** | Kapılı bir koşumla ölçümü tekrarla (tohum 9902–9904, düzeltilmiş bellekle) | uç nokta kararına bağlı | ~5.5 sa |
 
@@ -77,7 +77,7 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 
 | # | karar | dayanağı hazır mı |
 |---|---|---|
-| **1** ⛔⛔ | **`z` uç noktası ne olacak** | ⭐ **Evet, artık mekanizma biliniyor** (D-115). Üç yol: **A** koru + krizin uç noktayı eşitlediğini ilan et · **B** okuma anını kaydır (⚠ sansürleme bedeli, D-081'de bir kez reddedildi) · **C** değiştir (⚠ B2 sıfırdan yazılır). ⭐ **Yeni dördüncü seçenek:** `z`'yi **yalnız bireysel kanaldan** okumak — kriz kaynaklı drift'i uç noktadan dışla. Tohum 9903 (kriz hiç olmayan) bunun çalıştığını gösteriyor: 8 ajanda **5 farklı `z`** |
+| **1** ⛔⛔ | **`z` uç noktası ne olacak** | ⭐ **Evet, artık mekanizma biliniyor** (D-115), ve ⭐ **D-117'den sonra hangi kanalın yazdığı koşum sırasında raporlanıyor.** Üç yol: **A** koru + krizin uç noktayı eşitlediğini ilan et · **B** okuma anını kaydır (⚠ sansürleme bedeli, D-081'de bir kez reddedildi) · **C** değiştir (⚠ B2 sıfırdan yazılır). ⭐ **Yeni dördüncü seçenek:** `z`'yi **yalnız bireysel kanaldan** okumak — kriz kaynaklı drift'i uç noktadan dışla. Tohum 9903 (kriz hiç olmayan) bunun çalıştığını gösteriyor: 8 ajanda **5 farklı `z`** |
 | **2** | Ömür uç nokta olsun mu | ⚠ **Post-hoc tuzağı** — hareket ettiğini gördükten sonra seçilemez (L9). Meşru tek yol: ikinci ön-kayıta **koşumdan önce** yazmak, **taze tohumla** sınamak. ⚠ Ve bugünkü hâliyle `lived ≈ shuffle` ⇒ Lamarckçı kanalın kanıtı **olamaz** |
 | **3** | **P7-a bütçesi** | ✅ **Biçimi karara bağlandı (D-110):** *"kaç saat"* değil ***"olay oranını hangi kesinlikle"***. ⚠ Ama D-115 sonrası **oran yeniden tanımlanmalı** — hangi kanalın oranı? |
 | **4** | Eşdeğerlik testi (TOST) | ⏸ **Ertelendi (D-110/D-113).** Aralık kestirimi alındı, TOST alınmadı: *"en küçük anlamlı etki"* isimlendirmeyi şart koşuyor (DR #1'den beri açık) |
@@ -96,7 +96,7 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 | **D-109** | **B1 pilotu** — `clean`, I4.1 identical. ⚠ *"uç nokta dejenere"* okuması **D-115'te çürütüldü** |
 | **D-110** | **DR #9 mutabakatı** (§Q) — ⭐ **ilk sıfır kimlik hatalı tur** (5/5 doğrulandı, alıntılar kaynakta). ⭐ **Pilottan uç nokta değiştirmek meşrudur** (Evans 2007): koşum ortasında değiliz |
 | **D-111** | ⭐ **Checkpoint** — her nesilden sonra kısmi sonuç. Sonuç **değil**: `complete:false`, `run_quality` yok, analiz aracı **reddediyor** |
-| **D-112** | `delta.magnitude` profili (eşiğe kalan mesafe). ⚠ **EKSİK** — kriz yolunu görmüyor (D-115) |
+| **D-112** | `delta.magnitude` profili (eşiğe kalan mesafe). ⚠ **EKSİK'ti** — kriz yolunu görmüyordu (D-115); ✅ **D-117 tamamladı** |
 | **D-113** | Aralık kestirimi (**Wilson**, Wald değil — nadir olayda Wald bozuluyor). Test değil |
 | **D-114** | Headroom koşumu — ⚠ merkezî iddiası **D-115'te düzeltildi** |
 | **D-115** | ⛔⛔ **Kök neden: `z`'yi iki yol yazıyor, aletim birini ölçüyordu** |
@@ -136,8 +136,13 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 3. **P0 tek fonksiyonda:** `build_arm_population`.
 4. **Price bir nesil GECİKMELİ** (D-101): G nesil ⇒ **G−1** satır.
 5. ⚠ **Mutasyon kontrolü:** *"bir test kırıldı mı"* yetmez, **hangi** testin
-   kırıldığına bakılır. Bu oturumda **üç kez** boş test yakalandı (A1'in
-   `enforce()`'u · D-108'in tek-tip popülasyonu · D-112'nin sınır değeri).
+   kırıldığına bakılır. Bu oturumda **beş kez** boş test yakalandı (A1'in
+   `enforce()`'u · D-108'in tek-tip popülasyonu · D-112'nin sınır değeri ·
+   **D-116/D-117'de iki kez aynı boşluk**).
+   ⛔ **Kural sertleşti (D-117):** testin, düzeltmenin **çağrıldığı yerden**
+   geçmesi gerekir. Fonksiyonu doğrudan çağıran test *"kod tabanında var"*ı
+   kanıtlar, ***"koşum yolunda var"***ı değil — iki kez tam bu yüzden
+   düzeltme repoda olup koşumda yoktu.
 6. ⭐ **Checkpoint var** (D-111): koşum çökerse `*.partial.json`'a bak.
    Analiz aracı onu **reddeder** — elle incelenir.
 7. ⛔ **Bir sayıya bakıp cümle kurmadan önce hangi mekanizmanın onu ürettiğini
