@@ -61,6 +61,26 @@ DRIFT_ABSENT_MAGNITUDE: float = 0.0
 PRICE_KEY_SELECTION: str = "selection"
 PRICE_KEY_TRANSMISSION: str = "transmission"
 PRICE_KEY_DELTA_ZBAR: str = "delta_zbar"
+# D-121. Cov(w, z) is zero BY CONSTRUCTION when every parent of a cell carries
+# the same z, and a run that prints that zero next to a real one is reporting
+# two different things with one number. Measured: 14 of 27 cells of the
+# headroom run were degenerate this way. So the partition also says whether the
+# selection term was estimable at all — the identification check Rothenberg
+# 1971 (10.2307/1913267) names, applied before the number is read rather than
+# after (Yasin's decision A, 2026-08-18).
+PRICE_KEY_Z_VARIANCE: str = "z_variance"
+PRICE_KEY_ESTIMABLE: str = "selection_estimable"
+# Below this the within-cell spread is numerical noise, not variation. Named
+# rather than testing == 0.0 because z is a sum of floats and an exact zero is
+# not the only way to have nothing to select on.
+Z_VARIANCE_EPSILON: float = 1e-12
+# The pre-declared positive control (D-121). NOT an endpoint and never claimed
+# as one: it exists so that a run reporting "no selection" can be told apart
+# from a run whose selection machinery never worked. Declared before the run,
+# per Q4's boundary conditions.
+CONTROL_KEY_COVARIANCE: str = "control_selection"
+CONTROL_KEY_VARIANCE: str = "control_variance"
+CONTROL_KEY_ESTIMABLE: str = "control_estimable"
 
 REPORT_KEY_F_AGENT_SPREAD: str = "f_agent_spread"
 REPORT_KEY_W_VARIANCE: str = "w_variance"
@@ -80,6 +100,10 @@ class Candidate:
     agent_id: str
     f_agent: float
     z: dict[str, float]
+    # D-121: the pre-declared positive-control trait, or None when the caller
+    # does not carry one. Optional so every existing construction stays valid,
+    # and never folded into z — it is a diagnostic, not an endpoint.
+    control: float | None = None
 
 
 def _sorted_unique(candidates: list[Candidate]) -> list[Candidate]:
@@ -220,12 +244,54 @@ def price_partition(
         transmission = statistics.fmean(
             w * dz for w, dz in zip(w_values, delta_z)
         )
+        z_variance = statistics.fmean((z - z_mean) ** 2 for z in z_values)
         out[domain] = {
             PRICE_KEY_SELECTION: cov / w_mean,
             PRICE_KEY_TRANSMISSION: transmission / w_mean,
             PRICE_KEY_DELTA_ZBAR: (cov + transmission) / w_mean,
+            # Reported beside the term, not instead of it: the number stays
+            # readable, and the flag says whether it carries information.
+            PRICE_KEY_Z_VARIANCE: z_variance,
+            PRICE_KEY_ESTIMABLE: z_variance > Z_VARIANCE_EPSILON,
         }
     return out
+
+
+def positive_control_partition(
+    parents: list[Candidate],
+    w_by_parent: dict[str, int],
+) -> dict[str, float | bool] | None:
+    """Cov(w, control) for the pre-declared control trait — D-121, Yasin's A.
+
+    Returns None when the trait was not carried, rather than a zero: a run
+    without the control must not look like a run whose control came out flat.
+
+    ⚠ This is NOT a second endpoint and no inheritance claim may be built on
+    it. Its only job is to separate two readings that look identical in the
+    results file — "selection acted and we measured none" from "the selection
+    machinery could not have measured anything" — by showing the same w
+    covarying with a quantity that DOES vary. Chosen and written down before
+    the run (Q4/Eldridge 2016), and reported whatever it says.
+    """
+
+    ordered = _sorted_unique(parents)
+    if not ordered or any(c.control is None for c in ordered):
+        return None
+    w_values = [float(w_by_parent[c.agent_id]) for c in ordered]
+    w_mean = statistics.fmean(w_values)
+    if w_mean <= 0.0:
+        raise ValueError("no heirs were produced — Price partition is undefined")
+    values = [float(c.control) for c in ordered]  # type: ignore[arg-type]
+    mean = statistics.fmean(values)
+    variance = statistics.fmean((v - mean) ** 2 for v in values)
+    cov = statistics.fmean(
+        (w - w_mean) * (v - mean) for w, v in zip(w_values, values)
+    )
+    return {
+        CONTROL_KEY_COVARIANCE: cov / w_mean,
+        CONTROL_KEY_VARIANCE: variance,
+        CONTROL_KEY_ESTIMABLE: variance > Z_VARIANCE_EPSILON,
+    }
 
 
 def reproduction_report(

@@ -43,8 +43,12 @@ from pathlib import Path
 from typing import Any
 
 from dau.generation.reproduction import (
+    CONTROL_KEY_COVARIANCE,
+    CONTROL_KEY_ESTIMABLE,
+    CONTROL_KEY_VARIANCE,
     DRIFT_ABSENT_MAGNITUDE,
     PRICE_KEY_DELTA_ZBAR,
+    PRICE_KEY_ESTIMABLE,
     PRICE_KEY_SELECTION,
     PRICE_KEY_TRANSMISSION,
     REPORT_KEY_F_AGENT_SPREAD,
@@ -77,6 +81,13 @@ LANDMARK_KEY_DRIFT: str = "landmark_drift_magnitudes"
 LANDMARK_KEY_REACHED: str = "landmark_reached"
 
 AGENT_KEY_DELTA_PROFILE: str = "delta_profile"
+# D-121: where the runner writes the positive control, and how the report
+# labels it. The label names the QUANTITY so a reader never has to guess which
+# trait was declared.
+GEN_KEY_CONTROL: str = "positive_control_for_previous_transition"
+CONTROL_TRAIT_LABEL: str = "energy_mean_over_life"
+# Printed next to a term that exists but cannot carry information.
+UNDEFINED_MARK: str = "⛔ UNDEFINED (Var=0)"
 # The commons-crisis sub-block D-117 added to the profile. Absent in every
 # run before it, which the report says out loud rather than reading as zero.
 PROFILE_KEY_CRISIS: str = "crisis"
@@ -113,6 +124,10 @@ class ArmGenerationView:
     f_agent_spread: float | None
     selection_measurable: bool | None
     price: dict[str, dict[str, float]] | None
+    # D-121. Reported beside the price row, never merged into it: the control
+    # answers "could this run have measured selection at all", which is a
+    # different question from "did selection act on z".
+    control: dict[str, Any] | None = None
     z_by_agent: dict[str, dict[str, float]] = field(default_factory=dict)
     landmark_reached: int = 0
     n_agents: int = 0
@@ -162,6 +177,7 @@ def arm_views(run: dict[str, Any]) -> list[ArmGenerationView]:
                     f_agent_spread=report.get(REPORT_KEY_F_AGENT_SPREAD),
                     selection_measurable=report.get(REPORT_KEY_SELECTION_MEASURABLE),
                     price=row.get(GEN_KEY_PRICE),
+                    control=row.get(GEN_KEY_CONTROL),
                     z_by_agent=z_by_agent,
                     landmark_reached=reached,
                     n_agents=len(agents),
@@ -430,10 +446,35 @@ def level1_selection(
         lines.append(f"  {view.arm:<8} gen{view.generation} closes the previous transition:")
         for domain in sorted(view.price):
             part = view.price[domain]
+            # D-121. Var(z) = 0 within a cell makes the selection term zero BY
+            # CONSTRUCTION, and printing that zero like any other is the single
+            # most likely misreading of this whole report: it looks exactly
+            # like "selection acted and came out flat". Measured: 14 of 27
+            # cells of the headroom run were degenerate. So the term is
+            # labelled, not hidden — the number stays visible and the label
+            # says what it can carry (Rothenberg 1971, 10.2307/1913267).
+            estimable = part.get(PRICE_KEY_ESTIMABLE)
+            mark = "" if estimable is not False else f"  {UNDEFINED_MARK}"
             lines.append(
                 f"    {domain:<14} selection={part[PRICE_KEY_SELECTION]:+.6f}  "
                 f"transmission={part[PRICE_KEY_TRANSMISSION]:+.6f}  "
-                f"Δz̄={part[PRICE_KEY_DELTA_ZBAR]:+.6f}"
+                f"Δz̄={part[PRICE_KEY_DELTA_ZBAR]:+.6f}{mark}"
+            )
+        degenerate = sum(
+            1 for part in view.price.values()
+            if part.get(PRICE_KEY_ESTIMABLE) is False
+        )
+        if degenerate:
+            lines.append(
+                f"    ⛔ {degenerate} of {len(view.price)} domains: every parent "
+                "of this cell carried the SAME z, so Var(z) = 0 and the "
+                "selection term is zero by construction. This is NOT 'no "
+                "selection was measured' — nothing could have been measured."
+            )
+        if PRICE_KEY_ESTIMABLE not in _any_part(view.price):
+            lines.append(
+                "    ⚠ estimability ABSENT — this run predates D-121 and cannot "
+                "say whether its zeros were measurable"
             )
         if not view.price:
             lines.append(
@@ -441,6 +482,7 @@ def level1_selection(
             )
     if not lines:
         lines.append("  no transition was closed at all")
+    lines.extend(positive_control(views))
     lines.append("")
     if n_seeds < MIN_SEEDS_FOR_SIGN_CONSISTENCY:
         lines.append(
@@ -453,6 +495,42 @@ def level1_selection(
         lines.append(
             f"sign consistency across seeds: {n_seeds} seeds present — compare "
             "the per-seed signs above by hand; this module does not test."
+        )
+    return lines
+
+
+def _any_part(price: dict[str, Any]) -> dict[str, Any]:
+    """One domain's partition, or an empty dict when there are none."""
+
+    for part in price.values():
+        return part
+    return {}
+
+
+def positive_control(views: list[ArmGenerationView]) -> list[str]:
+    """The pre-declared control trait — D-121, and it answers a different question.
+
+    ⛔ Not an endpoint and not evidence of inheritance. It exists to separate
+    "selection acted and we measured none" from "this run could not have
+    measured any selection at all": the SAME w is covaried with a quantity
+    that does vary, so a flat z next to a moving control means the machinery
+    worked and z was the flat thing.
+    """
+
+    rows = [(v, v.control) for v in views if getattr(v, "control", None)]
+    if not rows:
+        return [
+            "",
+            "  positive control: ABSENT — this run predates D-121, so a null "
+            "here cannot be told apart from a broken selection engine",
+        ]
+    lines = ["", f"  positive control ({CONTROL_TRAIT_LABEL}) — NOT an endpoint:"]
+    for view, control in rows:
+        mark = "" if control.get(CONTROL_KEY_ESTIMABLE) else f"  {UNDEFINED_MARK}"
+        lines.append(
+            f"    {view.arm:<8} gen{view.generation}  "
+            f"Cov(w, control)={float(control[CONTROL_KEY_COVARIANCE]):+.6f}  "
+            f"Var(control)={float(control[CONTROL_KEY_VARIANCE]):.6f}{mark}"
         )
     return lines
 

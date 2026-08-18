@@ -621,3 +621,67 @@ def test_a_run_without_the_crisis_block_says_so_instead_of_reporting_zero() -> N
 
     assert "predates D-117" in lines
     assert "lives that saw a crisis event" not in lines
+
+
+def test_a_degenerate_cell_is_labelled_not_printed_as_a_plain_zero() -> None:
+    """⭐ D-121: the single most likely misreading of this whole report.
+
+    An unlabelled 0.000000 looks exactly like "selection acted and came out
+    flat". The report must say the term could not have been measured.
+    """
+
+    from dau.diagnostics.analyze_population_run import level1_selection
+    from dau.generation.reproduction import PRICE_KEY_ESTIMABLE
+
+    flat = {
+        "resource": {
+            "selection": 0.0,
+            "transmission": 0.2,
+            "delta_zbar": 0.2,
+            "z_variance": 0.0,
+            PRICE_KEY_ESTIMABLE: False,
+        }
+    }
+    from dau.diagnostics.analyze_population_run import arm_views
+
+    run = _run(_three_arms(flat))
+    lines = "\n".join(level1_selection(run, arm_views(run)))
+
+    assert "UNDEFINED" in lines
+    assert "NOT 'no selection was measured'" in lines
+
+
+def test_an_estimable_cell_is_not_labelled() -> None:
+    """The label must discriminate, or it is decoration."""
+
+    from dau.diagnostics.analyze_population_run import level1_selection
+    from dau.generation.reproduction import PRICE_KEY_ESTIMABLE
+
+    varied = {
+        "resource": {
+            "selection": 0.0,
+            "transmission": 0.2,
+            "delta_zbar": 0.2,
+            "z_variance": 0.25,
+            PRICE_KEY_ESTIMABLE: True,
+        }
+    }
+    from dau.diagnostics.analyze_population_run import arm_views
+
+    run = _run(_three_arms(varied))
+    lines = "\n".join(level1_selection(run, arm_views(run)))
+
+    assert "UNDEFINED" not in lines
+
+
+def test_a_run_without_the_control_says_so_instead_of_reporting_a_null() -> None:
+    """Old runs have no control; silence would read as a control that came out flat."""
+
+    from dau.diagnostics.analyze_population_run import positive_control
+
+    from dau.diagnostics.analyze_population_run import arm_views
+
+    run = _run(_three_arms(PRICE))
+    lines = "\n".join(positive_control(arm_views(run)))
+
+    assert "predates D-121" in lines

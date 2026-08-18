@@ -142,6 +142,7 @@ from dau.generation.reproduction import (
     HEIRS_PER_TOURNAMENT_WIN,
     TOURNAMENT_K,
     Candidate,
+    positive_control_partition,
 )
 from dau.memory.store import MemoryStore
 from dau.society.environment import POOL_MAX, EnvironmentState, get_pool_ratio
@@ -174,6 +175,10 @@ P0_NICHE_LABEL: str = "shared-per-seed (P0 option 1)"
 # no domains and returns {}, and every generation reports a Price row that says
 # nothing. That is exactly what happened on the first full-chain run.
 LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
+# D-121. The positive control declared before the run: time-integrated energy
+# over the life. Named here so the choice is visible in one place and cannot be
+# quietly swapped for whichever quantity happens to move (§2.7).
+CONTROL_TRAIT_KEY: str = "energy_mean_over_life"
 # P0-① as decided (2026-08-17): sequential service in a rotating order. The
 # D-103 pilot measured what the simultaneous, proportional version does — eight
 # founders came out bit-identical, z had zero variance, and Cov(w, z) was zero
@@ -282,6 +287,19 @@ def seed_from_population_id(agent_id: str) -> int:
             f"{FOUNDER_ID_TEMPLATE} or an heir of one"
         )
     return int(match.group("seed"))
+
+
+def _control_trait(landmark: dict[str, Any]) -> float | None:
+    """The pre-declared positive-control value for one agent, or None.
+
+    None rather than 0.0 when the landmark was never reached: an agent with no
+    reading must not enter the control as a value it never had (§2.9), and
+    ``positive_control_partition`` drops the whole cell rather than average
+    around it.
+    """
+
+    value = landmark.get(CONTROL_TRAIT_KEY)
+    return None if value is None else float(value)
 
 
 def run_population_phase0(
@@ -691,6 +709,12 @@ def candidates_from_rows(rows: list[AgentGenerationRow]) -> list[Candidate]:
             agent_id=row.agent_id,
             f_agent=row.f_agent,
             z=dict(row.landmark.get(LANDMARK_DRIFT_KEY, {}) or {}),
+            # D-121's positive control, read from the landmark block the run
+            # already writes. Time-integrated energy was chosen because it is
+            # continuous and does NOT pass through the trauma threshold, which
+            # is the thing that flattens z; measured range 0.59–0.86 (D-085).
+            # ⚠ Diagnostic only — no inheritance claim rests on it.
+            control=_control_trait(row.landmark),
         )
         for row in rows
     ]
@@ -986,7 +1010,11 @@ def _run_arm_generations(
         # finished gets its own Price row one generation from now, and the last
         # generation never gets one at all.
         price: dict[str, dict[str, float]] | None = None
+        control: dict[str, float | bool] | None = None
         if previous_plan is not None:
+            control = positive_control_partition(
+                list(previous_plan.parents), previous_plan.w_by_parent
+            )
             price = close_transition(
                 previous_plan,
                 {
@@ -1052,6 +1080,7 @@ def _run_arm_generations(
                     for agent_id, record in sorted(records.items())
                 },
                 "price_for_previous_transition": price,
+                "positive_control_for_previous_transition": control,
                 "reproduction_report": None if plan is None else plan.report,
                 "w_by_parent": None if plan is None else plan.w_by_parent,
                 "pedigree": None

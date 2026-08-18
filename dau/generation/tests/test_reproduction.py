@@ -174,3 +174,102 @@ def test_report_flags_the_degenerate_case() -> None:
     varied = reproduction_report(parents, {"a": 0, "b": 1, "c": 2, "d": 1})
     assert varied[REPORT_KEY_W_VARIANCE] > 0.0
     assert varied[REPORT_KEY_SELECTION_MEASURABLE] is True
+
+
+# ---------------------------------------------------------------------------
+# D-121 — estimability and the positive control (Yasin's decision A)
+# ---------------------------------------------------------------------------
+
+
+def test_price_says_when_the_selection_term_could_not_be_measured() -> None:
+    """⭐ Var(z) = 0 makes Cov(w, z) zero BY CONSTRUCTION, and it must say so.
+
+    Measured: 14 of 27 cells of the headroom run had every parent carrying the
+    same z. Printed unlabelled, that zero is indistinguishable from "selection
+    acted and came out flat" — the two call for opposite conclusions.
+    """
+
+    from dau.generation.reproduction import (
+        PRICE_KEY_ESTIMABLE,
+        PRICE_KEY_SELECTION,
+        PRICE_KEY_Z_VARIANCE,
+        Candidate,
+        price_partition,
+    )
+
+    flat = [
+        Candidate(agent_id="a", f_agent=0.5, z={"resource": 1.0}),
+        Candidate(agent_id="b", f_agent=0.9, z={"resource": 1.0}),
+    ]
+    part = price_partition(
+        flat,
+        {"a": 1, "b": 1},
+        {"a": [{"resource": 1.2}], "b": [{"resource": 1.4}]},
+    )["resource"]
+
+    assert part[PRICE_KEY_ESTIMABLE] is False
+    assert part[PRICE_KEY_Z_VARIANCE] == pytest.approx(0.0)
+    # The number is still reported — labelled, not hidden.
+    assert part[PRICE_KEY_SELECTION] == pytest.approx(0.0)
+
+
+def test_price_marks_a_real_spread_as_estimable() -> None:
+    """The other side: a cell whose parents differ must NOT be labelled."""
+
+    from dau.generation.reproduction import (
+        PRICE_KEY_ESTIMABLE,
+        Candidate,
+        price_partition,
+    )
+
+    varied = [
+        Candidate(agent_id="a", f_agent=0.5, z={"resource": 0.2}),
+        Candidate(agent_id="b", f_agent=0.9, z={"resource": 1.0}),
+    ]
+    part = price_partition(
+        varied,
+        {"a": 1, "b": 1},
+        {"a": [{"resource": 0.3}], "b": [{"resource": 1.1}]},
+    )["resource"]
+
+    assert part[PRICE_KEY_ESTIMABLE] is True
+
+
+def test_positive_control_covaries_the_same_w_with_a_trait_that_moves() -> None:
+    """The control's whole job: show the machinery works when z is flat.
+
+    ⛔ Never an endpoint. It answers "could this run have measured selection",
+    not "did selection act on z".
+    """
+
+    from dau.generation.reproduction import (
+        CONTROL_KEY_COVARIANCE,
+        CONTROL_KEY_ESTIMABLE,
+        Candidate,
+        positive_control_partition,
+    )
+
+    parents = [
+        Candidate(agent_id="a", f_agent=0.5, z={"resource": 1.0}, control=0.60),
+        Candidate(agent_id="b", f_agent=0.9, z={"resource": 1.0}, control=0.86),
+    ]
+    control = positive_control_partition(parents, {"a": 0, "b": 2})
+
+    assert control is not None
+    assert control[CONTROL_KEY_ESTIMABLE] is True
+    # b has both the higher control value and both heirs, so the covariance is
+    # positive; the direction is what makes this a control rather than a number.
+    assert control[CONTROL_KEY_COVARIANCE] > 0.0
+
+
+def test_a_missing_control_is_none_not_zero() -> None:
+    """§2.9: "not carried" must not read as "carried and came out flat"."""
+
+    from dau.generation.reproduction import Candidate, positive_control_partition
+
+    parents = [
+        Candidate(agent_id="a", f_agent=0.5, z={}, control=0.6),
+        Candidate(agent_id="b", f_agent=0.9, z={}),
+    ]
+
+    assert positive_control_partition(parents, {"a": 1, "b": 1}) is None

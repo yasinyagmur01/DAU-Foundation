@@ -1789,3 +1789,64 @@ def test_i04_aborts_the_run_when_an_id_carries_the_wrong_seed(monkeypatch) -> No
             n_generations=N_GENERATIONS,
             events_budget=EVENTS,
         )
+
+
+def test_the_positive_control_reaches_the_results_file(monkeypatch) -> None:
+    """⭐ D-121's wiring, not just its function (§2.4).
+
+    This is the third time in this session that a fix existed in the codebase
+    and not on the run path (D-116's main() call, D-117's recorder, D-118's
+    gate). The unit tests in test_reproduction.py call the partition directly
+    and would all pass with the runner never calling it.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=N_AGENTS,
+        n_generations=N_GENERATIONS,
+        events_budget=EVENTS,
+    )
+
+    from dau.generation.reproduction import CONTROL_KEY_COVARIANCE
+
+    closed = [
+        row
+        for arm in results["arms"]
+        for row in arm["generations"]
+        if row["price_for_previous_transition"] is not None
+    ]
+    assert closed, "no transition closed — test is blind"
+    for row in closed:
+        control = row["positive_control_for_previous_transition"]
+        assert control is not None, "the control never reached the file"
+        assert CONTROL_KEY_COVARIANCE in control
+
+
+def test_the_price_rows_carry_estimability(monkeypatch) -> None:
+    """A cell whose z could not vary must be readable as such from the file."""
+
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    # The budget has to reach the landmark or z carries no domains at all and
+    # there is no partition to inspect — the same blindness
+    # test_price_partition_actually_carries_drift_domains guards against.
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=2,
+        n_generations=2,
+        events_budget=LANDMARK_EVENT + 2,
+    )
+
+    from dau.generation.reproduction import PRICE_KEY_ESTIMABLE
+
+    parts = [
+        part
+        for arm in results["arms"]
+        for row in arm["generations"]
+        if row["price_for_previous_transition"]
+        for part in row["price_for_previous_transition"].values()
+    ]
+    assert parts, "no partition to check"
+    assert all(PRICE_KEY_ESTIMABLE in part for part in parts)
