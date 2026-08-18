@@ -9133,3 +9133,117 @@ var ⇒ I0.7 abort eder). Bugünkü mock duman koşumları (9305–9308) `--no-l
 ile koştu, **adapter yazmadı**, ama yine de deneyde kullanılmayacak.
 
 ⇒ **Dört slotun dördü kapalı.** Sıradaki iş: **kilit**.
+
+---
+
+## D-123 · 2026-08-18 · ⭐⭐ **C2 KOŞULDU** — makine çalıştı, **uç nokta ölçmedi**; seviye 1 kurulamadı, seviye 3'ün deseni **teşhis edilmiş bir confound taşıyor**
+
+**Koşum:** `dau_runs/c2_population_n8_g3_s3.json` · tohum 9911–9913 · N=8 · G=3 ·
+30 olay · `--lora --fresh-pasture` · **5 sa 53 dk** · `exit 0`.
+Ön-kayıt `docs/PREREGISTRATION_2.md`, kilit `72df476ebd54`.
+
+### 1. Seviye 0 — kapı ✅ ama **V2 beş geçişte düştü**
+
+| kapı | sonuç |
+|---|---|
+| `run_quality` | ✅ **clean** |
+| Değişmezler | ✅ **6/6** (I0.3 · I0.4 · I0.6 · I0.7 · I1.1 · I4.1) |
+| I4.1 replay | ✅ **identical** (2 nesil) |
+| `complete` · `generations_informative` | ✅ true · true |
+| **V1** `Var(w) > 0` | ✅ **18/18** (0.75–2.25, distinct(w) 3–4) |
+| ⛔ **V2** `F_agent` yayılımı > 0 | ❌ **13/18** |
+
+⚠ **V2'nin düştüğü beş geçişte `Var(w) > 0` ama `F_agent` yayılımı tam
+sıfır** ⇒ turnuva **yazı-tura**, yani o geçişlerde ölçülen şey seçilim değil
+**sürüklenme**. ⭐ V2'nin ön-kayıta yazılma sebebi tam olarak buydu; V1 tek
+başına yeterli olsaydı bu beş hücre *"seçilim vardı"* diye okunacaktı.
+
+### 2. Seviye 1 — ⛔ **KURULAMADI**
+
+| | |
+|---|---|
+| Price satırı | **18** (ön-kayıtta yazıldığı gibi) |
+| ⛔ **ölçülebilir** (`Var(z) > 0`) | **4 / 18 = %22** |
+| ön-kayıtta ilan edilen kestirim | **~%48** ⇒ **yarısından az çıktı** |
+| sıfırdan farklı ve tanımlı terim | **yalnız tohum 9911, gen3, `resource`** |
+
+    lived +0.010873 · null +0.021746 · shuffle +0.021746
+
+⇒ Seviye 1 iddiası *"işaret **tohumlar arası** tutarlı"* şartına bağlı ve
+**tek tohum** tanımlı terim üretti ⇒ **şart sorulamıyor bile**.
+⚠ Ve tanımlı üç terimin ikisi **`null` ve `shuffle`** kollarında — eğitimin
+içeriğiyle ilgisi olmayan kollarda.
+
+### 3. Seviye 2 — tanımsız (seviye 1'e bağlı)
+
+### 4. Seviye 3 — ⚠ **desen var, ama mekanizması teşhis edildi**
+
+⛔ **Analiz aracı burada tohumları çakıştırıyordu** (kusur B, §6) — doğru tablo:
+
+| tohum | gen3 ‖lived−null‖ | ‖lived−shuffle‖ | ‖null−shuffle‖ |
+|---|---|---|---|
+| 9911 | 0.589 | 0.619 | **0.030** |
+| 9912 | 0.388 | 0.196 | 0.193 |
+| 9913 | 0.318 | 0.187 | 0.130 |
+
+Üç tohumda da `lived`, kontrollerden **birbirlerine olduklarından daha uzak**.
+⚠ B2'nin *"üç kol eşit uzaklıkta"* null deseni **değil**.
+
+⛔ **Ama bu kanal iddiası olarak alınamaz, ve sebebi tahmin değil ölçüm:**
+kollar **kriz maruziyetinde** ayrışıyor. Tohum 9911 gen2'de kriz olayı
+`lived` 32 · `null` 69 · `shuffle` 80; gen3'te ömürler 23.6 / 30.0 / 26.1.
+`z`'yi bu evrende **çoğunlukla kriz yazıyor** (216 yaşamın 144'ünde kriz,
+bireysel eşik geçişi yalnız **24/216 = %11.1**, Wilson [7.6, 16.0]).
+
+⇒ Kolların `z` farkı, **kendi meralarının ne kadar çöktüğünün** farkı olabilir
+— kalıtılan iç yapının değil. **D-115/D-120 dersinin kol düzeyinde tekrarı:**
+sayıya bakıp cümle kurmadan önce hangi mekanizmanın onu ürettiğini sor.
+
+### 5. ⭐ Pozitif kontrol — **bu koşum alet null'ı DEĞİL**
+
+`Cov(w, energy_mean_over_life)` gen3'te üç tohumda da hareket etti
+(**+0.106 · +0.068 · +0.134** `lived` kollarında; bazı gen2 hücrelerinde
+`Var = 0` ⇒ **UNDEFINED** damgalandı).
+
+⇒ **Aynı `w`, değişen bir nicelikle kovaryans üretiyor.** Yani seçilim
+makinesi **çalışıyor**; düz olan şey **uç nokta**. D-121'in pozitif kontrolü
+ilk koşumda tam bu ayrımı yaptı.
+
+### 6. ⛔ Üç rapor kusuru — **hiçbiri ölçülen sayıyı değiştirmiyor, ikisi okumayı değiştiriyor**
+
+| # | kusur | etkisi |
+|---|---|---|
+| **A** | `RESULTS_NOTE` sonuç dosyasına *"exploratory, not pre-registered"* yazıyor — **bu koşum ön-kayıtlı** | ⚠ dosya kendi statüsü hakkında yanlış konuşuyor |
+| **B** ⛔ | `level3_arm_contrast` tohumları **sessizce çakıştırıyor** (`by_generation[gen][arm] = view` ⇒ **son tohum kazanıyor**) | ⛔ üç tohumluk kol karşıtlığı **tek tohum** gibi raporlanıyordu |
+| **C** | Boş partition'da *"estimability ABSENT — predates D-121"* basılıyor | ⚠ **yanlış cümle**: koşum D-121 sonrası, partition sadece boş |
+
+⚠ **B, bu projenin tam olarak korunduğu hata sınıfı:** rapor sağlıklı
+görünüyor ve başka bir şey söylüyor. Düzeltme **Yasin'in onayına** sunuldu
+(kilit sonrası: saf raporlama düzeltmesi, hiçbir hesabı değiştirmiyor).
+
+### 7. Sonuç sınıfı (ön-kayıt §11, koşumdan **önce** tanımlı)
+
+⇒ ⭐ **EVREN NULL'I.** Makine çalıştı (kapılar temiz, replay birebir, pozitif
+kontrol hareket etti); **evren uç noktada yeterli hücre-içi değişkenlik
+üretmedi**. Alet null'ı değil (B2 oydu), etki null'ı da değil (etki sorusu
+sorulabilir hâle **gelmedi**).
+
+### 8. ⛔ Bu koşumdan iddia EDİLEMEYECEKLER
+
+- *"Seçilim landmark drift üzerinde etki etti"* — **seviye 1 kurulamadı**
+- *"Lamarckçı kanal"* — seviye 3'ün deseni **kriz maruziyeti confound'u** taşıyor
+- *"anlamlı"* — test yok (P7-b)
+- Birey düzeyi · genelleme (tek model, tek niş ailesi, **n = 1 deney**)
+- ⚠ **V2'nin düştüğü beş geçişte** *"seçilim"* kelimesi hiç kullanılamaz — orada **sürüklenme** var
+
+### 9. ⭐ Bu koşumun ölçtüğü asıl şey — bir sonraki tasarımın girdisi
+
+1. **Bireysel kanal %11.1 oranında ateşleniyor** (24/216, Wilson [7.6, 16.0]).
+   Ölçülebilir hücre oranı **%22** — ön-kayıtın **%48** kestirimi **fazla iyimserdi**.
+2. **`z`'yi çoğunlukla kriz yazıyor** (144/216 yaşam) ve kriz **hücre içi
+   bilgi taşımıyor** ⇒ uç noktanın sorunu tasarımda değil, **oranda**.
+3. **`F_agent` yayılımı 5/18 geçişte tam sıfır** ⇒ seçilim girdisi de dejenere.
+4. ⇒ Bir sonraki tasarımın hedefi belli: **bireysel kanalın landmark'tan önceki
+   ateşleme oranı** ve **`F_agent` ayrımı**. ⚠ İkisi de **sabit değişikliği**
+   ister ⇒ §2.7: değer etkiye bakılarak değil, **sabitlerden türetilen bir
+   eşitsizlikle** seçilir, ve **üçüncü ön-kayıta** yazılır.
