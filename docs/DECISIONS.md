@@ -8841,3 +8841,40 @@ hangi kanaldan geldiğini **koşum sırasında** raporlayacak. ⚠ Uç noktanın
 kendisi **değişmedi** — değişmesi ön-kayıt kararıdır (L9).
 
 **Commit:** `85b70fa`.
+
+---
+
+## D-118 · 2026-08-18 · ✅ **I0.4 bağlandı** — D-105'in ilan ettiği borç ödendi
+
+**Neden borçtu:** `check_seed_derivation` Protocol C′'nin **sonda** tohum arayan
+desenini (`AGENT_ID_SEED_PATTERN`) içine gömülü tutuyordu. Popülasyon id'si
+`pop-{arm}-s{seed}-a{index}` biçiminde ve tohum **ortada** ⇒ desen hiçbir şeyle
+eşleşmiyor, kapı **her koşumu abort ederdi**. D-105 bu yüzden onu dışarıda
+bıraktı ve ikinci ön-kayıta borç yazdı.
+
+### Çözüm — kapının anlamı değişmedi, **parser çağırana bırakıldı**
+
+| | |
+|---|---|
+| `check_seed_derivation(agent_ids, seeds, derive=None)` | varsayılan hâlâ C′'nin çözücüsü ⇒ **multigen yolu birebir aynı** |
+| `seed_from_population_id()` | popülasyonun kendi çözücüsü; varis ekleri **sona** eklendiği için üçüncü nesil varis de aynı tohumu verir |
+| fallback | ⛔ **yok** (§2.9) — okunamayan id `ValueError` |
+
+⇒ İki koşucu **I0.4 ile aynı şeyi kastetmeye** devam ediyor, farklı id
+biçimleri okuyarak (§2.8).
+
+### ⚠ Kozmetik değil — neyi koruyor
+
+`shuffle` kolu permutasyonunu **id'den çözülen tohumdan** çekiyor. Okunamayan
+bir id koşumun **replay garantisini** götürür — **GAP-11 tam olarak buydu**, ve
+popülasyonda bir yaşamı değil **bir soyu** tohumlar.
+
+### Mutasyon kontrolü — üç mutasyon, üçü de doğru testi kırdı
+
+| mutasyon | kırılan |
+|---|---|
+| kapı `run_population_phase0`'dan silindi | `test_i04_aborts_the_run_...` + değişmez bloğu testi |
+| parser sessizce `0` dönüyor | `test_an_unreadable_id_raises_instead_of_defaulting` |
+| paylaşılan kapı çağıranın parser'ını yok sayıyor | popülasyon testlerinin **36'sı birden** ⇒ kapı gerçekten yük taşıyor |
+
+Suite: **573 passed, 2 deselected**. Commit: bu kaydın bir öncekinde.
