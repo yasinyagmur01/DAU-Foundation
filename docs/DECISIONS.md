@@ -8878,3 +8878,68 @@ popülasyonda bir yaşamı değil **bir soyu** tohumlar.
 | paylaşılan kapı çağıranın parser'ını yok sayıyor | popülasyon testlerinin **36'sı birden** ⇒ kapı gerçekten yük taşıyor |
 
 Suite: **573 passed, 2 deselected**. Commit: bu kaydın bir öncekinde.
+
+---
+
+## D-119 · 2026-08-18 · 🔍 **DR #10 gönderildi + yerel tarama önden yapıldı** — ⛔ **D seçeneği adı konmuş bir tuzağa değiyor**
+
+**Yetki:** Yasin *"bir soralım bakalım"* (2026-08-18). Karar 1 (`z` uç noktası)
+için DR turu açıldı, ve cevap beklenirken **çapraz kontrol taraması** yapıldı.
+
+### 1. Brief
+
+`docs/research/2026-08-18_common-shock-endpoint_PLAIN.txt` — düz ASCII,
+İngilizce, 225 satır. Beş soru: **Q1** ortak şokun bileşeninden birime özgü
+bileşeni ayırmanın **adı/yordamı** · **Q2** ⛔ ortak şok **müdahale-sonrası**
+ise bu ayırma geçersiz mi (*bad control* / *collider*) · **Q3** ayırmak yerine
+**ayrıştırma** (contextual analysis) var mı · **Q4** pilottan sonra uç nokta
+yeniden tanımlamanın sınır koşulları · **Q5** *"bu uç nokta değişemezdi"*yi
+sıfır kovaryans raporlamadan ilan etmenin yolu.
+
+⚠ **Etki sorulmuyor** (L9), ve brief'te **açıkça yazıldı**: kol karşıtlığına
+bakılmadı, karar verilene kadar bakılmayacak. ⚠ Kısıtlar (C1–C5) listelendi
+ki DR aksiyomu ihlal eden bir şey önermesin; ihlal ederse **işaretlemesi**
+isteniyor. D-110'un üç şartı (DOI · **birebir alıntı** · kaynakça + **boşluk
+ilanı**) aynen tekrarlandı.
+
+### 2. ⭐ Yerel tarama ilk iş **kendi iki hatamı** yakaladı
+
+| verdiğim DOI | gerçekte | doğrusu |
+|---|---|---|
+| `10.1086/285447` | **Stevens 1992**, yükselti gradyanı (aynı dergi/yıl, **komşu numara**) | `10.1086/285438` |
+| `10.1016/j.jtbi.2008.03.008` | Chattopadhyay ve ark., plankton | `10.1186/1471-2148-8-262` |
+
+⇒ DR'yi 12 kez suçladığımız hata biçimi (*"makaleyi biliyor, künyeyi
+uyduruyor"*) **bende de çıktı**. 13 kimlik Crossref'ten doğrulandı, ayrıntı
+`RECONCILIATION.md` **§R**.
+
+### 3. ⛔⛔ Bulgu — **D seçeneği ile E seçeneği arasındaki denge değişti**
+
+Montgomery, Nyhan & Torres 2018 (`10.1111/ajps.12357`) özetinden **birebir**:
+
+> *"…eliminating observations based on posttreatment criteria, or **subsetting
+> the data based on posttreatment variables**."*
+
+⚠ **Kriz müdahale-sonrasıdır:** ajanların kendi hasat davranışından doğuyor,
+davranış adapter'dan yani **koldan** etkileniyor. ⇒ `z`'yi *"kriz kaynaklı
+kısmı hariç"* diye tanımlamak (**seçenek D**) müdahale-sonrası bir ölçüte göre
+uç noktayı **budamak** olabilir.
+
+⚠ **Abartmıyorum, birebir aynı değil:** hiçbir yaşam elenmiyor, regresyona
+kontrol eklenmiyor; **uç noktanın tanımı** daraltılıyor. Literatürün bu
+**üçüncü** biçime ne dediği taramanın cevaplayamadığı yer — ve DR'nin **Q2**'si
+tam olarak bu.
+
+⇒ ⭐ **Seçenek E (ayrıştırma) öne geçti:** hiçbir şeyi atmıyor, iki bileşeni de
+raporluyor, ve evrimsel biyolojide **yerleşik bir formu var** (Heisler &
+Damuth 1987, `10.1086/284732`; Goodnight ve ark. 1992, `10.1086/285438`).
+⚠ **Yön, iddia değil:** kimlikler doğrulandı; **iddiayı taşıdıkları** yalnız
+ikisinde (Montgomery, Cinelli — Crossref özetleri açıkça söylüyor)
+doğrulanabildi. Contextual analysis'in bizim *"hücre-ortak bileşen"*imize
+uyup uymadığı **okunmadan iddia edilemez**.
+
+### 4. Sınırlar
+
+1. ⚠ **Sistematik derleme değil** — adaylar benim bildiklerimden çıktı.
+2. ⚠ **Tam metinler okunmadı**; iddia doğrulaması iki özetle sınırlı.
+3. ⚠ Karar **hâlâ Yasin'in** (D-007). Bu kayıt seçenekleri sıralıyor, seçmiyor.
