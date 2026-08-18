@@ -24,8 +24,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `569 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — bu oturumda **25 commit** yerel.
-- **Son D-kaydı: D-117.** Sıradaki kayıt **D-118** olarak açılır.
+- **Suite:** `573 passed, 2 deselected`. Çalışma ağacı temiz. ✅ **`origin/main` ile senkron — push edildi.**
+- **Son D-kaydı: D-119.** Sıradaki kayıt **D-120** olarak açılır.
+- ⛔ **BEKLEYEN: DR #10'un cevabı** (`docs/research/2026-08-18_common-shock-endpoint_PLAIN.txt`). Yasin getirince **karar 1 kesinleşecek**. ⭐ Yerel tarama önden yapıldı (**§R**, D-119): **seçenek D zayıfladı, E (ayrıştırma) öne geçti**.
 - **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
@@ -71,7 +72,9 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 |---|---|---|---|
 | ~~**1**~~ | ✅ **KAPANDI (D-117)** — kriz büyüklüğü `crisis_trauma_magnitude()`'dan okunup havuz olay satırına yazılıyor; `delta_profile` ve analiz raporu iki kanalı **ayrı** veriyor (⛔ toplamıyor: kriz kolun tamamına aynı anda vurur ⇒ ajanlar arası bilgi taşımaz) | ✅ | — |
 | ~~**2**~~ | ✅ **KAPANDI (D-116)** — `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` popülasyon koşucusunun `main()`'inde, alet kimliğinde `cuda_allocator` bloğu. ⭐ Tahsis ediciye **ulaştığı ölçüldü** (`is_expandable` True ↔ ayarsız False). ⚠ **Eğitim yükünde OOM azaldı mı ölçülmedi** — kanıtı bir sonraki gerçek koşumun OOM sayısı | ✅ | — |
-| **3** | Kapılı bir koşumla ölçümü tekrarla (tohum 9902–9904, düzeltilmiş bellekle) | uç nokta kararına bağlı | ~5.5 sa |
+| **3** | Kapılı bir koşumla ölçümü tekrarla (⚠ **taze tohum** — 9902–9904 yakıldı) | uç nokta kararına bağlı | ~5.5 sa |
+| ~~**4**~~ | ✅ **I0.4 bağlandı (D-118)** — borç kapandı, parser çağırana bırakıldı | ✅ | — |
+| ~~**5**~~ | ✅ **İkinci ön-kayıt taslağı açıldı** — `docs/PREREGISTRATION_2.md`, **dört slot açık** | ✅ | — |
 
 ### ⛔ Yasin'in vermesi gereken kararlar
 
@@ -88,7 +91,7 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 
 | kayıt | ne |
 |---|---|
-| **D-105** | **A1** — kapılar sarmalayıcıya bağlandı (I0.3·I0.6·I0.7·I1.1 + `run_quality`). ⚠ **I0.4 bağlanamadı**: `AGENT_ID_SEED_PATTERN` popülasyon id'leriyle eşleşmiyor ⇒ ikinci ön-kayıta borç |
+| **D-105** | **A1** — kapılar sarmalayıcıya bağlandı (I0.3·I0.6·I0.7·I1.1 + `run_quality`). ~~I0.4 bağlanamadı~~ ✅ **D-118 kapattı** |
 | **D-106** | **A2** — I4.1 replay, nesil başına digest. `REPLAY_GENERATIONS=2` **türetildi** (gen1 adapter'sız koşar) |
 | **D-107** | **A3** — G≥3 **yapısal**; `generations_informative` damgası. ⛔ P7-a bunu kesemez |
 | — | **Analiz aracı** `analyze_population_run.py` — seviye 0/1/2/3, **p-değeri üretmiyor** (test bekçiliğiyle) |
