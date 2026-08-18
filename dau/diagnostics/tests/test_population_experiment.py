@@ -1257,3 +1257,126 @@ def test_checkpoint_path_hangs_off_the_results_name() -> None:
     assert pop_mod.checkpoint_path_for(_Path("dau_runs/x.json")) == _Path(
         "dau_runs/x.json.partial.json"
     )
+
+
+# ---------------------------------------------------------------------------
+# D-112 — how close the universe came to the endpoint's trigger
+# ---------------------------------------------------------------------------
+
+
+def test_delta_profile_reports_the_headroom_to_the_trauma_threshold() -> None:
+    """⭐ The number B1 could not produce, and the decision it blocks.
+
+    z is written by exactly one condition: delta magnitude >= 0.7. B1 found z
+    empty in 23 of 24 cells, and the results file could not say whether the
+    universe missed by 0.02 or by 0.5 — two situations that call for opposite
+    decisions about the endpoint.
+    """
+
+    from dau.foundation.delta import DELTA_THRESHOLD_DEEP
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    rows = [
+        {"agent_id": "a", "delta_magnitude": 0.10},
+        {"agent_id": "a", "delta_magnitude": 0.68},
+        {"agent_id": "b", "delta_magnitude": 0.90},
+    ]
+    profile = delta_profile("a", rows)
+
+    assert profile["n_events"] == 2, "another agent's events leaked in"
+    assert profile["max"] == pytest.approx(0.68)
+    assert profile["n_at_or_above_trauma"] == 0
+    assert profile["headroom_to_trauma"] == pytest.approx(
+        DELTA_THRESHOLD_DEEP - 0.68
+    )
+
+
+def test_delta_profile_counts_a_crossing_and_reports_negative_headroom() -> None:
+    """The other side: a life that DID cross must be visibly different."""
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    profile = delta_profile(
+        "a", [{"agent_id": "a", "delta_magnitude": 0.9}]
+    )
+
+    assert profile["n_at_or_above_trauma"] == 1
+    assert profile["headroom_to_trauma"] < 0
+
+
+def test_delta_profile_of_a_life_with_no_events_is_not_zero() -> None:
+    """None, not 0.0: 'never measured' and 'measured zero' are opposites here.
+
+    A headroom of 0.0 would read as "this life sat exactly on the threshold",
+    which is the most interesting possible value — and it would be a lie about
+    a life that produced no event at all.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    profile = delta_profile("ghost", [{"agent_id": "a", "delta_magnitude": 0.9}])
+
+    assert profile["n_events"] == 0
+    assert profile["max"] is None
+    assert profile["headroom_to_trauma"] is None
+
+
+def test_the_delta_profile_reaches_the_results_file(monkeypatch) -> None:
+    """Aggregating it is useless if it never lands in the artefact."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    agents = results["arms"][0]["generations"][0]["agents"]
+    assert agents, "no agents at all"
+    for agent in agents:
+        assert "delta_profile" in agent
+        assert "headroom_to_trauma" in agent["delta_profile"]
+
+
+def test_delta_profile_counts_the_boundary_the_same_way_the_universe_does() -> None:
+    """⭐ Exactly 0.7 IS trauma, and the reporter must agree with update_drift.
+
+    classify_delta returns TRAUMA at magnitude >= 0.7, and test_drift.py pins
+    that boundary from the other side (0.69 writes no drift, 0.70 does). A
+    reporter using `>` would say "no crossing" about a life the universe
+    treated as traumatic — the instrument and the thing it reports on would
+    disagree in silence, at the one value where it matters most.
+
+    Measured: with `>` instead of `>=`, every other test in this group still
+    passed (§2.4 — check WHICH test breaks).
+    """
+
+    from dau.foundation.delta import (
+        DELTA_THRESHOLD_DEEP,
+        DeltaRecord,
+        is_trauma,
+    )
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    exact = DELTA_THRESHOLD_DEEP
+    profile = delta_profile("a", [{"agent_id": "a", "delta_magnitude": exact}])
+
+    assert profile["n_at_or_above_trauma"] == 1
+    assert profile["headroom_to_trauma"] == pytest.approx(0.0)
+    # And the universe agrees, read from its own function rather than restated:
+    # if these two ever disagree the reporter is describing a different world.
+    snapshot = {
+        "energy": 1.0,
+        "resource_load": 0.0,
+        "uncertainty_load": 0.0,
+        "social_load": 0.0,
+    }
+    assert is_trauma(
+        DeltaRecord(
+            timestamp=1,
+            magnitude=exact,
+            affected_domain="resource",
+            snapshot_before=snapshot,
+            snapshot_after=snapshot,
+        )
+    )

@@ -115,6 +115,7 @@ from dau.diagnostics.tool_identity import (
     build_tool_identity,
     resolve_lora_choice,
 )
+from dau.foundation.delta import DELTA_THRESHOLD_DEEP
 from dau.foundation.drift import DriftState
 from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
@@ -428,6 +429,8 @@ class AgentGenerationRow:
     landmark: dict[str, Any]
     reward_marker: float
     threat_marker: float
+    # D-112. What the endpoint's own trigger condition saw during this life.
+    delta_profile: dict[str, Any] = field(default_factory=dict)
 
 
 def founder_id(arm: str, seed: int, index: int) -> str:
@@ -485,6 +488,51 @@ def shared_pasture(founders: list[DAUAgentState]) -> EnvironmentState:
     )
 
 
+def delta_profile(agent_id: str, pe_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """How close this life came to the trauma threshold — D-112, pure reporting.
+
+    ⚠ The endpoint `z` is written by ONE thing: update_drift, and update_drift
+    fires on ONE condition, ``is_trauma``, which is ``delta.magnitude >=
+    DELTA_THRESHOLD_DEEP`` (0.7). B1 measured z as empty in 23 of 24 arm-by-
+    generation cells, and from the results file alone there was no way to tell
+    whether the universe was missing the threshold by 0.02 or by 0.5. Those two
+    situations call for opposite decisions and the run could not distinguish
+    them.
+
+    Nothing is computed here: ``delta_magnitude`` is already written on every PE
+    event row by graph.record_pe_event. This only aggregates what the run
+    already recorded, which is why it changes no number the experiment produces
+    (§2.10) — and why it could be added after B1 without invalidating it.
+    """
+
+    magnitudes = [
+        float(row["delta_magnitude"])
+        for row in pe_rows
+        if row["agent_id"] == agent_id
+    ]
+    if not magnitudes:
+        return {
+            "n_events": 0,
+            "max": None,
+            "mean": None,
+            "n_at_or_above_trauma": 0,
+            "headroom_to_trauma": None,
+        }
+    peak = max(magnitudes)
+    return {
+        "n_events": len(magnitudes),
+        "max": peak,
+        "mean": sum(magnitudes) / len(magnitudes),
+        "n_at_or_above_trauma": sum(
+            1 for m in magnitudes if m >= DELTA_THRESHOLD_DEEP
+        ),
+        # How far the closest call fell short. Negative means it crossed.
+        # Reported rather than inferred from `max` so the reader never has to
+        # remember what the threshold is.
+        "headroom_to_trauma": DELTA_THRESHOLD_DEEP - peak,
+    }
+
+
 def score_generation(
     states: dict[str, DAUAgentState],
     events_budget: int,
@@ -498,6 +546,7 @@ def score_generation(
     """
 
     body_rows = graph_mod.get_body_event_log()
+    pe_rows = graph_mod.get_pe_event_log()
     rows: list[AgentGenerationRow] = []
     for agent_id in sorted(states):
         state = states[agent_id]
@@ -515,6 +564,7 @@ def score_generation(
                 threat_marker=float(
                     self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0)
                 ),
+                delta_profile=delta_profile(agent_id, pe_rows),
             )
         )
     return rows
@@ -906,6 +956,7 @@ def _run_arm_generations(
                         "f_agent_inputs": row.f_agent_inputs,
                         "events_lived": row.events_lived,
                         "landmark": row.landmark,
+                        "delta_profile": row.delta_profile,
                         # Whether this agent's events could reach the vault at
                         # all. An unbound heir writes no engrams, so its own
                         # children inherit nothing and the transmission term
