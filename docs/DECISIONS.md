@@ -9591,3 +9591,75 @@ Bu, D-126'nın hatasının tekrarı olurdu.
 3. ⚠ Süre: **~2 sa 20 dk** — tahminim önce *"1 sa 40 dk"*, sonra *"3.5–4 sa"*
    demişti. ⇒ K4'e ek: maliyet tahmini tabanın **yayılımını** taşımalı
    (nişler arası toplam-olay farkı **2.3 kat**: 104 ↔ 240).
+
+---
+
+## D-131 · 2026-08-19 · ⭐ **TASARIM KARARI: birincil karşıtlık `lived` ↔ `shuffle`; `null` betimleyici kola indiriliyor** — iki fizik kaldıracı da **aritmetikle** elendi
+
+**Yetki:** Yasin, 2026-08-19: *"DR'ye güvenmeden kontrol ederek tasarım kararı
+al."* ⚠ Karar **DR #11'in cevabıyla çapraz kontrol edilecek** ve Yasin'in
+vetosuna açıktır.
+
+### 1. Çözülmesi gereken problem (D-129/D-130)
+
+Farklılaşmanın **tek** kaynağı adapter: adapter → farklı davranış → farklı
+talep → kıtlık → sıralı erişim ısırır → ayrışma. ⇒ Adapter'ı olmayan `null`
+kolu, zengin nişte **donmuş klon popülasyonu**: `Var(F_agent) = 0`, turnuva
+yazı-tura, ve **hangi uç nokta seçilirse seçilsin** `Var(z) = 0`.
+
+### 2. ⛔ Denenen iki fizik kaldıracı — **ikisi de ölü**, sabitlerden hesaplandı
+
+**Kaldıraç 1 — kapasiteyi düşürüp kıtlığı garantilemek.**
+Kişi başı dinamik `p ← p + r·p(1−p/K) − d` üzerinde, K ∈ {100…5} ve
+d ∈ {1, 2, 8} için ilk kıtlık ve ilk kriz olayları hesaplandı.
+⇒ **Her yapılandırmada kriz, kıtlıktan önce (ya da aynı olayda) ateşliyor.**
+Sebep: kriz eşiği `0.30·K`, kıtlık noktası `d`; havuz büyük olandan küçüğe
+inerken **önce krize** giriyor.
+
+**Kaldıraç 2 — kriz eşiğini düşürüp sırayı öne almak.**
+`CRIT ∈ {0.30, 0.15, 0.10, 0.05, 0.02}` × `K ∈ {100…10}` × `d ∈ {2, 8}` = 70
+kombinasyon tarandı. Aranan: *kıtlık ≤ olay 9 **ve** kriz kıtlıktan sonra.*
+⇒ ⛔ **Hiçbir kombinasyon sağlamıyor.**
+
+**Neden — ve bu zaten kayıtlıydı:** D-081, *"bu evrende kademeli kıtlık yok,
+**kıtlık anı** var"* demişti. Havuz tek adımda *"herkese yeter"*den *"boş"*a
+geçiyor ⇒ **kıtlık ile kriz aynı olaydır**, eşik nereye konursa konsun
+ayrılmıyorlar.
+
+⚠ Ve ikinci bir imkânsızlık: talep davranışa bağlı (`COOPERATE` 2.0 ↔
+`DEFECT` 8.0) ve C1 davranışa dokunmayı yasaklıyor. d=2 için kıtlığı olay
+9'dan önce getiren K (≈15), d=8 için havuzu **olay 2'de** öldürüyor.
+⇒ Tek bir K iki talep düzeyinde birden çalışamaz.
+
+⇒ **Fizikle çözülemez.** Bu, aritmetiğin verdiği bir sonuç, tercih değil.
+
+### 3. ⭐ Karar
+
+| # | madde |
+|---|---|
+| **1** | **Birincil karşıtlık `lived` ↔ `shuffle`.** İkisi de eğitiliyor ⇒ ikisi de ayrışıyor (C2: **6/6** ve **6/6**) |
+| **2** | **`null` betimleyici kola indirilir.** Geçerlilik kriteri **taşımaz**; raporlanır ama hiçbir kapı ona bağlanmaz |
+| **3** | **İlan edilen sınır:** *"Bu tasarımda farklılaşma davranışa bağlıdır; eğitilmemiş kol zengin nişte yapısal olarak dejeneredir."* Bu bir kusur değil, **bulgudur** ve öyle raporlanır |
+| **4** | Uç nokta kararı **üçüncü ön-kayıta** bırakılır. ⚠ D-125'in *"aday girmez"* hükmü **eski tasarım için geçerliliğini korur**; yeni tasarım yeni bir kriteri **ölçümden önce** ilan eder |
+
+**Neden meşru:** ilk ön-kayıt da birincili `lived ↔ shuffle` yapmıştı — gerekçe
+oradaki gibi: *"`null` yalnız 'eğitim oldu mu' sorusunu cevaplar; aksiyomun
+iddiası eğitimin **içeriğine** dairdir."* Karar yeni bir çerçeve değil, o
+çerçeveye **geri dönüş**, ve şimdi ölçülmüş bir sebeple.
+
+### 4. ⚠ İtiraz edilebilecek tek yer — açıkça yazıyorum
+
+`lived`/`shuffle`'ın ayrıştığını **ölçtükten sonra** onları birincil yapıyorum.
+Savunmam: bakılan şey **etki değil, tanımlılık** — dağılımın var olup olmadığı,
+ki bu ön-kayıtta zaten **geçerlilik ön-koşulu** olarak tanımlı (V2) ve L9'un
+yasakladığı şey **kol farkına** bakmak. Kol farkına **bakılmadı**.
+⚠ Yine de bir hakem bunu itiraz konusu yapabilir; üçüncü ön-kayıtta **bu
+paragrafla birlikte** ilan edilecek.
+
+### 5. Bu kararın çözmediği iki şey
+
+1. **Uç noktanın tek boyuta çökmesi** (D-130 §9): `social`/`uncertainty` hiç
+   yazılmıyor, `resource` krizin alanı ⇒ bireysel kanalın tek boyutu `energy`,
+   216 okumanın **11'inde** dolu. ⇒ Üçüncü ön-kayıtın asıl konusu bu.
+2. **Adapter sönümü** (D-130 §12): 6/6 dizide 1.8×–4.8× azalma. İlan edilecek
+   sınır; düzeltme denenmiyor.
