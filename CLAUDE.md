@@ -25,7 +25,12 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
 - **Suite:** `582 passed, 2 deselected`. Çalışma ağacı temiz. ✅ **`origin/main` ile senkron — push edildi.**
-- **Son D-kaydı: D-121.** Sıradaki kayıt **D-122** olarak açılır.
+- **Son D-kaydı: D-122.** Sıradaki kayıt **D-123** olarak açılır.
+- 🔒 **İKİNCİ ÖN-KAYIT KİLİTLİ** — `docs/PREREGISTRATION_2.md`, commit `72df476ebd54`. Dört slot kapalı: uç nokta **A** · ikincil **yok** · bütçe **3 tohum · N=8 · G=3 · 30 olay** · tohumlar **9911–9913**.
+  ⛔ **Kilitten sonra kod/eşik/uç nokta/test değişirse sonuç post-hoc olur.** Yalnız saf raporlama meşru (§2.10).
+- ▶ **KOŞUM UÇUŞTA** (2026-08-18 15:04 başladı): `dau_runs/c2_population_n8_g3_s3.json`, log `dau_runs/logs/c2_run.log`.
+  ⚠ **Oturum koparsa:** checkpoint `*.partial.json`'a bak (D-111), koşum sürüyorsa `pgrep -f run_population_experiment`. Sonraki iş **analiz**: `python -m dau.diagnostics.analyze_population_run --results dau_runs/c2_population_n8_g3_s3.json`.
+  ⚠ **Koşum sürerken `pytest` KOŞMA** — test oturumu CUDA'yı başlatıyor, 8 GB kartta canlı koşumla yarışır.
 - ⭐⭐ **KARAR 1 VERİLDİ (D-121, Yasin):** `z` **korunuyor** (seçenek A) + **dejenere hücre ilanı** + **pozitif kontrol**. ⛔ D elendi: ölçüm gösterdi ki dejenere hücre **14/27 → en az 21/27** olurdu, ve kriz müdahale-sonrası olduğu için budamak *bad control* riski taşıyordu. ⇒ **İkinci ön-kayıtta Slot 1 kapandı.**
 - **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
