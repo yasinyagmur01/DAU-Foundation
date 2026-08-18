@@ -1119,3 +1119,141 @@ def test_a_run_where_EVERY_agent_was_exempted_still_aborts(monkeypatch) -> None:
             seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
             lora=True,
         )
+
+
+# ---------------------------------------------------------------------------
+# D-111 — partial results survive a crash or a refusal
+# ---------------------------------------------------------------------------
+
+
+def test_checkpoint_is_written_after_every_generation(monkeypatch, tmp_path) -> None:
+    """⭐ The point is the GRANULARITY, not that a file eventually appears.
+
+    Per arm would already be an improvement, but at the main run's scale one
+    arm is hours. This asserts the file grows while a single arm is still in
+    flight, which is the only version that bounds what a crash costs.
+    """
+
+    import json as _json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    partial = tmp_path / "run.json.partial.json"
+    seen: list[int] = []
+    real_write = pop_mod.Checkpoint.write
+
+    def _counting_write(self, in_progress=None):
+        real_write(self, in_progress)
+        payload = _json.loads(partial.read_text(encoding="utf-8"))
+        seen.append(
+            sum(len(a["generations"]) for a in payload["arms"])
+        )
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod.Checkpoint, "write", _counting_write)
+    run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=N_GENERATIONS, events_budget=EVENTS,
+        checkpoint_path=partial,
+    )
+
+    # Strictly increasing generation counts, and more writes than there are
+    # arms: a per-arm checkpoint would produce exactly len(ARM_ORDER) of them.
+    assert len(seen) > len(ARM_ORDER)
+    assert seen == sorted(seen)
+
+
+def test_the_checkpoint_never_carries_a_quality_stamp(monkeypatch, tmp_path) -> None:
+    """⛔ A gate-less file must not look gated.
+
+    The checkpoint is written before any gate has run. If it carried
+    `run_quality` or an invariants block, a reader — or the analyzer — would
+    treat a mid-flight snapshot as a judged result, which is the silent fake
+    result the whole preflight system exists to prevent.
+    """
+
+    import json as _json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    partial = tmp_path / "run.json.partial.json"
+    captured: list[dict] = []
+    real_write = pop_mod.Checkpoint.write
+
+    def _capturing_write(self, in_progress=None):
+        real_write(self, in_progress)
+        captured.append(_json.loads(partial.read_text(encoding="utf-8")))
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod.Checkpoint, "write", _capturing_write)
+    run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
+        checkpoint_path=partial,
+    )
+
+    assert captured, "nothing was ever written"
+    for payload in captured:
+        assert payload[pop_mod.RESULTS_COMPLETE_KEY] is False
+        assert "run_quality" not in payload
+        assert "invariants" not in payload
+        assert "INCOMPLETE" in payload["note"]
+
+
+def test_a_crash_mid_run_leaves_the_measurements_behind(
+    monkeypatch, tmp_path
+) -> None:
+    """⭐ D-111's whole reason: two runs were lost in one night.
+
+    The crash is injected in the middle of the third arm, so the file must
+    still hold the two finished arms — that is the data that used to evaporate.
+    """
+
+    import json as _json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    partial = tmp_path / "run.json.partial.json"
+    real_run_arm = pop_mod.run_arm
+
+    def _crashing(arm, *args, **kwargs):
+        if arm == ARM_ORDER[-1]:
+            raise RuntimeError("power cut")
+        return real_run_arm(arm, *args, **kwargs)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "run_arm", _crashing)
+
+    with pytest.raises(RuntimeError, match="power cut"):
+        run_population_experiment(
+            seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
+            checkpoint_path=partial,
+        )
+
+    payload = _json.loads(partial.read_text(encoding="utf-8"))
+    assert len(payload["arms"]) == len(ARM_ORDER) - 1
+    assert payload[pop_mod.RESULTS_COMPLETE_KEY] is False
+
+
+def test_the_finished_result_is_marked_complete(monkeypatch, tmp_path) -> None:
+    """And the real result says so, which is what the reader checks."""
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS,
+        checkpoint_path=tmp_path / "run.json.partial.json",
+    )
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    assert results[pop_mod.RESULTS_COMPLETE_KEY] is True
+
+
+def test_checkpoint_path_hangs_off_the_results_name() -> None:
+    """So the partial file sorts next to what it belongs to, and cannot collide."""
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    from pathlib import Path as _Path
+
+    assert pop_mod.checkpoint_path_for(_Path("dau_runs/x.json")) == _Path(
+        "dau_runs/x.json.partial.json"
+    )

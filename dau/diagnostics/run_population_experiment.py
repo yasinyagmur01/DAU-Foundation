@@ -74,7 +74,7 @@ import os
 import random
 import shutil
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -168,6 +168,18 @@ LANDMARK_DRIFT_KEY: str = "landmark_drift_magnitudes"
 # because ① is the declared physics of this experiment, not a knob.
 SEQUENTIAL_ACCESS: bool = True
 ROTATE_ACT_ORDER: bool = True
+# D-111 checkpointing. The suffix hangs off the RESULTS name rather than
+# replacing its extension, so the partial file sorts next to the thing it
+# belongs to and can never collide with a real result name.
+CHECKPOINT_SUFFIX: str = ".partial.json"
+CHECKPOINT_TMP_SUFFIX: str = ".tmp"
+RESULTS_COMPLETE_KEY: str = "complete"
+CHECKPOINT_NOTE: str = (
+    "INCOMPLETE — written while the run was still going. The preflight gates "
+    "have NOT run, so this file carries no run_quality and is NOT a result. "
+    "It exists so that a crashed or refused run leaves its measurements "
+    "behind for diagnosis (D-111)."
+)
 # The keys check_training_moved_weights (I1.1) reads out of a "section". The
 # predicate takes plain dicts, so a misspelt key here is not a type error: for a
 # train arm it reads as "weights never read" and fails loudly, but for the null
@@ -338,6 +350,71 @@ def run_population_phase2(
         mode=MODE_FLAG if gate.mock else MODE_ABORT,
     )
     return gate
+
+
+@dataclass
+class Checkpoint:
+    """Partial results on disk, rewritten as each generation finishes (D-111).
+
+    Written because this runner produces NOTHING until the very end, and that
+    cost two runs in one night: one was going to be refused by I1.1 after 75
+    minutes of GPU (D-108) and one died to a power cut at minute six. The main
+    run is planned at twenty hours; losing it to either would be unrecoverable.
+
+    ⚠ A checkpoint is NOT a result, and the file says so in three ways at once:
+    its ``note`` states it is incomplete, ``complete`` is false, and it carries
+    NO ``run_quality`` and no invariants block — because the gates have not run
+    yet and a stamp copied from nowhere is exactly the silent fake result the
+    whole preflight system exists to prevent. The analyzer refuses it.
+
+    ⭐ Side effect worth naming: an ABORTED run now leaves its data behind. The
+    gates still refuse to write a *result*, which is D-105's contract, but the
+    measurements survive for diagnosis instead of evaporating.
+    """
+
+    path: Path
+    header: dict[str, Any]
+    completed: list[dict[str, Any]] = field(default_factory=list)
+
+    def write(self, in_progress: dict[str, Any] | None = None) -> None:
+        """Rewrite the file: everything finished, plus the arm mid-flight.
+
+        Written to a temporary file and renamed, because ``rename`` is atomic
+        on POSIX: a crash during the write leaves the PREVIOUS checkpoint
+        intact rather than a half-written file that parses as truncated data.
+        """
+
+        payload = {
+            **self.header,
+            "note": CHECKPOINT_NOTE,
+            RESULTS_COMPLETE_KEY: False,
+            "arms": list(self.completed)
+            + ([in_progress] if in_progress is not None else []),
+        }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.path.with_name(self.path.name + CHECKPOINT_TMP_SUFFIX)
+        tmp.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+        tmp.replace(self.path)
+
+    def arm_finished(self, arm_result: dict[str, Any]) -> None:
+        self.completed.append(arm_result)
+        self.write()
+
+    def discard(self) -> None:
+        """Remove the checkpoint once a real result has been written.
+
+        A stale partial file sitting next to a complete one is a trap: the two
+        differ only by a flag, and the partial is the older, gate-less half.
+        """
+
+        with contextlib.suppress(FileNotFoundError):
+            self.path.unlink()
+
+
+def checkpoint_path_for(results: Path) -> Path:
+    """Where the partial file for a given results path lives."""
+
+    return results.with_name(results.name + CHECKPOINT_SUFFIX)
 
 
 @dataclass(frozen=True)
@@ -693,8 +770,13 @@ def run_arm(
     n_generations: int,
     events_budget: int,
     pasture_carryover: bool,
+    checkpoint: "Checkpoint | None" = None,
 ) -> dict[str, Any]:
-    """One arm: G generations of N agents on that arm's own pasture (P1)."""
+    """One arm: G generations of N agents on that arm's own pasture (P1).
+
+    ``checkpoint`` is written after every generation, so an interrupted run
+    keeps everything it had already measured (D-111).
+    """
 
     _lock_seeds(seed)
     rng = random.Random(seed)
@@ -718,6 +800,7 @@ def run_arm(
                 previous_parents=previous_parents, n_agents=n_agents,
                 n_generations=n_generations, events_budget=events_budget,
                 pasture_carryover=pasture_carryover, founders=states,
+                checkpoint=checkpoint,
             )
     finally:
         graph_mod.MAX_EVENTS = original_max_events
@@ -740,6 +823,7 @@ def _run_arm_generations(
     events_budget: int,
     pasture_carryover: bool,
     founders: list[DAUAgentState],
+    checkpoint: "Checkpoint | None" = None,
 ) -> dict[str, Any]:
     """The generation loop of one arm; run_arm owns the global it borrows."""
 
@@ -878,6 +962,12 @@ def _run_arm_generations(
                 ],
             }
         )
+        # D-111: written HERE, after the generation is appended and before the
+        # next one starts. Per generation rather than per arm because at the
+        # main run's scale one arm is hours, and the point of the file is how
+        # much a crash costs.
+        if checkpoint is not None:
+            checkpoint.write({"arm": arm, "seed": seed, "generations": generations})
         if plan is None:
             break
         previous_parents = dict(outcome.states)
@@ -999,6 +1089,7 @@ def run_population_experiment(
     pasture_carryover: bool = False,
     arms: tuple[str, ...] = ARM_ORDER,
     preflight: Preflight | None = None,
+    checkpoint_path: Path | None = None,
 ) -> dict[str, Any]:
     """Every arm × every seed. Each arm keeps its own population and pasture.
 
@@ -1061,14 +1152,30 @@ def run_population_experiment(
             }
         },
     )
-    arm_results = [
-        run_arm(
-            arm, seed, n_agents, n_generations, events_budget,
-            pasture_carryover=pasture_carryover,
-        )
-        for seed in seeds
-        for arm in arms
-    ]
+    header = {
+        "protocol": PROTOCOL_NAME,
+        "n_agents": n_agents,
+        "n_generations": n_generations,
+        "events_budget": events_budget,
+        "seeds": list(seeds),
+        "tool_identity": identity,
+    }
+    checkpoint = (
+        None
+        if checkpoint_path is None
+        else Checkpoint(path=checkpoint_path, header=header)
+    )
+    arm_results: list[dict[str, Any]] = []
+    for seed in seeds:
+        for arm in arms:
+            result = run_arm(
+                arm, seed, n_agents, n_generations, events_budget,
+                pasture_carryover=pasture_carryover,
+                checkpoint=checkpoint,
+            )
+            arm_results.append(result)
+            if checkpoint is not None:
+                checkpoint.arm_finished(result)
     replay = run_replay_arm(
         seed=seeds[0],
         n_agents=n_agents,
@@ -1110,6 +1217,11 @@ def run_population_experiment(
         "events_budget": events_budget,
         "seeds": list(seeds),
         "tool_identity": identity,
+        # D-111. True only here, on the path that ran every gate. The
+        # checkpoint file writes False, and the reader refuses that file —
+        # otherwise a partial run would be indistinguishable from a result
+        # that simply had fewer arms.
+        RESULTS_COMPLETE_KEY: True,
         **gate.block(),
         "replay": replay,
         "arms": arm_results,
@@ -1153,6 +1265,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.mock_llm:
         os.environ[MOCK_LLM_ENV] = "1"
         install_mock_llm()
+    partial = checkpoint_path_for(args.results)
     try:
         results = run_population_experiment(
             seeds=list(args.seeds),
@@ -1162,14 +1275,21 @@ def main(argv: list[str] | None = None) -> None:
             lora=bool(args.lora),
             pasture_carryover=bool(args.carryover),
             arms=tuple(args.arms),
+            checkpoint_path=partial,
         )
     except PreflightAbort as abort:
         # An expected refusal, not a crash: print the named invariants rather
         # than a traceback, and write NO results file (preflight.py's contract —
         # a silent fake result has to be impossible, not merely labelled).
-        raise SystemExit(str(abort)) from None
+        # D-111: the checkpoint is deliberately LEFT on disk here. A refused
+        # run still measured things, and losing them was the cost D-108 paid.
+        raise SystemExit(
+            f"{abort}\n\nPartial measurements kept at {partial} — "
+            f"NOT a result: no gate passed on it."
+        ) from None
     args.results.parent.mkdir(parents=True, exist_ok=True)
     args.results.write_text(json.dumps(results, indent=1), encoding="utf-8")
+    Checkpoint(path=partial, header={}).discard()
     print(f"wrote {args.results}")
     print(f"run_quality={results['run_quality']}", flush=True)
 

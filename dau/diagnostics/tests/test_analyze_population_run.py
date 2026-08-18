@@ -419,3 +419,43 @@ def test_reached_landmark_with_no_flags_is_a_zero_reading_not_a_missing_one() ->
         "not an absence"
     )
     assert NOT_EVALUABLE not in lines.split("gen2:")[0]
+
+
+# ---------------------------------------------------------------------------
+# D-111 — a checkpoint is not a result
+# ---------------------------------------------------------------------------
+
+
+def test_a_checkpoint_file_is_refused_not_reported() -> None:
+    """A partial run differs from a result by one boolean and some missing arms.
+
+    A report built from it would look exactly like a smaller, healthy run --
+    fewer arms, fewer generations, everything else in place. Refusing is the
+    only reading that cannot be mistaken for a finding.
+    """
+
+    from dau.diagnostics.analyze_population_run import IncompleteRun
+
+    import pathlib
+
+    run = _run(_three_arms(PRICE), complete=False)
+    del run["run_quality"]
+    del run["invariants"]
+
+    with pytest.raises(IncompleteRun, match="CHECKPOINT"):
+        format_report(run, pathlib.Path("run.json.partial.json"))
+
+
+def test_a_run_from_before_checkpointing_is_still_reportable() -> None:
+    """Absent is not False: files written before D-111 are complete.
+
+    B1's results have no `complete` key at all. Testing "is True" instead of
+    "is not False" would refuse every run this project has already made.
+    """
+
+    import pathlib
+
+    run = _run(_three_arms(PRICE))
+    assert "complete" not in run
+
+    assert "Level 3" in format_report(run, pathlib.Path("old.json"))

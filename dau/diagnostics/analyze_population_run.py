@@ -63,6 +63,11 @@ RUN_KEY_SEEDS: str = "seeds"
 RUN_KEY_QUALITY: str = "run_quality"
 RUN_KEY_INVARIANTS: str = "invariants"
 RUN_KEY_INFORMATIVE: str = "generations_informative"
+# D-111. False on a checkpoint file, True only on a run that reached the end
+# with every gate run. ABSENT on runs written before checkpointing existed,
+# which is why "not False" is the test rather than "is True": those files are
+# complete, they just predate the flag.
+RUN_KEY_COMPLETE: str = "complete"
 GEN_KEY_PRICE: str = "price_for_previous_transition"
 GEN_KEY_REPRODUCTION: str = "reproduction_report"
 GEN_KEY_AGENTS: str = "agents"
@@ -436,7 +441,29 @@ FORBIDDEN: tuple[str, ...] = (
 )
 
 
+class IncompleteRun(ValueError):
+    """Raised when asked to report on a checkpoint rather than a result."""
+
+
+def refuse_if_incomplete(run: dict[str, Any], path: Path) -> None:
+    """A checkpoint is not a result and must not be reported as one (D-111).
+
+    The two files differ by one boolean and by the absence of a gate block, and
+    the partial one is missing arms — so a report built from it would look
+    exactly like a smaller, healthy run. Refusing is the only reading that
+    cannot be mistaken.
+    """
+
+    if run.get(RUN_KEY_COMPLETE) is False:
+        raise IncompleteRun(
+            f"{path.name} is a CHECKPOINT, not a result: it was written while "
+            f"the run was still going and no preflight gate has run on it. "
+            f"Refusing to report it. Use it for diagnosis by hand."
+        )
+
+
 def format_report(run: dict[str, Any], path: Path) -> str:
+    refuse_if_incomplete(run, path)
     views = arm_views(run)
     out: list[str] = [
         f"# Population run report — {path.name}",
