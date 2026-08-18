@@ -471,7 +471,11 @@ def level1_selection(
                 "selection term is zero by construction. This is NOT 'no "
                 "selection was measured' — nothing could have been measured."
             )
-        if PRICE_KEY_ESTIMABLE not in _any_part(view.price):
+        # Only a NON-empty partition can be missing the flag. An empty one
+        # carries no domains at all, which the line below already says — and
+        # calling that "predates D-121" was simply false on a run that has the
+        # field everywhere it applies (D-127).
+        if view.price and PRICE_KEY_ESTIMABLE not in _any_part(view.price):
             lines.append(
                 "    ⚠ estimability ABSENT — this run predates D-121 and cannot "
                 "say whether its zeros were measurable"
@@ -539,16 +543,24 @@ def level2_persistence(views: list[ArmGenerationView]) -> list[str]:
     """Does the term survive across transitions? Reported, never tested."""
 
     lines: list[str] = []
-    by_arm: dict[str, list[ArmGenerationView]] = {}
+    # ⛔ Keyed by (arm, SEED), not by arm alone (D-127). With the seed left out,
+    # three seeds' transitions were appended into one list and printed as a
+    # single arrow sequence — "gen2 → gen3 → gen2 → gen3 → …" reads as one
+    # lineage's trajectory and was in fact three unrelated ones. Persistence is
+    # a statement about a lineage over time, so mixing seeds into the sequence
+    # answers a different question than the one the section asks.
+    by_arm_seed: dict[tuple[str, int], list[ArmGenerationView]] = {}
     for view in views:
         if view.price is not None:
-            by_arm.setdefault(view.arm, []).append(view)
+            by_arm_seed.setdefault((view.arm, view.seed), []).append(view)
 
-    for arm, rows in sorted(by_arm.items()):
+    for (arm, seed), rows in sorted(by_arm_seed.items()):
+        rows = sorted(rows, key=lambda v: v.generation)
         if len(rows) < MIN_TRANSITIONS_FOR_PERSISTENCE:
             lines.append(
-                f"  {arm:<8}: {len(rows)} closed transition — {NOT_EVALUABLE}, "
-                f"persistence needs at least {MIN_TRANSITIONS_FOR_PERSISTENCE}"
+                f"  {arm:<8} s{seed}: {len(rows)} closed transition — "
+                f"{NOT_EVALUABLE}, persistence needs at least "
+                f"{MIN_TRANSITIONS_FOR_PERSISTENCE}"
             )
             continue
         domains = sorted({d for row in rows for d in (row.price or {})})
@@ -559,7 +571,7 @@ def level2_persistence(views: list[ArmGenerationView]) -> list[str]:
                 for row in rows
             ]
             shown = " → ".join(f"gen{g}:{v:+.6f}" for g, v in series)
-            lines.append(f"  {arm:<8} {domain:<14} {shown}")
+            lines.append(f"  {arm:<8} s{seed} {domain:<14} {shown}")
     if not lines:
         lines.append("  nothing to compare")
     lines.append("")
@@ -579,14 +591,19 @@ def level3_arm_contrast(views: list[ArmGenerationView]) -> list[str]:
     """
 
     domains = all_domains(views)
-    by_generation: dict[int, dict[str, ArmGenerationView]] = {}
+    # ⛔ Keyed by (SEED, generation), not by generation alone (D-127). Without
+    # the seed, `[arm] = view` let the LAST seed overwrite the others and three
+    # seeds' arm contrasts were reported as one — silently, and the section
+    # looked healthy. The arm contrast is the inheritance question, so a
+    # collapsed one is the most expensive wrong number this report can print.
+    by_cell: dict[tuple[int, int], dict[str, ArmGenerationView]] = {}
     for view in views:
-        by_generation.setdefault(view.generation, {})[view.arm] = view
+        by_cell.setdefault((view.seed, view.generation), {})[view.arm] = view
 
     lines: list[str] = []
-    for generation in sorted(by_generation):
-        arms = by_generation[generation]
-        lines.append(f"  gen{generation}:")
+    for (seed, generation) in sorted(by_cell):
+        arms = by_cell[(seed, generation)]
+        lines.append(f"  s{seed} gen{generation}:")
         digests = {arm: view.digest[:12] for arm, view in sorted(arms.items())}
         distinct = len(set(digests.values()))
         lines.append(

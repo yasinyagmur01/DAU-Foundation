@@ -9378,3 +9378,63 @@ sağlanmadı.
 vekiliyle (**15/18 = %83**) gerekçelendirmek. ⛔ Riski açık: pencere ömrün
 **alt kümesi** olduğu için tanımlılık ancak **düşebilir**, ve ne kadar
 düştüğünü bilmeden ön-kayıt yazmış oluruz.
+
+---
+
+## D-127 · 2026-08-18 · ⛔ **Dört rapor kusuru düzeltildi + beş ek kontrol** (Yasin: *"bir daha görmek istemiyorum"*)
+
+**Yetki:** Yasin, 2026-08-18. Kilit sonrası **açık hata düzeltmesi** (§2.10):
+D-kaydı + onay ile meşru, ve **hiçbir ölçülen sayı değişmiyor** — değişen
+şey raporun ne **söylediği**.
+
+### 1. Düzeltilen dört kusur
+
+| # | kusur | ne yapıyordu |
+|---|---|---|
+| **A** | `level3_arm_contrast`, `by_generation[gen][arm] = view` | ⛔ **son tohum diğerlerini eziyordu** ⇒ üç tohumluk kol karşıtlığı **tek tohum** gibi raporlanıyordu. Kol karşıtlığı **kalıtım sorusudur**; bu raporun basabileceği **en pahalı yanlış sayı** |
+| **B** | `level2_persistence`, `by_arm[arm]` | ⛔ Üç tohumun geçişlerini tek diziye topluyordu ⇒ `gen2 → gen3 → gen2 → …` **bir soyun yörüngesi** gibi okunuyordu. ⚠ Ve daha ağırı: **hiçbir soyun iki geçişi olmadığı** bir koşumda tohumları havuzlayarak asgari şartı geçip *"kalıcılık"* basabiliyordu — **bölümün ön koşulunu uyduruyordu** |
+| **C** | *"estimability ABSENT — predates D-121"* | Boş partition'da ateşleniyordu ⇒ D-121 **sonrası** koşum için **yanlış cümle** |
+| **D** | `RESULTS_NOTE = "exploratory, not pre-registered"` | C2 **ön-kayıtlıydı** ⇒ dosya kendi statüsü hakkında yanlış konuşuyordu. Koşucu bunu **bilemez** (statü belgede ve commit'te), o yüzden artık **bildiğini** söylüyor |
+
+⇒ **A ve B**, `(tohum, …)` anahtarına çevrildi: çakıştırma artık **yapısal
+olarak** imkânsız.
+
+### 2. ⭐ Ortak sebep bulundu — ve o düzeltildi
+
+**Analiz testlerinin tamamı tek tohumla kuruluyordu** (`_three_arms` hep
+`seed: 9901`). Tohum boyutunu çakıştıran bir kod, **çakışacak ikinci tohum
+olmadığı için** testlerde görünmez. ⇒ `_multi_seed()` fixture'ı eklendi (üç
+tohum × üç kol, ayrı bloklar) ve fixture üç nesle çıkarıldı, ki her soyun
+**gerçekten** iki kapanmış geçişi olsun.
+
+### 3. Mutasyon kontrolü — **md5 doğrulamalı** (K5)
+
+| mutasyon | kırılan test |
+|---|---|
+| level3 tohumu tekrar çakıştırıyor | `test_level3_reports_every_seed_not_just_the_last` |
+| level2 tohumları tekrar birleştiriyor | `test_level2_keeps_each_seed_its_own_sequence` |
+| level2 satırından tohum etiketi kalkıyor | aynı test |
+| boş partition yine *"predates D-121"* diyor | `test_an_empty_partition_is_not_called_a_pre_D121_run` |
+
+⚠ **İlk denememde toplu betik çelişkili sonuç verdi** (M2, level2 yerine
+level3 testini kırdı gibi göründü). Sebep kodda değil **benim ölçüm
+aracımdaydı**; matris dosya md5'i doğrulanarak ve `-p no:cacheprovider` ile
+yeniden koşuldu, dördü de doğru testi kırdı. ⇒ **K5** bundan doğdu.
+
+### 4. C2 raporu yeniden üretildi
+
+Sayılar **değişmedi**; gruplama ve etiketler değişti. Düzeltilmiş seviye 3,
+elle çıkardığım tabloyla **birebir** uyuşuyor (9911 gen3: 0.589 / 0.619 /
+0.030). ⚠ `dau_runs/c2_population_n8_g3_s3.json` içindeki `note` alanı **eski
+metni taşımaya devam ediyor** — dosya yeniden yazılmadı; statünün otoritesi
+`docs/PREREGISTRATION_2.md` kilidi (`72df476ebd54`).
+
+### 5. ⇒ Beş ek kontrol, `CLAUDE.md §2.4-b`'ye bağlayıcı olarak yazıldı
+
+**K1** mekanizma kontrolü · **K2** boyut testi · **K3** çağrı yeri testi ·
+**K4** sayı disiplini · **K5** kendini kanıtlayan mutasyon koşumu.
+
+⚠ Hepsi bu oturumda **gerçekleşmiş** hatalardan türetildi; hiçbiri
+varsayımsal değil.
+
+Suite: **590 passed, 2 deselected**.

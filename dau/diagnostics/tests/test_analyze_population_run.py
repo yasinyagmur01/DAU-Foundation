@@ -93,13 +93,37 @@ def _run(arms: list[dict[str, Any]], **overrides: Any) -> dict[str, Any]:
     return run
 
 
-def _three_arms(price: dict[str, dict[str, float]] | None = None) -> list[dict[str, Any]]:
+def _multi_seed(
+    price: dict[str, dict[str, float]] | None = None,
+    seeds: tuple[int, ...] = (9901, 9902, 9903),
+) -> list[dict[str, Any]]:
+    """⭐ K2's fixture: three seeds AND three arms, one block each (D-127).
+
+    Every fixture in this module used to carry a single seed, and that is
+    precisely why two seed-collapsing defects lived here unseen: with one seed
+    there is no second value to collapse. Two reporting sections keyed their
+    aggregates by arm or by generation alone, and the last seed silently
+    overwrote (level 3) or was concatenated into (level 2) the others.
+
+    ⛔ Any section that aggregates over a dimension must be tested with at
+    least two values in that dimension, or the test cannot see the collapse.
+    """
+
+    arms: list[dict[str, Any]] = []
+    for seed in seeds:
+        arms.extend(_three_arms(price, seed=seed))
+    return arms
+
+
+def _three_arms(
+    price: dict[str, dict[str, float]] | None = None, seed: int = 9901
+) -> list[dict[str, Any]]:
     arms = []
     for index, name in enumerate(("lived", "null", "shuffle")):
         arms.append(
             {
                 "arm": name,
-                "seed": 9901,
+                "seed": seed,
                 "generations": [
                     _generation(
                         1,
@@ -107,7 +131,7 @@ def _three_arms(price: dict[str, dict[str, float]] | None = None) -> list[dict[s
                             _agent(f"{name}-a0", {RESOURCE: 1.0 + index}),
                             _agent(f"{name}-a1", {RESOURCE: 2.0 + index}),
                         ],
-                        digest=f"{name}-g1",
+                        digest=f"{name}-s{seed}-g1",
                     ),
                     _generation(
                         2,
@@ -116,7 +140,22 @@ def _three_arms(price: dict[str, dict[str, float]] | None = None) -> list[dict[s
                             _agent(f"{name}-h1", {RESOURCE: 2.5 + index}),
                         ],
                         price=price,
-                        digest=f"{name}-g2",
+                        digest=f"{name}-s{seed}-g2",
+                    ),
+                    # A THIRD generation, so each (arm, seed) lineage really
+                    # has two closed transitions (D-127). Without it the
+                    # persistence section could only reach its minimum by
+                    # pooling seeds — which is exactly the defect: the old code
+                    # printed a "persistence" sequence for a run where no
+                    # lineage had two transitions at all.
+                    _generation(
+                        3,
+                        [
+                            _agent(f"{name}-h0h0", {RESOURCE: 1.7 + index}),
+                            _agent(f"{name}-h1h0", {RESOURCE: 2.7 + index}),
+                        ],
+                        price=price,
+                        digest=f"{name}-s{seed}-g3",
                     ),
                 ],
             }
@@ -207,7 +246,15 @@ def test_a_diverged_replay_is_reported_as_diverged() -> None:
 def test_persistence_refuses_a_single_transition() -> None:
     """Level 2 compares transitions; one transition is not a comparison."""
 
-    run = _run(_three_arms(PRICE))
+    # Trimmed to two generations on purpose: the shared fixture now carries
+    # three, because a lineage needs two closed transitions for the section to
+    # be readable at all (D-127). This test is about the OTHER side — one
+    # transition must be refused — so it builds that case explicitly instead of
+    # depending on how many generations the fixture happens to have.
+    arms = _three_arms(PRICE)
+    for arm in arms:
+        arm["generations"] = arm["generations"][:2]
+    run = _run(arms)
     lines = "\n".join(level2_persistence(arm_views(run)))
 
     assert NOT_EVALUABLE in lines
@@ -685,3 +732,67 @@ def test_a_run_without_the_control_says_so_instead_of_reporting_a_null() -> None
     lines = "\n".join(positive_control(arm_views(run)))
 
     assert "predates D-121" in lines
+
+
+# ---------------------------------------------------------------------------
+# D-127 / K2 — the seed dimension must survive every aggregation
+# ---------------------------------------------------------------------------
+
+
+def test_level3_reports_every_seed_not_just_the_last() -> None:
+    """⛔ The defect that cost the most: three seeds reported as one.
+
+    `by_generation[generation][arm] = view` let the last seed overwrite the
+    others. The section looked healthy and printed one arm contrast per
+    generation — and the arm contrast IS the inheritance question, so a
+    collapsed one is the most expensive wrong number this report can print.
+    """
+
+    from dau.diagnostics.analyze_population_run import arm_views, level3_arm_contrast
+
+    run = _run(_multi_seed(PRICE), seeds=[9901, 9902, 9903])
+    lines = "\n".join(level3_arm_contrast(arm_views(run)))
+
+    for seed in (9901, 9902, 9903):
+        assert f"s{seed}" in lines, f"seed {seed} vanished from the arm contrast"
+
+
+def test_level2_keeps_each_seed_its_own_sequence() -> None:
+    """A persistence sequence is about ONE lineage over time.
+
+    Three seeds appended into one list printed "gen2 → gen3 → gen2 → gen3 → …",
+    which reads as a single trajectory and was three unrelated ones.
+    """
+
+    from dau.diagnostics.analyze_population_run import arm_views, level2_persistence
+
+    run = _run(_multi_seed(PRICE), seeds=[9901, 9902, 9903])
+    rows = [ln for ln in level2_persistence(arm_views(run)) if "→" in ln]
+
+    assert rows, "no sequence rows produced"
+    for row in rows:
+        # One row per (arm, seed): a row may not carry more transitions than
+        # a single lineage has.
+        assert row.count("gen") <= 2, f"a row mixed seeds: {row}"
+    for seed in (9901, 9902, 9903):
+        assert any(f"s{seed}" in row for row in rows), f"seed {seed} unlabelled"
+
+
+def test_an_empty_partition_is_not_called_a_pre_D121_run() -> None:
+    """The label must fire on a missing FIELD, never on a missing DOMAIN.
+
+    A cell whose z carried no domains has an empty partition; calling that
+    "predates D-121" was false on a run that has the field everywhere it
+    applies.
+    """
+
+    from dau.diagnostics.analyze_population_run import arm_views, level1_selection
+
+    run = _run(_multi_seed({}), seeds=[9901, 9902, 9903])
+    lines = "\n".join(level1_selection(run, arm_views(run)))
+
+    # Narrow on purpose: the positive-control section legitimately says
+    # "predates D-121" for a fixture that carries no control, and that message
+    # is correct. What must never appear is the ESTIMABILITY one.
+    assert "estimability ABSENT" not in lines
+    assert "empty" in lines, "an empty partition must still be reported as empty"

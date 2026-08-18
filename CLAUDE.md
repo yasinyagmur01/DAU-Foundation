@@ -1046,6 +1046,24 @@ kestiğinden test her koşulda geçiyordu. Mutasyon (256'ya geri dön) geçti �
 test boştu → "kesme oldu mu" sorusuna çevrildi. **Mutasyon kontrolü
 olmadan repoya işe yaramaz bir bekçi girecekti.**
 
+## 2.4-b ⛔ BEŞ EK KONTROL (D-127) — kapılar aletin arızasını yakalıyordu, **benimkini yakalayan yoktu**
+
+2026-08-18'de bir oturumda **beş kusur** çıktı ve hepsi aynı yerden geldi:
+*"yazdığım şeyi doğruluyorum, sistemin yaptığı şeyi değil."* Bedeli **~50 dk
+GPU + bir DR turunun yarısı + neredeyse yanlış okunmuş bir kol karşıtlığı**.
+Aşağısı bağlayıcıdır.
+
+| # | kural | kestiği hata |
+|---|---|---|
+| **K1** | ⛔ **GPU koşumu öncesi mekanizma kontrolü.** Yazıya dökülmeden koşum başlamaz: (a) ölçülen niceliği **hangi mekanizma üretiyor**, (b) seçtiğim bayraklardan **hangisi onu kapatır**, (c) **mevcut veriden** o yapılandırmada dejenere olmadığının kanıtı | `--no-lora` sondası: farklılaşmayı üreten kanalı kapatıp onu ölçmeye çalıştım |
+| **K2** | ⛔ **Boyut testi.** Bir boyut (tohum · kol · nesil · ajan) üzerinde toplayan her raporlama fonksiyonunun testinde o boyutta **en az iki farklı değer** olmak zorunda | Analiz testlerinin tamamı **tek tohumluydu** ⇒ iki ayrı çakıştırma kusuru görünmez kaldı |
+| **K3** | **Çağrı yeri testi.** Düzeltmenin testi, düzeltmenin **çağrıldığı yerden** geçmeli | *"kod tabanında var, koşum yolunda yok"* — bir oturumda **dört kez** |
+| **K4** | **Sayı disiplini.** Kayda/commit'e yazılan hiçbir sayı, o turda çıktıdan **okunmamış** olamaz. Tahmin **"tahmin"** diye ve **dayanağıyla** yazılır | suite sayısı yanlış commit'lendi; süre tahminleri iki kez tuttu**ma**dı |
+| **K5** | **Mutasyon koşumu kendini kanıtlar.** Mutasyondan önce/sonra dosyanın **md5'i** doğrulanır ve `-p no:cacheprovider` kullanılır | Toplu mutasyon betiğim **çelişkili sonuç** verdi; kod değil **ölçüm aracım** güvenilmezdi |
+
+⚠ **K1'in en önemli kısmı (b).** Bir koşumu ucuzlatırken kapattığın şeyin,
+**ölçmek istediğin şeyi üreten mekanizma** olup olmadığını sor.
+
 ## 2.5 Commit ritmi
 
 **Tek konu → tam suite (`python -m pytest -q`) → gerekçeli commit.**

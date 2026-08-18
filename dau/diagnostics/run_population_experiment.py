@@ -162,7 +162,15 @@ POPULATION_ID_SEED_PATTERN: re.Pattern[str] = re.compile(
     r"-s(?P<seed>\d+)-a\d+"
 )
 FIRST_FOUNDER_INDEX: int = 0
-RESULTS_NOTE: str = "exploratory, not pre-registered"
+# D-127. This said "exploratory, not pre-registered" unconditionally, and on
+# the C2 run that sentence was FALSE — the run was bound by
+# docs/PREREGISTRATION_2.md. The runner cannot know whether a pre-registration
+# binds it (that fact lives in a document and a commit, not in argv), so it now
+# states what it actually knows instead of asserting a status it cannot check.
+RESULTS_NOTE: str = (
+    "pre-registration status is NOT determined by this runner — check "
+    "docs/PREREGISTRATION*.md and the commit this run was launched from"
+)
 PROTOCOL_NAME: str = "population-experiment"
 # The round guard is the event budget itself: should_continue is the authority
 # on when a life ends, and this only stops a runaway loop (D-100).
