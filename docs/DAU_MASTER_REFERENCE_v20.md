@@ -2,8 +2,10 @@
 
 **Versiyon 2.5** · 2026-08-18
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
-*(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.4.3'te kaldı** — v2.4.4'ün
-§26'sı ve v2.5'in §27'si orada **yok**. `.md` tek güncel kaynaktır.
+*(`.md` kaynaktır. ✅ `.html` ve `.pdf` **v2.5'te yeniden üretildi**
+(2026-08-18, pandoc 3.7 + xelatex, 34 sayfa). PDF'te emoji'ler metin
+karşılığına çevriliyor (`✅` → `[OK]`, `⚠` → `[!]`, `⛔` → `[STOP]` …) ve
+DejaVu ailesi kullanılıyor ki Türkçe karakterler kod bloklarında da düşmesin.
 Önceki üretim v2.4.3'te yapılmıştı —
 pandoc; PDF'te emoji'ler metin karşılığına çevrildi (`✅` → `[OK]` vb.)
 çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF'in görüntüsü

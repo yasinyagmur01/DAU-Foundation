@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DAU Master Reference v2.4.3</title>
+  <title>DAU Master Reference v2.5</title>
   <style>
     html {
       color: #1a1a1a;
@@ -170,23 +170,43 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">DAU Master Reference v2.4.3</h1>
+<h1 class="title">DAU Master Reference v2.5</h1>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
 <li><a href="#dau-master-reference" id="toc-dau-master-reference">DAU —
 Master Reference</a>
 <ul>
+<li><a href="#v2.4.4-evrenin-fiziği-değişti-2026-08-13"
+id="toc-v2.4.4-evrenin-fiziği-değişti-2026-08-13">🔔 v2.4.4 — EVRENİN
+FİZİĞİ DEĞİŞTİ (2026-08-13)</a></li>
 <li><a href="#v2.4.3-doğrulayici-koşum-yapildi-sonuç-null"
 id="toc-v2.4.3-doğrulayici-koşum-yapildi-sonuç-null">🔔 v2.4.3 —
 DOĞRULAYICI KOŞUM YAPILDI, SONUÇ NULL</a></li>
 <li><a href="#v2.4.2-okuma-uyarısı-önce-bunu-oku"
 id="toc-v2.4.2-okuma-uyarısı-önce-bunu-oku">⚠ v2.4.2 okuma uyarısı —
-önce bunu oku</a></li>
+önce bunu oku</a>
+<ul>
+<li><a href="#bu-belgedeki-sayıların-hiçbiri-bugünkü-aletten-değil"
+id="toc-bu-belgedeki-sayıların-hiçbiri-bugünkü-aletten-değil">Bu
+belgedeki sayıların hiçbiri bugünkü aletten değil</a></li>
+<li><a href="#belgeye-girmemiş-tamamen-eksik-olan-katman"
+id="toc-belgeye-girmemiş-tamamen-eksik-olan-katman">Belgeye girmemiş,
+tamamen eksik olan katman</a></li>
+</ul></li>
 <li><a href="#bugünkü-gerçek-durum-2026-08-11"
 id="toc-bugünkü-gerçek-durum-2026-08-11">Bugünkü gerçek durum
-(2026-08-11)</a></li>
-<li><a href="#aksiyom" id="toc-aksiyom">1. Aksiyom</a></li>
+(2026-08-11)</a>
+<ul>
+<li><a href="#kapanmış-iki-büyük-darboğaz"
+id="toc-kapanmış-iki-büyük-darboğaz">Kapanmış iki büyük
+darboğaz</a></li>
+</ul></li>
+<li><a href="#aksiyom" id="toc-aksiyom">1. Aksiyom</a>
+<ul>
+<li><a href="#değiştirilemez-yasaklar"
+id="toc-değiştirilemez-yasaklar">Değiştirilemez yasaklar</a></li>
+</ul></li>
 <li><a href="#evren-modeli" id="toc-evren-modeli">2. Evren
 modeli</a></li>
 <li><a href="#zaman-ve-free-energy" id="toc-zaman-ve-free-energy">3.
@@ -198,26 +218,73 @@ tamam)</a></li>
 eşikleri</a></li>
 <li><a href="#hafıza-formülleri-layer-1-adim-4"
 id="toc-hafıza-formülleri-layer-1-adim-4">6. Hafıza formülleri (Layer 1
-+ ADIM 4)</a></li>
++ ADIM 4)</a>
+<ul>
+<li><a href="#ebbinghaus-değişmedi"
+id="toc-ebbinghaus-değişmedi">Ebbinghaus (değişmedi)</a></li>
+<li><a href="#memory_score-v2.0-hipporag-2-ppr-entegre"
+id="toc-memory_score-v2.0-hipporag-2-ppr-entegre">memory_score (v2.0 —
+HippoRAG 2 PPR entegre)</a></li>
+</ul></li>
 <li><a href="#layer-1.5-prediction-error-tamam"
 id="toc-layer-1.5-prediction-error-tamam">7. Layer 1.5 — Prediction
-Error (tamam)</a></li>
+Error (tamam)</a>
+<ul>
+<li><a href="#daerm-dynamic-allostatic-equilibrium-recovery-model"
+id="toc-daerm-dynamic-allostatic-equilibrium-recovery-model">DAERM
+(Dynamic Allostatic Equilibrium Recovery Model)</a></li>
+<li><a href="#adim-5-precision-weighted-pe-kodlandı-v2.4-adaptif"
+id="toc-adim-5-precision-weighted-pe-kodlandı-v2.4-adaptif">ADIM 5 —
+Precision-weighted PE (kodlandı; v2.4 adaptif)</a></li>
+</ul></li>
 <li><a href="#layer-2-emotionalweight-drift-tamam"
 id="toc-layer-2-emotionalweight-drift-tamam">8. Layer 2 —
-EmotionalWeight + Drift (tamam)</a></li>
+EmotionalWeight + Drift (tamam)</a>
+<ul>
+<li><a href="#emotionalweight"
+id="toc-emotionalweight">EmotionalWeight</a></li>
+<li><a href="#drift" id="toc-drift">Drift</a></li>
+</ul></li>
 <li><a href="#layer-3-nesil-konsolidasyonu-drift-healing-tamam"
 id="toc-layer-3-nesil-konsolidasyonu-drift-healing-tamam">9. Layer 3 —
-Nesil Konsolidasyonu + Drift Healing (tamam)</a></li>
+Nesil Konsolidasyonu + Drift Healing (tamam)</a>
+<ul>
+<li><a
+href="#v2.4.3-konsolidasyon-deney-yolunda-nereye-bağlı-d-022d-031"
+id="toc-v2.4.3-konsolidasyon-deney-yolunda-nereye-bağlı-d-022d-031">⚠
+v2.4.3: konsolidasyon deney yolunda <strong>nereye</strong> bağlı
+(D-022/D-031)</a></li>
+<li><a href="#ilk-ölçüm-b2-n40-120-kol"
+id="toc-ilk-ölçüm-b2-n40-120-kol">İlk ölçüm (B2, N=40, 120 kol)</a></li>
+</ul></li>
 <li><a href="#layer-4-society-tamam-adim-1"
 id="toc-layer-4-society-tamam-adim-1">10. Layer 4 — Society (tamam +
-ADIM 1)</a></li>
+ADIM 1)</a>
+<ul>
+<li><a href="#govsim-kaynak-fiziği-environment.py"
+id="toc-govsim-kaynak-fiziği-environment.py">GovSim Kaynak Fiziği
+(<code>environment.py</code>)</a></li>
+<li><a href="#adim-1-somatic-enforcement-kodlandı"
+id="toc-adim-1-somatic-enforcement-kodlandı">ADIM 1 — Somatic
+Enforcement (kodlandı)</a></li>
+<li><a href="#sosyal-yük-lod-fitness"
+id="toc-sosyal-yük-lod-fitness">Sosyal yük / LOD / Fitness</a></li>
+<li><a href="#graph-wiring" id="toc-graph-wiring">Graph wiring</a></li>
+</ul></li>
 <li><a href="#b.-layer-5-metacognition-kod-tamam-empirik-unsupported"
 id="toc-b.-layer-5-metacognition-kod-tamam-empirik-unsupported">10b.
-Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</a></li>
+Layer 5 — Metacognition (kod tamam · empirik UNSUPPORTED)</a>
+<ul>
+<li><a href="#empirik-verdict-kilitli"
+id="toc-empirik-verdict-kilitli">Empirik verdict (kilitli)</a></li>
+<li><a href="#aktüatörler-deterministik-python-llm-okumaz"
+id="toc-aktüatörler-deterministik-python-llm-okumaz">Aktüatörler
+(deterministik Python, LLM okumaz)</a></li>
+</ul></li>
 <li><a href="#mimari-durum-v2.3" id="toc-mimari-durum-v2.3">11. Mimari
 durum (v2.3)</a></li>
-<li><a href="#kod-ağacı-v2.4.3" id="toc-kod-ağacı-v2.4.3">12. Kod ağacı
-(v2.4.3)</a></li>
+<li><a href="#kod-ağacı-v2.5" id="toc-kod-ağacı-v2.5">12. Kod ağacı
+(v2.5)</a></li>
 <li><a href="#graph-yaşam-döngüsü" id="toc-graph-yaşam-döngüsü">13.
 Graph yaşam döngüsü</a></li>
 <li><a href="#test-durumu-bu-branch" id="toc-test-durumu-bu-branch">14.
@@ -228,16 +295,68 @@ karşılaştırma</a></li>
 <li><a href="#beş-evrensel-kısıt" id="toc-beş-evrensel-kısıt">16. Beş
 evrensel kısıt</a></li>
 <li><a href="#açık-sorular-güncel" id="toc-açık-sorular-güncel">17. Açık
-sorular (güncel)</a></li>
+sorular (güncel)</a>
+<ul>
+<li><a href="#kilitli-kapanmış" id="toc-kilitli-kapanmış">Kilitli /
+kapanmış</a></li>
+<li><a href="#hâlâ-açık" id="toc-hâlâ-açık">Hâlâ açık</a></li>
+<li><a href="#kapanan-v2.2v2.3-bu-branchte-ölçüldü"
+id="toc-kapanan-v2.2v2.3-bu-branchte-ölçüldü">Kapanan (v2.2–v2.3 — bu
+branch’te ölçüldü)</a></li>
+</ul></li>
 <li><a href="#bilinen-sınırlar-plastisite-günlüğü"
 id="toc-bilinen-sınırlar-plastisite-günlüğü">18. Bilinen Sınırlar +
-Plastisite günlüğü</a></li>
+Plastisite günlüğü</a>
+<ul>
+<li><a href="#bilinen-sınırlar-özet"
+id="toc-bilinen-sınırlar-özet">Bilinen sınırlar (özet)</a></li>
+<li><a href="#yeni-sınırlar-v2.1-tarihsel-v2.2-durumu"
+id="toc-yeni-sınırlar-v2.1-tarihsel-v2.2-durumu">Yeni sınırlar (v2.1
+tarihsel) → v2.2 durumu</a></li>
+<li><a href="#plastisite-günlüğü" id="toc-plastisite-günlüğü">Plastisite
+günlüğü</a></li>
+</ul></li>
 <li><a href="#adim-uygulama-kaydı-v2.4.1-bu-branch"
 id="toc-adim-uygulama-kaydı-v2.4.1-bu-branch">19. ADIM uygulama kaydı
-(v2.4.1 — bu branch)</a></li>
+(v2.4.1 — bu branch)</a>
+<ul>
+<li><a href="#adim-1-layer-4-somatic-enforcement-kod-wiring"
+id="toc-adim-1-layer-4-somatic-enforcement-kod-wiring">ADIM 1 — Layer 4
+Somatic Enforcement ✅ kod + wiring</a></li>
+<li><a href="#adim-2-signal-v2-nli-polarity-filter-kod"
+id="toc-adim-2-signal-v2-nli-polarity-filter-kod">ADIM 2 — Signal v2 NLI
+Polarity Filter ✅ kod</a></li>
+<li><a href="#adim-3-per-agent-qlora-punica-kod"
+id="toc-adim-3-per-agent-qlora-punica-kod">ADIM 3 — Per-Agent QLoRA
+(Punica) ✅ kod</a></li>
+<li><a href="#adim-4-hipporag-2-ppr-kod"
+id="toc-adim-4-hipporag-2-ppr-kod">ADIM 4 — HippoRAG 2 PPR ✅
+kod</a></li>
+<li><a href="#adim-5-precision-weighted-pe-kod-smoke-pass-v2.4.1"
+id="toc-adim-5-precision-weighted-pe-kod-smoke-pass-v2.4.1">ADIM 5 —
+Precision-Weighted PE ✅ kod + smoke PASS (v2.4.1)</a></li>
+<li><a href="#adim-6-protocol-c-n15-kod-samplingb-koşuldu"
+id="toc-adim-6-protocol-c-n15-kod-samplingb-koşuldu">ADIM 6 — Protocol
+C′ N≥15 ✅ kod + sampling+B koşuldu</a></li>
+<li><a href="#bağımlılık-grafiği" id="toc-bağımlılık-grafiği">Bağımlılık
+grafiği</a></li>
+</ul></li>
 <li><a href="#yol-haritası-anti-roadmap-v2.3"
 id="toc-yol-haritası-anti-roadmap-v2.3">20. Yol haritası + Anti-roadmap
-(v2.3)</a></li>
+(v2.3)</a>
+<ul>
+<li><a href="#doğrulanan-kilitli" id="toc-doğrulanan-kilitli">Doğrulanan
+/ kilitli</a></li>
+<li><a href="#yeniden-değerlendirilmesi-gereken"
+id="toc-yeniden-değerlendirilmesi-gereken">Yeniden değerlendirilmesi
+gereken</a></li>
+<li><a href="#yanlışlanan-kapatılan"
+id="toc-yanlışlanan-kapatılan">Yanlışlanan / kapatılan</a></li>
+<li><a href="#sıradaki-öncelik" id="toc-sıradaki-öncelik">Sıradaki
+(öncelik)</a></li>
+<li><a href="#anti-roadmap-yasak"
+id="toc-anti-roadmap-yasak">Anti-roadmap (yasak)</a></li>
+</ul></li>
 <li><a href="#ortam-bayrakları-referans"
 id="toc-ortam-bayrakları-referans">21. Ortam bayrakları
 (referans)</a></li>
@@ -245,24 +364,164 @@ id="toc-ortam-bayrakları-referans">21. Ortam bayrakları
 geçmişi</a></li>
 <li><a href="#nerede-duruyoruz-v2.4.3-baştan-yazıldı"
 id="toc-nerede-duruyoruz-v2.4.3-baştan-yazıldı">23. Nerede Duruyoruz
-(v2.4.3 — baştan yazıldı)</a></li>
+(v2.4.3 — baştan yazıldı)</a>
+<ul>
+<li><a href="#bitenler" id="toc-bitenler">Bitenler</a></li>
+<li><a href="#sonuç" id="toc-sonuç">Sonuç</a></li>
+<li><a href="#sınıflandırması-alet-nulli"
+id="toc-sınıflandırması-alet-nulli">§11 sınıflandırması: <strong>ALET
+NULL’I</strong></a></li>
+<li><a href="#sınıflandırmayı-bağımsız-destekleyen-üç-ölçüm"
+id="toc-sınıflandırmayı-bağımsız-destekleyen-üç-ölçüm">Sınıflandırmayı
+bağımsız destekleyen üç ölçüm</a></li>
+<li><a href="#ne-iddia-edilemez" id="toc-ne-iddia-edilemez">Ne iddia
+edilemez</a></li>
+<li><a href="#bu-nullın-değeri" id="toc-bu-nullın-değeri">Bu null’ın
+değeri</a></li>
+<li><a href="#sıradaki" id="toc-sıradaki">Sıradaki</a></li>
+</ul></li>
 <li><a href="#preflight-değişmez-sistemi-ve-alet-kimliği-v2.4.2-yeni"
 id="toc-preflight-değişmez-sistemi-ve-alet-kimliği-v2.4.2-yeni">24.
-Preflight değişmez sistemi ve alet kimliği (v2.4.2 — yeni)</a></li>
+Preflight değişmez sistemi ve alet kimliği (v2.4.2 — yeni)</a>
+<ul>
+<li><a href="#neden-var" id="toc-neden-var">Neden var</a></li>
+<li><a href="#kayıtlı-20-değişmez" id="toc-kayıtlı-20-değişmez">Kayıtlı
+20 değişmez</a></li>
+<li><a href="#iki-kapı-kendini-ilk-gününde-ödedi"
+id="toc-iki-kapı-kendini-ilk-gününde-ödedi">İki kapı kendini ilk gününde
+ödedi</a></li>
+<li><a href="#alet-kimliği-tool_identity.py"
+id="toc-alet-kimliği-tool_identity.py">Alet kimliği
+(<code>tool_identity.py</code>)</a></li>
+</ul></li>
 <li><a href="#karar-kaydı-sistemi-v2.4.2-yeni"
 id="toc-karar-kaydı-sistemi-v2.4.2-yeni">25. Karar kaydı sistemi (v2.4.2
-— yeni)</a></li>
+— yeni)</a>
+<ul>
+<li><a href="#bu-belgeyi-doğrudan-geçersizleştiren-kayıtlar"
+id="toc-bu-belgeyi-doğrudan-geçersizleştiren-kayıtlar">Bu belgeyi
+doğrudan geçersizleştiren kayıtlar</a></li>
+<li><a href="#d-029-aksiyoma-doğrudan-dokunan-kayıt"
+id="toc-d-029-aksiyoma-doğrudan-dokunan-kayıt">D-029 — aksiyoma doğrudan
+dokunan kayıt</a></li>
+<li><a href="#d-044-uç-nokta-duyarlılığı"
+id="toc-d-044-uç-nokta-duyarlılığı">D-044 — uç nokta
+duyarlılığı</a></li>
+<li><a
+href="#d-045d-053-faz-anın-kapanışı-kilit-ve-doğrulayıcı-koşum-v2.4.3"
+id="toc-d-045d-053-faz-anın-kapanışı-kilit-ve-doğrulayıcı-koşum-v2.4.3">D-045…D-053
+— Faz A’nın kapanışı, kilit ve doğrulayıcı koşum (v2.4.3)</a></li>
+<li><a href="#d-053-sonucun-sınıfını-belirleyen-kayıt"
+id="toc-d-053-sonucun-sınıfını-belirleyen-kayıt">D-053 — sonucun
+sınıfını belirleyen kayıt</a></li>
+</ul></li>
+<li><a href="#d-054d-068-evrenin-fiziği-değişti-v2.4.4-yeni"
+id="toc-d-054d-068-evrenin-fiziği-değişti-v2.4.4-yeni">26. D-054…D-068:
+evrenin fiziği değişti (v2.4.4 — yeni)</a>
+<ul>
+<li><a href="#neden-değiştirildi-üç-ölçüm"
+id="toc-neden-değiştirildi-üç-ölçüm">26.1 Neden değiştirildi — üç
+ölçüm</a></li>
+<li><a href="#ne-değişti-d-066-a7b157f"
+id="toc-ne-değişti-d-066-a7b157f">26.2 Ne değişti (D-066,
+<code>a7b157f</code>)</a></li>
+<li><a href="#ve-borcu-ödendi-d-067-7c76a8c"
+id="toc-ve-borcu-ödendi-d-067-7c76a8c">26.3 Ve borcu ödendi (D-067,
+<code>7c76a8c</code>)</a></li>
+<li><a href="#ilk-pilot-ne-gösterdi-d-068-n2-keşifsel"
+id="toc-ilk-pilot-ne-gösterdi-d-068-n2-keşifsel">26.4 İlk pilot ne
+gösterdi (D-068, N=2, keşifsel)</a></li>
+<li><a href="#karşılaştırılabilirlik-kesildi"
+id="toc-karşılaştırılabilirlik-kesildi">26.5 ⚠ Karşılaştırılabilirlik
+kesildi</a></li>
+<li><a href="#bu-turda-kapanan-diğer-kayıtlar"
+id="toc-bu-turda-kapanan-diğer-kayıtlar">26.6 Bu turda kapanan diğer
+kayıtlar</a></li>
+</ul></li>
+<li><a
+href="#d-069d-122-popülasyon-makinesi-ve-ikinci-ön-kayıt-v2.5-yeni"
+id="toc-d-069d-122-popülasyon-makinesi-ve-ikinci-ön-kayıt-v2.5-yeni">27.
+D-069…D-122: popülasyon makinesi ve ikinci ön-kayıt (v2.5 — yeni)</a>
+<ul>
+<li><a href="#linçpin-neden-popülasyon-zorunluydu"
+id="toc-linçpin-neden-popülasyon-zorunluydu">27.1 Linçpin — neden
+popülasyon zorunluydu</a></li>
+<li><a href="#tasarım-kilitli-kararlar"
+id="toc-tasarım-kilitli-kararlar">27.2 Tasarım — kilitli
+kararlar</a></li>
+<li><a href="#uç-nokta-krizi-ve-çözülmesi-bu-dönemin-en-pahalı-dersi"
+id="toc-uç-nokta-krizi-ve-çözülmesi-bu-dönemin-en-pahalı-dersi">27.3 ⛔
+Uç nokta krizi ve çözülmesi — bu dönemin en pahalı dersi</a></li>
+<li><a href="#alet-bu-dönemde-eklenenler"
+id="toc-alet-bu-dönemde-eklenenler">27.4 Alet: bu dönemde
+eklenenler</a></li>
+<li><a href="#süreç-mutasyon-kuralı-sertleşti"
+id="toc-süreç-mutasyon-kuralı-sertleşti">27.5 Süreç: mutasyon kuralı
+sertleşti</a></li>
+<li><a href="#dr-kanalı-12-kimlik-hatasından-sonra-ne-değişti"
+id="toc-dr-kanalı-12-kimlik-hatasından-sonra-ne-değişti">27.6 DR kanalı:
+12 kimlik hatasından sonra ne değişti</a></li>
+<li><a href="#ikinci-ön-kayıt-kilitli"
+id="toc-ikinci-ön-kayıt-kilitli">27.7 İkinci ön-kayıt — 🔒
+kilitli</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </nav>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 2.4.3</strong> · 2026-08-12 <strong>Dosya:</strong>
+<p><strong>Versiyon 2.5</strong> · 2026-08-18 <strong>Dosya:</strong>
 <code>docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}</code>
-<em>(<code>.md</code> kaynaktır. <code>.html</code> ve <code>.pdf</code>
-<strong>v2.4.3’te yeniden üretildi</strong> — pandoc; PDF’te emoji’ler
+<em>(<code>.md</code> kaynaktır. ⚠ <code>.html</code> ve
+<code>.pdf</code> <strong>v2.4.3’te kaldı</strong> — v2.4.4’ün §26’sı ve
+v2.5’in §27’si orada <strong>yok</strong>. <code>.md</code> tek güncel
+kaynaktır. Önceki üretim v2.4.3’te yapılmıştı — pandoc; PDF’te emoji’ler
 metin karşılığına çevrildi (<code>✅</code> → <code>[OK]</code> vb.)
 çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF’in
 görüntüsü md’den farklıdır.)</em></p>
+<hr />
+<h2 id="v2.4.4-evrenin-fiziği-değişti-2026-08-13">🔔 v2.4.4 — EVRENİN
+FİZİĞİ DEĞİŞTİ (2026-08-13)</h2>
+<p><strong>v2.4.3 bir null sonuçla kapanmıştı. Ondan sonra o null’ın
+sebebi ölçüldü ve evren değiştirildi.</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Sebep</td>
+<td>Seçilim katmanı atıldı: <code>f_agent</code>=0.000 ·
+<code>energy</code>=0.000 · <code>fitness_class</code>=<code>low</code>,
+<strong>120/120 kolda</strong> (D-060); enerji <strong>yapı
+gereği</strong> artamıyordu (D-061)</td>
+</tr>
+<tr>
+<td>Değişiklik</td>
+<td>Hasat enerjiye dönüyor (<strong>içbükey</strong> kazanç), havuz
+defteri <strong>gerçekleşeni</strong> yazıyor, tükenmek
+<strong>öldürüyor</strong> (D-066); kasa saati fazlar arasında sürüyor
+(D-067)</td>
+</tr>
+<tr>
+<td>İlk pilot</td>
+<td>Sınıf bariyeri <strong>kırıldı</strong> (<code>low</code> 0.208 vs
+<code>normal</code> 0.413), yaşamlar 19 ve 10 olayda bitti, varis ömrü
+kola göre değişti (D-068)</td>
+</tr>
+<tr>
+<td>⚠ Yeni sorun</td>
+<td>Uç nokta <strong>%71 padding</strong>’e boğuldu;
+<code>E_final</code> hâlâ 0.000 (ölüm kuralının kendisi yüzünden)</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong><code>dau_runs/</code>’daki hiçbir koşum bugünün aletiyle
+karşılaştırılamaz</strong> — bu, D-036/D-037/D-042’den <strong>daha
+büyük</strong> bir kırılmadır: onlar aletin nasıl ölçtüğünü, bu ölçülen
+evreni değiştirdi.</p>
+<p>Ayrıntı <strong>§26’da</strong>. Aşağıdaki v2.4.3 kutusu
+<strong>tarihçe olarak</strong> duruyor.</p>
 <hr />
 <h2 id="v2.4.3-doğrulayici-koşum-yapildi-sonuç-null">🔔 v2.4.3 —
 DOĞRULAYICI KOŞUM YAPILDI, SONUÇ NULL</h2>
@@ -303,7 +562,10 @@ düştü (<strong>D-053</strong>)</td>
 bağlandı). Doğru ifade: <em>“<code>d_z ≥ 0.465</code> büyüklüğünde etki
 yok; altındaki için veri bilgisiz.”</em> ⚠ <strong>Mekanizma hakkında
 hüküm verilemez</strong> — sonuç alet null’ı sınıfında.</p>
-<p>Ayrıntı §23’te (yeniden yazıldı) ve §25’te (D-045…D-053).</p>
+<p>Ayrıntı §23’te (yeniden yazıldı) ve §25’te (D-045…D-053). ⚠
+<strong>§23 v2.4.3’te yazıldı ve D-066 sonrası eskidi</strong> —
+<em>“sıradaki iş”</em> dediği şeylerin çoğu yapıldı; güncel durum §26’da
+ve <code>CLAUDE.md</code> §1’de.</p>
 <hr />
 <h2 id="v2.4.2-okuma-uyarısı-önce-bunu-oku">⚠ v2.4.2 okuma uyarısı —
 önce bunu oku</h2>
@@ -430,7 +692,8 @@ değil)</td>
 </tr>
 <tr>
 <td>Test</td>
-<td><strong>332 passed, 2 deselected</strong> — ⚠ belge boyunca 206</td>
+<td><strong>582 passed, 2 deselected</strong> (v2.5; 35 dosyada 551 test
+fonksiyonu) — ⚠ belge boyunca 206</td>
 <td>—</td>
 </tr>
 <tr>
@@ -592,6 +855,14 @@ L_i(t+1) = clamp(L_i + PE_i − γ·(L_i − μ_i), μ_i, 1.0)</code></pre>
 <p>Sabitler: <code>ALLOSTATIC_SETPOINT_MAX=0.75</code>,
 <code>CROSS_AXIS_SPILLOVER=0.20</code>,
 <code>METABOLIC_FLOOR=0.05</code>.</p>
+<p>⚠ <strong>v2.4.3’ten sonra eksik (D-066):</strong> bu denklem
+enerjinin <strong>yalnız düşen</strong> tarafını anlatıyor ve o haliyle
+<code>decay ≥ recovery</code> yapısal olarak her zaman doğruydu
+(D-061’in cebirsel kanıtı) — enerji 2. olayda tabana vurup yaşamın
+%96’sında sıfırda kalıyordu. Artık <strong>üçüncü bir terim</strong>
+var: hasat enerjiye dönüyor (<code>gain = 0.50·x/(2.0+x)</code>,
+<code>x</code> = <strong>gerçekleşen</strong> hasat) ve enerji tükenince
+yaşam <strong>biter</strong>. Bkz. §26.</p>
 <h3 id="adim-5-precision-weighted-pe-kodlandı-v2.4-adaptif">ADIM 5 —
 Precision-weighted PE (kodlandı; v2.4 adaptif)</h3>
 <p><code>semantic_similarity.compute_precision_weight</code> /
@@ -791,7 +1062,11 @@ eğitmiştir</strong>. Hata değil, “iki kanal”ın tanımı — ama D-002’
 kullanılıyor ve faz-2 <code>EventClock</code>’u sıfırdan sayıyor ⇒ faz-1
 anıları bir faz daha taze görünüyor (GAP-19). Etkisi şu an
 <strong>bloke</strong> ama <strong>gizli</strong>: <code>F_agent</code>
-tek başına düzeltilirse canlanır (D-051).</p>
+tek başına düzeltilirse canlanır (D-051). ✅ <strong>KAPANDI
+(D-067).</strong> Kasa <code>counter_base</code> tutuyor;
+<code>F_agent</code> D-066’da canlandığı için düzeltme <strong>aynı
+gün</strong> yapıldı, D-051’in <em>“ikisi birlikte ya da hiçbiri”</em>
+şartına uyularak. L16 artık tarihçedir.</p>
 <hr />
 <h2 id="layer-4-society-tamam-adim-1">10. Layer 4 — Society (tamam +
 ADIM 1)</h2>
@@ -821,6 +1096,15 @@ test). <strong>Kablolama:</strong> <code>graph.py</code>
 <pre><code>social_load = 0.5·cooperation_stress + 0.5·coordination_friction
 T_cognitive = 0.35·(δ/0.7) + 0.25·max_drift + 0.20·coord_friction + 0.20·(1-pool_ratio)
 F_agent = 0.4·(E/E_max) + 0.3·(1-|ΔP|/P_max) + 0.3·(t_surv/T_gen)</code></pre>
+<p>⚠ <strong>Formül değişmedi, girdileri değişti (D-066/D-068).</strong>
+B2’de üç girdinin ikisi sabitti (<code>E</code>=0.000 ve
+<code>t_surv/T_gen</code>=1.0, 120/120 kolda) ve skor 120/120
+<code>low</code> okuyordu. Metabolik döngü kapandıktan sonra
+<code>t_surv</code> ve <code>ΔP</code> canlandı — pilotta sınıf bariyeri
+<strong>ilk kez kırıldı</strong> (<code>low</code> 0.208 vs
+<code>normal</code> 0.413). ⚠ Ama <code>E</code> <strong>hâlâ
+0.000</strong>, çünkü artık ajanlar tükenerek ölüyor ve tükenerek ölenin
+son enerjisi tanımı gereği sıfır. Bkz. §26.</p>
 <p>NPC conserve kuralı: <code>NPC_POOL_RATIO_CONSERVE=0.3</code> (crisis
 eşiği ile hizalı).</p>
 <h3 id="graph-wiring">Graph wiring</h3>
@@ -969,7 +1253,7 @@ sorgu</li>
 </tbody>
 </table>
 <hr />
-<h2 id="kod-ağacı-v2.4.3">12. Kod ağacı (v2.4.3)</h2>
+<h2 id="kod-ağacı-v2.5">12. Kod ağacı (v2.5)</h2>
 <pre><code>dau/foundation/
  ├── state.py              — DAUAgentState (+ drift, social, lod, env, self_model)
  ├── delta.py              — compute_delta / classify / is_trauma (peak-weighted)
@@ -1003,7 +1287,13 @@ dau/memory/
  └── tests/                — + test_ppr_retrieval
 
 dau/generation/
- └── fitness.py            — F_agent, W_transfer
+ ├── fitness.py            — F_agent, W_transfer
+ ├── reproduction.py       — 321 satır; turnuva (k=2), w tahsisi,
+ │                          **price_partition** (+ z_variance /
+ │                          selection_estimable, D-121) ve
+ │                          **positive_control_partition** (D-121)
+ └── population.py         — 147 satır; GenerationPlan / heir_id /
+                            plan_next_generation / close_transition (D-101)
 
 dau/society/
  ├── environment.py        — pool physics + apply_crisis_trauma (ADIM 1)
@@ -1013,14 +1303,23 @@ dau/society/
 dau/diagnostics/
  ├── run_protocol_c.py     — frozen Meta ON/OFF (paper-locked)
  ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
- ├── preflight.py          — 1208 satır; değişmez kapıları (I0.1–I5.4);
+ ├── run_cprime_multigen.py — 1610 satır; gen1→transfer→gen2 (B2&#39;nin yolu,
+ │                          DEĞİŞMEDİ — `prereg/b2-code` etiketi)
+ ├── run_population_experiment.py — 1464 satır; **popülasyon sarmalayıcısı**
+ │                          (N ajan · G nesil · kol başına ayrı mera);
+ │                          I0.3·I0.4·I0.6·I0.7·I1.1·I4.1 + checkpoint
+ ├── analyze_population_run.py — 724 satır; dört seviyeye göre okuma;
+ │                          **p-değeri üretmez** (test bekçiliğiyle)
+ ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.4);
  │                          ABORT/FLAG modları
- ├── tool_identity.py      — 242 satır; koşumun alet kimliği; yüklenen
- │                          ağırlığı ve ayarları raporlar
+ ├── tool_identity.py      — 299 satır; koşumun alet kimliği; yüklenen
+ │                          ağırlığı ve ayarları raporlar (+ cuda_allocator)
  └── long_run.py / pe_histogram.py / actuator_audit.py
 
 docs/
- └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.4.1**)
+ └── PREREGISTRATION.md                     — 🔒 birinci ön-kayıt (B2)
+ └── PREREGISTRATION_2.md                   — 🔒 ikinci ön-kayıt (popülasyon)
+ └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.5**)
  └── DAU_MASTER_REFERENCE_v20.pdf           — türev (md ile senkron)
  └── DAU_MASTER_REFERENCE_v20.html          — türev (stale; md kaynaktır)
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)</code></pre>
@@ -1101,14 +1400,14 @@ Llama-3.1-8B + peft · LangSmith</p>
 <td><code>test_precision_pe.py</code> (rolling-history suite)</td>
 </tr>
 <tr>
-<td><strong>Collect (v2.4.3 branch)</strong></td>
-<td><strong>344 passed, 2 deselected</strong></td>
+<td><strong>Collect (v2.4.4 branch)</strong></td>
+<td><strong>384 passed, 2 deselected</strong></td>
 </tr>
 </tbody>
 </table>
 <p><em>(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” /
 v2.4.1’deki “206” sayıları önceki kesitler; bu belge <strong>bu branch
-collect=344</strong> ile kilitlenir.)</em></p>
+collect=384</strong> ile kilitlenir.)</em></p>
 <p><strong>NLI flake ÇÖZÜLDÜ (<code>3d760e8</code>):</strong> unit path
 mock HF; gerçek model <code>@pytest.mark.integration</code> (günlük
 suite dışı). Kök neden: HF Hub canlı çağrı + ağ kesintisi
@@ -2593,5 +2892,421 @@ birer <code>lived</code> ve <code>shuffle</code> kollarında.</p>
 sınıfında, çünkü o tanım “§5’ten biri düştü” diyor ve düştü.
 <strong>Sınıflandırma sonucu görmeden yazılmış bir kuraldan geliyor,
 yorumdan değil.</strong></p>
+<hr />
+<h2 id="d-054d-068-evrenin-fiziği-değişti-v2.4.4-yeni">26. D-054…D-068:
+evrenin fiziği değişti (v2.4.4 — yeni)</h2>
+<p>⚠ <strong>Bu bölüm, belgenin geri kalanının hangi kısımlarının artık
+geçersiz olduğunu söyler.</strong> v2.4.3 doğrulayıcı koşumla (B2)
+kapanmıştı; ondan sonra on beş karar alındı ve son üçü <strong>evrenin
+fiziğini</strong> değiştirdi. §7’nin DAERM denklemi, §10’un
+<code>F_agent</code> formülü ve §18’in empirik tablosu bu yüzden yerinde
+işaretlendi.</p>
+<h3 id="neden-değiştirildi-üç-ölçüm">26.1 Neden değiştirildi — üç
+ölçüm</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Kayıt</th>
+<th>Bulgu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D-060</strong></td>
+<td>Seçilim katmanı atıl: <code>f_agent</code>=0.000 ·
+<code>energy</code>=0.000 · <code>fitness_class</code>=<code>low</code>,
+<strong>120/120 kolda</strong>. Formül düzeltilse bile hepsi aynı sınıfa
+düşüyor</td>
+</tr>
+<tr>
+<td><strong>D-061</strong></td>
+<td>Enerji <strong>yapı gereği</strong> asla artamıyor:
+<code>decay ≥ recovery</code> cebirsel olarak her zaman. 2. olayda
+tabana vuruyor, yaşamın %96’sı sıfırda</td>
+</tr>
+<tr>
+<td><strong>D-056 / D-064</strong></td>
+<td>Birincil uç noktanın çözünürlüğü: <code>resource</code> kanalı
+120/120 kolda var ama <strong>38/40 seed’de kollar özdeş</strong>; ayırt
+etme gücünü taşıyan <code>social</code> kanalı kolların
+<strong>%42.5’inde hiç yok</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Kök neden (D-060 §2.3):</strong> ajanlar olayların
+%94–100’ünde en yüksek çıkarımı seçiyordu, çünkü <strong>defect’in
+bedeli yoktu</strong> — çıkarım enerjiye dönmüyor, havuz çökünce kimse
+ölmüyordu.</p>
+<h3 id="ne-değişti-d-066-a7b157f">26.2 Ne değişti (D-066,
+<code>a7b157f</code>)</h3>
+<p>Üç parça, biri olmadan diğerleri anlamsız:</p>
+<ol type="1">
+<li><strong>Havuz defteri gerçekleşen hasatı yazıyor.</strong>
+<code>step_pool</code> havuzu <code>POOL_MIN</code>’de clamp’liyor ama
+deftere <strong>istenen</strong> miktarı yazıyordu ⇒ boş meradan
+<em>“8.0 aldım”</em> fiziksel olarak olmamış bir olaydı.
+<code>agent_delta_pool</code> bu yüzden kararın
+<strong>sınıfını</strong> topluyordu, ortak kaynağı değil.</li>
+<li><strong>Kazanç içbükey:</strong>
+<code>gain(x) = METABOLIC_GAIN_MAX · x / (HALF_SAT + x)</code>,
+<code>x</code> = gerçekleşen hasat. Dayanak DR #4 / J9 (Dykhuizen, Dean
+&amp; Hartl 1987, <em>Metabolic flux and fitness</em>, Genetics
+115:25–31): akı, aktivitenin içbükey fonksiyonudur ve <strong>doyumda
+seçilim nötrleşir</strong>. Doğrusul bir bağ defect’i kesin baskın
+bırakırdı. Sonuç aritmetik: COOPERATE→0.25, DEFECT→0.40 ⇒ <strong>4×
+havuz hasarı 1.6× enerji</strong>.</li>
+<li><strong>Ölüm açıldı.</strong> <code>AB_ENERGY_FLOOR</code> yastığı
+<code>TERMINATION_ENERGY</code>’nin üstünde oturduğu için ölüm
+<strong>yapısal olarak imkânsızdı</strong>; artık yalnız doğum geçişini
+(<code>METABOLIC_GRACE_EVENTS</code>) kapsıyor.</li>
+</ol>
+<p>⚠ Üç sabit de <strong>kalibre değil</strong>
+(<code>METABOLIC_GAIN_CALIBRATED = False</code>) ve alet kimliği bunu
+<code>metabolism</code> bloğunda raporluyor. Değerleri <strong>ikinci
+ön-kayıt</strong> kilitler; sonuca bakarak ayarlamak post-hoc tuning
+olur.</p>
+<h3 id="ve-borcu-ödendi-d-067-7c76a8c">26.3 Ve borcu ödendi (D-067,
+<code>7c76a8c</code>)</h3>
+<p>D-051 gizli bağımlılığı yazmıştı: <em>“<code>F_agent</code> tek
+başına düzeltilirse GAP-19 canlanır.”</em> D-066 <code>F_agent</code>’ı
+canlandırdı ⇒ GAP-19 <strong>aynı gün</strong> kapatıldı. Kasa artık
+<code>counter_base</code> tutuyor; kasaya giren her sayaç
+<strong>faz-yereldir</strong> ve çeviriyi yalnız kasa yapar. Yaşam
+bitince <strong>yaşanan</strong> olay sayısıyla mühürlenir — bütçeyle
+değil, çünkü artık yaşam erken bitebiliyor.</p>
+<h3 id="ilk-pilot-ne-gösterdi-d-068-n2-keşifsel">26.4 İlk pilot ne
+gösterdi (D-068, N=2, keşifsel)</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>B2 (eski fizik)</th>
+<th>Pilot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ölüm</td>
+<td>imkânsız</td>
+<td>yaşamlar <strong>19</strong> ve <strong>10</strong> olay (50
+bütçesine karşı)</td>
+</tr>
+<tr>
+<td><code>fitness_class</code></td>
+<td>120/120 <code>low</code></td>
+<td><code>low</code> 0.208 <strong>vs <code>normal</code>
+0.413</strong></td>
+</tr>
+<tr>
+<td><code>\|Δhavuz\|</code></td>
+<td>393.55 ± 2.62 (%0.7)</td>
+<td><strong>130.8 vs 62.2</strong></td>
+</tr>
+<tr>
+<td>Varis ömrü</td>
+<td>her kolda eşit</td>
+<td><code>lived</code> <strong>17</strong>,
+<code>null</code>/<code>shuffle</code> <strong>20</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Bedel zinciri canlıda ateşledi: havuz 8. olayda tabana vurunca
+gerçekleşen hasat <strong>8.0 → 6.17 → 0</strong> düştü.</p>
+<p>⚠ <strong>İki yeni sorun, ikisi de bu koşumun ürettiği:</strong></p>
+<ul>
+<li><strong>Uç nokta padding’e boğuldu</strong> — gen1’de %71 pad, alet
+<em>“arm not measurable”</em> bastı. Sabit 50 olaylık pencere, ölümün
+mümkün olduğu bir evrende çalışmıyor.</li>
+<li><strong>Enerji terimi hâlâ ölü, başka sebeple</strong> —
+<code>E_final = 0.000</code> altı kolun altısında, çünkü tükenerek
+ölenin son enerjisi tanımı gereği sıfırdır.</li>
+</ul>
+<p>Her ikisi de <strong>DR brief #5</strong>’in konusu
+(<code>docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md</code>).</p>
+<p>⚠ <strong>Davranış hâlâ çökmüş:</strong> hasat neredeyse her olayda
+8.0. Evren bedeli kesiyor, ajan davranışını değiştirmiyor — DR #4 /
+J4’ün (GovSim, Piatti vd. 2024) rapor ettiği olgunun aynısı.</p>
+<h3 id="karşılaştırılabilirlik-kesildi">26.5 ⚠ Karşılaştırılabilirlik
+kesildi</h3>
+<p><strong><code>dau_runs/</code> altındaki hiçbir koşum bugünün
+aletiyle karşılaştırılamaz.</strong> D-036 (ölçüm penceresi), D-037
+(determinizm) ve D-042 (konum bağımsızlığı) aletin nasıl ölçtüğünü
+değiştirmişti; D-066/D-067 <strong>ölçülen evreni</strong> değiştirdi.
+Bu daha büyük bir kırılmadır.</p>
+<h3 id="bu-turda-kapanan-diğer-kayıtlar">26.6 Bu turda kapanan diğer
+kayıtlar</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Kayıt</th>
+<th>Ne</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D-062</strong></td>
+<td>W1 sahte-PE kontrolü: confound <em>tarif edildiği biçimiyle</em>
+<strong>yok</strong> (PE ↔︎ token başı olabilirlik ρ=+0.06, p=0.37). Ama
+D-059’un <em>“<code>lived</code> daha kolay öğreniliyor”</em> bulgusu
+<strong>seed-kararlı değil</strong>. Yan bulgu: eğitim dizilerinin
+<strong>%85.5’i</strong> 512 token tavanında kesiliyor ve sohbet şablonu
+başlığı kayboluyor</td>
+</tr>
+<tr>
+<td><strong>D-063</strong></td>
+<td>S5 aletlendi (hasat + <code>pool_ratio</code> + kriz bayrağı
+<code>Gen2Result</code>’a giriyor). <strong>S6 kol olarak
+üretilmedi:</strong> denetim birincilin <code>F_agent</code>’ı
+<strong>hiçbir yoldan göremediğini</strong> gösterdi ⇒ gölge kayıt</td>
+</tr>
+<tr>
+<td><strong>D-064</strong></td>
+<td>Uç nokta çözünürlük envanteri (21 aday). Dördü <strong>yapı gereği
+kör</strong></td>
+</tr>
+<tr>
+<td><strong>D-065</strong></td>
+<td>DR #4 mutabakatı (§J). Bir DOI yanlış makaleye atıflı (yedinci
+kimlik hatası), bir “kimlik” dergi ISSN’i, <em>“N=20–50”</em> kaynaksız
+⇒ kullanılmadı</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="d-069d-122-popülasyon-makinesi-ve-ikinci-ön-kayıt-v2.5-yeni">27.
+D-069…D-122: popülasyon makinesi ve ikinci ön-kayıt (v2.5 — yeni)</h2>
+<p>⚠ <strong>Bu bölüm §26’nın devamıdır ve belgenin geri kalanının hangi
+kısımlarının artık <em>deney tarihçesi</em> olduğunu söyler.</strong>
+§26 evrenin fiziğinin değiştiğini anlatıyordu; burada anlatılan şey
+<strong>deneyin kendisinin değiştiği</strong>: tek soy yerine
+<strong>popülasyon</strong>, sabit <code>w</code> yerine
+<strong>değişken <code>w</code></strong>, ve ölçülen şey <em>“bir varis
+nasıl doğdu”</em> değil <strong><em>“kim varis
+bıraktı”</em></strong>.</p>
+<h3 id="linçpin-neden-popülasyon-zorunluydu">27.1 Linçpin — neden
+popülasyon zorunluydu</h3>
+<p>Price eşitliği <code>Cov(wᵢ, zᵢ)</code> ister ve bu ancak
+<code>w</code> <strong>değişkense</strong> tanımlıdır. Birinci
+ön-kayıtta her ebeveynin <strong>tam olarak bir</strong> varisi vardı ⇒
+<code>w</code> sabit ⇒ <strong>seçilim ölçülemez</strong>. Popülasyonun
+asıl işi ajan sayısını artırmak değil, <code>w</code>’yi değişken
+yapmaktı; gerisi altyapıdır.</p>
+<p>⚠ <strong>Üç katman ayrı tutulur</strong> (P4/D-094), yoksa Mills
+&amp; Beatty’nin totolojisi geri gelir: <code>F_agent</code>
+(<strong>girdi</strong>) → <code>w</code> (<strong>varis
+sayısı</strong>) → <code>z</code> (<strong>sonuç</strong>).
+<code>F_agent</code>’ın içinde D-071’den beri gerçekleşmiş hayatta kalma
+var, o yüzden doğrudan <code>w</code> yapılamaz.</p>
+<h3 id="tasarım-kilitli-kararlar">27.2 Tasarım — kilitli kararlar</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Karar</th>
+<th>Kayıt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P0</strong></td>
+<td>① sıralı erişim, <strong>tur başına rotasyon</strong> — ajanlar
+karar vererek değil <strong>farklı yaşayarak</strong> ayrışır</td>
+<td>D-104</td>
+</tr>
+<tr>
+<td><strong>P1</strong></td>
+<td>kol başına <strong>ayrı popülasyon ve ayrı mera</strong> (kol
+kirlenmesi kapatıldı)</td>
+<td>D-095</td>
+</tr>
+<tr>
+<td><strong>P2/P3</strong></td>
+<td>turnuva <strong>k=2</strong>; sabit N, ölenin yerine varis ⇒
+<code>w ∈ {0,1,2,…}</code></td>
+<td>D-094</td>
+</tr>
+<tr>
+<td><strong>P5</strong></td>
+<td>havuz kapasitesi <strong>N ile ölçeklenir</strong>, kişi başı
+yörünge N=1 evreninin aynısı</td>
+<td>D-081</td>
+</tr>
+<tr>
+<td><strong>P6</strong></td>
+<td>tek faz; <code>delta_pe</code> uç noktası
+<strong>kayboldu</strong></td>
+<td>D-095</td>
+</tr>
+<tr>
+<td><strong>P7-b</strong></td>
+<td>ilk koşum <strong>kestirimdir, hipotez testi değildir</strong></td>
+<td>D-096</td>
+</tr>
+<tr>
+<td>—</td>
+<td>mera her nesilde <strong>taze</strong>; Kanal 2 <strong>varise miras
+kalır</strong> (3A tersine çevrildi)</td>
+<td>D-104 · D-102</td>
+</tr>
+<tr>
+<td>—</td>
+<td>Price <strong>bir nesil gecikmeli</strong>: G nesil ⇒
+<strong>G−1</strong> satır</td>
+<td>D-101</td>
+</tr>
+<tr>
+<td>—</td>
+<td><strong>G ≥ 3 yapısal</strong> — G=2 yalnız sıfır
+raporlayabilir</td>
+<td>D-107</td>
+</tr>
+</tbody>
+</table>
+<h3 id="uç-nokta-krizi-ve-çözülmesi-bu-dönemin-en-pahalı-dersi">27.3 ⛔
+Uç nokta krizi ve çözülmesi — bu dönemin en pahalı dersi</h3>
+<p>Koşumlar <code>Cov(w,z) = 0</code> verdi ve <strong>dört ayrı okuma
+sırayla çürüdü</strong>. Son teşhis zinciri:</p>
+<ol type="1">
+<li><strong>D-115:</strong> <code>z</code>’yi <strong>iki yol</strong>
+yazıyor — ajanın kendi <code>DeltaRecord</code>’u ve <strong>ortak havuz
+krizi</strong>. Kriz kolun <strong>tamamına aynı anda</strong>
+vuruyor.</li>
+<li><strong>D-117:</strong> kriz yolu hiçbir günlüğe yazmıyordu ⇒
+D-112’nin <em>“eşiğe kalan mesafe”</em> profili evrenin
+<strong>yarısını</strong> görüyordu. Kapatıldı; iki kanal artık
+<strong>ayrı</strong> raporlanıyor (havuzlanmıyor: kriz ajanlar arası
+bilgi taşımaz).</li>
+<li><strong>D-120:</strong> ⛔ <strong>Ve asıl teşhis burada
+değişti.</strong> DR #10’a <em>“her ajan özdeş bir artış alır”</em> diye
+yazmıştık; <strong>kod öyle demiyor</strong> —
+<code>current + magnitude·exp(−current/BASE)</code> ⇒ artış ajanın
+<strong>kendi drift’ine</strong> bağlı, harita <strong>monoton ama
+sıkıştırıcı</strong> (~10.7×), ve türev <strong>tam <code>z=0</code>’da
+sıfır</strong>. Ölçüm seçeneği tersine çevirdi: <em>“yalnız bireysel
+kanaldan oku”</em> dejenere hücreyi <strong>14/27 → en az 21/27</strong>
+yapardı. ⇒ ⭐ <strong>Sorun ortak şok değil, bireysel kanalın
+landmark’tan önce ateşlenmemesi.</strong></li>
+<li><strong>D-121 (karar, Yasin):</strong> <code>z</code>
+<strong>korunur</strong>; eklenen şey <strong>okuma kuralı</strong> —
+<code>Var(z)=0</code> olan hücre <em>“sıfır seçilim ölçtük”</em> değil
+<strong><em>“seçilim tanımsız”</em></strong> raporlanır (Rothenberg
+1971, <code>10.2307/1913267</code>), ve krizden bağımsız bir nicelikte
+(<code>energy_mean_over_life</code>) <strong>pozitif kontrol</strong>
+koşulur.</li>
+</ol>
+<p>⚠ <strong>Genel ders (§2.2’nin dördüncü teyidi):</strong> bir sayıya
+bakıp cümle kurmadan önce <strong>hangi mekanizmanın</strong> onu
+ürettiği sorulur. Bu dönemde tek tohumdan yazılan hiçbir cümle ayakta
+kalmadı.</p>
+<h3 id="alet-bu-dönemde-eklenenler">27.4 Alet: bu dönemde
+eklenenler</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Kayıt</th>
+<th>Ne</th>
+<th>Neden saf raporlama</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D-105/106/107</strong></td>
+<td>kapılar sarmalayıcıya (I0.3·I0.6·I0.7·I1.1·I4.1), nesil başına
+replay digest’i, <code>generations_informative</code> damgası</td>
+<td>hesaba dokunmuyor</td>
+</tr>
+<tr>
+<td><strong>D-108</strong></td>
+<td>I1.1 muafiyeti <strong>sebebe</strong> bağlandı, sayıya değil — beş
+erken çıkışın dördü sıfır çift raporluyor</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>D-111</strong></td>
+<td><strong>checkpoint</strong>: her nesilden sonra kısmi sonuç. ⚠
+<code>complete:false</code>, analiz aracı <strong>reddeder</strong></td>
+<td>bir gecede üç kez veri kurtardı</td>
+</tr>
+<tr>
+<td><strong>D-113</strong></td>
+<td>aralık kestirimi <strong>Wilson</strong> (Wald nadir olayda
+bozuluyor)</td>
+<td>test değil</td>
+</tr>
+<tr>
+<td><strong>D-116</strong></td>
+<td><code>PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True</code>;
+tahsis ediciye ulaştığı <strong>ölçüldü</strong>
+(<code>is_expandable</code> True ↔︎ ayarsız False)</td>
+<td>tahsisi değiştirir, aritmetiği değil</td>
+</tr>
+<tr>
+<td><strong>D-118</strong></td>
+<td><strong>I0.4</strong> popülasyona bağlandı — kapı aynı,
+<strong>parser çağırana</strong> bırakıldı</td>
+<td><code>shuffle</code> permutasyonu id’den çözülen tohumdan gelir ⇒
+okunamayan id replay’i götürür</td>
+</tr>
+<tr>
+<td><strong>D-121</strong></td>
+<td><code>z_variance</code> + <code>selection_estimable</code> + pozitif
+kontrol</td>
+<td>sayı gizlenmiyor, <strong>etiketleniyor</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="süreç-mutasyon-kuralı-sertleşti">27.5 Süreç: mutasyon kuralı
+sertleşti</h3>
+<p>⛔ <em>“Bir test kırıldı mı”</em> yetmiyor; <strong>hangi</strong>
+testin kırıldığına bakılıyor — ve bu dönemde <strong>dört kez</strong>
+aynı boşluk çıktı: düzeltme <strong>kod tabanında</strong> var,
+<strong>koşum yolunda</strong> yok (D-116’nın <code>main()</code>
+çağrısı · D-117’nin kayıtçısı · D-118’in kapısı · D-121’in kontrol
+okuması). ⇒ <strong>Kural:</strong> testin, düzeltmenin
+<strong>çağrıldığı yerden</strong> geçmesi gerekir; fonksiyonu doğrudan
+çağıran test <em>“repoda var”</em>ı kanıtlar, <em>“koşumda var”</em>ı
+değil.</p>
+<h3 id="dr-kanalı-12-kimlik-hatasından-sonra-ne-değişti">27.6 DR kanalı:
+12 kimlik hatasından sonra ne değişti</h3>
+<p>Üç şart (DOI · <strong>birebir alıntı</strong> · kaynakça +
+<strong>boşluk ilanı</strong>) DR #9’da ilk kez birlikte tuttu. ⚠ Ama
+şart listesi kusuru <strong>engellemiyor, yakalanabilir
+kılıyor</strong>: DR #10’da yine bir kimlik hatası çıktı (13.), ve
+<strong>aynı hata bizde de</strong> çıktı (§R) — ikisi de <strong>komşu
+DOI numarası</strong> deseninde. ⚠ Ve DR #10’un asıl dersi kaynakta
+değil <strong>girdide</strong>ydi: sistemi yanlış tarif ettiğimiz için
+cevabın yarısı uygulanamaz çıktı. <em>“Brief kalitesi girdi kalitesiyle
+sınırlıdır”</em>, dördüncü kez.</p>
+<h3 id="ikinci-ön-kayıt-kilitli">27.7 İkinci ön-kayıt — 🔒 kilitli</h3>
+<p><code>docs/PREREGISTRATION_2.md</code>, commit
+<code>72df476ebd54</code>. Dört slot kapalı: uç nokta
+(<strong>A</strong>) · ikincil uç nokta (<strong>yok</strong> — karar,
+eksik değil) · bütçe (<strong>3 tohum · N=8 · G=3 · 30 olay ⇒ 18 Price
+satırı</strong>) · tohumlar (<strong>9911–9913</strong>).</p>
+<p>⚠ <strong>Birinci ön-kayıt yürürlükte kalır</strong> — ayrı bir
+deneyi bağlar, bu belge onu geçersiz kılmaz.</p>
 </body>
 </html>
