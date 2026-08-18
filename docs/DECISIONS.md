@@ -8677,3 +8677,90 @@ uç noktayı **eşitliyor**.
 3. ⚠ **n = 4 tohum.** Niş parametreleriyle (`social_pressure` 0.516 ↔ en yüksek
    oran) ilişki **gözlem**, iddia değil; dört noktadan parametre seçmek tam
    olarak §2.7'nin yasakladığı şey olur.
+
+---
+
+## D-116 · 2026-08-18 · ✅ **OOM düzeltmesi uygulandı** — `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, ve tahsis ediciye ulaştığı **ölçüldü**
+
+**Yetki:** Yasin **onayladı** (2026-08-18, CLAUDE.md §1 ⏭ tablosu madde 2).
+D-114'ün bulgusunun tek açık işi buydu: 280 OOM uyarısı, **2'si ölümcül**,
+dağılım log boyunca **düz** ⇒ sızıntı değil **kronik bellek baskısı**.
+
+### 1. Ne değişti
+
+| yer | ne |
+|---|---|
+| `dau/foundation/local_llm.py` | `apply_cuda_allocator_config()` + `describe_cuda_allocator()` + sabitler |
+| `dau/diagnostics/run_population_experiment.py` | `main()` en başta çağırıyor, seçilen değeri konsola basıyor |
+| `dau/diagnostics/tool_identity.py` | `cuda_allocator` bloğu |
+
+⚠ **`run_cprime_multigen.py`'ye dokunulmadı** — B2'nin yolu olarak duruyor.
+
+### 2. ⭐ Neden bir "kurulum satırı" değil de üç sonuçlu bir kapı
+
+`apply_cuda_allocator_config()` üç şeyden **birini** yapar, dördüncüsü yok:
+
+1. değer yoksa **kurar**;
+2. operatör **aynı** değeri vermişse kabul eder;
+3. aksi hâlde **süreci durdurur** — ve iki ayrı sebeple:
+   - ⛔ **farklı bir operatör değerini sessizce ezmez** (§2.11: iki kaynak
+     çelişiyorsa seçen ben olmam);
+   - ⛔ **CUDA başlamışsa yazmaz.** PyTorch bu değişkeni tahsis edici
+     açılırken **bir kez** okur. Sonradan yazmak `os.environ`'da **başarılı
+     olur**, tahsis edicide **hiçbir şey yapmaz**, ve `tool_identity`
+     (os.environ'ı okuyor) kosumun **hiç sahip olmadığı** bir düzeltmeyi ilan
+     ederdi. **GAP-15'in hata biçimi**, sıcaklık yerine bellekte.
+
+### 3. ⭐ Ölçüldü — varsayılmadı (keşifsel, tek atış, GPU)
+
+⚠ Bu kaydın en önemli maddesi: *"env değişkenini süreç içinde set etmek
+işe yarar"* bir **varsayımdı** ve §2.8 tam olarak bunu yasaklıyor.
+
+| koşul | tahsis edilen segment `is_expandable` |
+|---|---|
+| bizim `apply_cuda_allocator_config()` yolumuz | ⭐ **True** |
+| değişken hiç verilmeden (negatif kontrol) | **False** |
+
+⇒ **Süreç içinde kurmak tahsis ediciye gerçekten ulaşıyor.** `torch 2.13.0+cu130`.
+⚠ İlk sondam **yanlış alan adını** okudu (`is_expandable_segment`) ve **her
+üç kolda da `False`** verdi — yani *"çalışmıyor"* diye okunabilirdi. Alan adı
+snapshot'tan **doğrulanınca** tablo yukarıdaki hâlini aldı. Bu, §2.2'nin
+(*"hafızaya değil dosyaya güven"*) bir kez daha çalıştığı yer.
+
+Ayrıca ölçüldü: koşucu **import edildikten sonra**
+`torch.cuda.is_initialized()` **False** ⇒ `main()` gerçekten tahsis ediciden
+önce koşuyor, yani kapının 3. şıkkı üretimde ateşlenmiyor.
+
+### 4. Mutasyon kontrolü — beş mutasyon, beşi de **doğru** testi kırdı (§2.4)
+
+| mutasyon | kırılan test |
+|---|---|
+| `os.environ[...] = ...` silindi | `test_allocator_config_is_applied_before_the_gpu` |
+| rapor sabitten üretildi (§2.8 ihlali) | `test_tool_identity_reports_the_allocator_from_the_environment` |
+| çakışan operatör değeri sessizce ezildi | `test_allocator_config_refuses_to_overwrite_a_different_value` |
+| CUDA açıkken yine de yazıldı | `test_allocator_config_refuses_once_cuda_is_up` |
+| **`main()`'deki çağrı silindi** | `test_main_applies_the_allocator_setting` |
+
+⛔ **Sonuncusu ilk hâlinde HİÇBİR şeyi kırmadı.** Fonksiyon repoda vardı,
+koşum yolunda yoktu — *"düzeltme kod tabanında var, koşumda yok"*. Bekçi
+sonradan yazıldı ve kırılması doğrulandı. **Bu oturumun dördüncü boş testi**
+olacaktı (§1'in 5. uyarısı).
+
+### 5. Test oturumu ≠ koşum süreci
+
+Tahsis testleri `fresh_cuda_process` fixture'ı ile gerçek koşumun koşulunu
+**açıkça** kuruyor: pytest oturumunda CUDA zaten başlamış oluyor (daha önceki
+bir test GPU'da encode ediyor), o yüzden kapı ateşliyordu ve testler **sıraya
+göre** geçip kalıyordu. Fixture ayrıca değişkeni `""` yaparak teardown'ı
+monkeypatch'e bırakıyor ⇒ bir test ayarı bir sonrakine **sızdıramaz**.
+
+### 6. Sınırlar
+
+1. ⚠ **Tek atış, keşifsel ölçüm.** Sonda 64 MB'lık bir tahsis; **eğitim
+   yükünde** OOM'un azaldığı **ölçülmedi**. Bunun kanıtı ancak bir sonraki
+   gerçek koşumun OOM sayısıdır.
+2. ⚠ Ayar **hesabı değiştirmiyor** ama determinizmi de **yeniden
+   doğrulamadım**; I4.1 replay kapısı bir sonraki koşumda bunu zaten söyler.
+3. Suite: **560 passed, 2 deselected**.
+
+**Commit:** `244b767`.
