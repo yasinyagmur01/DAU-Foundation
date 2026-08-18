@@ -9663,3 +9663,68 @@ paragrafla birlikte** ilan edilecek.
    216 okumanın **11'inde** dolu. ⇒ Üçüncü ön-kayıtın asıl konusu bu.
 2. **Adapter sönümü** (D-130 §12): 6/6 dizide 1.8×–4.8× azalma. İlan edilecek
    sınır; düzeltme denenmiyor.
+
+---
+
+## D-132 · 2026-08-19 · **DR #11 mutabakatı** — D-131 ayakta, ve **hiç düşünmediğimiz bir kaldıraç** çıktı
+
+Mutabakat tablosu `RECONCILIATION.md` **§T**.
+
+### 1. Kaynak sicili — ⚠ **gerileme**
+
+- ❌ **14. kimlik hatası:** *Permutation Tests for Random Effects in LMM*
+  → *"El-Horbaty ve ark."* değil, **Lee & Braun 2012** (`10.1111/j.1541-0420.2011.01675.x`).
+- ⚠ **~15 iddianın yalnız 3'ünde DOI var** ⇒ D-080'in 1. şartı bu turda
+  tutmadı (DR #9/#10'da tutuyordu).
+- ⚠ İki alıntı iddiasını taşımıyor: *"species numbers"* cümlesi bir LMM
+  özetinde olamaz · *"larger coefficients"* cümlesi **argmax** yapısını
+  desteklemiyor.
+- ✅ Buna karşılık **boşluk iki kez ilan edildi** ⇒ 3. şart tuttu.
+- ⛔ **İç çelişki:** Q5'te *"evrensel nesil alt sınırı bulunamadı"* denip
+  hemen ardından *"8+ nesil ⇒ birikimli kalıtım"* normatif tablosu basılmış.
+  Tek dayanağı **bir** çalışmanın (Martin ve ark. 2014) sekizli zincirleri.
+  ⇒ **Tablo alınmadı; uyarısı alındı** — tasarımımız **G=3**, ve *"birikimli"*
+  kelimesi ilan edilmiş sınırla kullanılacak.
+
+### 2. Alınanlar
+
+| ne | dayanak |
+|---|---|
+| ⭐ **Loss of Plasticity** — D-130 §12'nin adı | Dohare ve ark. 2024, *Nature*, **doğrulandı** |
+| Sıfır-varyanslı kolda **sınır problemi** ve karışım χ² / permütasyon çözümü | Lee & Braun 2012, künye **düzeltilmiş** |
+
+⚠ **LoP'a kendi çekincemizi ekledik:** LoP *"öğrenme yeteneğini yitirme"*dir;
+bizde ölçülen **güncelleme büyüklüğünün küçülmesi**, ki bu **yakınsama** da
+olabilir. Ayırt etmek için güncelleme değil **öğrenme sonucu** ölçülmeli.
+DR bu ayrımı yapmadı.
+
+### 3. ⛔ Alınmayan — Q2'nin iki mekanizması bizde zaten var ya da uygulanamaz
+
+- **Asenkron güncelleme:** ⚠ **zaten var** (sıralı + rotasyonlu hizmet). İşe
+  yaramama sebebi asenkronluk değil, **karar fonksiyonunun basamak olması**
+  (D-084: tek soğurucu çıktı, 1e-9 girdi farkı bile oynatmıyor).
+- **Kaotik ayrışma / çoklu çekici:** sürekli ve duyarlı dinamik gerektiriyor;
+  bizim karar haritamız **ayrık ve soğurucu**. Kaynak ayrıca **düopol
+  pazarlama** modeli (başlık DR'de yanlış yazılmıştı).
+
+### 4. ⭐⭐ Turun gerçek kazancı: **ajan-ajan etkileşimi**
+
+DR'nin Q2 cevaplarının **hepsi** tek bir şeye dayanıyor: ajanların
+**birbiriyle** etkileşmesi. ⛔ Bizim popülasyonumuzda bu **hiç yok** — sekiz
+ajanın da `opponent_id`'si **aynı NPC** (D-130 §9), tek ortaklıkları mera.
+
+⇒ Ajan-ajan etkileşimi:
+- kıtlıktan **bağımsız** simetri kırar,
+- **C1'i ihlal etmez** (hiçbir trait atanmıyor),
+- ve **kontrol kolunu yeniden değişken yapabilir** — D-131'in kabul etmek
+  zorunda kaldığı dejenereliği **ortadan kaldırabilir**.
+
+⚠ Bedeli: en az iki yeni sabit (kim kiminle · hangi sıklıkta) ⇒ **üçüncü
+ön-kayıtın konusu**, bu koşumun değil.
+
+### 5. ⇒ D-131 **değişmiyor**
+
+Birincil karşıtlık `lived ↔ shuffle`, `null` betimleyici. DR bunu çürütmedi;
+dejenere kontrolün parametrik testi geçersiz kıldığını söyleyerek dolaylı
+olarak **destekledi**. Ajan-ajan etkileşimi **bir sonraki tasarımın** en güçlü
+adayı olarak kayda geçti.
