@@ -24,8 +24,8 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - **Branch:** **`main`** tek branch (D-013 kapandı, **D-054**). Eski main
   `archive/main-pre-c116` etiketinde. B2'nin koştuğu kod **`prereg/b2-code`**
   etiketinde. ✅ `origin/main` ile senkron (`9abe935`'e kadar push edildi); sonrasında **iki commit** yerel.
-- **Suite:** `554 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — bu oturumda **21 commit** yerel.
-- **Son D-kaydı: D-115.** Sıradaki kayıt **D-116** olarak açılır.
+- **Suite:** `560 passed, 2 deselected`. Çalışma ağacı temiz. ⚠ **push edilmedi** — bu oturumda **23 commit** yerel.
+- **Son D-kaydı: D-116.** Sıradaki kayıt **D-117** olarak açılır.
 - **2026-08-17/18 oturumu:** ✅ **Kuşak A kapandı** (A1/A2/A3) · analiz aracı · checkpoint · DR #9 · **iki koşum** · ⛔ **ve dört okumam çürütüldü** — ayrıntı §1'in **▶▶ SIRADAKİ İŞ**'inde.
 - **Bugün (2026-08-13) kapananlar:** W1/W2/W3 (D-062…D-064) · DR #4 mutabakatı
   (D-065, §J) · A4-① (D-066) · GAP-19 (D-067) · ilk pilot (D-068) · yerel
@@ -70,7 +70,7 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 | # | iş | durum | süre |
 |---|---|---|---|
 | **1** | ⛔ **D-112'yi tamamla: kriz yolunun büyüklüğü günlüğe yazılsın.** `environment.py:252`'deki `crisis_magnitude` hiçbir yere kaydedilmiyor ⇒ `delta_profile` `z`'yi yazan iki yoldan **yalnız birini** görüyor. Saf raporlama (§2.10) | **Yasin'e önerildi, sıra bekliyor** | ~20 dk |
-| **2** | ✅ **OOM düzeltmesi: `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`** — koşum betiğine + **alet kimliğine** (§2.8: sabitten oku, yeniden üretme). Sonra kısa bir koşumla doğrula | **Yasin ONAYLADI**, uygulanmadı | ~30 dk + doğrulama |
+| ~~**2**~~ | ✅ **KAPANDI (D-116)** — `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` popülasyon koşucusunun `main()`'inde, alet kimliğinde `cuda_allocator` bloğu. ⭐ Tahsis ediciye **ulaştığı ölçüldü** (`is_expandable` True ↔ ayarsız False). ⚠ **Eğitim yükünde OOM azaldı mı ölçülmedi** — kanıtı bir sonraki gerçek koşumun OOM sayısı | ✅ | — |
 | **3** | Kapılı bir koşumla ölçümü tekrarla (tohum 9902–9904, düzeltilmiş bellekle) | uç nokta kararına bağlı | ~5.5 sa |
 
 ### ⛔ Yasin'in vermesi gereken kararlar
@@ -130,7 +130,9 @@ sayıya bakıp cümle kurmadan önce **hangi mekanizmanın** onu ürettiğini so
 1. **Popülasyon koşucusu ayrı dosya:** `dau/diagnostics/run_population_experiment.py`.
    `run_cprime_multigen.py` **değişmedi**, B2'nin yolu olarak duruyor.
 2. **Zorunlu CLI bayrakları:** `--lora/--no-lora` **ve** `--pasture-carryover/--fresh-pasture`,
-   ve **`PYTHONHASHSEED=0`** (I0.3 abort eder).
+   ve **`PYTHONHASHSEED=0`** (I0.3 abort eder). ⭐ `PYTORCH_CUDA_ALLOC_CONF`'u
+   **elle vermeye gerek yok** — `main()` kuruyor (D-116); **farklı** bir değer
+   export edilmişse koşum durur, `unset` et.
 3. **P0 tek fonksiyonda:** `build_arm_population`.
 4. **Price bir nesil GECİKMELİ** (D-101): G nesil ⇒ **G−1** satır.
 5. ⚠ **Mutasyon kontrolü:** *"bir test kırıldı mı"* yetmez, **hangi** testin
