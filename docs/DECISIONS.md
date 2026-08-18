@@ -9728,3 +9728,54 @@ Birincil karşıtlık `lived ↔ shuffle`, `null` betimleyici. DR bunu çürütm
 dejenere kontrolün parametrik testi geçersiz kıldığını söyleyerek dolaylı
 olarak **destekledi**. Ajan-ajan etkileşimi **bir sonraki tasarımın** en güçlü
 adayı olarak kayda geçti.
+
+---
+
+## D-133 · 2026-08-19 · 🗺 **Yol haritası: Yön 3'e hızlandırılmış geçiş** (`docs/ROADMAP.md`)
+
+**Yetki:** Yasin, 2026-08-19: *"Yön 3 çok cazip geldi ama onu sonraya saklayıp
+ona geçme adımlarını hızlandırmak isterim."*
+
+### 1. ⭐ Stratejik çıkış noktası — **pahalı koşumu atlıyoruz**
+
+Yön 3'e (ajan-ajan etkileşimi) gidilecekse, **bugünkü fizikle 30–80 saatlik
+doğrulayıcı koşum boşa gider**: sosyal kuplaj evreni değiştirir, o sayılar ne
+karşılaştırılabilir ne yeniden kullanılabilir. ⇒ GPU yalnız **geçişten sağ
+çıkacak** işlere harcanır.
+
+### 2. ⭐⭐ Yön 3 sanılandan ucuz — mekanizma **kodda mevcut**
+
+| parça | durum |
+|---|---|
+| `compute_social_load` · `record_interaction` · `compute_coordination_friction` · `compute_markov_expectation` | ✅ hepsi **genel**, rastgele ajan id'leri alıyor |
+| N ajan arasında **hepsi-hepsiyle** sosyal güncelleme | ✅ `run_convention_pilot.py:243` — **çalışan referans** |
+| Değişecek tek yer | ⛔ popülasyon koşucusunda `opponent_id = OPPONENT_ID` (tek NPC) |
+
+⭐ **Muhtemelen sıfır yeni sabit:** havuz erişimi zaten rotasyonlu (D-104);
+aynı rotasyon eşleştirmeyi de tanımlarsa yeni sabit gerekmez.
+⚠ **Doğrulanacak, varsayılmayacak** (Faz 0.2).
+
+### 3. Fazlar
+
+| faz | maliyet | çıktı |
+|---|---|---|
+| **0** GPU'suz | ~2–3 sa | uç nokta boyut düzeltmesi · sosyal kablolama tasarımı · K1 kontrolü · K2/K3/K5 testleri |
+| **1** tek ucuz koşum | ~1–2 sa GPU | ⭐ **tek soru:** sosyal kuplaj `null`'ı değişken yapıyor mu |
+| **2** ön-kayıt | GPU'suz | fizik + uç nokta + **gerçek güç hesabı** kilitlenir |
+| **3** tek pahalı koşum | tohum başına ~2 sa | nihai fizikle, gözetimsiz |
+
+**Faz 1 yol ayrımıdır:** `null` değişkenleşiyorsa Yön 3 kurulur;
+değişkenleşmiyorsa D-131 kalıcılaşır ve Yön 2'ye dönülür.
+
+### 4. ⛔ Bilerek yapılmayacaklar
+
+1. Bugünkü fizikle doğrulayıcı koşum (taşınmaz)
+2. G'yi 8'e çıkarmak — DR normatifi dayanaksız (§T.2) **ve** adapter sönümü
+   uzun soyda sinyali seyreltebilir (D-130 §12)
+3. Davranışa dokunmak (C1/K7)
+4. Kapasite / kriz eşiği ayarı — D-131'de aritmetikle elendi
+
+### 5. ⚠ Açık kalan tek eski borç
+
+**En küçük anlamlı etki** — DR #1'den beri açık, hâlâ verilmemiş. Faz 2'de
+verilmek zorunda, yoksa güç hesabı yapılamaz.
