@@ -209,6 +209,12 @@ def _sampling() -> dict[str, Any]:
     }
 
 
+def _cuda_allocator() -> dict[str, Any]:
+    from dau.foundation.local_llm import describe_cuda_allocator
+
+    return dict(describe_cuda_allocator())
+
+
 def build_tool_identity(
     *,
     lora_choice: str,
@@ -273,6 +279,12 @@ def build_tool_identity(
             "landmark_event": LANDMARK_EVENT,
         },
         "sampling": _sampling(),
+        # D-114/D-116. The allocator setting is not a physics constant, but a
+        # run that OOMs half way through and one that does not are different
+        # measurements, and the difference has to be readable from the file.
+        # Read from the environment the process is actually running under
+        # (local_llm.describe_cuda_allocator), never restated here.
+        "cuda_allocator": _cuda_allocator(),
         "seeds": {
             "n": len(seeds),
             "start": seeds[0] if seeds else None,

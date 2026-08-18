@@ -115,6 +115,7 @@ from dau.diagnostics.tool_identity import (
     build_tool_identity,
     resolve_lora_choice,
 )
+from dau.foundation.local_llm import apply_cuda_allocator_config
 from dau.foundation.delta import DELTA_THRESHOLD_DEEP
 from dau.foundation.drift import DriftState
 from dau.foundation.constraints import TRAIN_SKIP_NO_PAIRS
@@ -1313,6 +1314,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
+    # D-114: chronic allocator pressure killed two lives of the headroom run.
+    # Applied here, before argv can lead anywhere near a CUDA allocation, and
+    # loud rather than best-effort — a memory setting that silently failed to
+    # apply is worse than none, because the results file would still name it.
+    allocator = apply_cuda_allocator_config()
+    print(f"{allocator['env']}={allocator['value']} ({allocator['source']})")
     if args.mock_llm:
         os.environ[MOCK_LLM_ENV] = "1"
         install_mock_llm()

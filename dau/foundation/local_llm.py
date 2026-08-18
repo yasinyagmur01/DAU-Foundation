@@ -75,6 +75,31 @@ LLM_SAMPLE_TEMPERATURE_FLOOR: float = 1e-6
 QUANT_TYPE_NF4: str = "nf4"
 DOUBLE_QUANT_ENABLED: bool = True
 
+# D-114: the headroom run logged 280 OOM warnings, two of them fatal, with a
+# FLAT distribution over the log — chronic allocator pressure on an 8 GB card,
+# not a leak. expandable_segments lets the caching allocator grow a segment
+# instead of fragmenting into unusable blocks; it changes ALLOCATION, not
+# arithmetic, so it does not touch a pre-registered quantity (2.10).
+CUDA_ALLOC_CONF_ENV: str = "PYTORCH_CUDA_ALLOC_CONF"
+CUDA_ALLOC_CONF_EXPANDABLE: str = "expandable_segments:True"
+# Where the value in os.environ came from, for the results file.
+ALLOC_CONF_SET_BY_RUNNER: str = "set_by_runner"
+ALLOC_CONF_FROM_OPERATOR: str = "already_set_by_operator"
+ALLOC_CONF_UNSET: str = "unset"
+ALLOC_CONF_TOO_LATE_MESSAGE: str = (
+    "{env} cannot be applied: CUDA is already initialised in this process. "
+    "PyTorch reads it once, when the caching allocator starts, so setting it "
+    "now would be accepted by os.environ and ignored by the allocator — the "
+    "run would report a memory setting it never used (GAP-15). Export "
+    "{env}={value} before starting the process."
+)
+ALLOC_CONF_CONFLICT_MESSAGE: str = (
+    "{env}={found!r} in the environment, but this runner applies {value!r}. "
+    "Refusing to overwrite an operator's deliberate setting and refusing to "
+    "run under one nobody chose (2.11) — unset it, or export the value you "
+    "mean."
+)
+
 # Process-wide singleton — frozen base loaded once; adapters hot-swapped.
 _model: Any | None = None
 _tokenizer: Any | None = None
@@ -99,6 +124,71 @@ def _resolve_generation_sampling() -> tuple[bool, float]:
     if temperature <= LLM_SAMPLE_TEMPERATURE_FLOOR:
         return False, LLM_TEMPERATURE_DEFAULT
     return True, temperature
+
+
+def apply_cuda_allocator_config() -> dict[str, Any]:
+    """Install the CUDA allocator setting D-114 asked for, or refuse loudly.
+
+    Called by the runner before anything can touch the GPU. Three outcomes and
+    no fourth: the value is set here, the operator had already set exactly it,
+    or the process aborts. In particular it does NOT quietly overwrite a
+    different value, and it does NOT set the variable once CUDA is up, because
+    PyTorch reads it exactly once at allocator start — after that os.environ
+    and the allocator disagree and only the reported number would change.
+
+    Returns what tool_identity writes into the results file; that block reads
+    this state rather than re-deriving the string (2.8).
+    """
+
+    found = os.environ.get(CUDA_ALLOC_CONF_ENV, "").strip()
+    if found == CUDA_ALLOC_CONF_EXPANDABLE:
+        return {
+            "env": CUDA_ALLOC_CONF_ENV,
+            "value": found,
+            "source": ALLOC_CONF_FROM_OPERATOR,
+        }
+    if found:
+        raise ValueError(
+            ALLOC_CONF_CONFLICT_MESSAGE.format(
+                env=CUDA_ALLOC_CONF_ENV,
+                found=found,
+                value=CUDA_ALLOC_CONF_EXPANDABLE,
+            )
+        )
+    try:
+        import torch
+    except ImportError:  # CPU-only unit tests: nothing allocates either way
+        torch = None  # type: ignore[assignment]
+    if torch is not None and torch.cuda.is_initialized():
+        raise ValueError(
+            ALLOC_CONF_TOO_LATE_MESSAGE.format(
+                env=CUDA_ALLOC_CONF_ENV, value=CUDA_ALLOC_CONF_EXPANDABLE
+            )
+        )
+    os.environ[CUDA_ALLOC_CONF_ENV] = CUDA_ALLOC_CONF_EXPANDABLE
+    return {
+        "env": CUDA_ALLOC_CONF_ENV,
+        "value": CUDA_ALLOC_CONF_EXPANDABLE,
+        "source": ALLOC_CONF_SET_BY_RUNNER,
+    }
+
+
+def describe_cuda_allocator() -> dict[str, Any]:
+    """Report the allocator setting as it stands in the environment NOW.
+
+    Reads os.environ, not the constant, for the same reason describe_
+    quantization reads build_load_kwargs: a run that failed to apply the
+    setting must not be able to report that it did. The expected value travels
+    alongside so a reader can see a mismatch without knowing the constant.
+    """
+
+    found = os.environ.get(CUDA_ALLOC_CONF_ENV, "").strip()
+    return {
+        "env": CUDA_ALLOC_CONF_ENV,
+        "value": found or ALLOC_CONF_UNSET,
+        "expected": CUDA_ALLOC_CONF_EXPANDABLE,
+        "applied": found == CUDA_ALLOC_CONF_EXPANDABLE,
+    }
 
 
 def adapter_dir(agent_id: str) -> Path:

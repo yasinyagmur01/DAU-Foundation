@@ -19,6 +19,7 @@ from dau.foundation.lod import NPC_ACTION_EXTRACT_MODERATE
 from dau.foundation.state import DAUAgentState
 
 SEED: int = 9301
+CUDA_ALLOC_UNSET: str = ""
 SHUFFLE_MARKER: str = "-shuffle-"
 NULL_MARKER: str = "-null-"
 N_AGENTS: int = 3
@@ -44,6 +45,28 @@ def _preflight_env(monkeypatch) -> None:
     """
 
     monkeypatch.setenv("PYTHONHASHSEED", "0")
+
+
+@pytest.fixture
+def fresh_cuda_process(monkeypatch):
+    """The one condition a real run starts under: allocator not yet up (D-116).
+
+    Measured: after importing the runner, ``torch.cuda.is_initialized()`` is
+    False — main() genuinely runs before the allocator. Inside a pytest session
+    it is True by then, because an earlier test already encoded on the GPU, so
+    without this the allocator tests would pass or fail on test ORDER. Setting
+    the variable to "" rather than deleting it makes monkeypatch responsible
+    for the teardown, so a test cannot leak the setting into the next one.
+    """
+
+    from dau.foundation.local_llm import CUDA_ALLOC_CONF_ENV
+
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_UNSET)
+    try:
+        import torch
+    except ImportError:
+        return
+    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
 
 
 def _stub_agent(state: DAUAgentState) -> dict[str, Any]:
@@ -477,7 +500,9 @@ def test_shuffle_arm_trains_with_the_preference_direction_shuffled(
     assert not any(NULL_MARKER in agent_id for agent_id, _ in seen)
 
 
-def test_mock_llm_flag_installs_the_canned_llm(monkeypatch, tmp_path) -> None:
+def test_mock_llm_flag_installs_the_canned_llm(
+    monkeypatch, tmp_path, fresh_cuda_process
+) -> None:
     """Flagging a mock without installing it silently runs the real model.
 
     Measured: the first full-chain smoke run set the env var, reported
@@ -1380,3 +1405,161 @@ def test_delta_profile_counts_the_boundary_the_same_way_the_universe_does() -> N
             snapshot_after=snapshot,
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# D-116 — the CUDA allocator setting (D-114's OOM fix)
+# ---------------------------------------------------------------------------
+
+
+def test_allocator_config_is_applied_before_the_gpu(fresh_cuda_process) -> None:
+    """The runner installs expandable_segments, and names the constant it used.
+
+    Mutation check (§2.4): dropping the ``os.environ[...] = ...`` line leaves
+    every other test in this module passing — the setting is invisible to the
+    rest of the harness by design, which is exactly why it needs its own test.
+    """
+
+    from dau.foundation.local_llm import (
+        ALLOC_CONF_SET_BY_RUNNER,
+        CUDA_ALLOC_CONF_ENV,
+        CUDA_ALLOC_CONF_EXPANDABLE,
+        apply_cuda_allocator_config,
+    )
+
+    report = apply_cuda_allocator_config()
+
+    import os
+
+    assert os.environ[CUDA_ALLOC_CONF_ENV] == CUDA_ALLOC_CONF_EXPANDABLE
+    assert report["source"] == ALLOC_CONF_SET_BY_RUNNER
+    assert report["value"] == CUDA_ALLOC_CONF_EXPANDABLE
+
+
+def test_allocator_config_refuses_to_overwrite_a_different_value(monkeypatch) -> None:
+    """A conflicting operator setting stops the run instead of being replaced.
+
+    §2.11: two sources disagree about a memory setting, so the process asks
+    rather than picking one. The value already in the environment survives.
+    """
+
+    from dau.foundation.local_llm import (
+        CUDA_ALLOC_CONF_ENV,
+        apply_cuda_allocator_config,
+    )
+
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, "max_split_size_mb:128")
+    with pytest.raises(ValueError, match="max_split_size_mb:128"):
+        apply_cuda_allocator_config()
+
+    import os
+
+    assert os.environ[CUDA_ALLOC_CONF_ENV] == "max_split_size_mb:128"
+
+
+def test_allocator_config_accepts_an_operator_who_set_the_same_value(
+    monkeypatch,
+) -> None:
+    """Exporting it by hand is the documented way, so it must not be an error."""
+
+    from dau.foundation.local_llm import (
+        ALLOC_CONF_FROM_OPERATOR,
+        CUDA_ALLOC_CONF_ENV,
+        CUDA_ALLOC_CONF_EXPANDABLE,
+        apply_cuda_allocator_config,
+    )
+
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_CONF_EXPANDABLE)
+    assert apply_cuda_allocator_config()["source"] == ALLOC_CONF_FROM_OPERATOR
+
+
+def test_tool_identity_reports_the_allocator_from_the_environment(
+    monkeypatch,
+) -> None:
+    """The block follows the process, it does not repeat the constant (§2.8).
+
+    A run whose allocator setting never took effect must report ``applied:
+    False``; restating CUDA_ALLOC_CONF_EXPANDABLE would have it claim the fix
+    in a file produced without it — the U3a failure mode, on memory instead of
+    the model id.
+    """
+
+    from dau.diagnostics.tool_identity import LORA_CHOICE_OFF, build_tool_identity
+    from dau.foundation.local_llm import CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_CONF_EXPANDABLE
+
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_UNSET)
+    block = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED])[
+        "cuda_allocator"
+    ]
+    assert block["applied"] is False
+    assert block["expected"] == CUDA_ALLOC_CONF_EXPANDABLE
+
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_CONF_EXPANDABLE)
+    applied = build_tool_identity(lora_choice=LORA_CHOICE_OFF, seeds=[SEED])[
+        "cuda_allocator"
+    ]
+    assert applied["applied"] is True
+    assert applied["value"] == CUDA_ALLOC_CONF_EXPANDABLE
+
+
+def test_allocator_config_refuses_once_cuda_is_up(monkeypatch) -> None:
+    """Setting it after the allocator started is a LIE, not a fallback (§2.9).
+
+    PyTorch reads PYTORCH_CUDA_ALLOC_CONF once. Assigning it afterwards
+    succeeds in os.environ and changes nothing in the allocator — and
+    tool_identity, which reads os.environ, would then report a fix the run
+    never had. That is GAP-15's failure mode on memory instead of temperature,
+    so the process stops instead.
+    """
+
+    from dau.foundation.local_llm import (
+        CUDA_ALLOC_CONF_ENV,
+        apply_cuda_allocator_config,
+    )
+
+    torch = pytest.importorskip("torch")
+    monkeypatch.setenv(CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_UNSET)
+    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: True)
+
+    with pytest.raises(ValueError, match="already initialised"):
+        apply_cuda_allocator_config()
+
+    import os
+
+    assert os.environ[CUDA_ALLOC_CONF_ENV] == CUDA_ALLOC_UNSET
+
+
+def test_main_applies_the_allocator_setting(
+    monkeypatch, tmp_path, fresh_cuda_process
+) -> None:
+    """The wiring itself, not just the function (§2.4).
+
+    Measured: deleting the ``apply_cuda_allocator_config()`` call from main()
+    broke NOTHING — the three unit tests above call the function directly and
+    the mock-llm test stubs the experiment away. A fix present in the codebase
+    and absent from the run path is the failure this test exists for.
+    """
+
+    import os
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+    from dau.diagnostics.run_cprime_multigen import MOCK_LLM_ENV
+    from dau.foundation.local_llm import CUDA_ALLOC_CONF_ENV, CUDA_ALLOC_CONF_EXPANDABLE
+
+    monkeypatch.setenv(MOCK_LLM_ENV, "0")
+    monkeypatch.setattr(pop_mod, "install_mock_llm", lambda: (lambda: None))
+    monkeypatch.setattr(
+        pop_mod,
+        "run_population_experiment",
+        lambda **_: {"arms": [], "run_quality": "mock"},
+    )
+
+    pop_mod.main(
+        [
+            "--seeds", str(SEED), "--n-agents", "2", "--n-generations", "2",
+            "--events", "3", "--no-lora", "--mock-llm", "--fresh-pasture",
+            "--results", str(tmp_path / "out.json"),
+        ]
+    )
+
+    assert os.environ[CUDA_ALLOC_CONF_ENV] == CUDA_ALLOC_CONF_EXPANDABLE
