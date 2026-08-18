@@ -9779,3 +9779,64 @@ değişkenleşmiyorsa D-131 kalıcılaşır ve Yön 2'ye dönülür.
 
 **En küçük anlamlı etki** — DR #1'den beri açık, hâlâ verilmemiş. Faz 2'de
 verilmek zorunda, yoksa güç hesabı yapılamaz.
+
+---
+
+## D-135 · 2026-08-19 · ⛔⛔ **Kuyruk 0.1: ajan-ajan etkileşimi de simetriyi kırmıyor** — ve bu bir **trilemma**yı açığa çıkarıyor
+
+**İş:** `EXECUTION_QUEUE.md` madde 0.1. **Sıfır GPU**, gerçek fonksiyonlarla.
+
+### 1. Ölçüm
+
+`dau/foundation/social.py`'nin **kendi** fonksiyonlarıyla (`record_interaction`,
+`compute_social_load`), dört özdeş ajan:
+
+| senaryo | `social_load` | sonuç |
+|---|---|---|
+| **hepsi-hepsiyle**, özdeş davranış | `{a0:0.0, a1:0.0, a2:0.0, a3:0.0}` | ⛔ **özdeş** |
+| **ikili eşleştirme + rotasyon**, özdeş davranış | `{a0:0.0, …}` | ⛔ **özdeş** |
+| hepsi-hepsiyle, **davranış farklı** (biri defect) | `{a0:0.125, diğerleri 0.0}` | ✅ ayrışıyor |
+
+⇒ **Sosyal kuplaj bir ayrım kaynağı değil, bir çarpandır** — tıpkı sıralı
+erişim gibi (D-129). Fark **yaratmıyor**, var olanı büyütüyor.
+
+### 2. ⭐⭐ Ortaya çıkan yapısal sonuç — bir trilemma
+
+> **Deterministik** bir evrende, **bit düzeyinde özdeş** ajanlarla ve **trait
+> enjeksiyonu yasakken**, tek olası simetri kırıcı **çekişmeli bir kaynaktaki
+> konumdur.** Diğer bütün mekanizmalar (sosyal kuplaj · uzamsal topoloji ·
+> asenkronluk) **çarpandır**.
+
+Ve çekişme, bu evrende **talep farkına** bağlı ⇒ **döngü**: fark için fark
+gerekiyor.
+
+⚠ **DR #11'in Q2 cevapları neden bizde çalışmıyor:** literatürdeki modeller
+(Axelrod, Flache & Macy) simetriyi **rastgele başlangıç özellikleriyle**
+kırıyor — bizde **C1** yasaklıyor; ya da **stokastik güncellemeyle** — bizde
+**D-037/I0.6** yasaklıyor. Mekanizmalar gerçek, **ön koşulları bizde yok**.
+
+### 3. Döngüden çıkışlar — ve hangisinin açık olduğu
+
+| çıkış | durum |
+|---|---|
+| **(a)** Kurucuları farklı doğur (② ayrı niş · ③ asimetrik doğum · ⑤ uzamsal yerleşim) | ⚠ **Fark yaşamaktan önce gelir** — aksiyomun sınırında; D-077/D-080'de bu yüzden geri çekilmişti |
+| **(b)** Determinizmi kır (④ örnekleme) | ⛔ **D-037 / I0.6** yasaklıyor: gürültü etkiden büyüktü |
+| **(c)** ⭐ **Simetri kaynağının müdahalenin kendisi olduğunu kabul et** | ✅ **D-131 bunu zaten seçti** — `lived ↔ shuffle` birincil, `null` betimleyici |
+| **(d)** Kaynağı talepten bağımsız çekişmeli yap | ⛔ D-131'de aritmetikle elendi (kıtlık ile kriz **aynı olay**) |
+
+⇒ ⭐ **D-131 bir geri çekilme değil, C1 + D-037 ile uyumlu TEK seçenek.**
+
+### 4. Yol haritasına etkisi — **Faz 1 iptal**
+
+`ROADMAP.md`'nin Faz 1'i (*"sosyal kuplaj `null`'ı değişken yapıyor mu"*,
+~1–2 sa GPU) **gereksiz**: cevap **hayır**, ve on dakikalık bir testle alındı.
+⇒ Faz 0.4 (sosyal kablolama) ve 0.5 (karar kuralı) da **düşüyor**.
+
+⚠ **Kuyruğun amacı buydu:** ucuz faz, iki saatlik GPU koşumunu **on dakikada**
+öldürdü. K1'in *"mekanizmayı önce sor"* kuralının ilk kez **kazandırdığı** yer.
+
+### 5. ⇒ Sıradaki soru değişti
+
+*"Nasıl ayrıştırırız"* sorusu kapandı: **ayrıştıran şey müdahaledir**, ve bu
+kabul edilmiş durumda (D-131). Geriye kalan tek açık teknik iş, uç noktanın
+**tek boyuta çökmesi** (D-130 §9) — yani kuyruğun **0.2** maddesi.

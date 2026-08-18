@@ -17,7 +17,14 @@ borçlar **tek listede**, yapılma sırasına göre.
 
 # FAZ 0 — GPU'suz, %100 taşınır (~3–4 sa)
 
-## ⬜ 0.1 · Eşleştirme rotasyondan türetilebiliyor mu?
+## ✅ 0.1 · Eşleştirme rotasyondan türetilebiliyor mu? — **D-135, ve soru düştü**
+⛔ **Cevap sorudan büyük çıktı:** ajan-ajan etkileşimi **özdeş ajanlarda simetriyi
+kırmıyor** (gerçek fonksiyonlarla ölçüldü, sıfır GPU). Sosyal kuplaj bir
+**çarpan**, kaynak değil ⇒ eşleştirme sabiti sorusu **anlamsızlaştı**.
+⇒ **Faz 1 ve 0.4/0.5 İPTAL.** Ayrıntı D-135.
+
+<details><summary>özgün madde</summary>
+
 **Neden ilk:** cevabı, Yön 3'ün **yeni sabit gerektirip gerektirmediğini** ve
 dolayısıyla bütün fazın maliyetini belirliyor.
 **İş:** `run_convention_pilot.py:203` (`_pair_opponents`) ve popülasyon
@@ -25,6 +32,7 @@ koşucusundaki rotasyon (`ROTATE_ACT_ORDER`, D-104) okunur; aynı rotasyonun
 eşleştirmeyi de tanımlayıp tanımlayamayacağı **hesapla** gösterilir.
 **Bitti sayılır:** *"sıfır yeni sabit"* ya da *"şu N sabit gerekli"* cevabı
 D-kaydında, aritmetiğiyle. **GPU yok. Kod değişmez.**
+</details>
 
 ## ⬜ 0.2 · Uç noktanın boyutunu geri kazan (saf raporlama)
 **Borç:** D-130 §9 — `z` dört alanlı görünüyor, **tek kullanılabilir boyutu
@@ -43,7 +51,10 @@ dosyasına hiç çıkmıyor**, yani iddia **ne doğrulanabiliyor ne çürütüle
 raporlama, ~1 alan).
 **Bitti sayılır:** alan dosyada · K3 · K5.
 
-## ⬜ 0.4 · Sosyal kablolama + K1 kontrolü
+## ⛔ 0.4 · ~~Sosyal kablolama~~ — **İPTAL (D-135)**
+
+<details><summary>iptal edilen madde</summary>
+
 **İş:** popülasyon koşucusunda `opponent_id`, NPC yerine **başka bir popülasyon
 ajanına** bağlanır (0.1'in verdiği eşleştirmeyle). Mekanizma `record_interaction`
 ve `compute_social_load` — **ikisi de genel, kodda mevcut**.
@@ -51,15 +62,25 @@ ve `compute_social_load` — **ikisi de genel, kodda mevcut**.
 kapatır, (c) dejenere olmadığının **mevcut veriden** kanıtı — üçü de
 koşumdan önce yazılır.
 **Bitti sayılır:** mock prova geçti · K2/K3/K5 · K1 kaydı commit'li.
+</details>
 
-## ⬜ 0.5 · ⛔ KARAR — Faz 1'in karar kuralı
+## ⛔ 0.5 · ~~Faz 1'in karar kuralı~~ — **İPTAL (D-135)**
+
+<details><summary>iptal edilen madde</summary>
+
 **Yasin'e sorulacak:** `null` kolunun *"değişkenleşti"* sayılması için eşik ne?
 (öneri: `Var(F_agent) > 0` **ve** hasat yayılımı > 0, **her iki nesilde**).
 ⚠ Kural **koşumdan önce** commit edilir (D-125 deseni; sıra kanıttır).
+</details>
 
 ---
 
-# FAZ 1 — tek ucuz doğrulama koşumu (~1–2 sa GPU)
+# ⛔ FAZ 1 — **İPTAL (D-135)**
+
+Sorusu GPU'suz cevaplandı: sosyal kuplaj `null`'ı değişken **yapmıyor**.
+
+<details><summary>iptal edilen faz</summary>
+
 
 ## ⬜ 1.1 · Sosyal kuplaj koşumu
 **Tek soru:** sosyal kuplaj `null` kolunu değişken yapıyor mu?
@@ -76,6 +97,8 @@ uygulanmış — sonucu ne olursa olsun.
 Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye dön.
 
 ---
+
+</details>
 
 # FAZ 2 — üçüncü ön-kayıt (GPU'suz)
 
