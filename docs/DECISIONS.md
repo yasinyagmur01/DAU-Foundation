@@ -9093,3 +9093,43 @@ oranı"* diye açılmıştı. ⭐ **Aranan nicelik belli: bilgilendirici hücre 
 (bugünkü kestirim **13/27 ≈ %48**, ⚠ kapısız checkpoint'ten).
 
 Suite: **582 passed, 2 deselected**. Commit `968c31f`.
+
+---
+
+## D-122 · 2026-08-18 · ✅ **Son üç slot kapandı** — ikincil YOK · bütçe 3 tohum · tohumlar 9911–9913
+
+**Yetki:** Yasin, 2026-08-18 (*"bütçemiz senin önerdiğin kadar ama gerçekten
+gerektiği kadar · ikincil uç noktalar önerinle boş · tohum politikası önerdiğin
+gibi"*).
+
+### Slot 2 — ikincil uç nokta **YOK**
+
+⛔ Boş bırakmak **karar**, eksik değil. Tek meşru aday **ömür**dü:
+`lived` 24.8 · `shuffle` 28.2 · `null` 10.0 (B1) ⇒ `lived ≈ shuffle`, yani
+**Lamarckçı kanalın kanıtı olamaz**. İkincil olarak konsaydı, birincil null
+çıktığında *"ama ikincilde bir şey var"* demenin yolunu açardı.
+⚠ Ömür ve diğer nicelikler **betimleyici** olarak raporlanmaya devam eder.
+
+### Slot 3 — bütçe
+
+| | |
+|---|---|
+| tohum × kol × nesil | 3 × 3 × 3 |
+| Price satırı | **18** (G−1 = 2 / kol / tohum) |
+| beklenen bilgilendirici | **~9** (⚠ %48 kestiriminden) |
+| olay bütçesi | 30 |
+| beklenen süre | ~4–5.5 sa |
+
+**Neden tam 3:** seviye 1 iddiası *"işaret tohumlar arası tutarlı"* şartına
+bağlı ⇒ 3, bu şartın **sorulabildiği en küçük** sayı. Şekil B1/headroom ile
+aynı olduğundan maliyet **tahmin değil ölçüm**. Ve ilk koşum zaten
+**kestirimdir** (P7-b/D-096) — tohum büyütmek sınıfını değiştirmez.
+⛔ **Durma kuralı:** uzatma yok, kısaltma yok; ara sonuca bakılırsa kayda geçer.
+
+### Slot 4 — tohumlar **9911 · 9912 · 9913**
+
+Taze blok. ⚠ **9901–9904 yanmış** (`dau_runs/adapters/` altında `pop-` dizinleri
+var ⇒ I0.7 abort eder). Bugünkü mock duman koşumları (9305–9308) `--no-lora`
+ile koştu, **adapter yazmadı**, ama yine de deneyde kullanılmayacak.
+
+⇒ **Dört slotun dördü kapalı.** Sıradaki iş: **kilit**.

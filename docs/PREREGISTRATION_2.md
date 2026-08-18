@@ -1,6 +1,6 @@
 # Popülasyon C″ — İkinci Ön-Kayıt · ⚠ **TASLAK, KİLİTLİ DEĞİL**
 
-**Durum: ✍️ taslak · 2026-08-18 · açık slot: 3** (Slot 1 kapandı, D-121)
+**Durum: ✍️ taslak · 2026-08-18 · açık slot: 0** — kilitlenmeye hazır (D-121, D-122)
 
 ⚠ **Bu belge henüz bir ön-kayıt değildir.** Slotlar kapanmadan hiçbir koşum
 "doğrulayıcı" sayılmaz. Kapanma anında bu satır **🔒 KİLİTLİ** ile değişir,
@@ -102,9 +102,18 @@ bakılmadı.
 
 ---
 
-## 4. Ön-kayıtlı ikincil uç noktalar — ⛔ **SLOT 2, AÇIK**
+## 4. Ön-kayıtlı ikincil uç noktalar — ✅ **SLOT 2 KAPANDI: YOK** (D-122, Yasin)
 
-Adaylar (hiçbiri seçilmedi):
+⛔ **Bu koşumun ön-kayıtlı ikincil uç noktası yoktur.** Boş bırakmak bir eksik
+değil, bir karardır: elimizdeki tek meşru aday **ömür**dü ve `lived ≈ shuffle`
+olduğu için **Lamarckçı kanalın kanıtı olamaz** — ikincil olarak konsa bile
+ön-kayıtı zayıflatır, çünkü null çıktığında *"ama ikincilde bir şey var"*
+demenin yolunu açar.
+
+⚠ Ölçülen her şey (ömür · somatik marker · `F_agent` dağılımı · havuz oranı)
+**betimleyici** olarak raporlanmaya devam eder; hiçbiri hipotez taşımaz.
+
+**Adaylar ve neden alınmadıkları (arşiv):**
 
 | aday | durum |
 |---|---|
@@ -143,7 +152,30 @@ olmadığına** bakılıyor ve kural koşumdan **önce** yazılıyor.
 
 ---
 
-## 7. Bütçe ve durma kuralı — ⛔ **SLOT 3, AÇIK (P7-a)**
+## 7. Bütçe ve durma kuralı — ✅ **SLOT 3 KAPANDI** (D-122, Yasin)
+
+| | |
+|---|---|
+| **Tohumlar** | **9911 · 9912 · 9913** (taze blok, Slot 4) |
+| **N** | 8 ajan / kol / nesil |
+| **G** | 3 nesil ⇒ kol başına **2** Price satırı (D-101) |
+| **Kollar** | `lived` · `null` · `shuffle` + I4.1 replay kolu |
+| **Olay bütçesi** | 30 |
+| ⇒ **Price satırı** | 3 tohum × 3 kol × 2 = **18** |
+| ⇒ **beklenen bilgilendirici** | **~9** (%48 kestiriminden, ⚠ kestirim) |
+| **Beklenen süre** | ~4–5.5 sa (B1: 1 tohum 1 sa 15 dk, kapılı) |
+
+**Gerekçe — neden tam 3 tohum:** seviye 1 iddiası *"işaret **tohumlar arası**
+tutarlı"* şartına bağlı; 3 tohum bu şartın sorulabildiği en küçük sayıdır ve
+şekil B1/headroom ile **aynı** olduğu için maliyeti tahmin değil **ölçüm**.
+İlk koşum zaten **kestirimdir, hipotez testi değildir** (P7-b/D-096), o yüzden
+tohum sayısını büyütmek bu koşumun sınıfını değiştirmez.
+
+⛔ **Durma kuralı:** koşum ne **uzatılır** ne **kısaltılır**. Ara sonuca
+bakılırsa **kayda geçer** (D-114 deseni) ve N değişmez. Çökme hâlinde
+checkpoint elle incelenir, **sonuç sayılmaz** (D-111).
+
+### 7b. Eski hâli (arşiv)
 
 Biçimi karara bağlandı (D-110): *"kaç saat"* değil ***"olay oranını hangi
 kesinlikle"***. ⭐ **Aranan nicelik D-121 ile belirlendi: bilgilendirici hücre
@@ -200,9 +232,9 @@ sonuç değil).
 | # | slot | durum |
 |---|---|---|
 | ~~**1**~~ | Birincil uç nokta (`z`) | ✅ **KAPANDI (D-121)** — seçenek A + dejenere ilanı + pozitif kontrol |
-| **2** | İkincil uç noktalar | ⛔ **AÇIK** — Slot 1 kapandı, sıra bunda |
-| **3** | Bütçe (P7-a) | ⛔ **AÇIK** — ⭐ aranan oran artık belli: **bilgilendirici hücre oranı** (~13/27) |
-| **4** | Tohum politikası | ⛔ **AÇIK** — kullanılmış tohumlar yeniden kullanılamaz (I0.7 abort eder) |
+| ~~**2**~~ | İkincil uç noktalar | ✅ **KAPANDI (D-122): YOK** — karar, eksik değil |
+| ~~**3**~~ | Bütçe (P7-a) | ✅ **KAPANDI (D-122):** 3 tohum · N=8 · G=3 · 30 olay ⇒ 18 Price satırı |
+| ~~**4**~~ | Tohum politikası | ✅ **KAPANDI (D-122):** **9911 · 9912 · 9913**, taze blok |
 | — | Tasarım (P0–P6) | ✅ kapalı |
 | — | Geçerlilik kriterleri | ✅ kapalı (§5) |
 | — | Okuma kuralları | ✅ kapalı (§6) |
