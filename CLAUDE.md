@@ -1368,28 +1368,33 @@ bare `0.5` (shuffle), default `k: int = 5`. **Cursor'a uygun**, Faz C.
 
 # 7. Dosya Konumu Notları
 
-⚠ **Satır numaraları 2026-08-13'te doğrulandı ama kayar — `grep` ile teyit et.**
+⚠ **Satır numaraları 2026-08-18'de doğrulandı ama kayar — `grep` ile teyit et.**
 
 | Ne | Nerede |
 |---|---|
 | `build_pe_ranked_pairs` | `dau/foundation/lora_update.py:346` |
-| `_encode_pair_side` (D-027 kesme) | `dau/foundation/local_llm.py:609` |
-| `_run_dpo_epochs` (D-028 accumulation) | `dau/foundation/local_llm.py:781` |
-| `build_load_kwargs` (D-020 quantization) | `dau/foundation/local_llm.py:135` |
-| `_consolidate_gen1` (D-031) | `dau/diagnostics/run_cprime_multigen.py:942` |
-| `run_lineage` | `dau/diagnostics/run_cprime_multigen.py:976` |
-| `_pair_filter_report` (D-030/D-032) | `dau/diagnostics/run_protocol_c_prime.py:871` |
+| `_encode_pair_side` (D-027 kesme) | `dau/foundation/local_llm.py:700` |
+| `_run_dpo_epochs` (D-028 accumulation) | `dau/foundation/local_llm.py:872` |
+| `build_load_kwargs` (D-020 quantization) | `dau/foundation/local_llm.py:226` |
+| `_consolidate_gen1` (D-031) | `dau/diagnostics/run_cprime_multigen.py:1075` |
+| `run_lineage` | `dau/diagnostics/run_cprime_multigen.py:1109` |
+| `_pair_filter_report` (D-030/D-032) | `dau/diagnostics/run_protocol_c_prime.py:975` |
 | Polarite kapısı (D-032) | `dau/foundation/polarity_filter.py` (NLI `nli_filter.py`'de durmaya devam ediyor) |
 | Karar prompt'unun saklanması (D-032) | `dau/foundation/graph.py`, `agent_node` SYSTEM_2 dalı |
-| `_train_adapter` | `dau/diagnostics/run_protocol_c_prime.py:950` (**`lora_update.py`'de değil**) |
+| `_train_adapter` | `dau/diagnostics/run_protocol_c_prime.py:1054` (**`lora_update.py`'de değil**) |
 | `TransferCandidate` | `dau/foundation/generation.py:55` |
 | **Metabolik kazanç** (D-066) | `dau/society/extraction.py` → `metabolic_gain` |
 | **Gerçekleşen çıkarım** (D-066) | `dau/society/environment.py` → `realized_extractions` / `realized_extraction_at` |
 | **Enerji kredisi + S5 kaydı** (D-066/D-063) | `dau/foundation/graph.py` → `pool_step_node` |
 | **Ölüm eşiği** (D-066) | `dau/foundation/graph.py` → `should_continue` |
 | **Kasa saati** (D-067) | `dau/memory/store.py` → `vault_counter` / `seal_phase` |
-| Gate altyapısı | `dau/diagnostics/preflight.py` (**1208** satır) + `tool_identity.py` (**257**) |
-| Multigen orkestrasyon | `dau/diagnostics/run_cprime_multigen.py` (**1476**) + testi (**1799**) |
+| Gate altyapısı | `dau/diagnostics/preflight.py` (**1293** satır) + `tool_identity.py` (**299**) |
+| Multigen orkestrasyon | `dau/diagnostics/run_cprime_multigen.py` (**1610**) + testi |
+| **Popülasyon orkestrasyonu** | `dau/diagnostics/run_population_experiment.py` (**1464**) |
+| **Price + turnuva + pozitif kontrol** | `dau/generation/reproduction.py` (**321**) · `population.py` (**147**) |
+| **Okuma aracı** | `dau/diagnostics/analyze_population_run.py` (**724**) |
+| Kriz büyüklüğü (D-117) | `dau/society/environment.py` → `crisis_trauma_magnitude` |
+| CUDA tahsis edici (D-116) | `dau/foundation/local_llm.py` → `apply_cuda_allocator_config` |
 
 - `CLAUDE.md` **repo kökünde** durur — Claude Code onu yalnızca kökten
   otomatik yükler.
