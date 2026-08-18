@@ -33,7 +33,9 @@ MAX_EVENTS_SENTINEL: int = 137
 # What A1 wired in. Named so the test asserts the SET, not just that some
 # invariants block exists: a gate quietly dropped from run_population_phase0
 # would otherwise leave a healthy-looking block behind.
-GATED_INVARIANTS: tuple[str, ...] = ("I0.3", "I0.6", "I0.7", "I1.1", "I4.1")
+GATED_INVARIANTS: tuple[str, ...] = (
+    "I0.3", "I0.4", "I0.6", "I0.7", "I1.1", "I4.1",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -1697,3 +1699,93 @@ def test_pool_event_rows_carry_the_crisis_magnitude(monkeypatch) -> None:
     g.reset_pool_event_log()
 
     assert row["crisis_magnitude"] == pytest.approx(crisis_trauma_magnitude(ratio))
+
+
+# ---------------------------------------------------------------------------
+# D-118 — I0.4, the gate D-105 had to leave out
+# ---------------------------------------------------------------------------
+
+
+def test_the_seed_survives_every_generation_of_ids() -> None:
+    """⭐ A third-generation heir must still name the seed it descends from.
+
+    The shuffle arm draws its permutation from the seed parsed out of the id,
+    so an id the parser cannot read costs the run its replay guarantee — that
+    is GAP-11, and in a population it would seed an entire lineage rather than
+    one life. Heir suffixes are APPENDED, so the founder segment has to keep
+    answering at any depth; this test is what pins that property.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        founder_id,
+        seed_from_population_id,
+    )
+    from dau.generation.population import heir_id
+
+    founder = founder_id(ARM_ORDER[0], SEED, 3)
+    gen2 = heir_id(founder, 2, 0)
+    gen3 = heir_id(gen2, 3, 1)
+
+    assert seed_from_population_id(founder) == SEED
+    assert seed_from_population_id(gen2) == SEED
+    assert seed_from_population_id(gen3) == SEED
+
+
+def test_an_unreadable_id_raises_instead_of_defaulting() -> None:
+    """§2.9: no silent fallback. A default seed would be a different universe."""
+
+    from dau.diagnostics.run_population_experiment import seed_from_population_id
+
+    with pytest.raises(ValueError, match="no seed segment"):
+        seed_from_population_id("cprime-lived-9901")
+
+
+def test_i04_rejects_an_id_that_names_an_unplanned_seed() -> None:
+    """The gate compares the id's seed against the seeds the run planned.
+
+    Checked through the shared predicate with THIS runner's parser, not a
+    re-implementation: the point of D-118 is that both runners keep meaning
+    the same thing by I0.4 while reading different id formats (§2.8).
+    """
+
+    from dau.diagnostics.preflight import check_seed_derivation
+    from dau.diagnostics.run_population_experiment import (
+        founder_id,
+        seed_from_population_id,
+    )
+
+    ok, note = check_seed_derivation(
+        [founder_id(ARM_ORDER[0], SEED, 0)], [SEED], seed_from_population_id
+    )
+    assert ok, note
+
+    stranger = founder_id(ARM_ORDER[0], SEED + 1, 0)
+    bad, why = check_seed_derivation([stranger], [SEED], seed_from_population_id)
+    assert not bad
+    assert str(SEED + 1) in why
+
+
+def test_i04_aborts_the_run_when_an_id_carries_the_wrong_seed(monkeypatch) -> None:
+    """The wiring, not just the predicate (§2.4).
+
+    Measured: deleting the gate from run_population_phase0 broke nothing —
+    every other test builds well-formed ids, which is exactly the condition
+    under which a missing gate is invisible.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(
+        pop_mod,
+        "planned_founder_ids",
+        lambda seeds, n_agents, arms: [pop_mod.founder_id(arms[0], 1234, 0)],
+    )
+
+    with pytest.raises(PreflightAbort, match="I0.4"):
+        run_population_experiment(
+            seeds=[SEED],
+            n_agents=N_AGENTS,
+            n_generations=N_GENERATIONS,
+            events_budget=EVENTS,
+        )

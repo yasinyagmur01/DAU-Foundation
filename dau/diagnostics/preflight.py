@@ -277,16 +277,30 @@ def check_pythonhashseed() -> tuple[bool, str]:
     return True, f"{PYTHONHASHSEED_ENV}={raw}"
 
 
-def check_seed_derivation(agent_ids: list[str], seeds: list[int]) -> tuple[bool, str]:
-    """I0.4 — every planned agent_id yields the seed it is supposed to."""
+def check_seed_derivation(
+    agent_ids: list[str],
+    seeds: list[int],
+    derive: Callable[[str], int] | None = None,
+) -> tuple[bool, str]:
+    """I0.4 — every planned agent_id yields the seed it is supposed to.
 
-    from dau.diagnostics.run_protocol_c_prime import _seed_from_agent_id
+    ``derive`` is the parser the CALLER's ids are built for, because id
+    formats differ per runner and the seed segment sits in a different place
+    in each: Protocol C′ ends in the seed, the population wrapper carries it
+    mid-string as ``-s{seed}-a{index}``. Defaulting to the C′ parser keeps the
+    multigen path exactly as it was; the population runner passes its own and
+    stops being the runner without this gate (D-105's declared debt).
+    """
 
+    if derive is None:
+        from dau.diagnostics.run_protocol_c_prime import _seed_from_agent_id
+
+        derive = _seed_from_agent_id
     if not agent_ids:
         return False, "no agent_ids to verify"
     expected = set(seeds)
     for agent_id in agent_ids:
-        derived = _seed_from_agent_id(agent_id)
+        derived = derive(agent_id)
         if derived not in expected:
             return False, f"{agent_id} → {derived}, not in planned seeds"
     return True, f"{len(agent_ids)} agent_ids verified"

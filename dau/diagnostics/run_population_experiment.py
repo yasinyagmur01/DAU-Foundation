@@ -72,6 +72,7 @@ import contextlib
 import json
 import os
 import random
+import re
 import shutil
 import tempfile
 from dataclasses import dataclass, field
@@ -89,6 +90,7 @@ from dau.diagnostics.preflight import (
     check_no_stale_adapters,
     check_pythonhashseed,
     check_replay_identical,
+    check_seed_derivation,
     check_training_moved_weights,
 )
 from dau.diagnostics.run_cprime_multigen import (
@@ -149,6 +151,15 @@ from dau.society.environment import POOL_MAX, EnvironmentState, get_pool_ratio
 # ---------------------------------------------------------------------------
 
 FOUNDER_ID_TEMPLATE: str = "pop-{arm}-s{seed}-a{index}"
+# The inverse of FOUNDER_ID_TEMPLATE, and the reason I0.4 can finally be wired
+# here (D-105 left it as a debt). The seed sits MID-STRING in a population id
+# and every heir suffix is appended after it, so a pattern anchored at the end
+# — which is what Protocol C′ uses — matches nothing here. Anchored on the
+# founder segment instead, so it reads the same seed off a founder and off a
+# third-generation heir.
+POPULATION_ID_SEED_PATTERN: re.Pattern[str] = re.compile(
+    r"-s(?P<seed>\d+)-a\d+"
+)
 FIRST_FOUNDER_INDEX: int = 0
 RESULTS_NOTE: str = "exploratory, not pre-registered"
 PROTOCOL_NAME: str = "population-experiment"
@@ -255,21 +266,51 @@ def planned_founder_ids(
     ]
 
 
-def run_population_phase0(gate: Preflight, *, agent_ids: list[str]) -> Preflight:
-    """I0.3 · I0.6 · I0.7 before any GPU work — the population runner's phase 0.
+def seed_from_population_id(agent_id: str) -> int:
+    """Read the seed out of a population agent id — founder or heir.
 
-    A SUBSET of ``preflight.run_phase0``, and calling the whole thing instead
-    would abort every run here: I0.4 derives the seed from the agent id with
-    ``AGENT_ID_SEED_PATTERN``, which matches ``cprime-{arm}-{seed}`` and not the
-    population's ``pop-{arm}-s{seed}-a{index}`` (nor a heir's ``…-g{n}-h{k}``).
-    The predicates themselves are imported rather than re-implemented, so this
-    runner and the multigen one cannot drift apart on what a gate means (§2.8).
+    No fallback (§2.9): an id this cannot read is an id whose seed-derived
+    draws are undefined, and returning a default would hide that behind a run
+    that looks healthy. Heir suffixes are appended, never inserted, so the
+    same segment answers for every generation.
+    """
+
+    match = POPULATION_ID_SEED_PATTERN.search(str(agent_id))
+    if match is None:
+        raise ValueError(
+            f"agent_id {agent_id!r} carries no seed segment — expected "
+            f"{FOUNDER_ID_TEMPLATE} or an heir of one"
+        )
+    return int(match.group("seed"))
+
+
+def run_population_phase0(
+    gate: Preflight, *, agent_ids: list[str], seeds: list[int]
+) -> Preflight:
+    """I0.3 · I0.4 · I0.6 · I0.7 before any GPU work — this runner's phase 0.
+
+    A SUBSET of ``preflight.run_phase0``, and the predicates themselves are
+    imported rather than re-implemented, so this runner and the multigen one
+    cannot drift apart on what a gate means (§2.8).
 
     ⚠ I0.1/I0.2 are deliberately NOT here — they are a decision, not an
     oversight, and it is written down in D-105.
+
+    ✅ I0.4 is here now (D-118). D-105 could not wire it because the shared
+    check hard-coded Protocol C′'s end-anchored seed pattern, which matches
+    nothing in ``pop-{arm}-s{seed}-a{index}``; the check now takes the parser
+    the caller's ids are built for. What it guards is not cosmetic: the
+    shuffle arm draws its permutation from the seed parsed out of the id, so
+    an id the parser cannot read costs the run its replay guarantee — GAP-11
+    was exactly that failure, and here it would seed a whole lineage.
     """
 
     gate.check("I0.3", check_pythonhashseed, mode=MODE_ABORT)
+    gate.check(
+        "I0.4",
+        lambda: check_seed_derivation(agent_ids, seeds, seed_from_population_id),
+        mode=MODE_ABORT,
+    )
     gate.check("I0.6", check_determinism_settings, mode=MODE_ABORT)
     gate.check("I0.7", lambda: check_no_stale_adapters(agent_ids), mode=MODE_ABORT)
     return gate
@@ -1218,6 +1259,7 @@ def run_population_experiment(
     run_population_phase0(
         gate,
         agent_ids=planned_founder_ids(list(seeds), n_agents, tuple(arms)),
+        seeds=list(seeds),
     )
     gate.enforce()
 
