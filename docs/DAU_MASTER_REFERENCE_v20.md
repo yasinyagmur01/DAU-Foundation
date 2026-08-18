@@ -108,7 +108,7 @@ projenin en sağlam parçası. Bkz. yeni **§24**.
 | Shuffle kolu | **çiftlerin tamamı ters** (eskiden %50 yazı-tura) | **D-040** |
 | Adapter graft'ı | sabit `LORA_INIT_SEED`, konumdan bağımsız | **D-042** |
 | Değişmez kapıları | **20 kayıtlı** (belgede tanımlı 25'ten) | D-012, D-039, D-041 |
-| Test | **384 passed, 2 deselected** (v2.4.4) — ⚠ belge boyunca 206 | — |
+| Test | **582 passed, 2 deselected** (v2.5; 35 dosyada 551 test fonksiyonu) — ⚠ belge boyunca 206 | — |
 | Ön-kayıt | **taslak**, 5 slot kapalı, S4/S2 açık | `PREREGISTRATION.md` |
 
 ### Kapanmış iki büyük darboğaz
@@ -582,7 +582,7 @@ zayıf/gürültülü yön.
 
 ---
 
-## 12. Kod ağacı (v2.4.3)
+## 12. Kod ağacı (v2.5)
 
 ```
 dau/foundation/
@@ -618,7 +618,13 @@ dau/memory/
  └── tests/                — + test_ppr_retrieval
 
 dau/generation/
- └── fitness.py            — F_agent, W_transfer
+ ├── fitness.py            — F_agent, W_transfer
+ ├── reproduction.py       — 321 satır; turnuva (k=2), w tahsisi,
+ │                          **price_partition** (+ z_variance /
+ │                          selection_estimable, D-121) ve
+ │                          **positive_control_partition** (D-121)
+ └── population.py         — 147 satır; GenerationPlan / heir_id /
+                            plan_next_generation / close_transition (D-101)
 
 dau/society/
  ├── environment.py        — pool physics + apply_crisis_trauma (ADIM 1)
@@ -628,14 +634,23 @@ dau/society/
 dau/diagnostics/
  ├── run_protocol_c.py     — frozen Meta ON/OFF (paper-locked)
  ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
- ├── preflight.py          — 1208 satır; değişmez kapıları (I0.1–I5.4);
+ ├── run_cprime_multigen.py — 1610 satır; gen1→transfer→gen2 (B2'nin yolu,
+ │                          DEĞİŞMEDİ — `prereg/b2-code` etiketi)
+ ├── run_population_experiment.py — 1464 satır; **popülasyon sarmalayıcısı**
+ │                          (N ajan · G nesil · kol başına ayrı mera);
+ │                          I0.3·I0.4·I0.6·I0.7·I1.1·I4.1 + checkpoint
+ ├── analyze_population_run.py — 724 satır; dört seviyeye göre okuma;
+ │                          **p-değeri üretmez** (test bekçiliğiyle)
+ ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.4);
  │                          ABORT/FLAG modları
- ├── tool_identity.py      — 242 satır; koşumun alet kimliği; yüklenen
- │                          ağırlığı ve ayarları raporlar
+ ├── tool_identity.py      — 299 satır; koşumun alet kimliği; yüklenen
+ │                          ağırlığı ve ayarları raporlar (+ cuda_allocator)
  └── long_run.py / pe_histogram.py / actuator_audit.py
 
 docs/
- └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.4.1**)
+ └── PREREGISTRATION.md                     — 🔒 birinci ön-kayıt (B2)
+ └── PREREGISTRATION_2.md                   — 🔒 ikinci ön-kayıt (popülasyon)
+ └── DAU_MASTER_REFERENCE_v20.md            — operasyonel kaynak (**v2.5**)
  └── DAU_MASTER_REFERENCE_v20.pdf           — türev (md ile senkron)
  └── DAU_MASTER_REFERENCE_v20.html          — türev (stale; md kaynaktır)
  └── DAU_MASTER_REFERENCE_v10.*              — arşiv (v1.4; süpersede)
