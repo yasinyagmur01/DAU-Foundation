@@ -22,8 +22,11 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Suite:** `599 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-137.** Sıradaki kayıt **D-138** olarak açılır.
+- **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
+- **Son D-kaydı: D-138.** Sıradaki kayıt **D-139** olarak açılır.
+- ✅ **FAZ 0 BİTTİ** (D-135 · D-136 · D-138). ⛔ **Sıradaki iş Faz 2, ve
+  önündeki ilk iki madde KARAR:** **2.0** travma eşiği · **2.1** *"en küçük
+  anlamlı etki"*. İkisi de Yasin'in (D-007), ikisi de §2.7'ye tabi.
 - ✅ **GAP-10 / spillover karara bağlandı (D-137, Yasin): skaler kalıyor**,
   sınır ilan edildi. ⏸ **Kapanmadı** — `k` ajanlar arasında değişkenleşirse
   yeniden açılır. ⛔ **Ama eşik sorunu açıkta ve artık ayrı madde: kuyruk 2.0.**
@@ -105,6 +108,7 @@ Verilmeden güç hesabı, dolayısıyla Faz 3'ün tohum sayısı **bilinemez**.
 | **D-135** | ⛔ Kuyruk 0.1 — ajan-ajan etkileşimi de simetriyi **kırmıyor**; **Faz 1 iptal** |
 | **D-136** | ⭐ Kuyruk 0.2 — `z`'nin dört ekseni raporlanıyor. `social`/`uncertainty` **ölü değil**, ⛔ ama spillover **tekdüze** ⇒ dört sayı **dört boyut değil** ⇒ **GAP-10 tetiklendi** |
 | **D-137** | ✅ **GAP-10 kararı (Yasin): skaler kalıyor, sınır ilan ediliyor.** Matris `k` sabit olduğu için (192/192) skalerin **üç kopyalı hâli**; eşiği de geçirmiyor. ⛔ Ve asıl darboğazın **travma kapısı** olduğu ortaya çıktı ⇒ **kuyruk 2.0** açıldı |
+| **D-138** | ⭐ Kuyruk 0.2b + 0.3 — `k` ve π raporlanıyor ⇒ **D-137'nin tetiği gözlenebilir**, ve **L13 ilk kez çürütülebilir**. π *"tavanda takılı"* değilmiş, **1.0 ↔ 1.2** arasında oynuyor (`n_distinct = 2`) |
 
 ### ⚠ Bu oturumun beş dersi (K1–K5'e dönüştü)
 

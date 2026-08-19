@@ -61,7 +61,14 @@ yerine değil. Hesap **değişmez**.
 **K3** (çağrı yeri testi) · **K5** (md5'li mutasyon, 4 mutasyon 4 doğru test).
 </details>
 
-## ⬜ 0.2b · Birincil eksen `k` raporlansın (saf raporlama, ~3 satır)
+## ✅ 0.2b · Birincil eksen `k` raporlansın — **D-138**
+✅ PE satırı `target_domain` taşıyor; `delta_profile["axes"]["primary_axis"]`.
+K2/K3/K5 ✅ (**7 mutasyon, 7 doğru test**). İlk okuma D-137 §2'yi **sonuç
+dosyasından** yeniden üretti: `k` 8/8 `resource_load`, `social`/`uncertainty`
+**0**. ⭐ Ve `k` ile argmax `wins` **ayrı şeyler** olduğu görüldü (hedef 8/8
+`resource`, argmax 7/8 `energy`) ⇒ tek alanla raporlansaydı biri yanlış olurdu.
+
+<details><summary>özgün madde</summary>
 **Borç:** D-137 §9 — kaydın merkezî iddiası (*"`k` bütün olaylarda
 `resource_load`"*) **stub koşumda** ölçüldü ve bugünkü aletle **gerçek koşumda
 doğrulanamıyor**: `k` hiçbir yere yazılmıyor. `axis_deltas` (D-136) **sonucu**
@@ -72,13 +79,27 @@ yazılsın; ajan satırında dağılımı özetlensin. Hesap **değişmez**.
 ⚠ **Neden ucuz ama önemli:** D-137'nin yeniden açılma tetiği (§7) *"`k` ajanlar
 arasında değişken hale gelirse"*. Tetiğin ateşlenip ateşlenmediğini görmenin
 tek yolu `k`'yi kaydetmek.
+</details>
 
-## ⬜ 0.3 · `precision_weight` raporlansın
+## ✅ 0.3 · `precision_weight` raporlansın — **D-138**
+✅ Ajan satırında **`precision`**: `n_distinct`/`min`/`max`/`mean` + PE_w
+doygunluğu. Sayaçlar `_precision_audit_from_pe_rows`'tan **çağrılıyor**,
+yeniden yazılmadı (§2.8). K2/K3/K5 ✅.
+
+⭐ **L13 ilk kez çürütülebilir.** İlk okuma: `n_distinct = 2` — pilotun gördüğü
+sayının **aynısı** ⇒ L13'ü **destekliyor**. ⚠ Ama *"tavanda takılı"* tarifi
+**yanlışmış**: π `1.0`'da donmuş değil, **1.0 ↔ 1.2 arasında** oynuyor.
+⛔ PE_w doygunluğu (%75) bu koşumdan **okunmaz** — stub kararlar ham PE'yi
+sabit 1.000 yapıyor; gerçek koşumun sayısıdır.
+
+<details><summary>özgün madde</summary>
+
 **Borç:** L13 *"Precision-PE atıl"* — D-130 §10 ölçtü ki nicelik **sonuç
 dosyasına hiç çıkmıyor**, yani iddia **ne doğrulanabiliyor ne çürütülebiliyor**.
 **İş:** PE satırındaki `precision_weight` ajan satırına özetlensin (saf
 raporlama, ~1 alan).
 **Bitti sayılır:** alan dosyada · K3 · K5.
+</details>
 
 ## ⛔ 0.4 · ~~Sosyal kablolama~~ — **İPTAL (D-135)**
 
@@ -128,6 +149,13 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 ---
 
 </details>
+
+# ✅ FAZ 0 BİTTİ (D-135 · D-136 · D-138) — sıradaki iş **FAZ 2**
+
+⛔ **Ve Faz 2'nin önündeki ilk iki madde KARAR, kod değil.** İkisi de Yasin'in
+(D-007) ve ikisi de §2.7'ye tabi: değer **etkiye bakılarak seçilemez**.
+
+---
 
 # FAZ 2 — üçüncü ön-kayıt (GPU'suz)
 

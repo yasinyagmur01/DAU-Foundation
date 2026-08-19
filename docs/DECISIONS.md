@@ -10079,3 +10079,99 @@ ve üçüncü ön-kaydın konusudur; sabit değişikliği ister ⇒ §2.7 geçer
   D-136 `axis_deltas`'ı ekledi, ama o **sonucu** kaydeder, `k`'yi değil.
   ⇒ Kuyruğa **0.2b** olarak eklendi (saf raporlama, ~3 satır).
 - §4'ün aritmetiği **kapalı formdur**, koşuma bağlı değil.
+
+---
+
+## D-138 · 2026-08-19 · **Kuyruk 0.2b + 0.3: `k` ve π raporlanıyor** — iki iddianın ikisi de ilk kez **çürütülebilir** hale geldi
+
+**İş:** `EXECUTION_QUEUE.md` maddeleri **0.2b** ve **0.3**. İkisi de **saf
+raporlama**, hesap değişmedi, GPU yok. Tek commit'te, çünkü aynı sınıf iş ve
+aynı dosyalara dokunuyorlar.
+
+### 1. Neden bu ikisi birlikte
+
+İkisinin de borcu **aynı biçimde**: evren bir nicelik hesaplıyor, kullanıyor,
+ve **sonuç dosyasına hiç yazmıyor** ⇒ o nicelik hakkındaki iddia ne
+doğrulanabiliyor ne çürütülebiliyor.
+
+| | nicelik | iddianın sahibi | borcun kaynağı |
+|---|---|---|---|
+| **0.2b** | `k` = birincil eksen (`target_domain`) | **D-137**: *"`k` 192/192 `resource_load`"* — bütün spillover kararı buna dayanıyor | D-137 §9: **stub koşumda** ölçüldü, gerçek koşumda **doğrulanamıyor** |
+| **0.3** | π = `precision_weight` | **L13**: *"Precision-PE atıl"* | D-130 §10: ajan satırında `precision` alanı **yok** |
+
+⚠ **0.2b'nin özel bir yükümlülüğü var:** D-137 §7 yeniden açılma tetiğini
+*"`k` ajanlar arasında değişkenleşirse"* diye yazdı. Tetiğin ateşlenip
+ateşlenmediğini **görmenin tek yolu** `k`'yi kaydetmek. Aksi hâlde tetik
+yazılmış ama gözlenemez olurdu.
+
+### 2. Ne yapıldı
+
+| yer | ne |
+|---|---|
+| `graph.py` · `_record_pe_event` | PE satırı `target_domain` taşıyor — `_apply_prediction_error`'a **verilen** değer, ikinci bir çağrıyla yeniden türetilmiş değil (§2.8) |
+| `run_population_experiment.py` · `_primary_axis_counts` | `k` dağılımı; `delta_profile["axes"]["primary_axis"]` |
+| `run_population_experiment.py` · `_precision_profile` | π'nin `n_distinct`/`min`/`max`/`mean` + PE_w doygunluğu; ajan satırında **`precision`** |
+
+⚠ **`_precision_audit_from_pe_rows` yeniden yazılmadı, çağrıldı** — protokol-C
+koşucusunun denetlediği fonksiyonun **aynısı**. *"π oynuyor mu"* sorusuna iki
+yerde iki fonksiyonun cevap vermesi, §2.8'in dört kez yakaladığı kayma.
+Yalnız `min`/`max`/`mean` burada, o fonksiyonun döndürdüğü π listesinden
+türetiliyor.
+
+⚠ **`k`'nin anahtar kümesi `wins`'inkinden farklı, bilerek:** `energy` durumun
+oynayabildiği bir eksen ama güncellemenin **asla hedefleyemeyeceği** bir eksen
+(`DAERM_LOAD_DOMAINS`'te yok). İkisini tek listeye düzleştirmek, **imkânsız
+bir sıfırı** gözlem gibi raporlamak olurdu.
+
+⚠ **`precision` `delta_profile`'ın içine konmadı:** π, magnitude'ü **besleyen**
+PE'yi ağırlıklandırıyor; bir magnitude profilinin içine konsa aynı niceliğin
+başka bir kanalı gibi okunurdu.
+
+### 3. K1–K5
+
+| | |
+|---|---|
+| **K2** | `k` ve π **iki ajanla** uçtan uca test edildi; π'nin filtresiz hâli iki ajanın olaylarını tek ajana yazıyor |
+| **K3** | ikisi de `run_population_experiment` üzerinden **sonuç dosyasında** doğrulandı; `n_events == events_lived` bağlandı |
+| **K5** | **yedi mutasyon**, her birinin md5'i okundu (öncesi → sonrası → geri yükleme), `-p no:cacheprovider`. **Yedisi de doğru testi kırdı** |
+| **K4** | §4'ün sayıları çıktıdan **okundu**; koşum **keşifsel ve karar-stub'lı**, öyle etiketlendi |
+
+Mutasyonlar: `k`'yi argmax kazananı diye raporla · hiç hedeflenmemiş ekseni
+listeden düşür · aletlenmemiş satırı `resource_load` say · `target_domain`'i
+PE satırına hiç yazma · π sütununu okumayı bırak · π'yi ajana göre filtreleme ·
+boş yaşamda `None` yerine `0.0` yaz.
+
+### 4. İlk okuma — ⚠ **keşifsel, kararlar stub, tohum 9301**
+
+| nicelik | değer (3 ajanın üçünde de aynı, 8 olay) |
+|---|---|
+| `k` | `resource_load: 8` · `social_load: 0` · `uncertainty_load: 0` |
+| argmax `wins` | `energy: 7` · `resource: 1` · `social: 0` · `uncertainty: 0` |
+| π | `n_distinct = 2` · min **1.0** · max **1.2** · mean 1.15 |
+| PE_w doygunluk | **0.75** (6/8) |
+
+- ✅ `k` sonucu **D-137 §2'yi yeniden üretti**, bu kez sonuç dosyasından
+  okunarak.
+- ✅ `wins` ile `primary_axis` **ayrı şeyler** olduğunu gösterdi: hedef 8/8
+  `resource`, ama argmax'ı 7/8 `energy` kazanıyor. Tek alanla raporlansaydı
+  ikisinden biri yanlış olurdu.
+- ⚠ **π hakkında:** `n_distinct = 2`, L13'ün pilotta gördüğü sayının **aynısı**
+  ⇒ ilk okuma L13'ü **destekliyor**, çürütmüyor. Ama π `1.0`'da takılı da
+  değil (max 1.2) ⇒ *"tavanda takılı"* tarifi **düzeltilmeli**: π **iki değer
+  arasında** oynuyor.
+
+⛔ **PE_w doygunluğu bu koşumdan okunmaz.** Stub kararlar yüzünden ham PE
+`fallback` kanalından **sabit 1.000** geliyor; %75'lik doygunluk bunun
+sonucudur, evrenin değil. **Gerçek koşumun sayısıdır.**
+
+### 5. Sınırlar
+
+- Koşum **keşifsel, ön-kayıtlı değil**; kararlar **stub**, tek tohum (9301),
+  8 olay, iki nesil.
+- Üç ajan birebir aynı sayıları verdi — D-129/D-135'in klon sonucu, **yeni
+  bulgu değil**.
+- Hiçbir alan **hiçbir hesaba girmiyor**. Bunlardan uç nokta seçmek üçüncü
+  ön-kaydın işidir ve **etkiye bakılarak yapılamaz** (L9).
+- ⇒ **Faz 0 bitti.** Sıradaki iş **Faz 2**, ve önündeki iki ⛔ karar Yasin'in:
+  **2.0** (travma eşiği) ve **2.1** (*"en küçük anlamlı etki"* — DR #1'den beri
+  açık, Faz 3'ün ön koşulu).
