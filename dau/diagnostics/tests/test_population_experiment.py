@@ -8,6 +8,34 @@ import pytest
 
 import dau.foundation.graph as graph_mod
 from dau.diagnostics.preflight import RUN_QUALITY_CLEAN, PreflightAbort
+
+# ⭐ D-149. A stub run legitimately raises I5.4: no life accumulates an
+# emotional weight worth scaling, so no inherited somatic scale is ever
+# applied. Asserting a blanket `clean` would force the choice between a
+# false-green suite and an unwired gate — so the tests assert the flagged SET
+# instead, which is a stronger statement than `clean` ever was: it says which
+# gates fired AND that no other did.
+STUB_EXPECTED_FLAGS: frozenset[str] = frozenset({"I5.4"})
+
+
+def _flagged(results: dict[str, Any]) -> frozenset[str]:
+    """Invariant names that did not pass, from the results' own block."""
+
+    # ⚠ `is False`, not `is not True`: a gate that did not run records None,
+    # and counting that as a failure would make "not evaluated" and "failed"
+    # the same thing — the distinction D-121 spent a decision on.
+    return frozenset(
+        name for name, ok in results["invariants"].items() if ok is False
+    )
+
+
+def assert_only_expected_flags(results: dict[str, Any]) -> None:
+    """Everything green except the stub's known-empty channel."""
+
+    unexpected = _flagged(results) - STUB_EXPECTED_FLAGS
+    assert not unexpected, f"a gate fired that this test did not expect: {unexpected}"
+    if not _flagged(results):
+        assert_only_expected_flags(results)
 from dau.diagnostics.run_population_experiment import (
     build_arm_population,
     founder_id,
@@ -594,7 +622,7 @@ def test_results_carry_the_invariant_block_and_a_quality_stamp(monkeypatch) -> N
     )
 
     assert set(GATED_INVARIANTS) <= set(results["invariants"])
-    assert results["run_quality"] == RUN_QUALITY_CLEAN
+    assert_only_expected_flags(results)
     for invariant in ("I0.3", "I0.6"):
         assert results["invariants"][invariant] is True
     # I1.1 under --no-lora: not applicable, and deliberately NOT True — a check
@@ -723,7 +751,7 @@ def test_i1_1_passes_when_every_trained_agent_moved(monkeypatch) -> None:
     )
 
     assert results["invariants"]["I1.1"] is True
-    assert results["run_quality"] == RUN_QUALITY_CLEAN
+    assert_only_expected_flags(results)
 
 
 def test_training_sections_speak_the_key_i1_1_reads(monkeypatch) -> None:
@@ -1015,7 +1043,7 @@ def test_an_agent_with_no_pairs_does_not_take_the_run_down(monkeypatch) -> None:
     )
 
     assert results["invariants"]["I1.1"] is True
-    assert results["run_quality"] == RUN_QUALITY_CLEAN
+    assert_only_expected_flags(results)
 
 
 @pytest.mark.parametrize(

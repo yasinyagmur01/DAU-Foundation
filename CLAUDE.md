@@ -22,7 +22,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-148.** Sıradaki kayıt **D-149** olarak açılır.
+- **Son D-kaydı: D-149.** Sıradaki kayıt **D-150** olarak açılır.
+- ⛔⛔ **D-149: sembolik kanalın SOMATİK yarısı varise hiç ulaşmıyor.** C2'de
+  144 varisin **0'ında** somatik ölçek (anılar geçiyor, ~10/varis). Ve C2 bunu
+  **`clean`** raporlamıştı — I5.4 bağlı değildi. ⇒ **GAP-3 karar bekliyor.**
 - **Suite:** `611 passed, 2 deselected`.
 - ⭐⭐ **K5'te delik bulundu ve kapatıldı (D-148):** `no:cacheprovider` bytecode
   önbelleğini kapatmıyor ⇒ mutasyon teste hiç ulaşmayabiliyordu.

@@ -11070,3 +11070,93 @@ ihtiyacını ve kalan 17'nin **sınıflandırılmadığını** açıkça yazıyo
   brief'lerden benimsenenler · C2'nin okunmamış alanları) **yapılmadı**.
 - AV-2'nin ayrışımı **raporlama**dır; hiçbir hesaba girmiyor.
 - Kalan 17 kapı sınıflandırılmadı — ön-kayıtta **öyle ilan edildi**.
+
+---
+
+## D-149 · 2026-08-19 · ⛔⛔ **Kuyruk 2.1b: I4.2 ve I5.4 bağlandı — ve I5.4 bağlandığı anda bir kusur buldu**
+
+**Yetki:** Yasin, *"baştan sona bizi runa hazır hale getirene kadar avlan"*.
+D-147/AV-3'ün açtığı borç. **Suite 611, GPU yok.**
+
+### 1. ⭐⭐ Asıl bulgu: **sembolik kanalın somatik yarısı varise hiç ulaşmıyor**
+
+I5.4'ü bağladım, stub koşumda **FLAG** bastı: *"never applied (skipped=0)"*.
+⚠ `skipped=0` demek fonksiyonun **hiç çağrılmadığı** demek. C2'nin (gerçek,
+6 saatlik) çıktısı okundu:
+
+| nicelik | C2 (144 varis) |
+|---|---|
+| `n_retrieval_context` | **4–16**, ort. ~10 ✅ |
+| `n_inherited_by_parent` | ort. **9.74** anı ✅ |
+| `adapter_inherited` | **96 / 144** ✅ (= eğitim alan iki kol) |
+| ⛔ `has_somatic_scale` | **0 / 144** |
+| ⛔ `has_inherited_warning` | **0 / 144** |
+
+⇒ ⛔ **Kanal 1'in engram yarısı çalışıyor, somatik yarısı çalışmıyor.**
+Bu **GAP-3'ün tam kendisi**, ve bugüne kadar *"gen2'nin ilk olayında küçük
+bir boşluk"* diye taşınıyordu — ölçülen şey **hiç uygulanmadığı**.
+
+⛔⛔ **Ve C2 bunu `run_quality = clean` diye raporladı**, çünkü **I5.4 bağlı
+değildi** (20 bağsız kapıdan biri). ⇒ **Tamamlanmış, temiz görünen bir koşum,
+iddia ettiği iki kanaldan birinin yarısı sessizken.**
+
+⚠ **Abartmıyorum, sınırı yazıyorum:** anılar **geçiyor**. Ulaşmayan şey
+somatik ölçek ve miras uyarısı. İddia *"kalıtım yok"* değil,
+*"**somatik** kalıtım yok"*.
+
+### 2. I4.2 — RNG kilidi asimetrisi **ölçüme bağlandı**
+
+Ölçüldü (`grep`, çıkarım değil): popülasyon koşucusu `_lock_seeds(seed)`'i
+nesil döngüsünün **önünde bir kez** çağırıyor (satır 1168 vs döngü 1217);
+multigen ise **her nesilden önce** (dört çağrı yeri). ⇒ Nesil 2+ , nesil 1'in
+bıraktığı durumdan başlıyor, ve `lived`/`shuffle` **eğitiyor**, `null`
+**eğitmiyor** — GAP-12'nin tam şekli.
+
+⚠ **Ve `fork_rng` bunu kapatmıyor:** koruma yalnız **adapter init/reset**
+üzerinde (`local_llm.py:311, 452` — D-042'nin düzeltmesi), eğitim döngüsünün
+üstünde **değil**.
+
+⛔ **Stub'la ölçemedim ve ölçmeye kalkışmadım:** stub eğitimi kapatıyor, yani
+**ölçmek istediğim mekanizmayı** kapatıyor — D-126'nın 50 GPU dakikası buna
+gitmişti (K1(b)). ⇒ Koşum artık her neslin başındaki global RNG durumunu
+**kaydediyor**, ve `check_generation_rng_uniform` onu okuyor.
+
+⚠ **Bilerek FLAG, ABORT değil.** Ölçülmemiş bir öncül üzerine kurulu bir
+ABORT, 24 saatlik koşumu **bir tahmin yüzünden** öldürür. İlk koşum **ölçer**,
+mod sayı geldikten sonra yükseltilir. Ön-kayıt §5.1'de **koşumdan önce**
+ilan edildi.
+
+### 3. Kapı sayısı **6 → 8**
+
+Bağlananlar `I4.2` (FLAG) ve `I5.4` (FLAG). Kalan **18** hâlâ bağlı değil ve
+ön-kayıt §5.1 bunu **sayıyla** yazıyor.
+
+### 4. ⛔ Ve bu, kendi ön-kaydımın V1 kapısını **kırdı**
+
+`PREREGISTRATION_3` §5 V1 *"`run_quality = clean`"* istiyordu. I5.4 gerçek
+koşumda **FLAG** basacağına göre, V1 **bilinen ve ilan edilmiş** bir eksikliği
+**koşumu geçersiz sayma** sebebine çevirirdi.
+
+⇒ **§5.2 eklendi:** ABORT kapıları **hepsi geçmeli**; FLAG kapıları
+**raporlanır**, koşumu geçersiz kılmaz. **Beklenen flag `I5.4`**, ve
+beklenmeyen bir flag **yorumlanır**, sessizce geçilmez.
+
+### 5. İki test disiplini dersi
+
+| | ders |
+|---|---|
+| **`None ≠ False`** | Yardımcı testim `ok is not True` ile filtreliyordu ⇒ *"değerlendirilmedi"*i **başarısızlık** sayıyordu. D-121'in üzerine karar verdiği ayrım, testte kaybolmuş. `is False` oldu |
+| **mock'ta anlamsız kapı basmaz** | I5.4 mock altında **her zaman** flag basardı ve *"mock"* damgasını **yok ederdi**. I4.1'in deseniyle aynı: mock'ta **`None`** döner — hak etmediği bir yeşil de basmaz |
+
+⭐ Ve testler artık `clean` yerine **flag KÜMESİNİ** doğruluyor — hangi
+kapıların bastığını **ve başkasının basmadığını** söyleyen daha güçlü bir
+iddia.
+
+### 6. Sınırlar
+
+- I4.2 stub'da **geçti** ama bu **hiçbir şey söylemiyor** (§2).
+- I5.4'ün `applied` sayacı **global**; çok kollu koşumda *"herhangi bir yerde
+  ≥1"* demek ⇒ kol başına ayrım yapmıyor. Multigen'de de böyleydi.
+- Kalan **18** kapı hâlâ sınıflandırılmadı.
+- GAP-3'ün **düzeltilmesi** bu kayıtta **yapılmadı** — ölçüldü ve ilan edildi.
+  Düzeltmek fizik değiştirir ve **Yasin'in kararıdır**.

@@ -183,7 +183,7 @@ uç noktalar **yorumlanmaz**.
 
 | # | kapı |
 |---|---|
-| **V1** | `run_quality = clean` · ⚠ **preflight 6/6 — ama 6/26** (aşağıya bak) |
+| **V1** | ⚠ **ABORT sınıfı kapıların hepsi geçmeli.** `run_quality = clean` **şart değildir** — bak §5.2 |
 | **V2** | **I4.1 replay `identical`** |
 | **V3** | `PYTHONHASHSEED=0` · `TORCH_DETERMINISTIC_WARN_ONLY=False` (I0.6) |
 | **V4** | I0.7 temiz başlangıç — tohum bloğu diskte adapter bırakmamış |
@@ -198,6 +198,21 @@ hakkında **bilgisizdir**.
 ⚠ **V6 `null` kolunu KAPSAMAZ** — D-129 o kolun bu nişte donmuş olabileceğini
 ölçtü ve D-131 onu betimleyiciye indirdi.
 
+### ⛔ 5.2 `run_quality = flagged` koşumu geçersiz KILMAZ (D-149)
+
+⚠ **Bu bir düzeltmedir.** V1 önce `run_quality = clean` istiyordu. **Ölçüldü:
+I5.4 gerçek koşumda FLAG basacak** — C2'de 144 varisin **0'ında** somatik
+ölçek vardı. `clean` şartı, bilinen ve ilan edilmiş bir eksikliği koşumu
+**geçersiz sayma** sebebine çevirirdi.
+
+| sınıf | kural |
+|---|---|
+| **ABORT** kapıları | **hepsi geçmeli** — düşerse koşum **bilgisizdir** |
+| **FLAG** kapıları | **raporlanır**, koşumu geçersiz kılmaz; hangisi neden bastı §8'de sınır olarak yazılı |
+
+⛔ **Beklenen flag: `I5.4`.** Beklenmeyen bir flag çıkarsa **rapor edilir ve
+yorumlanır**, sessizce geçilmez (§2.11).
+
 ### ⛔ 5.1 Kapı kapsamı — *"6/6"* **tam kapsam değildir** (D-147/AV-3)
 
 ⚠ **Bu satır bir düzeltmedir.** V1 önce yalnız *"preflight 6/6"* diyordu ve bu
@@ -206,17 +221,17 @@ değişmez tanımlıyor, popülasyon yolunda **6'sı** bağlı.
 
 | durum | kapılar |
 |---|---|
-| ✅ **bağlı** (6) | `I0.3` · `I0.4` · `I0.6` · `I0.7` · `I1.1` · `I4.1` |
-| ⛔ **bağlı değil** (20) | `I0.1 I0.2 I0.5 I1.2 I1.3 I1.3b I1.4 I1.5 I2.1 I2.2 I2.3 I3.1 I3.2 I3.3 I3.4 I4.2 I5.1 I5.2 I5.3 I5.4` |
+| ✅ **bağlı** (8) | `I0.3` · `I0.4` · `I0.6` · `I0.7` · `I1.1` · `I4.1` · ⭐ **`I4.2`** · ⭐ **`I5.4`** |
+| ⛔ **bağlı değil** (18) | `I0.1 I0.2 I0.5 I1.2 I1.3 I1.3b I1.4 I1.5 I2.1 I2.2 I2.3 I3.1 I3.2 I3.3 I3.4 I5.1 I5.2 I5.3` |
 
-**İkisi bu deneyin iddiasına doğrudan dokunuyor ve ön-kayıttan ÖNCE
-bağlanmalıdır:**
+⭐ **`I4.2` ve `I5.4` D-149'da bağlandı** — ve I5.4 bağlandığı anda bir kusur
+buldu (§8/L20).
 
-- **`I4.2`** (ABORT) — *gen2 öncesi RNG durumu kol-bağımsız* (GAP-12). Koşum
-  çok nesilli; nesiller arası determinizmi kapıya bağlayan tek şey buydu.
-- **`I5.4`** (FLAG) — *inherited somatic scale gen2'de ≥1 kez uygulandı*
-  (GAP-3). ⛔ İddia **kalıtım** hakkında ve sembolik kanalın varise
-  ulaştığını doğrulayan kapı budur.
+⚠ **`I4.2` bu koşumda FLAG, ABORT değil**, ve gerekçesi yazılı: bu koşucu
+RNG'yi nesil döngüsünün **önünde bir kez** kilitliyor, multigen ise **her
+nesilden önce**. Eğitimin global akışı tüketip tüketmediği **stub'la
+ölçülemez** (K1(b)) ⇒ ilk koşum **ölçer**, mod sayı geldikten sonra
+yükseltilir.
 
 ⚠ **`I2.1`** (*"iki kol özdeşse dur"*, ABORT) olduğu gibi bağlanamaz:
 popülasyonda **gen1 tasarım gereği özdeştir** ⇒ meşru bir durumda abort
@@ -323,7 +338,8 @@ eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 | **L16** | **GAP-10 / spillover skaler kalıyor.** Matris `k` sabit olduğu için skalerin üç kopyalı hâli olurdu; eşiği de geçirmiyordu (+%2.29) | D-137 |
 | **L17** | **`to_landmark.max` reddedildi** (D-129, **2/4**) ve bu koşumda **kullanılmaz**. Yeniden açılması **üç şart** ister | D-143 §5 |
 | **L18** | **Davranış çökük** — olayların %94–100'ünde DEFECT; K7 bilişsel önseli aksiyom gerekçesiyle kapattı ve bu **açık risktir** | D-068, D-074 |
-| **L19** | **GAP-3** (gen2 ilk olayda somatik ölçek boşluğu) ve **GAP-4'ün ikinci yarısı** (silinen anının LoRA izi) **açık** | GAP tablosu |
+| **L19** | **GAP-4'ün ikinci yarısı** (silinen anının LoRA izi) **açık** | GAP tablosu |
+| **L20** ⭐⭐ | ⛔ **Sembolik kanalın somatik yarısı varise HİÇ ULAŞMIYOR.** C2'de 144 varisin **0'ında** somatik ölçek, **0'ında** miras uyarısı vardı — buna karşılık **anılar geçti** (varis başına ~10, `n_inherited_by_parent` ort. **9.74**) ve **adapter geçti** (96/144 = eğitim alan iki kol). ⇒ Kanal 1'in **engram yarısı çalışıyor, somatik yarısı çalışmıyor** (GAP-3). ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
 
 ---
 

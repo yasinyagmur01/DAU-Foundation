@@ -91,7 +91,9 @@ from dau.diagnostics.preflight import (
     check_pythonhashseed,
     check_replay_identical,
     check_seed_derivation,
+    check_somatic_scale_applied,
     check_training_moved_weights,
+    rng_state_digest,
 )
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
@@ -360,6 +362,47 @@ def run_population_phase0(
     gate.check("I0.6", check_determinism_settings, mode=MODE_ABORT)
     gate.check("I0.7", lambda: check_no_stale_adapters(agent_ids), mode=MODE_ABORT)
     return gate
+
+
+def check_generation_rng_uniform(arms: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I4.2 on the population path — one RNG state per (seed, generation).
+
+    ``preflight.check_gen2_rng_uniform`` asks the same question of the multigen
+    runner, whose unit is a lineage's gen2 section. Here the unit is a
+    generation of an arm, so the shape differs and the predicate is written
+    against this shape rather than the other one bent to fit — a wrapper that
+    reshaped the data would be the reporting/measuring drift §2.8 keeps
+    catching. The QUESTION is identical: within one seed, did every arm enter
+    the same generation from the same global RNG state (GAP-12)?
+
+    Generation 1 is excluded on purpose: every arm is re-locked immediately
+    before it, so agreement there is guaranteed by construction and would
+    dilute the check. What matters is 2 and later, because that is where
+    training has happened for `lived`/`shuffle` and not for `null`.
+    """
+
+    by_cell: dict[tuple[Any, int], dict[str, str]] = {}
+    for arm in arms:
+        for row in arm.get("generation_rng_digests", []):
+            generation = int(row.get("generation", 0))
+            if generation <= FIRST_GENERATION:
+                continue
+            digest = str(row.get("rng_digest", ""))
+            if not digest:
+                return False, f"{row.get('arm')} gen{generation} has no rng_digest"
+            by_cell.setdefault((row.get("seed"), generation), {})[
+                str(row.get("arm"))
+            ] = digest
+    if not by_cell:
+        return False, "no generation-2+ RNG digests were recorded"
+    split = [
+        f"s{seed} gen{generation}: {len(set(digests.values()))} states"
+        for (seed, generation), digests in sorted(by_cell.items())
+        if len(set(digests.values())) > 1
+    ]
+    if split:
+        return False, "arms entered a generation from different RNG states: " + "; ".join(split)
+    return True, f"{len(by_cell)} (seed, generation) cells, one RNG state each"
 
 
 def training_sections(arms: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1172,6 +1215,7 @@ def run_arm(
     env = shared_pasture(states)
 
     generations: list[dict[str, Any]] = []
+    generation_rng_digests: list[dict[str, Any]] = []
     previous_plan: GenerationPlan | None = None
     previous_parents: dict[str, DAUAgentState] = {}
     # MAX_EVENTS is a module global that should_continue reads. Restoring it is
@@ -1183,7 +1227,9 @@ def run_arm(
         with arm_vault([state.agent_id for state in states]) as vault:
             return _run_arm_generations(
                 arm=arm, seed=seed, rng=rng, app=app, env=env, states=states,
-                vault=vault, generations=generations, previous_plan=previous_plan,
+                vault=vault, generations=generations,
+                generation_rng_digests=generation_rng_digests,
+                previous_plan=previous_plan,
                 previous_parents=previous_parents, n_agents=n_agents,
                 n_generations=n_generations, events_budget=events_budget,
                 pasture_carryover=pasture_carryover, founders=states,
@@ -1203,6 +1249,7 @@ def _run_arm_generations(
     states: list[DAUAgentState],
     vault: "ArmVault",
     generations: list[dict[str, Any]],
+    generation_rng_digests: list[dict[str, Any]],
     previous_plan: GenerationPlan | None,
     previous_parents: dict[str, DAUAgentState],
     n_agents: int,
@@ -1215,6 +1262,22 @@ def _run_arm_generations(
     """The generation loop of one arm; run_arm owns the global it borrows."""
 
     for generation in range(FIRST_GENERATION, FIRST_GENERATION + n_generations):
+        # D-149 / I4.2. The multigen runner re-locks before EVERY generation
+        # (run_cprime_multigen: four call sites); this runner locks once, above
+        # the loop. So generations 2+ start from whatever state generation 1
+        # left, and `lived`/`shuffle` train while `null` does not — the exact
+        # shape GAP-12 is about. Whether training actually consumes the global
+        # stream cannot be settled from a stub run (the stub turns training
+        # off, which is K1(b)'s trap), so the run records the state and the
+        # gate reads it. Instrumentation only: nothing here changes a number.
+        generation_rng_digests.append(
+            {
+                "seed": int(seed),
+                "arm": str(arm),
+                "generation": int(generation),
+                "rng_digest": rng_state_digest(),
+            }
+        )
         graph_mod.reset_pe_event_log()
         graph_mod.reset_pool_event_log()
         graph_mod.reset_body_event_log()
@@ -1377,7 +1440,16 @@ def _run_arm_generations(
         if not pasture_carryover:
             env = shared_pasture(founders)
 
-    return {"arm": arm, "seed": seed, "generations": generations}
+    return {
+        "arm": arm,
+        "seed": seed,
+        "generations": generations,
+        # D-149 / I4.2 (GAP-12). The global RNG state each generation STARTED
+        # from. Kept at arm level rather than inside `generations` because the
+        # gate compares ACROSS arms of one seed, and a per-generation nesting
+        # would make the reader re-join what the gate needs whole.
+        "generation_rng_digests": generation_rng_digests,
+    }
 
 
 def chain_digest(digests: list[str]) -> str:
@@ -1597,6 +1669,39 @@ def run_population_experiment(
         "I4.1",
         lambda: check_replay_identical(replay),
         mode=MODE_FLAG if use_mock else MODE_ABORT,
+    )
+    # D-149 / GAP-12. Wired here for the first time on this path (D-147/AV-3
+    # measured 6 of 26 invariants live, and this was one of the 20).
+    #
+    # ⚠ FLAG, not ABORT — and the reason is written down rather than left as a
+    # preference. The multigen runner re-locks the RNG before every generation;
+    # THIS runner locks once, above the loop, so generations 2+ inherit
+    # whatever generation 1 left. Whether that actually splits the arms depends
+    # on whether DPO consumes the global stream, and that cannot be settled
+    # without training: a stub run turns training off, which is exactly K1(b)'s
+    # trap (D-126 spent 50 GPU minutes on it). An ABORT on an unmeasured
+    # premise would kill a 24-hour run on a guess. So the first run MEASURES,
+    # and the mode escalates once there is a number. Declared in
+    # PREREGISTRATION_3 §5.1 so the choice is visible before the run, not
+    # explained after it.
+    gate.check(
+        "I4.2",
+        lambda: check_generation_rng_uniform(arm_results),
+        mode=MODE_FLAG,
+    )
+    # I5.4 (GAP-3) — the symbolic channel actually reaching the heir. The claim
+    # of this experiment is about inheritance, so a run that never applied an
+    # inherited somatic scale should say so on its own face.
+    # ⚠ Skipped under a canned LLM for the same reason I4.1 is: a mock life
+    # accumulates no emotional weight, so "no inherited somatic scale was
+    # applied" would be a statement about the stub, not about the system. It
+    # records None — not evaluated — rather than a green it did not earn.
+    gate.check(
+        "I5.4",
+        (lambda: (None, "not evaluated under a canned LLM"))
+        if use_mock
+        else check_somatic_scale_applied,
+        mode=MODE_FLAG,
     )
     gate.enforce()
     return {

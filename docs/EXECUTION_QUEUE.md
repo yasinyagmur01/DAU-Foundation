@@ -211,15 +211,18 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 (pseudoreplication kısıtı karşılanır), nesil satırları **raporlamada kalır**
 (D-132'nin sönüm sorusu açık kalır). Biri istatistik, öteki betimleme.
 
-## ⬜ 2.1b · Kapıları popülasyon yoluna bağla — **I4.2 · I5.4** (D-147/AV-3)
-**Borç:** 26 değişmezin **6'sı** bağlı. İkisi iddiaya doğrudan dokunuyor:
-**I4.2** (ABORT, gen2 RNG kol-bağımsız, GAP-12) · **I5.4** (FLAG, inherited
-somatic scale, GAP-3 — **kalıtım iddiasının kapısı**).
-⚠ **I4.2 ABORT'tur** ⇒ 24 saatlik koşuma yarım bağlanmaz: **K1 zorunlu**
-(hangi mekanizma, hangi bayrak kapatır, dejenere olmadığının kanıtı).
-⚠ **I2.1 olduğu gibi bağlanamaz** — popülasyonda gen1 tasarım gereği özdeş.
-**Bitti sayılır:** iki kapı koşum yolunda · K2/K3/K5 · kalan 17 kapı **N/A mı
-eksik mi** sınıflandırıldı ya da öyle **ilan edildi**.
+## ✅ 2.1b · Kapılar bağlandı — **D-149**, ve I5.4 anında bir kusur buldu
+✅ **`I4.2`** (FLAG — ölçüm için, gerekçesi ön-kayıt §5.1'de) ve **`I5.4`**
+(FLAG) bağlandı. Kapı sayısı **6 → 8**; kalan **18** ilan edildi.
+
+⛔⛔ **I5.4 bağlandığı anda ölçtü:** C2'de 144 varisin **0'ında** somatik ölçek,
+**0'ında** miras uyarısı — buna karşılık **anılar geçmiş** (~10/varis) ve
+**adapter geçmiş** (96/144). ⇒ **Kanal 1'in engram yarısı çalışıyor, somatik
+yarısı çalışmıyor** (GAP-3). ⚠ Ve C2 bunu **`clean`** diye raporlamıştı,
+çünkü kapı bağlı değildi.
+
+⛔ **GAP-3 düzeltilmedi** — düzeltmek fizik değiştirir, **karar Yasin'in**.
+Ön-kayıta **L20** olarak yazıldı.
 
 ## 🔴 2.2 · Ön-kayıt taslağı — **D-145: KİLİTLENEMEZ, dört kusur bulundu**
 📝 `docs/PREREGISTRATION_3.md` yazıldı (D-144), ⛔ **kilit öncesi denetim
