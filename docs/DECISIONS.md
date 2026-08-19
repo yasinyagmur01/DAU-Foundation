@@ -10391,3 +10391,124 @@ betimleme.
   değil (yayıncı 403 döndü) ⇒ *"ifade örtüşüyor"* düzeyinde.
 - U9'un `P_active`'i **ön-kayıt yapısıdır**, henüz karar değil — 2.2'nin işi.
 - Bu tur **hiçbir sabiti** değiştirmedi, **hiçbir kod** yazılmadı.
+
+---
+
+## D-141 · 2026-08-19 · ✅ **KARAR (Yasin): U6 — nesil geçişleri hem ortalanır hem satır satır kalır**
+
+**Soru:** DR #12 §2 (U6) *"G=2 geçişi tohum başına tek ortalamaya indir"*
+diyor, gerekçesi pseudoreplication (Lazic 2010). ⛔ Ama bu **D-132 ile
+çelişiyor**: adapter sönümü 6/6 dizide **1.8×–4.8×** ölçüldü ve ortalama tam
+onu siliyor. DR'nin **kendi saldırı vektörü** de bunu söylüyor.
+
+**Karar:** ⭐ **İkisi birden.**
+
+| katman | ne |
+|---|---|
+| **test istatistiği** | tohum başına **ortalanmış** `ΔCov` ⇒ U5'in tekrarlama-birimi kısıtı karşılanır, pseudoreplication yok |
+| **raporlama** | **nesil başına** Price satırları **kalır** ⇒ D-132'nin sönüm sorusu açık kalır |
+
+⇒ **Çelişki yok:** biri **istatistik** (hipotez testi neyin üstünde yapılır),
+öteki **betimleme** (koşum neyi kaydeder). D-112/D-124/D-136'nın deseninin
+aynısı — hesaba girmeyen saf raporlama, kararı sonraki ön-kayıta bırakır.
+
+⚠ **Ön-kayıta yazılacak:** nesil satırları **betimleyicidir**; onlardan uç
+nokta seçmek **etkiye bakarak seçmek** olur (L9). Sönüm sorusu ayrı bir
+ön-kayıt maddesidir, bu koşumun ikincil uç noktası **değildir**.
+
+---
+
+## D-142 · 2026-08-19 · ⭐⭐ **Kuyruk 2.0b: Rice yanlılığı ölçüldü — DR'nin çaresi olmayan bir sorunu çözüyor, ve asıl tehlike başka yerde**
+
+**İş:** `EXECUTION_QUEUE.md` madde 2.0b, D-140 §4'ün açtığı borç.
+**GPU yok, evrene dokunulmadı.** ⚠ **Keşifsel, ön-kayıtlı değil.**
+
+### 1. Soru
+
+DR #12 §3: *"iki kol da N=8 ve aynı tohum olduğu için Rice'ın stokastik
+büyütmesi çıkarmada iptal olur."* ⛔ **Kaynaksız**, ve **toplamsal mı
+çarpansal mı** sorusuna hiç değinmiyor — çarpansalsa iptal **olmaz**.
+
+### 2. Yöntem
+
+⚠ **Mekanizma yeniden yazılmadı:** `allocate_heirs` (turnuva, k=2) ve
+`price_partition` **gerçek modülden** çağrıldı (§2.8). Ölçülen şey, deneyin
+**fiilen kullandığı** kestirimci.
+
+Üretici model: `z ~ N(0.5, 0.15²)`, `f_agent = β·z + N(0, 0.15²)`.
+`β` tek başına seçilimin `z`'ye ne kadar nişanlandığını belirliyor; **β = 0
+null**. N=8, **R = 20 000** tekrar. Referans: `Cov(E[w], z)` — yani *"uygunluk
+sabit ve bilinen olsaydı"* hâli, ki Rice'ın klasik Price için söylediği
+varsayım tam budur.
+
+### 3. ⛔ Sonuç 1 — **işaretli kestirimci null'da yansız**
+
+| β | `E[Cov]` | `Cov(E[w],z)` | oran | offset |
+|---|---|---|---|---|
+| **0.00** | **0.000372** | 0.001713 | — | −0.001341 |
+| 0.25 | 0.019996 | 0.021765 | 0.919 | −0.001769 |
+| 0.50 | 0.037634 | 0.037185 | **1.012** | +0.000449 |
+| 1.00 | 0.059952 | 0.056923 | **1.053** | +0.003029 |
+| 2.00 | 0.075681 | 0.074690 | **1.013** | +0.000991 |
+
+**β = 0'da `E[Cov] = 0.000372`, `SE = 0.000419` ⇒ sıfırdan 0.89 SE**
+(%95 GA `[−0.000448, +0.001192]`) ⇒ **sıfırdan ayırt edilemiyor**.
+
+**Oran β ≥ 0.5'te 1.01–1.05** ⇒ **çarpansal büyütme de yok**.
+
+Eşli fark, iki kol da null: `E[ΔCov] = −0.000603`, **−1.02 SE** ⇒ sıfır.
+
+⇒ ⭐ **DR'nin §3'ü olmayan bir sorunu çözüyor.** İşaretli kovaryansta
+**iptal edilecek bir yanlılık yok**; çaresi zararsız ama **gerekçesi yanlış**.
+⇒ **U7 nihai olarak alınmıyor** — ama sonucu D-140'takinden **daha iyi**:
+endişe geçersiz çıktı.
+
+### 4. ⭐⭐ Sonuç 2 — **asıl tehlike magnitude kanalında, ve DR bunu hiç görmedi**
+
+| β | `E[Cov]` (işaretli) | **`E[\|Cov\|]`** |
+|---|---|---|
+| 0.00 (**null**) | 0.000372 | **0.046154** |
+| 0.50 | 0.037634 | 0.053446 |
+
+⛔ **Null'da `E[|Cov|] = 0.046` — sıfır değil.** Ve gerçek fark **0.0355**
+iken `|Cov|` farkı yalnız **0.0073** çıkıyor ⇒ **4.86 kat sıkışma**.
+
+Sebep: gürültü tabanı (`SD = 0.059`) etkiden büyük; mutlak değer alınca
+taban **eklenmiyor, yutuyor**.
+
+⇒ **Bir uç nokta `|Cov|` ya da `z` vektörünün **normunu** alırsa: null sıfır
+değildir ve gerçek etki ~5 kat küçük görünür.**
+
+✅ **Bugün temiziz:** `price_partition` alan başına **işaretli** değer
+döndürüyor ve `analyze_population_run` onu `+.6f` ile **işaretiyle**
+raporluyor — hiçbir yerde norm/mutlak değer alınmıyor (denetlendi).
+
+⚠ **Ama bu bir tesadüf değil, korunması gereken bir özellik** ⇒ üçüncü
+ön-kayıta **sınır** olarak yazılır: *"uç nokta `Cov`'un **işaretli** hâlidir;
+mutlak değer veya vektör normu alınamaz — null'ı sıfırdan uzaklaştırır ve
+etkiyi ~5 kat sıkıştırır (D-142)."*
+
+⚠ Ve bu, D-002'nin eski birincilinin (`L2` mesafesi, §G.2) neden kırılgan
+olduğuna **bağımsız bir açıklama** getiriyor.
+
+### 5. Sınırlar
+
+- **Tek üretici model** (Gauss `z`, doğrusal `f_agent` + Gauss gürültü),
+  turnuva k=2, N=8. **Kanıt değil, bu model altında ölçüm.**
+- Referans `Cov(E[w], z)` da Monte Carlo ile kestirildi (500 dış × 400 iç)
+  ⇒ oran sütununun hatası `E[Cov]`'unkinden **büyük**; β=1.00'daki 1.053
+  buna binebilir.
+- Rice'ın sonucu **uygunluğun tam dağılımı** hakkında; buradaki model
+  uygunluğu ortalama+gürültü olarak kuruyor ⇒ Rice'ın en genel koşulunu
+  **kapsamıyor olabilir**. ⇒ Sınır ilanı (D-140) **kalkmıyor**, yalnız
+  *"eşleştirme iptal ediyor"* gerekçesi **düşüyor**.
+- Hiçbir sabit değişmedi, hiçbir kod yazılmadı.
+
+### 6. Yeniden üretim
+
+⚠ **Sonda commit edilmedi** — §2.7 gereği keşifsel ölçüm scratchpad'den
+koşulur, ön-kayıtlı alete girmez (`dau_runs/` zaten git'te takipli değil).
+Yeniden kurmak için gereken her şey §2'de; kullanılan tohumlar:
+tek-kol taramasında **`4242 + round(100·β)`**, eşli farkta kol A **777**,
+kol B **999**, deterministik referansta **`4342 + round(100·β)`**
+(= tek-kol tohumu + 100 000). `PYTHONHASHSEED=0`.

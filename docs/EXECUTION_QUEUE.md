@@ -170,14 +170,20 @@ bir uç nokta tanımla (D-124'ün penceresi bunun için aletlendi).
 ⛔ **Karar Yasin'in** — sabit değişikliği (D-007), ve §2.7 bağlayıcı: değer
 **etkiye bakılarak seçilemez**, sabitlerden türetilen bir eşitsizlikle gelir.
 
-## ⬜ 2.0b · Rice yanlılığı gerçekten iptal oluyor mu? (GPU'suz)
-**Borç:** D-140 §4 — DR *"eşleştirilmiş fark küçük-N şişmesini iptal eder"*
-diyor ama **kaynaksız**, ve **toplamsal mı çarpansal mı** sorusuna hiç
-değinmiyor. Çarpansalsa **iptal olmaz** ve §3'ün bütün çaresi düşer.
-**İş:** `w` ve `z`'yi bilinen bir üretici modelden örnekle, N=8'de
-`Cov`'un ve `ΔCov`'un yanlılığını **ölç**. Saf simülasyon, evrene dokunmaz.
-**Bitti sayılır:** yanlılığın ölçeklenme biçimi D-kaydında, aritmetiğiyle ·
-K2/K5. ⚠ **Ön-kayıttan önce** — sonucu `ΔCov`'un savunulabilirliğini belirliyor.
+## ✅ 2.0b · Rice yanlılığı ölçüldü — **D-142**, ve tehlike başka yerde çıktı
+✅ **GPU'suz, gerçek fonksiyonlarla** (`allocate_heirs` + `price_partition`
+çağrıldı, yeniden yazılmadı). N=8, turnuva k=2, R=20 000.
+
+⭐ **Sonuç 1 — işaretli kestirimci null'da yansız.** β=0'da
+`E[Cov] = 0.000372`, `SE = 0.000419` ⇒ **0.89 SE**, sıfırdan ayırt edilemiyor.
+Oran β≥0.5'te **1.01–1.05** ⇒ çarpansal büyütme de yok. Eşli null
+`E[ΔCov] = −0.000603` (**−1.02 SE**).
+⇒ **DR'nin U7'si olmayan bir sorunu çözüyor** — iptal edilecek yanlılık yok.
+
+⭐⭐ **Sonuç 2 — asıl tehlike magnitude kanalında, DR bunu görmedi.** Null'da
+`E[|Cov|] = 0.046` (**sıfır değil**), ve gerçek fark 0.0355 iken `|Cov|` farkı
+yalnız 0.0073 ⇒ **4.86 kat sıkışma**. ✅ Bugün temiziz (her yer işaretli), ⚠ ama
+**korunması gereken bir özellik** ⇒ ön-kayıta sınır olarak yazılacak.
 
 ## ✅ 2.1 · **CEVAPLANDI — DR #12 / D-140**
 ⭐⭐ **Q1 indirgemeyle cevaplandı, yeni istatistik gerekmiyor:** kovaryansı
@@ -192,9 +198,9 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 **eş-birincil**) · **boşluk ilanı:** Price + güç analizi birleşimi literatürde
 **yok**, sentez ilan edilerek yapılacak.
 
-⛔ **Kalan tek karar Yasin'in: U6** — nesil geçişleri ortalanacak mı?
-Öneri **ikisi birden**: ortalama **test eder**, nesil satırları
-**raporlamada kalır** (D-132'nin sönüm ölçümü silinmesin).
+✅ **U6 karara bağlandı (Yasin, D-141): ikisi birden.** Ortalama **test eder**
+(pseudoreplication kısıtı karşılanır), nesil satırları **raporlamada kalır**
+(D-132'nin sönüm sorusu açık kalır). Biri istatistik, öteki betimleme.
 
 ## ⬜ 2.2 · Ön-kayıt taslağı
 Kilitlenecekler: sosyal kuplaj fiziği · uç nokta (0.2'den) · birincil
@@ -207,7 +213,9 @@ kriz **müdahale-sonrası** (D-119/120) · n=1 deney, tek model ·
 = tohum**, 8 ajan ve G=2 geçiş **bağımsız replikat değil** (Lazic 2010, D-140) ·
 ⭐ **Type S / Type M** riski küçük N'de (Gelman & Carlin 2014, D-140) ·
 ⭐ **Price + güç analizi birleşiminin literatürde örneği yok** (D-140 boşluk
-ilanı) · ⭐ **`z` etkin olarak tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
+ilanı) · ⛔ **uç nokta `Cov`'un İŞARETLİ hâlidir** — mutlak değer / vektör
+normu alınamaz, null'ı sıfırdan uzaklaştırır ve etkiyi **~5 kat** sıkıştırır
+(D-142) · ⭐ **`z` etkin olarak tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
 iddia yok, kovaryans drift'in **büyüklüğü** üzerine (D-137 §6).
 
 ## ⬜ 2.3 · Kilit

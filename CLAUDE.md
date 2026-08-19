@@ -23,7 +23,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
 - **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-140.** Sıradaki kayıt **D-141** olarak açılır.
+- **Son D-kaydı: D-142.** Sıradaki kayıt **D-143** olarak açılır.
 - ✅ **DR #12 cevaplandı ve mutabakata bağlandı (§U).** ⭐ **Kuyruk 2.1 açıldı:**
   `ΔCov` indirgemesiyle **yeni istatistik gerekmiyor**.
 - ✅ **FAZ 0 BİTTİ** (D-135 · D-136 · D-138). ⛔ **Sıradaki iş Faz 2, ve
@@ -112,6 +112,7 @@ Verilmeden güç hesabı, dolayısıyla Faz 3'ün tohum sayısı **bilinemez**.
 | **D-137** | ✅ **GAP-10 kararı (Yasin): skaler kalıyor, sınır ilan ediliyor.** Matris `k` sabit olduğu için (192/192) skalerin **üç kopyalı hâli**; eşiği de geçirmiyor. ⛔ Ve asıl darboğazın **travma kapısı** olduğu ortaya çıktı ⇒ **kuyruk 2.0** açıldı |
 | **D-138** | ⭐ Kuyruk 0.2b + 0.3 — `k` ve π raporlanıyor ⇒ **D-137'nin tetiği gözlenebilir**, ve **L13 ilk kez çürütülebilir**. π *"tavanda takılı"* değilmiş, **1.0 ↔ 1.2** arasında oynuyor (`n_distinct = 2`) |
 | **D-139** | 🔍 Kuyruk 2.1'in seçim uzayı — ⛔ **soru düştü:** DR #1 *"SESOI ilan etme"* cevabını vermiş ve **benimsemişiz** (§G.3). Gerçek boşluk **kovaryans için MDE**. 📄 **DR #12 yazıldı** |
+| **D-141/142** | ✅ **U6 kararı (ikisi birden)** · ⭐⭐ **2.0b ölçüldü:** işaretli kestirimci null'da **yansız** (0.89 SE) ⇒ DR'nin U7'si olmayan bir sorunu çözüyormuş. ⛔ **Asıl tehlike magnitude'de:** null'da `E[\|Cov\|] = 0.046` ve etki **4.86 kat** sıkışıyor |
 | **D-140** | ⭐⭐ **DR #12 mutabakatı — 2.1 açıldı.** `ΔCov` indirgemesi ⇒ D-052'nin makinesi aynen çalışıyor. Ayrıca: tekrarlama birimi **tohum** (pseudoreplication) · eşikli uç nokta için **`P_active` + `Cov_cond`** · ⛔ **dört alıntı kaynağında yok** (kimlikler 4/4 temiz) |
 
 ### ⚠ Bu oturumun beş dersi (K1–K5'e dönüştü)
