@@ -10610,3 +10610,88 @@ Eşiği geçmek **müdahaleden etkilenmiş** olabilir — bizde bu varsayımsal 
   etmemek** (§G.3) ⇒ bütçeden tohum, **ilan edilmiş MDE**.
 - Bu kayıt **hiçbir kod değiştirmiyor**; `P_active` zaten ölçülebilir
   (`selection_estimable`, D-121) — 2.2'nin işi onu **ön-kayıta yazmak**.
+
+---
+
+## D-144 · 2026-08-19 · 📝 **Üçüncü ön-kayıt taslağı yazıldı** (kuyruk 2.2) — **beş slot kapalı, biri Yasin'de**
+
+**Belge:** `docs/PREREGISTRATION_3.md` (342 satır) · **⛔ KİLİTLİ DEĞİL.**
+
+### 1. Ne yapıldı
+
+Bugünkü sekiz kaydın (D-136…D-143) çıktıları tek bağlayıcı belgeye toplandı.
+**Hiçbir yeni karar alınmadı** — taslak, verilmiş kararları **yazıya geçiriyor**.
+
+| slot | durum | dayanak |
+|---|---|---|
+| **1** Uç noktalar | ✅ `ΔP_active` + `ΔCov_cond`, ikisi de **eş-birincil** | D-143, D-140 |
+| **2** Test | ✅ eşleştirilmiş Wilcoxon · **birim tohum** · Holm (α=0.025) | D-140, D-141 |
+| **3** **Tohum sayısı `S`** | ⛔ **AÇIK** | — |
+| **4** Geçerlilik kapıları | ✅ V1–V6 | — |
+| **5** Sonuç sınıfları + rapor dili | ✅ dört sınıf, bağlayıcı kalıp | D-140/U11 |
+| **6** Alet kimliği | ⏳ kilitte donacak | — |
+
+**On dokuz sınır ilan edildi (L1–L19).**
+
+### 2. ⛔ Neden `S` açık bırakıldı
+
+Yasin yetkiyi devretmişti (D-143), ama `S` **metodolojik bir seçim değil**:
+Yasin'in makinesinde **20–36 saat** GPU taahhüdü, ve **tek atışlık** (kilitten
+sonra tohum eklenemez). ⇒ Geri döndürülemez bir kaynak kararı; onayı ayrıca
+alınır.
+
+### 3. Güç hesabı — ⭐ **yöntem bilinen bir sonuçla doğrulandı**
+
+Exact noncentral-t MDE, sonra Wilcoxon `ARE = 3/π`. ⚠ **Önce D-052'nin
+sayıları yeniden üretildi:** `N=32 → 0.5113 / 0.5232` · `N=40 → 0.4543 /
+0.4649` — D-052'nin yazdığıyla **birebir**. Yöntem doğrulanmadan yeni sayı
+üretilmedi (K4).
+
+| S | GPU saat (2.3× aralık) | MDE α=.05 | **MDE α=.025 (Holm)** |
+|---|---|---|---|
+| 8 | 16 (11–24) | 1.183 | 1.370 |
+| **10** | 20 (13–30) | 1.019 | **1.165** |
+| **12** | 24 (16–36) | 0.909 | **1.032** |
+| 15 | 30 (20–46) | 0.796 | 0.897 |
+
+**Öneri: `S = 12`.** S=10→12 MDE'yi %11 indirip 4 saate mal oluyor;
+S=15 altı saat daha alıp yalnız 0.897'ye iniyor. ⚠ **Bütçe önerisi, bilimsel
+gerekçe değil.**
+
+⚠ **MDE'ler büyük ve bu bilerek yazıldı:** `d_z ≈ 1.0` **büyük** bir etkidir;
+tasarım mütevazı etkileri **göremez** ve bu §7'de ilan edildi.
+
+### 4. ⭐ Taslak yazılırken çıkan **belirtilmemiş** bir nokta
+
+`selection_estimable` bayrağı **alan başına** yazılıyor (`reproduction.py:255`)
+⇒ *"hücre aktif"* tanımı **hangi alan** olduğunu söylemeden eksik.
+
+**Kapatıldı: birincil alan `energy`.** Gerekçe **mekanik**, sonuca bakmıyor:
+
+- `resource` — krizin sabit alanı, kriz **bütün kola aynı anda** vurur ⇒
+  herkes aynı skarı alır ⇒ hücre içi bilgi yok (L14);
+- `social`/`uncertainty` — argmax'ı hiç kazanmıyorlar (C2'de **sıfır kez**);
+- ⇒ `energy` **bireysel kanalın tek yazdığı alan**.
+
+⚠ Bedeli ilan edildi: C2'de `energy` 216 okumanın **11'inde** doluydu ⇒
+`P_active` **düşük** beklenmeli. Ve `Cov_cond` **aynı alanda** okunur —
+farklı alanlar seçilseydi iki eş-birincil **farklı şeyler** hakkında olurdu.
+
+⚠ Ayrıca: alan anahtarı **hiç yazılmamışsa** hücre **inaktiftir** —
+*"eksik veri"* değil **gözlem** (D-121'in ayrımı).
+
+### 5. Doğrulananlar (§2.2 — belgeye değil dosyaya güven)
+
+- `selection_estimable` **zaten** sonuç dosyasında (`price_partition` yazıyor,
+  `analyze_population_run` okuyor) ⇒ `P_active` için **kod değişikliği yok**.
+- CLI bayrakları doğrulandı: `--seeds` (liste), `--n-agents`,
+  `--n-generations`, `--events`, `--arms`, `--fresh-pasture`, `--lora`.
+
+### 6. Sınırlar
+
+- Taslak **bağlayıcı değil**; kilit kuyruk 2.3'te.
+- §7'nin maliyet aralığı C2'den **ölçülmüş** yayılıma dayanıyor (2.3×), ama
+  yeni fizik yok ⇒ **tahmin**, ve D-126/D-129'da süre tahminim **iki kez
+  tutmadı**.
+- L3'ün `192/192` sayısı **karar-stub'lı** koşumdan; gerçek koşumda `k` artık
+  kaydediliyor (D-138) ⇒ **doğrulanabilir**.

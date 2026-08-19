@@ -211,21 +211,15 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 (pseudoreplication kısıtı karşılanır), nesil satırları **raporlamada kalır**
 (D-132'nin sönüm sorusu açık kalır). Biri istatistik, öteki betimleme.
 
-## ⬜ 2.2 · Ön-kayıt taslağı
-Kilitlenecekler: sosyal kuplaj fiziği · uç nokta (0.2'den) · birincil
-karşıtlık (D-131: `lived ↔ shuffle`) · geçerlilik kriterleri · güç hesabı ·
-tohum sayısı · durma kuralı.
-**İlan edilecek sınırlar:** G=3 (DR #11'in "8 nesil" normatifi reddedildi,
-§T.2) · **adapter sönümü / LoP** (D-132) · Price küçük N'de yanlı (Rice 2008) ·
-kriz **müdahale-sonrası** (D-119/120) · n=1 deney, tek model ·
-**I0.1/I0.2 popülasyon yolunda bağlı değil** (D-105) · ⭐ **tekrarlama birimi
-= tohum**, 8 ajan ve G=2 geçiş **bağımsız replikat değil** (Lazic 2010, D-140) ·
-⭐ **Type S / Type M** riski küçük N'de (Gelman & Carlin 2014, D-140) ·
-⭐ **Price + güç analizi birleşiminin literatürde örneği yok** (D-140 boşluk
-ilanı) · ⛔ **uç nokta `Cov`'un İŞARETLİ hâlidir** — mutlak değer / vektör
-normu alınamaz, null'ı sıfırdan uzaklaştırır ve etkiyi **~5 kat** sıkıştırır
-(D-142) · ⭐ **`z` etkin olarak tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
-iddia yok, kovaryans drift'in **büyüklüğü** üzerine (D-137 §6).
+## 🟡 2.2 · Ön-kayıt taslağı — **D-144: yazıldı, bir slot Yasin'de**
+📝 `docs/PREREGISTRATION_3.md` (342 satır, **kilitli değil**). Beş slot kapalı,
+**on dokuz sınır** ilan edildi (L1–L19).
+
+⛔ **Açık slot: tohum sayısı `S`.** Metodolojik seçim değil — **20–36 saat GPU
+taahhüdü** ve **tek atışlık** (kilitten sonra tohum eklenemez) ⇒ geri
+döndürülemez kaynak kararı, onay Yasin'in.
+**Öneri `S = 12`** (24 sa, Holm sonrası MDE `d_z = 1.032`).
+⚠ Güç yöntemi **D-052'nin sayılarıyla doğrulandı** (32→0.5232, 40→0.4649).
 
 ## ⬜ 2.3 · Kilit
 Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).
