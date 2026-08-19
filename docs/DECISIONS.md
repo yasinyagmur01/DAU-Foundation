@@ -10821,3 +10821,59 @@ tekrarlamak yerine **ölçüyor** ve hiçbir şey vaat etmiyor.
   *"uç nokta canlı mı"*.
 - Taslak (`PREREGISTRATION_3.md`) **kilitlenmedi** ve §3/§4/§7 bu kayıttan
   sonra **yeniden yazılacak**.
+
+---
+
+## D-146 · 2026-08-19 · ⭐⭐ **Ölçüldü: darboğaz bütçe değil, uç noktanın EŞİKLİ olması**
+
+**Soru (Yasin):** *"şu an kestirim koşumu bizi hedeflediğimiz şeye sağlıklı
+olarak ulaştıracak mı?"* ⇒ Cevap vermek için ölçüldü. **GPU yok**, C2'nin
+mevcut çıktısından. ⚠ **Yalnız tanımlılık okundu; kol karşıtlığı
+HESAPLANMADI** (L9).
+
+### 1. Ölçüm — aynı koşum, üç nicelik, aynı hücreler
+
+| nicelik | hücre içi varyansı olan hücre |
+|---|---|
+| **`F_agent`** (seçilim **girdisi**) | **21 / 27 = %78** |
+| **`energy_mean_over_life`** (sürekli) | **21 / 27 = %78** |
+| ⛔ **`z`** (eşikli drift, Price alanı) | **4 / 16 = %25** |
+
+### 2. ⭐⭐ Ne söylüyor
+
+**Seçilim makinesi çalışıyor.** `F_agent` hücrelerin **%78'inde** ayrışıyor ⇒
+turnuva yazı-tura değil, `w` değişken, Price'ın girdisi **canlı**.
+
+⛔ **Ölü olan tek şey `z`.** Ve sebebi tek bir tasarım seçimi: **`z` eşikli**.
+Aynı yaşamlardan okunan **sürekli** bir nicelik **üç kat** daha çok hücrede
+tanımlı.
+
+⇒ ⛔ **Darboğaz `S` değil.** Tohum eklemek, hücrelerin **%75'inde tanımsız**
+olan bir niceliği daha çok kez tanımsız ölçmektir. ⇒ **Kestirim koşumu da
+hedefe götürmez** — D-145 §7'nin **A seçeneği zayıfladı**.
+
+### 3. ⇒ Tabloya **D** seçeneği giriyor: **sürekli uç nokta**
+
+⚠ **Bu L9'u ihlal etmez.** L9 uç noktayı **etkiye** bakarak seçmeyi yasaklar;
+buradaki ölçüt **tanımlılık** — niceliğin **var olup olmadığı**. Ön-kayıtın
+geçerlilik kapıları (`Var(F_agent) > 0`) zaten aynı mantıkla yazılmıştı, ve
+D-125'in sondası tam bu türdendi.
+
+⛔ **Ama D henüz hazır değil — iki gerçek engeli var:**
+
+1. **`energy_mean_over_life` doğrudan kullanılamaz:** o **pozitif kontroldür**
+   (D-121). Aynı niceliği hem uç nokta hem kontrol yapmak kontrolü yok eder.
+2. **`to_landmark.max` de doğrudan kullanılamaz:** D-129'da **2/4** ile
+   reddedildi, ve D-143 §5 yeniden açılmasını **üç şarta** bağladı — en
+   önemlisi sondanın **`shuffle` içermesi** (D-129'unki `lived null`'dı).
+
+⇒ **D'nin somut biçimi bir sonraki adımın işi**, ve **yeni bir ön-taahhüt +
+yeni bir sonda** ister.
+
+### 4. Sınırlar
+
+- Tek koşum (C2, **3 tohum**) ⇒ %78 ve %25 **gözlem**, kestirim değil.
+- `z`'nin paydası 16 (alan bazında), diğerlerininki 27 (hücre bazında) ⇒
+  oranlar **aynı tabana** oturmuyor; ⚠ ama fark (%78 ↔ %25) bu farkı
+  taşıyamayacak kadar büyük.
+- Hiçbir kol karşıtlığı, kovaryans veya etki büyüklüğü hesaplanmadı.

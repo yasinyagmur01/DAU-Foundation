@@ -23,7 +23,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
 - **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-145.** Sıradaki kayıt **D-146** olarak açılır.
+- **Son D-kaydı: D-146.** Sıradaki kayıt **D-147** olarak açılır.
+- ⭐⭐ **D-146 ölçtü: darboğaz bütçe değil, `z`'nin EŞİKLİ olması.**
+  `F_agent` **%78** · sürekli nicelik **%78** · ⛔ `z` **%25** ⇒ seçilim
+  makinesi çalışıyor, ölü olan tek şey uç nokta.
 - ⛔⛔ **KİLİT DURDURULDU (D-145).** Kilit öncesi denetim taslakta **dört
   kusur** buldu; en ağırı: `ΔP_active` sıfır-şişkin ⇒ **S=12'de testin
   reddedebilme ihtimali %6.6** (güç değil, **mümkün olma**).
