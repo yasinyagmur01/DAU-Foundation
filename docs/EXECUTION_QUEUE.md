@@ -61,6 +61,18 @@ yerine değil. Hesap **değişmez**.
 **K3** (çağrı yeri testi) · **K5** (md5'li mutasyon, 4 mutasyon 4 doğru test).
 </details>
 
+## ⬜ 0.2b · Birincil eksen `k` raporlansın (saf raporlama, ~3 satır)
+**Borç:** D-137 §9 — kaydın merkezî iddiası (*"`k` bütün olaylarda
+`resource_load`"*) **stub koşumda** ölçüldü ve bugünkü aletle **gerçek koşumda
+doğrulanamıyor**: `k` hiçbir yere yazılmıyor. `axis_deltas` (D-136) **sonucu**
+kaydeder, birincil ekseni değil.
+**İş:** `_pe_target_load_domain`'in döndürdüğü `target_domain` PE satırına
+yazılsın; ajan satırında dağılımı özetlensin. Hesap **değişmez**.
+**Bitti sayılır:** alan sonuç dosyasında · K2 · K3 · K5.
+⚠ **Neden ucuz ama önemli:** D-137'nin yeniden açılma tetiği (§7) *"`k` ajanlar
+arasında değişken hale gelirse"*. Tetiğin ateşlenip ateşlenmediğini görmenin
+tek yolu `k`'yi kaydetmek.
+
 ## ⬜ 0.3 · `precision_weight` raporlansın
 **Borç:** L13 *"Precision-PE atıl"* — D-130 §10 ölçtü ki nicelik **sonuç
 dosyasına hiç çıkmıyor**, yani iddia **ne doğrulanabiliyor ne çürütülebiliyor**.
@@ -119,6 +131,17 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 # FAZ 2 — üçüncü ön-kayıt (GPU'suz)
 
+## ⬜ 2.0 · ⛔ KARAR — **travma eşiği**, uç noktanın asıl darboğazı
+**D-137 §8 bunu ayrı madde yaptı.** `Var(z) = 0` çıkan 14/18 geçişin sebebi
+uç noktanın **boyutu değil**, travma kapısıydı: bireysel kanalın tepe
+değerleri **0.42–0.62**, kapı **`DELTA_THRESHOLD_DEEP = 0.70`** (D-124).
+⚠ Spillover'ın üç seçeneğinin **hiçbiri** bunu geçirmiyordu (D-137 §4) ⇒
+bu bağımsız bir sorundur, GAP-10'un yan ürünü değil.
+**Seçenek uzayı:** eşiği indir · `magnitude` formülünü değiştir · eşik-öncesi
+bir uç nokta tanımla (D-124'ün penceresi bunun için aletlendi).
+⛔ **Karar Yasin'in** — sabit değişikliği (D-007), ve §2.7 bağlayıcı: değer
+**etkiye bakılarak seçilemez**, sabitlerden türetilen bir eşitsizlikle gelir.
+
 ## ⬜ 2.1 · ⛔⛔ KARAR — **"en küçük anlamlı etki"**
 **En eski borç: DR #1'den beri açık, hâlâ verilmedi.**
 ⛔ Bu verilmeden **güç hesabı yapılamaz**, güç hesabı olmadan Faz 3'ün tohum
@@ -131,7 +154,9 @@ tohum sayısı · durma kuralı.
 **İlan edilecek sınırlar:** G=3 (DR #11'in "8 nesil" normatifi reddedildi,
 §T.2) · **adapter sönümü / LoP** (D-132) · Price küçük N'de yanlı (Rice 2008) ·
 kriz **müdahale-sonrası** (D-119/120) · n=1 deney, tek model ·
-**I0.1/I0.2 popülasyon yolunda bağlı değil** (D-105).
+**I0.1/I0.2 popülasyon yolunda bağlı değil** (D-105) · ⭐ **`z` etkin olarak
+tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
+iddia yok, kovaryans drift'in **büyüklüğü** üzerine (D-137 §6).
 
 ## ⬜ 2.3 · Kilit
 Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).
@@ -160,7 +185,8 @@ tanımlı (alet null'ı / evren null'ı / etki null'ı / pozitif).
 | **GAP-3** — gen2 ilk olayda somatik ölçek boşluğu | gen2 yaşamları kısaldığı için payı büyüdü | ⏸ üçüncü ön-kayıt |
 | **GAP-18 / KTO** | `uniq_rejected` 100/94 ölçüldü, karar verilmedi | ⏸ üçüncü ön-kayıt |
 | **`fitness_class` `high` bandı boş** · **`landmark_energy` doygunluğu** | ön-kayıt kararı, kod değil | ⏸ üçüncü ön-kayıt |
-| **GAP-10** — `W_SEM=0.0` · negation sarmalayıcı · asimetrik spillover | üçü de L8'de sınır | ⏸ |
+| **GAP-10 / spillover** | ✅ **D-137: ölçüldü, skaler kalıyor, sınır ilan edildi.** Matris `k` sabit olduğu için skalerin üç kopyalı hâli olurdu (192/192) ve eşiği de geçirmiyordu (+%2.29) | ⏸ **yeniden açılır:** `k` ajanlar **arasında** değişken hale geldiği gün (D-137 §7) |
+| **GAP-10 / `W_SEM = 0.0`** · **negation sarmalayıcı** | ikisi de L8'de sınır, spillover'dan **bağımsız** ve daha ucuz; ölçülmediler | ⏸ üçüncü ön-kayıt |
 | **Belge borcu** — master ref §6/§19 consolidation anlatısı | mekanik değil, karar gerektiriyor | ⏸ |
 | **Magic number kalıntıları** — `time.sleep(10)`, bare `0.5`, `k: int = 5` | **Cursor'a uygun** | ⏸ |
 | **Yöntem makalesi** | Faz 1'in sonucundan bağımsız yazılabilir | ⏸ Yasin'in kararı |

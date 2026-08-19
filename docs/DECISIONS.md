@@ -9951,3 +9951,131 @@ sabit değişikliği hâlâ meşru; kilitlendikten sonra olmayacak (§2.10).
 - `z`'nin `resource` girdisi ağırlıkla **krizden** geliyor
   (`CRISIS_AFFECTED_DOMAIN` sabit) — eksen bloğu **bireysel kanalı** ölçer,
   kriz kanalını değil; ikisi `delta_profile`'da zaten ayrı.
+
+---
+
+## D-137 · 2026-08-19 · ✅ **KARAR (Yasin): GAP-10 / spillover — skaler KALIYOR, sınır ilan ediliyor** — ve önerilen düzeltmenin **vaat ettiğini yapmadığı ölçüldü**
+
+**Soru:** D-136 §6 GAP-10'u tetikledi. Skaler `CROSS_AXIS_SPILLOVER = 0.20`
+kalsın mı, domain-özgü asimetrik matris mi? **GPU yok, keşifsel ölçüm.**
+
+⚠ **Bu bir kapanış değil, gerekçeli bir ertelemedir** (Yasin: *"ileride
+değiştirip geliştirebileceğimiz bir nokta olarak bırakalım"*). Yeniden açılma
+tetiği §7'de yazılı.
+
+### 1. Kaynak bulundu — ve kaynaksız çıktı
+
+Matris gerçek bir brief'te duruyor:
+`docs/research/2026-08-05_daerm-trauma-magnitude.md`, somut 4×4 tablo
+(`S_res→unc = 0.35`, `S_soc→res = 0.10`, …). Brief bunlara *"empirically
+grounded coupling coefficients"* diyor ve **hiçbir atıf vermiyor**.
+
+⇒ **Literatür yolu açık değil.** D-065'in kuralı: kaynaksız sayı kullanılmaz.
+
+### 2. ⛔⛔ Ölçüm 1 — birincil eksen `k` **sabit**
+
+Matrisin hangi satırının uygulanacağını `_pe_target_load_domain`
+(`graph.py:823`) belirliyor. Ölçüldü (tohum 9301, 24 ajan, dört kol, iki
+nesil, **192 olay**):
+
+| `target_domain` | sayı |
+|---|---|
+| `resource_load` | **192 / 192** |
+
+⇒ **`S[k][·]` sabit bir satır.** Matris alınsaydı üç ikincil eksen
+`0.20·PE, 0.20·PE, 0.20·PE` yerine `0.30·PE, 0.20·PE, 0.35·PE` olurdu —
+**bir skaler yerine üç skaler**, ama üçü de hâlâ **aynı PE'nin ölçekli
+kopyası**. ⛔ **Boyut yine tek. Matris D-136'nın sorununu çözmüyor.**
+
+### 3. ⭐ `k` neden kilitli — mekanizma
+
+Doğumda üç yükün üçü de `0.0` (`state.py:25–27`) ⇒ berabere ⇒
+`dominant_load_domain` **"energy"** döndürüyor ⇒ energy `DAERM_LOAD_DOMAINS`'te
+**yok** ⇒ `delta_log` boş ⇒ fallback **`DAERM_DEFAULT_TARGET_DOMAIN =
+resource_load`**.
+
+Sonra kilit kendini besliyor: hedeflenen eksen `PE` alıyor, diğerleri
+`0.2·PE` ⇒ resource **beş kat** hızlı büyüyor ⇒ dominant kalıyor ⇒ hep o
+hedefleniyor. **Doğumdaki bir beraberlik-bozma kuralı ömür boyu birincil
+ekseni belirliyor.**
+
+### 4. Ölçüm 2 — matris **eşiği de** kurtarmıyor
+
+`M(PE) = α·max(PE_vec) + (1−α)·mean(PE_vec)`, `α = 0.70`. Hesaplandı:
+
+| | `M(PE)` |
+|---|---|
+| skaler 0.20 (bugün) | **0.8200 · PE** |
+| brief matrisi (`resource` satırı) | **0.8387 · PE** — değişim **+%2.29** |
+
+D-124'ün ölçtüğü tepe değerleri bu çarpanla:
+
+| bugün | matris altında | travma kapısı |
+|---|---|---|
+| 0.42 | 0.430 | 0.70 |
+| 0.52 | 0.532 | 0.70 |
+| 0.62 | **0.634** | 0.70 |
+
+⇒ **Hiçbiri kapıyı geçmiyor.** 0.62'yi 0.70'in üstüne taşımak için tekdüze
+spillover'ın **0.671** olması gerekirdi — ve §2.7 gereği o değer **etkiye
+bakılarak seçilemez**.
+
+### 5. Reddedilen iki alternatif
+
+| | ne | neden reddedildi |
+|---|---|---|
+| **A** | Brief'in matrisini şimdi al | 12 **kaynaksız** sabit · `magnitude` değiştiği için **fizik değişir** ⇒ eski bütün sayılar karşılaştırılamaz olur · ölçülen kazanç **≈ sıfır** (§2, §4) |
+| **B** | Önce `k` kilidini aç, sonra matris | ⚠ **D-135'in trilemması geri geliyor:** `k` yüklerden türüyor, **özdeş ajanların yükleri özdeş** ⇒ `k`'leri de özdeş olur. `k` bir yaşam **içinde** oynardı, ajanlar **arasında** oynamazdı — ve gereken varyans tam olarak ikincisi |
+
+### 6. ✅ Seçilen: **C — skaler kalıyor, sınır ilan ediliyor**
+
+**Sıfır yeni sabit, sıfır kod değişikliği, sıfır fizik değişikliği.**
+
+Ön-kayıta girecek sınır metni:
+
+> **L-x:** Uç nokta `z` dört alanlı bir drift vektörü olarak tanımlıdır,
+> ancak bu evrenin fiziğinde birincil eksen `k` bütün olaylarda
+> `resource_load`'a kilitlidir (192/192 ölçüldü, D-137) ve ikincil eksenler
+> `k`'nin sabit katıdır. Dolayısıyla `z` **etkin olarak tek boyutludur** ve
+> alan kimliği hakkında hiçbir iddiada bulunulamaz. Raporlanan kovaryans
+> drift'in **büyüklüğü** üzerinedir, **alanı** üzerine değil.
+
+**İddia neyden neye gerileşiyor:** *"yaşam ajanı **nerede** şekillendirdi"*
+→ *"yaşam ajanı **ne kadar** şekillendirdi"*. Alan kimliği düşüyor, şiddet
+kalıyor.
+
+**Geri çekilmeyenler:** iki kanallı kalıtım (kasa + LoRA) · birincil
+karşıtlık `lived ↔ shuffle` (D-131) · aksiyom. Tek değişkenli Price zaten
+standarttır ⇒ daralan şey ölçümün **meşruiyeti** değil, iddianın
+**zenginliği**.
+
+### 7. ⚠ Yeniden açılma tetiği — bu madde kapanmadı
+
+> **GAP-10 / spillover, `k` ajanlar arasında değişken hale geldiği gün
+> yeniden açılır.** Matrisin bütün değeri `S[k][·]`'nin satır satır
+> farklılaşmasına bağlı; `k` sabit olduğu sürece matris skalerin üç kopyalı
+> hâlidir. Bir tasarım `k`'yi serbest bırakırsa (⚠ §5-B'nin trilemması
+> aşılarak), bu kayıt yeniden okunur ve karar **yeniden verilir**.
+
+### 8. ⛔ C'nin **çözmediği** şey — bilerek seçildi
+
+C **boyut** sorununu ilan ediyor, **eşik** sorununu çözmüyor. C2'de
+`Var(z) = 0` çıkan 14/18 geçişin sebebi boyut değil **travma kapısıydı**
+(tepeler 0.42–0.62, kapı 0.70). ⇒ C uç noktayı **ölçülebilir yapmıyor**,
+yalnız neden ölçülemediğini dürüstçe yazıyor.
+
+⚠ **Bu C'ye özgü bir eksiklik değil:** A ve B de eşiği geçirmiyordu (§4).
+Üçünün ortak açığı. ⇒ **Eşik, kuyruğa ayrı bir madde olarak eklendi (2.0)**
+ve üçüncü ön-kaydın konusudur; sabit değişikliği ister ⇒ §2.7 geçerli.
+
+### 9. Bu ölçümün sınırları
+
+- **Keşifsel, ön-kayıtlı değil.** Kararlar **stub** (LLM yok), PE `fallback`
+  kanalından **1.000** sabit, tek tohum (9301).
+- ⇒ `k = resource_load` sonucu **bu yapılandırmada** ölçüldü. §3'ün kilit
+  argümanı **yapısaldır** (`PE` vs `0.2·PE` her `PE > 0` için geçerli), ama
+  **gerçek koşumda doğrulanmadı**.
+- ⚠ Ve bugünkü aletle **doğrulanamaz**: `k` hiçbir yere yazılmıyor.
+  D-136 `axis_deltas`'ı ekledi, ama o **sonucu** kaydeder, `k`'yi değil.
+  ⇒ Kuyruğa **0.2b** olarak eklendi (saf raporlama, ~3 satır).
+- §4'ün aritmetiği **kapalı formdur**, koşuma bağlı değil.
