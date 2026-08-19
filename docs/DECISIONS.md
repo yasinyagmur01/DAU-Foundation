@@ -11248,3 +11248,120 @@ ister.
   ölçüm değil (K4).
 - §3-c'nin *"0.70 = 0.70"* gözlemi **bir bağ değil, bir tesadüf olabilir**;
   doğrulanmadı.
+
+---
+
+## D-151 · 2026-08-19 · ⛔ **c yolu ÇALIŞMIYOR** — ve asıl bulgu: bu tespit **sekiz oturum önce yapılmış, kapıya çevrilmemiş**
+
+**Yetki:** Yasin *"onaylıyorum"* (D-150 §3'ün **c** yolunu araştır).
+**GPU yok, salt aritmetik ve arşiv.**
+
+### 1. ⛔⛔ Önce süreç bulgusu — teknik bulgudan ağır
+
+D-150'de *"kök sebep bulundu"* dedim. **Yanlış: yeniden bulundu.**
+`DECISIONS.md` D-086'nın kaydında birebir yazıyor:
+
+> **"⛔ Bulgu 2 — D-086 o tek yolu kapattı (benim açtığım hasar)"**
+> `FITNESS_LOW_THRESHOLD = 0.35` altında: eski `F_agent` **12/12** →
+> yeni **1/12**. *"Kanıt aritmetiktir."*
+
+⇒ Bulgu **doğruydu, aritmetiğiyle yazılmıştı, ve orada kaldı.** Kuyruğa
+girmedi, kapıya çevrilmedi, ön-kayıta sınır olmadı. Sekiz oturum sonra C2
+koşuldu, **`run_quality = clean`** raporladı, ve **144 varisin 0'ı** somatik
+ölçek aldı.
+
+⭐ **I5.4 bağlı olsaydı ilk koşumda yakalanırdı.** ⇒ Ders bir sabit hakkında
+değil: **kayda geçen bir kusur, bir kapıya bağlanmadıkça kayıp sayılır.**
+Bu, K1–K5'e adaylık eden bir kural (§7).
+
+### 2. c yolu — iki aday sınandı, ikisi de düştü
+
+**Aday 1 — yapısal taban.** Ölüm `METABOLIC_GRACE_EVENTS = 10`'a kadar askıda
+⇒ her yaşam en az 10 olay yaşar ⇒
+`F_agent ≥ FITNESS_W_SURVIVAL × grace / bütçe`:
+
+| bütçe | taban | eşik 0.35 |
+|---|---|---|
+| 30 (deney) | **0.100** | altında ⇒ bant **ulaşılabilir** |
+| 20 | 0.150 | altında |
+| 10 | 0.300 | altında |
+
+Taban eşiği ancak **bütçe < 8.57** olsaydı aşardı. ⇒ **Eşitsizlik bağlamıyor.**
+
+**Aday 2 — eşikler birbirinden türemiş mi?**
+
+| ilişki | sonuç |
+|---|---|
+| `FITNESS_HIGH = 0.70` vs `DELTA_DEEP = 0.70` | **aynı** |
+| `FITNESS_LOW = 0.35` vs `DELTA_NORMAL = 0.40` | farklı |
+| `FITNESS_LOW = 0.35` vs `FITNESS_HIGH / 2` | ⭐ **tam eşit** |
+
+⇒ ⭐ **`0.35` keyfi bir sayı değil: üst eşiğin tam yarısı.** Yani **zaten
+türetilmiş**. Onu değiştirmek, var olan bir ilişkiyi **bozmak** olurdu — ve
+yerine konacak değer ancak **dağılıma bakılarak** seçilebilirdi (§2.7).
+
+⇒ ⛔ **c yolu kapandı.** Hiçbir sabit-eşitsizliği 0.35'i çürütmüyor ya da
+yerine bir değer vermiyor.
+
+### 3. ⇒ Sorun sabitte değil, **fizikte**
+
+Bant **ilkece ulaşılabilir** (taban 0.10 < 0.35) ama **hiç ulaşılmıyor**
+(C2 min 0.3919). ⇒ Kusur eşikte değil: **bu evren düşük-uygunluklu ajan
+üretmiyor.**
+
+⭐ **Ve bu, oturumun bütün bulgularının aynı deseni:**
+
+| mekanizma | durum |
+|---|---|
+| `z` (travma eşiği) | %25 hücrede tanımlı |
+| `fitness_class` | **216/216 `normal`** — üç bandın ikisi boş |
+| `null` kolu | donmuş klon (D-129) |
+| `z`'nin boyutu | dörtte bir (D-137) |
+
+⇒ **Bu evren her şeyi ortaya sıkıştırıyor.** Uç noktalar uçlarda tanımlı,
+evren uç üretmiyor.
+
+### 4. ⇒ Geriye **b** kalıyor, ve gerekçesi güçlendi
+
+**b: bantları göreli yap** (hücre içi sıra), mutlak eşik yerine.
+
+⭐ **Bu §2.7'yi ihlal etmiyor, çünkü bir DEĞER seçmiyor** — kuralı
+değiştiriyor, ve yerine konan referans **popülasyonun kendisi**.
+
+⭐ **Ve tasarımla iç tutarlılık argümanı var:** bu deneyin seçilimi **zaten
+göreli** — turnuva `k = 2` iki ajanı **birbirine** karşı yarıştırıyor
+(P2/D-094). Tek mutlak eşik **`fitness_class`**. ⇒ Göreli yapmak bir
+uyarlama değil, **var olan mantığın tamamlanması**.
+
+⚠ **Bedeli açıkça:** fizik değişir ⇒ C2 ile karşılaştırılamaz (zaten öyle) ·
+kendi doğrulaması gerekir · ve *"düşük bant"* artık **her hücrede dolu**
+olur, ki bu da bir tasarım iddiasıdır (her nesilde birileri *"düşük"* sayılır).
+
+### 5. ⛔ Karar Yasin'in — üç seçenek, biri yeni
+
+| | ne | not |
+|---|---|---|
+| **a** | Yeni eşik değeri | ⛔ **§2.7** + var olan `high/2` ilişkisini bozar |
+| **b** ⭐ | Bantları **göreli** yap | Yeni sabit **yok**, tasarımla tutarlı. **Öneri** |
+| **d** | **Sınır ilan et, dokunma** | Somatik kanal *"bu evrende ateşlenmiyor"* diye yazılır; iddia **engram kanalıyla** sınırlanır |
+
+⚠ **d, D-149'da reddettiğiniz B seçeneğidir** — ama o zaman kökün **stranded
+bir sabit** olduğunu bilmiyorduk. Şimdi biliyoruz ki sabit **türetilmiş** ve
+sorun **fizikte** ⇒ d'nin gerekçesi eskisinden **güçlü**.
+
+### 6. Sınırlar
+
+- Aday 1'in tabanı **yalnız hayatta kalma teriminden**; enerji ve havuz
+  terimlerinin yapısal tabanı **sabitlerden türetilemedi** (dinamiğe bağlı).
+- *"0.35 = 0.70/2"* bir **gözlemdir**; `da6880b`'nin niyetini gösteren bir
+  yorum ya da brief **bulunamadı** ⇒ ilişki **gerçek ama belgelenmemiş**.
+- §3'ün tablosu bu oturumun ölçümlerinden derlendi, hepsi **tek koşumdan**.
+
+### 7. ⭐ K1–K5'e aday altıncı kural
+
+> **K6 — kayda geçen kusur, bir kapıya bağlanmadıkça kapanmamıştır.**
+> Bir D-kaydı bir mekanizmanın çalışmadığını ölçtüyse, aynı turda ya bir
+> preflight kapısına ya da kuyruğa **bitti-ölçütüyle** bağlanır. Aksi hâlde
+> *"biliniyordu"* ile *"bilinmiyordu"* arasında **pratik fark kalmaz**.
+> **Ölçülen bedel:** D-086'nın Bulgu 2'si → sekiz oturum → C2'nin
+> `clean` raporu → 144 variste 0 somatik kalıtım.
