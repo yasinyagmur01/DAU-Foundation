@@ -2449,6 +2449,7 @@ def test_graph_writes_the_owner_onto_every_event_row() -> None:
         delta_class="SHALLOW",
         affected_domain="energy",
         axis_deltas={"energy": 0.1, "resource": 0.0, "social": 0.0, "uncertainty": 0.0},
+        target_domain="resource_load",
     )
 
     for rows in (

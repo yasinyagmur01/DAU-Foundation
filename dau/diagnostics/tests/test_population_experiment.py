@@ -2193,3 +2193,168 @@ def test_the_axis_report_reaches_the_results_file(monkeypatch) -> None:
         # A live run must have produced instrumented rows, or the block is a
         # well-formed shell reporting nothing (the failure K3 exists for).
         assert agent["delta_profile"]["axes"]["n_events"] > 0
+
+
+# ---------------------------------------------------------------------------
+# D-138 — `k` (queue 0.2b) and π (queue 0.3), both pure reporting
+# ---------------------------------------------------------------------------
+
+
+def test_primary_axis_counts_show_a_never_targeted_axis_as_a_zero() -> None:
+    """⭐ D-137's trigger: "`k` becomes variable" must be readable as a number.
+
+    A missing key would read as "no data"; an explicit 0 reads as "measured,
+    never happened". Those call for opposite decisions about reopening GAP-10.
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    rows = [
+        {
+            "agent_id": "a", "event_counter": 1, "delta_magnitude": 0.2,
+            "affected_domain": "energy", "target_domain": "resource_load",
+            "axis_deltas": {
+                "energy": 0.4, "resource": 0.1, "social": 0.02, "uncertainty": 0.01
+            },
+        },
+        {
+            "agent_id": "a", "event_counter": 2, "delta_magnitude": 0.3,
+            "affected_domain": "energy", "target_domain": "social_load",
+            "axis_deltas": {
+                "energy": 0.5, "resource": 0.1, "social": 0.30, "uncertainty": 0.01
+            },
+        },
+    ]
+    primary = delta_profile("a", rows, NO_CRISIS)["axes"]["primary_axis"]
+
+    assert primary["resource_load"] == 1
+    assert primary["social_load"] == 1
+    # Never aimed at — present, and zero.
+    assert primary["uncertainty_load"] == 0
+    # `energy` is not a target axis at all; it must not appear as a phantom 0.
+    assert "energy" not in primary
+
+
+def test_primary_axis_is_not_the_same_field_as_the_argmax_winner() -> None:
+    """§2.8 — two questions, two fields; conflating them would hide D-137.
+
+    Every row here was AIMED at resource and every row MOVED energy most. A
+    reporter that read one field for both would say `k` varies (it does not)
+    or that energy is a target (it cannot be).
+    """
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    rows = [
+        {
+            "agent_id": "a", "event_counter": n, "delta_magnitude": 0.2,
+            "affected_domain": "energy", "target_domain": "resource_load",
+            "axis_deltas": {
+                "energy": 0.9, "resource": 0.1, "social": 0.02, "uncertainty": 0.01
+            },
+        }
+        for n in (1, 2, 3)
+    ]
+    axes = delta_profile("a", rows, NO_CRISIS)["axes"]
+
+    assert axes["primary_axis"]["resource_load"] == 3
+    assert axes["wins"]["energy"] == 3
+    assert axes["wins"]["resource"] == 0
+
+
+def test_primary_axis_skips_rows_that_predate_the_field() -> None:
+    """"Not recorded" is not "never targeted" (§2.9)."""
+
+    from dau.diagnostics.run_population_experiment import delta_profile
+
+    legacy = [{"agent_id": "a", "event_counter": 1, "delta_magnitude": 0.5}]
+    primary = delta_profile("a", legacy, NO_CRISIS)["axes"]["primary_axis"]
+
+    assert primary == {"resource_load": 0, "social_load": 0, "uncertainty_load": 0}
+
+
+def test_precision_profile_separates_a_frozen_pi_from_a_moving_one() -> None:
+    """⭐ L13 made falsifiable: "Precision-PE is idle" had no number to fail on.
+
+    π is computed every event and written to the PE row, but no result file
+    carried it (D-130 §10), so the claim could be neither confirmed nor
+    refuted. Two lives that differ in exactly the way L13 is about must now
+    look different in the artefact.
+    """
+
+    from dau.diagnostics.run_population_experiment import _precision_profile
+
+    frozen = [
+        {"agent_id": "a", "prediction_error": 1.0, "precision_weight": 1.0}
+        for _ in range(4)
+    ]
+    moving = [
+        {"agent_id": "a", "prediction_error": 0.4, "precision_weight": w}
+        for w in (0.5, 0.8, 1.2, 1.6)
+    ]
+
+    assert _precision_profile(frozen)["n_distinct"] == 1
+    assert _precision_profile(frozen)["min"] == _precision_profile(frozen)["max"]
+    assert _precision_profile(moving)["n_distinct"] == 4
+    assert _precision_profile(moving)["min"] == pytest.approx(0.5)
+    assert _precision_profile(moving)["max"] == pytest.approx(1.6)
+    assert _precision_profile(moving)["mean"] == pytest.approx(1.025)
+
+
+def test_precision_profile_reports_pe_w_saturation_beside_pi() -> None:
+    """L13's other half: π can move while every weighted PE still pins at 1.0.
+
+    Reported through the protocol-C audit helper rather than recomputed, so
+    the two runners cannot disagree about what "saturated" means (§2.8).
+    """
+
+    from dau.diagnostics.run_population_experiment import _precision_profile
+
+    rows = [
+        {"agent_id": "a", "prediction_error": 1.0, "precision_weight": 0.5},
+        {"agent_id": "a", "prediction_error": 1.0, "precision_weight": 0.9},
+        {"agent_id": "a", "prediction_error": 0.3, "precision_weight": 1.4},
+        {"agent_id": "a", "prediction_error": 0.2, "precision_weight": 1.8},
+    ]
+    profile = _precision_profile(rows)
+
+    assert profile["n_distinct"] == 4, "pi looks alive"
+    assert profile["n_pe_w_saturated"] == 2
+    assert profile["pe_w_saturation_rate"] == pytest.approx(0.5)
+
+
+def test_precision_profile_of_a_life_with_no_events_is_not_zero() -> None:
+    """None, not 0.0 — a mean of 0.0 would be the most alarming possible π."""
+
+    from dau.diagnostics.run_population_experiment import _precision_profile
+
+    empty = _precision_profile([])
+
+    assert empty["n_events"] == 0
+    assert empty["min"] is None and empty["max"] is None and empty["mean"] is None
+    assert empty["pe_w_saturation_rate"] is None
+
+
+def test_k_and_precision_reach_the_results_file_per_agent(monkeypatch) -> None:
+    """K2 + K3 — two agents, and through the real runner, not the helpers.
+
+    K2 because both blocks aggregate over agents: an unfiltered version reports
+    the population while claiming to report one agent, and with one agent in
+    the fixture that bug is invisible.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    agents = results["arms"][0]["generations"][0]["agents"]
+    assert len(agents) == 2, "K2 needs two agents in the dimension being summed"
+    for agent in agents:
+        primary = agent["delta_profile"]["axes"]["primary_axis"]
+        assert sum(primary.values()) == agent["delta_profile"]["axes"]["n_events"]
+        assert agent["delta_profile"]["axes"]["n_events"] == agent["events_lived"]
+        precision = agent["precision"]
+        assert precision["n_events"] == agent["events_lived"], "another agent leaked in"
+        assert precision["min"] is not None
+        assert precision["n_distinct"] >= 1

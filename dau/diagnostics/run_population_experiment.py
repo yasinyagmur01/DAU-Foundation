@@ -110,6 +110,7 @@ from dau.diagnostics.run_protocol_c_prime import (
 )
 from dau.diagnostics.run_protocol_c_prime import (  # noqa: E402
     _build_lived_examples,
+    _precision_audit_from_pe_rows,
     _train_adapter,
 )
 from dau.diagnostics.tool_identity import (
@@ -193,11 +194,19 @@ CONTROL_TRAIT_KEY: str = "energy_mean_over_life"
 # "nothing moved" about a universe where three axes moved and lost.
 PE_ROW_AFFECTED_DOMAIN_KEY: str = "affected_domain"
 PE_ROW_AXIS_DELTAS_KEY: str = "axis_deltas"
+# D-137's reopening trigger lives on this key: the spillover decision rests on
+# `k` being constant, and until now `k` was measurable only on a stub run.
+PE_ROW_TARGET_DOMAIN_KEY: str = "target_domain"
 # The four axes, taken from the universe's own domain table rather than
 # retyped: a literal list here would keep reporting four axes after a fifth was
 # added to InternalState, and the endpoint would lose a dimension in silence —
 # which is the exact failure D-136 is about.
 AXIS_ORDER: tuple[str, ...] = tuple(DOMAIN_ATTR)
+# The axes a shock can be AIMED at. A different tuple from AXIS_ORDER on
+# purpose: `energy` is an axis the state can move on but never one the update
+# targets, and flattening the two would report an impossible zero as if it
+# were an observation. Taken from graph rather than retyped (§2.8).
+TARGET_AXIS_ORDER: tuple[str, ...] = tuple(graph_mod.DAERM_LOAD_DOMAINS)
 # P0-① as decided (2026-08-17): sequential service in a rotating order. The
 # D-103 pilot measured what the simultaneous, proportional version does — eight
 # founders came out bit-identical, z had zero variance, and Cov(w, z) was zero
@@ -510,6 +519,10 @@ class AgentGenerationRow:
     threat_marker: float
     # D-112. What the endpoint's own trigger condition saw during this life.
     delta_profile: dict[str, Any] = field(default_factory=dict)
+    # D-138 / L13. Kept beside delta_profile rather than inside it: π weights
+    # the PE that FEEDS the magnitude, so folding it into a magnitude profile
+    # would read as if it were another channel of the same quantity.
+    precision: dict[str, Any] = field(default_factory=dict)
 
 
 def founder_id(arm: str, seed: int, index: int) -> str:
@@ -593,6 +606,82 @@ def _magnitude_summary(magnitudes: list[float]) -> dict[str, Any]:
     }
 
 
+def _primary_axis_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """How often each axis was the one the shock was AIMED at — D-137's `k`.
+
+    ⚠ Not the same question as ``wins``. ``wins`` counts where the state ended
+    up moving most; this counts where the update was pointed. They come apart
+    because `k` gets the full PE and every other axis gets a fixed fraction of
+    it, so `k` decides the SHAPE of the perturbation while the argmax only
+    reports its outcome — and the entire GAP-10 decision (D-137) rests on `k`
+    being constant.
+
+    Every known target axis is present even at zero, so "this axis was never
+    aimed at" is visible as a number rather than as a missing key. An
+    unexpected value is counted under its own name instead of dropped: if the
+    universe ever starts aiming somewhere new, that must show up here, not
+    disappear into a filter (§2.9).
+
+    Rows without the key are skipped — they predate the field, and "not
+    recorded" is not "never targeted".
+    """
+
+    counts: dict[str, int] = {axis: 0 for axis in TARGET_AXIS_ORDER}
+    for row in rows:
+        target = row.get(PE_ROW_TARGET_DOMAIN_KEY)
+        if target is None:
+            continue
+        key = str(target)
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def _precision_profile(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """π's spread over one life — L13's "Precision-PE is idle", made falsifiable.
+
+    ⚠ The claim has been carried since L13 and could be neither confirmed nor
+    refuted from any result file: `precision_weight` is computed per event and
+    written to the PE row, but the population run's agent row had no precision
+    field at all (D-130 §10), so the quantity left no trace in the artefact.
+    A claim that cannot fail is not a finding.
+
+    The saturation/distinct counts come from ``_precision_audit_from_pe_rows``
+    — the same helper the protocol-C runner audits with — rather than from a
+    second implementation here. Two functions answering "is π moving" in two
+    places is how the reporting/measuring pairs in §2.8 drifted apart four
+    times. Only min/max/mean are derived here, off the π list that helper
+    returns.
+
+    ⛔ Reporting only, and read as estimability, never as effect (L9): whether
+    π varies at all is a different question from whether it varies BY ARM.
+    """
+
+    saturation_rate, n_distinct, pi_values, n_events, n_saturated = (
+        _precision_audit_from_pe_rows(rows)
+    )
+    if not rows:
+        return {
+            "n_events": 0,
+            "n_distinct": 0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "pe_w_saturation_rate": None,
+            "n_pe_w_saturated": 0,
+        }
+    return {
+        "n_events": int(n_events),
+        "n_distinct": int(n_distinct),
+        "min": min(pi_values),
+        "max": max(pi_values),
+        "mean": sum(pi_values) / len(pi_values),
+        # PE_w saturation rides along because it is the other half of L13: π
+        # can look alive while every weighted PE still pins at the ceiling.
+        "pe_w_saturation_rate": float(saturation_rate),
+        "n_pe_w_saturated": int(n_saturated),
+    }
+
+
 def _axis_profile(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Per-axis swing sizes beside the axis that won the tag — D-136.
 
@@ -633,6 +722,7 @@ def _axis_profile(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "n_events": len(instrumented),
         "wins": wins,
+        "primary_axis": _primary_axis_counts(rows),
         "deltas": {
             axis: {
                 "n_events": len(values),
@@ -803,6 +893,9 @@ def score_generation(
                     self_model.emotional_weight.somatic_markers.get(MARKER_THREAT, 0.0)
                 ),
                 delta_profile=delta_profile(agent_id, pe_rows, pool_rows),
+                precision=_precision_profile(
+                    graph_mod.rows_for_agent(pe_rows, agent_id)
+                ),
             )
         )
     return rows
@@ -1205,6 +1298,7 @@ def _run_arm_generations(
                         "events_lived": row.events_lived,
                         "landmark": row.landmark,
                         "delta_profile": row.delta_profile,
+                        "precision": row.precision,
                         # Whether this agent's events could reach the vault at
                         # all. An unbound heir writes no engrams, so its own
                         # children inherit nothing and the transmission term

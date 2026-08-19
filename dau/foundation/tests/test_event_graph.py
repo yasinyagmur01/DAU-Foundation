@@ -558,3 +558,41 @@ def test_a_lived_pe_row_carries_the_tag_and_the_four_swings(monkeypatch) -> None
         assert row["affected_domain"] == max(
             row["axis_deltas"], key=row["axis_deltas"].get
         )
+
+
+def test_a_lived_pe_row_carries_the_axis_the_shock_was_aimed_at(monkeypatch) -> None:
+    """K3 — D-137's reopening trigger has to be visible from a real run.
+
+    The whole GAP-10 decision rests on `k` being constant, and `k` was measured
+    on a STUB run because no run recorded it anywhere. A record whose central
+    claim cannot be rechecked by the next run is a claim that cannot fail.
+
+    The row's `target_domain` must be an axis the update can actually aim at —
+    `energy` is a state axis but never a DAERM target, and a report that
+    allowed it would be describing a universe that does not exist.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(graph_mod, "MAX_EVENTS", LIFE_EVENTS)
+    graph_mod.reset_pe_event_log()
+    graph_mod.reset_pool_event_log()
+    graph_mod.reset_body_event_log()
+
+    run_population(
+        EnvironmentState(pool=POOL_START),
+        [_birth_state()],
+        build_event_graph(),
+        max_rounds=ROUND_GUARD,
+    )
+    rows = graph_mod.get_pe_event_log()
+
+    assert rows, "the life produced no PE row at all"
+    for row in rows:
+        assert row["target_domain"] in graph_mod.DAERM_LOAD_DOMAINS
+    # ⭐ And it is NOT the same field as the tag: `k` is where the shock was
+    # aimed, `affected_domain` is where the state moved most. A row that made
+    # them equal by construction would hide exactly the difference D-137 turns
+    # on. Measured here: the tag is `energy`, which `k` can never be.
+    assert {row["target_domain"] for row in rows} != {
+        row["affected_domain"] for row in rows
+    }

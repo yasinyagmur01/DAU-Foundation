@@ -370,6 +370,7 @@ def _record_pe_event(
     delta_class: str,
     affected_domain: str,
     axis_deltas: dict[str, float],
+    target_domain: str,
 ) -> None:
     """Append one event-level PE row to the overnight-audit buffer.
 
@@ -382,6 +383,17 @@ def _record_pe_event(
     dimension in C2 (`social` and `uncertainty` never appeared in 216 lives,
     PROVENANCE_AUDIT §9), and without the losing magnitudes there is no way to
     tell "that axis never moved" from "it moved, and lost the argmax".
+
+    ``target_domain`` is the axis the shock was AIMED at — the `k` of
+    ``_apply_prediction_error``, which gets the full PE while every other axis
+    gets ``PE * CROSS_AXIS_SPILLOVER``. It is not the same thing as
+    ``affected_domain``: one is where the event was pointed, the other is where
+    the state ended up moving most, and D-137 turns on the difference. That
+    record measured `k` constant at ``resource_load`` in 192 of 192 events and
+    rested the whole spillover decision on it — but measured it on a STUB run,
+    because nothing in a real run recorded `k` anywhere. This closes that: the
+    reopening trigger D-137 declared ("`k` becomes variable between agents")
+    is now something a run can actually show.
 
     Recording only — ``_primary_affected_domain`` still decides the tag, and
     the numbers written here are the ones it decided from, never re-derived
@@ -401,6 +413,7 @@ def _record_pe_event(
             "axis_deltas": {
                 str(axis): float(value) for axis, value in axis_deltas.items()
             },
+            "target_domain": str(target_domain),
         }
     )
 
@@ -1236,6 +1249,10 @@ def evaluator_node(state: DAUAgentState) -> dict[str, Any]:
         delta_class=_audit_delta_class(record),
         affected_domain=str(record.affected_domain),
         axis_deltas={str(axis): float(value) for axis, value in axis_deltas.items()},
+        # The same object _apply_prediction_error was handed, not a second
+        # call to _pe_target_load_domain: the reporter must show what the
+        # update actually used (§2.8).
+        target_domain=str(target_domain),
     )
 
     current_drift = state.drift_state
