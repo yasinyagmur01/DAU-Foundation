@@ -10695,3 +10695,129 @@ farklı alanlar seçilseydi iki eş-birincil **farklı şeyler** hakkında olurd
   tutmadı**.
 - L3'ün `192/192` sayısı **karar-stub'lı** koşumdan; gerçek koşumda `k` artık
   kaydediliyor (D-138) ⇒ **doğrulanabilir**.
+
+---
+
+## D-145 · 2026-08-19 · ⛔⛔ **KİLİT ÖNCESİ DENETİM: taslak KİLİTLENEMEZ** — birincil uç nokta yapısal olarak test edilemiyor
+
+**Yetki:** Yasin, 2026-08-19: *"daha önceki runları, brieflerimizi ve
+brieflerde kullandığımız kısımları kontrol et… daha önce yaptığımız hatalara
+düşmeyelim."* ⇒ Kilit **durduruldu**.
+
+⚠ **Denetim, D-144'ün taslağında kendi yazdığım üç kusuru buldu.** Kilit tek
+atışlıktır; bunlar kilitten sonra bulunsaydı **24 GPU saati** boşa giderdi.
+
+### 1. Geçen kontroller
+
+| | kontrol | sonuç |
+|---|---|---|
+| ✅ | Tohum bloğu 9916+ (I0.7) | temiz — diskteki en yüksek **9915**, 650 adapter dizini tarandı |
+| ✅ | Maliyet tabanı | C2 = **3 tohum × 3 kol**, `run_quality=clean` ⇒ ~2 sa/tohum doğrulandı |
+| ✅ | `P_active` **kod değişikliği istemiyor** | `selection_estimable` zaten sonuç dosyasında |
+| ✅ | Dış `timeout` yok (D-126) · `PYTORCH_CUDA_ALLOC_CONF` elle verilmiyor (D-116) · CLI bayrakları | taslakta doğru |
+
+### 2. ⛔ Kusur 1 — seçtiğim birincil alan neredeyse hiç yazılmıyor
+
+D-144 §4'te birincil alanı **`energy`** ilan etmiştim, gerekçesi mekanikti.
+**C2'nin gerçek çıktısı okundu** (15 Price satırı, ⚠ **kol karşıtlığı
+hesaplanmadı** — L9):
+
+| alan | yazıldı | tanımlı |
+|---|---|---|
+| `energy` | **4 / 15** | **1** |
+| `resource` | 12 / 15 | 3 |
+
+⇒ **`energy` birincili C2'de 15 hücrenin 1'inde ölçülebilirdi.**
+
+### 3. ⛔⛔ Kusur 2 — hangi alanın yazıldığı **kola değil TOHUMA** bağlı
+
+| tohum | kriz olayı / nesil | `z` alanları |
+|---|---|---|
+| 9911 | 75 · 32 · 85 | `resource` (+1 `energy`) |
+| **9912** | **0 · 0 · 0** | **`energy`** |
+| 9913 | 120 · 96 · 72 | `resource` |
+
+⇒ ⭐ **Mekanizma kesin: kriz olan tohumda `z` `resource`'a, kriz olmayan
+tohumda `energy`'ye yazılıyor.** Kriz `CRISIS_AFFECTED_DOMAIN`'e sabit
+(L14), ve krizin olup olmaması **nişin, yani tohumun** özelliği.
+
+⇒ ⛔ **Sabit bir birincil alan, tohumların bir kısmını TAMAMEN dışarı atar.**
+`energy` seçilirse kriz tohumları, `resource` seçilirse kriz-olmayan tohumlar
+düşer — ve `resource` ayrıca **confounded** (L14).
+
+⚠ **Bunu D-144'te göremezdim çünkü bakmamıştım.** `selection_estimable`'ın
+**alan başına** yazıldığını fark edip alanı ilan ettim, ama **hangi alanın
+hangi koşulda yazıldığını** ölçmedim. §2.2'nin ihlali: belgeye güvendim,
+dosyaya bakmadım.
+
+### 4. ⛔⛔ Kusur 3 — `ΔP_active` üzerinde Wilcoxon **yapısal olarak çalışmıyor**
+
+`P_active ∈ {0, ½, 1}` ve çoğu tohumda iki kol da **aynı** ⇒ `ΔP_active = 0`.
+**Wilcoxon sıfır farkları ATAR** ⇒ etkin N = sıfır-olmayan çift sayısı.
+
+Reddedebilmenin **matematiksel** alt sınırı (çift yönlü):
+
+| sıfır-olmayan çift | mümkün en küçük p | α=0.05 | **α=0.025 (Holm)** |
+|---|---|---|---|
+| 6 | 0.0312 | EVET | **hayır** |
+| **7** | 0.0156 | EVET | **EVET** |
+
+C2'nin desenine göre (alan tohuma bağlı) tohumların ~⅓'ü bilgi taşıyor:
+
+| S | E[sıfır-olmayan] | **P(n ≥ 7)** | GPU saat |
+|---|---|---|---|
+| **12** (önerim) | 4.0 | ⛔ **0.066** | 24 |
+| 18 | 6.0 | 0.391 | 36 |
+| 24 | 8.0 | 0.737 | 48 |
+| 30 | 10.0 | 0.916 | 60 |
+
+⇒ ⛔⛔ **S=12'de testin reddedebilme ihtimali %6.6.** Bu bir **güç** sorunu
+değil — test **yapısal olarak** sonuca ulaşamıyor. §7'nin MDE tablosu
+`d_z = 1.032` diyordu ve **yanıltıcıydı**: o tablo sürekli, bağlaşımsız bir
+değişken varsayıyor; `ΔP_active` üç değerli ve **sıfır-şişkin**.
+
+⇒ ⚠ **K4'ün yeni bir biçimi:** *sayıyı okudum ama **dağılımının biçimini**
+sormadım.*
+
+### 5. ⛔ Kusur 4 — bütün bir kol-tohumun **hiç** Price satırı olmayabilir
+
+`null` s9912: **0/2** geçişte Price satırı var. Taslağım *"alan anahtarı
+yoksa hücre inaktif"* diyordu ama **satırın kendisi yoksa** ne olacağını
+söylemiyordu. Üçüncü bir kategori: **hücre hiç oluşmadı**.
+
+### 6. ⭐ Çözüm kayıtta zaten varmış — **P7-b / D-096**
+
+`PREREGISTRATION_2.md` §1: *"ilk koşum **kestirimdir, hipotez testi
+değildir**"* (P7-b / D-096). C2 o damgayla koştu.
+
+⇒ **Aynı damga burada da doğru cevap.** Bu bütçede `Cov(w,z)` üzerinde
+hipotez testi **yapılamaz**; yapılabilecek şey **kestirim**:
+`P_active` ve `ΔCov` **güven aralıklarıyla** raporlanır, **p-değeri yok,
+α yok, Holm yok**, ve `S` **kesinlik** için seçilir, güç için değil.
+
+⚠ Bu Lakens'le **çelişmiyor**: bütçe-kısıtlı gerekçelendirme + *"neyi
+kestirebiliriz"* ilanı aynı çerçevenin parçası.
+
+### 7. Yasin'in önündeki seçim — ⛔ kilit bunlardan biri seçilmeden atılmaz
+
+| | seçenek | maliyet | ne verir |
+|---|---|---|---|
+| **A** ⭐ | **Kestirim koşumu**, S=12 | 24 sa (16–36) | `P_active` + `ΔCov` **güven aralıklarıyla**; hipotez testi **yok**, ve bu **ilan edilir** |
+| **B** | Test koşumu, S ≥ 30 | **60 sa (40–91)** | Reddedebilme ihtimali %92 — ⚠ ama gerçek güç MDE tablosundan **düşük** (sıfır şişmesi) |
+| **C** | Uç noktayı düzelt | — | ⛔ **§2.7 + D-143**: eşik/alan artık **etkiye bakılarak** seçilemez |
+
+⭐ **Claude Code'un önerisi: A.** Gerekçe: B'nin 60 saati, **hâlâ** üç değerli
+ve sıfır-şişkin bir uç noktaya harcanıyor; C yasak. A ise C2'nin dersini
+tekrarlamak yerine **ölçüyor** ve hiçbir şey vaat etmiyor.
+
+⚠ **A'nın bedeli açıkça:** üst üste **üçüncü** kestirim koşumu olur ve
+*"anlamlı"* kelimesi yine kullanılamaz.
+
+### 8. Sınırlar
+
+- §2–§5'in sayıları C2'nin **tek** koşumundan (3 tohum) ⇒ *"tohumların ⅓'ü"*
+  oranı **3 tohumluk bir gözlem**, kestirim değil.
+- ⚠ **Kol karşıtlığı hiçbir yerde hesaplanmadı** (L9) — okunan yalnız
+  *"uç nokta canlı mı"*.
+- Taslak (`PREREGISTRATION_3.md`) **kilitlenmedi** ve §3/§4/§7 bu kayıttan
+  sonra **yeniden yazılacak**.

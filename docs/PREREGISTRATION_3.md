@@ -1,13 +1,26 @@
 # Popülasyon C‴ — Üçüncü Ön-Kayıt
 
-**Durum: 📝 TASLAK · 2026-08-19 · kuyruk 2.2 · ⛔ KİLİTLİ DEĞİL**
+**Durum: 📝 TASLAK · 2026-08-19 · kuyruk 2.2 · ⛔⛔ KİLİTLENEMEZ — D-145**
 
-⚠ **Bu belge henüz bağlayıcı değildir.** Kilit (kuyruk 2.3) atılana kadar her
-madde tartışmaya açıktır. Kilitten sonra hiçbiri değişmez (§2.10).
+⛔⛔ **KİLİT DURDURULDU (D-145).** Kilit öncesi denetim, bu belgedeki §3, §4 ve
+§7'de **dört kusur** buldu. Aşağıdaki metin **tarihçe olarak duruyor**;
+kusurlu maddeler yerinde işaretlendi ve **karar verilmeden yeniden
+yazılmayacak**.
 
-⛔ **Bir slot açık: §7'deki tohum sayısı `S`.** Bu bir **kaynak taahhüdüdür**
-(Yasin'in GPU'sunda 20–30 saat) ⇒ metodolojik bir seçim değil, ve
-**Yasin'in onayı olmadan kapanmaz**. Diğer bütün slotlar dolu.
+| # | kusur | nerede |
+|---|---|---|
+| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi | §3.1 |
+| 2 | ⛔⛔ Hangi alanın yazıldığı **kola değil TOHUMA** bağlı (kriz → `resource`, kriz yok → `energy`) ⇒ sabit alan tohumların bir kısmını **tamamen** atar | §3.1, §3.2 |
+| 3 | ⛔⛔ `ΔP_active` üç değerli ve **sıfır-şişkin**; Wilcoxon sıfırları atar ⇒ **S=12'de reddedebilme ihtimali %6.6** | §4, §7 |
+| 4 | Bütün bir kol-tohumun **hiç** Price satırı olmayabilir — üçüncü kategori tanımsız | §3.1 |
+
+⇒ ⛔ **Yasin'in kararı bekleniyor (D-145 §7):** **A** kestirim koşumu (S=12,
+24 sa, **hipotez testi yok**) · **B** test koşumu (S ≥ 30, **60 sa**) ·
+**C** uç noktayı düzelt (⛔ §2.7 yasaklıyor).
+**Öneri: A.**
+
+⚠ **§7'nin MDE tablosu yanıltıcıdır** — sürekli, bağlaşımsız bir değişken
+varsayıyor; gerçek uç nokta öyle değil. Karar verilene kadar **kullanılmaz**.
 
 ⚠ **Önceki iki ön-kayıt yürürlükte kalır.** `PREREGISTRATION.md` B2'yi,
 `PREREGISTRATION_2.md` C2'yi bağlar; ikisi de **kapanmış bölümlerdir**. Bu

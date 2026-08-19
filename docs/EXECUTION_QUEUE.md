@@ -211,15 +211,21 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 (pseudoreplication kısıtı karşılanır), nesil satırları **raporlamada kalır**
 (D-132'nin sönüm sorusu açık kalır). Biri istatistik, öteki betimleme.
 
-## 🟡 2.2 · Ön-kayıt taslağı — **D-144: yazıldı, bir slot Yasin'de**
-📝 `docs/PREREGISTRATION_3.md` (342 satır, **kilitli değil**). Beş slot kapalı,
-**on dokuz sınır** ilan edildi (L1–L19).
+## 🔴 2.2 · Ön-kayıt taslağı — **D-145: KİLİTLENEMEZ, dört kusur bulundu**
+📝 `docs/PREREGISTRATION_3.md` yazıldı (D-144), ⛔ **kilit öncesi denetim
+durdurdu** (D-145, Yasin'in talebiyle).
 
-⛔ **Açık slot: tohum sayısı `S`.** Metodolojik seçim değil — **20–36 saat GPU
-taahhüdü** ve **tek atışlık** (kilitten sonra tohum eklenemez) ⇒ geri
-döndürülemez kaynak kararı, onay Yasin'in.
-**Öneri `S = 12`** (24 sa, Holm sonrası MDE `d_z = 1.032`).
-⚠ Güç yöntemi **D-052'nin sayılarıyla doğrulandı** (32→0.5232, 40→0.4649).
+| # | kusur |
+|---|---|
+| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi |
+| 2 | ⛔⛔ Alan **kola değil TOHUMA** bağlı: kriz → `resource`, kriz yok → `energy` ⇒ sabit alan tohumların bir kısmını **tamamen** atar |
+| 3 | ⛔⛔ `ΔP_active` sıfır-şişkin; Wilcoxon sıfırları atar ⇒ **S=12'de reddedebilme ihtimali %6.6** (güç değil, **mümkün olma**) |
+| 4 | Bir kol-tohumun **hiç** Price satırı olmayabilir (`null` s9912: 0/2) |
+
+⛔ **KARAR Yasin'in (D-145 §7):** **A** ⭐ kestirim koşumu S=12, 24 sa,
+**hipotez testi yok** (P7-b/D-096 damgası) · **B** test koşumu S ≥ 30,
+**60 sa** (aralık 40–91) · **C** uç noktayı düzelt — ⛔ **§2.7 yasaklıyor**.
+**Öneri A.**
 
 ## ⬜ 2.3 · Kilit
 Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).
