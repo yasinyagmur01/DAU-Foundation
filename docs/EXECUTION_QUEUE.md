@@ -170,26 +170,31 @@ bir uç nokta tanımla (D-124'ün penceresi bunun için aletlendi).
 ⛔ **Karar Yasin'in** — sabit değişikliği (D-007), ve §2.7 bağlayıcı: değer
 **etkiye bakılarak seçilemez**, sabitlerden türetilen bir eşitsizlikle gelir.
 
-## ⬜ 2.1 · ⛔⛔ KARAR — **soru yeniden çerçevelendi (D-139)**
-⚠ **Eski hâli:** *"en küçük anlamlı etki, DR #1'den beri açık."*
-⛔ **Denetim bunu düşürdü:** DR #1 cevapladı ve **benimsedik** —
-`RECONCILIATION.md` §G.3: *"SESOI ilan edilmiyor. Yerine bütçe-kısıtlı N +
-duyarlılık analizi"* (Lakens 2022, `10.1525/collabra.33267`). D-052 bunu
-uyguladı (N=40 bütçeden, MDE `d_z = 0.465` ilan edildi).
+## ⬜ 2.0b · Rice yanlılığı gerçekten iptal oluyor mu? (GPU'suz)
+**Borç:** D-140 §4 — DR *"eşleştirilmiş fark küçük-N şişmesini iptal eder"*
+diyor ama **kaynaksız**, ve **toplamsal mı çarpansal mı** sorusuna hiç
+değinmiyor. Çarpansalsa **iptal olmaz** ve §3'ün bütün çaresi düşer.
+**İş:** `w` ve `z`'yi bilinen bir üretici modelden örnekle, N=8'de
+`Cov`'un ve `ΔCov`'un yanlılığını **ölç**. Saf simülasyon, evrene dokunmaz.
+**Bitti sayılır:** yanlılığın ölçeklenme biçimi D-kaydında, aritmetiğiyle ·
+K2/K5. ⚠ **Ön-kayıttan önce** — sonucu `ΔCov`'un savunulabilirliğini belirliyor.
 
-⭐ **Gerçek boşluk başka yerde:** usul sağlam ama **istatistik değişti** —
-`Cov(w, z)` için MDE'nin nasıl hesaplanacağını bilmiyoruz. Üstüne üç iç içe
-sayım (tohum · 8 ajan · 2 geçiş), Rice 2008'in küçük-N yanlılığı, ve eşikli
-uç noktanın **tanımsız** hücreleri var.
+## ✅ 2.1 · **CEVAPLANDI — DR #12 / D-140**
+⭐⭐ **Q1 indirgemeyle cevaplandı, yeni istatistik gerekmiyor:** kovaryansı
+tohum başına bir skalere indir — `ΔCov = Cov_lived(w,z) − Cov_shuffle(w,z)` —
+sonra tohumlar arası **Cohen's `d_z`**. Bu noktadan sonra D-052'nin makinesi
+(Lakens 2022, bütçe-kısıtlı N + duyarlılık analizi) **olduğu gibi** çalışıyor.
+⇒ Geriye kalan **tohum sayısı**, ve o **bütçeden** seçilir.
 
-⛔ **Yasin'in seçimi (D-139 §3):** **A** 2.1'i düşür · **B** ⭐ kovaryans için
-duyarlılık analizi olarak yeniden yaz (**DR #12 gönderilmeyi bekliyor**) ·
-**C** permütasyonla ampirik MDE üret.
-**Claude Code önerisi: B, ve C'yi B'nin cevabına göre karara bağla.**
+⭐ **Turun üç kazancı daha:** tekrarlama birimi **tohum** (Lazic 2010,
+pseudoreplication — 8 ajan alt-örneklem, G=2 geçiş bağımlı) · eşikli uç nokta
+için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
+**eş-birincil**) · **boşluk ilanı:** Price + güç analizi birleşimi literatürde
+**yok**, sentez ilan edilerek yapılacak.
 
-📄 **DR #12 hazır:** `docs/research/2026-08-19_price-sensitivity-and-seed-budget_PLAIN.txt`
-(saf ASCII · İngilizce · tablosuz · etki sorulmuyor · DR #1'in iki kusuruna
-önlem yazılı).
+⛔ **Kalan tek karar Yasin'in: U6** — nesil geçişleri ortalanacak mı?
+Öneri **ikisi birden**: ortalama **test eder**, nesil satırları
+**raporlamada kalır** (D-132'nin sönüm ölçümü silinmesin).
 
 ## ⬜ 2.2 · Ön-kayıt taslağı
 Kilitlenecekler: sosyal kuplaj fiziği · uç nokta (0.2'den) · birincil
@@ -198,8 +203,11 @@ tohum sayısı · durma kuralı.
 **İlan edilecek sınırlar:** G=3 (DR #11'in "8 nesil" normatifi reddedildi,
 §T.2) · **adapter sönümü / LoP** (D-132) · Price küçük N'de yanlı (Rice 2008) ·
 kriz **müdahale-sonrası** (D-119/120) · n=1 deney, tek model ·
-**I0.1/I0.2 popülasyon yolunda bağlı değil** (D-105) · ⭐ **`z` etkin olarak
-tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
+**I0.1/I0.2 popülasyon yolunda bağlı değil** (D-105) · ⭐ **tekrarlama birimi
+= tohum**, 8 ajan ve G=2 geçiş **bağımsız replikat değil** (Lazic 2010, D-140) ·
+⭐ **Type S / Type M** riski küçük N'de (Gelman & Carlin 2014, D-140) ·
+⭐ **Price + güç analizi birleşiminin literatürde örneği yok** (D-140 boşluk
+ilanı) · ⭐ **`z` etkin olarak tek boyutlu** — `k` 192/192 `resource_load`'a kilitli, alan kimliği hakkında
 iddia yok, kovaryans drift'in **büyüklüğü** üzerine (D-137 §6).
 
 ## ⬜ 2.3 · Kilit

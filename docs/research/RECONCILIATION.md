@@ -1695,3 +1695,104 @@ DR'de D-131'i çürüten hiçbir şey yok; dolaylı olarak **destekliyor** (deje
 kontrol parametrik testi geçersiz kılar ⇒ kolu betimleyiciye indirmek tutarlı).
 ⭐ **Eklenen tek şey:** ajan-ajan etkileşimi, kontrolü yeniden değişken
 yapabilecek **en güçlü aday** olarak kayda giriyor.
+
+---
+
+# §U — **DR #12 mutabakatı** (2026-08-19, D-140) · ⭐ **biçimde en iyi tur, ama dört alıntı kaynağında yok**
+
+**Brief:** `2026-08-19_price-sensitivity-and-seed-budget_PLAIN.txt` ·
+**Ham cevap:** `2026-08-19_DR12-answer-raw.md`
+
+**Kısa hüküm:** ⭐ **Q1 indirgemeyle cevaplandı ve bu 2.1'i açıyor** — kovaryans
+için yeni bir istatistik gerekmiyor; kovaryansı **tohum başına bir skalere**
+(`ΔCov`) indirgeyince DR #1'de zaten benimsediğimiz Lakens çerçevesi
+**olduğu gibi** uygulanabiliyor. ⛔ Ama iki madde alınmıyor: §3'ün yanlılık
+iptali **kaynaksız ve adreslenmemiş bir boşluk taşıyor**, ve dört "birebir
+alıntı" kaynaklarında **yok**.
+
+## U.0 Kaynak kimlikleri — ⭐ **4/4 doğrulandı**
+
+| kaynak | doğrulama |
+|---|---|
+| **Lakens 2022**, *Sample Size Justification*, Collabra: Psychology 8(1):33267, `10.1525/collabra.33267` | ✅ DR #1'de zaten yerel doğrulanmıştı (§G.1/G1) |
+| **Rice 2008**, *BMC Evol Biol* 8:262, `10.1186/1471-2148-8-262` | ✅ DR #8'de zaten doğrulanmıştı (§P.2, *"birebir"*) |
+| **Gelman & Carlin 2014**, *Perspectives on Psychological Science* 9(6):641–651, `10.1177/1745691614551642` | ✅ **Crossref'ten doğrulandı** — başlık, yazarlar, dergi, cilt, sayı, sayfa **birebir** |
+| **Lazic 2010**, *BMC Neuroscience* 11:5, `10.1186/1471-2202-11-5` | ✅ **Crossref'ten doğrulandı** — birebir |
+
+⇒ **12 kimlik hatasından sonra ikinci temiz tur** (ilki DR #9). Künye disiplini
+**oturdu**.
+
+## U.1 ⛔ Ama R2 (birebir alıntı) **kısmen çöktü** — dört alıntı kaynağında yok
+
+| # | alıntı | denetim |
+|---|---|---|
+| **A1** | Lakens: *"A sensitivity power analysis answers the question: 'Across a range…'"* | ✅ **gerçek** — ifade Lakens'in altı yönteminden biriyle örtüşüyor |
+| **A2** | Lakens: *"The minimal statistically detectable effect size addresses…"* | ✅ **gerçek** — aynı listeden |
+| **A3** ⛔ | Lakens'ten alıntı diye: *"A sensitivity analysis will report the smallest effect size … **(Lakens, 2022; Perugini et al., 2018)**"* | ❌ **yapısal olarak imkânsız.** Bir makale kendi gövde metninde **kendini** parantez içinde anamaz ⇒ bu, Lakens'i **anan başka bir metinden** alınmış |
+| **A4** ⛔ | Lakens'ten alıntı diye: *"When a sample size justification is based on resource constraints, **Lakens recommends** that researchers…"* | ❌ **yapısal olarak imkânsız.** Lakens kendinden **üçüncü şahısla** söz etmez |
+| **A5** ⛔ | Gelman & Carlin: *"Type S errors occur when a null hypothesis is confidently rejected in light of the alternative being true…"* | ❌ **makalede YOK** — PDF tam metninde arandı, bulunamadı |
+| **A6** ⛔ | Gelman & Carlin: *"Type M errors … and was likely the very reason why 'statistical significance' occurred in the first place"* | ❌ **makalede YOK** — aynı arama |
+
+**Makalenin kendi tanımı** (PDF'ten birebir): *"(a) the probability that claims
+with confidence have the wrong sign (Type S [sign] error) and (b) the factor by
+which the magnitude of an effect might be overestimated (Type M [magnitude]
+error or exaggeration ratio)"*.
+
+⚠ **Ve DR'nin uydurma tanımı bir şeyi düşürüyor:** gerçek tanımlar
+**anlamlılığa koşullu** (*"conditional on being significant"*); DR'nin
+sürümünde bu koşul **yok**, ki Type S/M'in bütün anlamı odur.
+
+⇒ **Yeni kusur türü değil ama yeni bir kip:** kimlik doğru, **alıntı uydurma**
+(§M'in *"doğru kimlik, yanlış iddia"*ının kardeşi). ⭐ **R2 şartı tam da bunu
+yakalamak için konmuştu ve yakaladı** — DOI doğrulaması bu dördünü **geçirirdi**.
+
+## U.2 İddia bazında mutabakat
+
+| # | İddia | DAU'da durum | Karar |
+|---|---|---|---|
+| **U1** ⭐⭐ | Birincil ölçüt: tohum başına `ΔCov = Cov_lived − Cov_shuffle`, sonra tohumlar arası **Cohen's `d_z`** | ⭐ **Q1'in gerçek cevabı, ve indirgemeyle geliyor:** kovaryans için yeni MDE aleti gerekmiyor — tohum başına **bir skalere** indirgenince D-052'nin kullandığı makine **aynen** çalışıyor. Birincil karşıtlık zaten `lived ↔ shuffle` (D-131) | **uyumlu — benimsenir**, 2.1'i açan madde |
+| **U2** | Bütçe-kısıtlı gerekçelendirme + duyarlılık analizi kovaryans için de geçerli | DR #1'de zaten benimsenmişti (§G.3); DR #12 **bağımsız olarak** teyit ediyor | **uyumlu** |
+| **U3** | Parametrik formül yerine **permütasyon/Monte Carlo** ile ampirik null | Kuyruk 2.1'in **C seçeneği** buydu. DR onu *"alternatif"* değil **tamamlayıcı** yapıyor | **uyumlu — C, B'nin yerine değil yanına** |
+| **U4** ⭐ | **Gelman & Carlin**: küçük N + gürültüde anlamlı sonuçlar **işaret** (Type S) ve **büyüklük** (Type M) hatası taşır | ⭐ Bize **birebir** uyuyor: küçük N + eşikli uç nokta + az sayıda tohum. ⚠ **Alıntılar uydurma (A5/A6) ⇒ fikir alınır, alıntı alınmaz**; kaynağın kendi cümlesi kullanılır | **uyumlu — fikir alınır, metin alınmaz** |
+| **U5** ⭐ | **Lazic 2010**: tekrarlama birimi **tohum**; 8 ajan alt-örneklem; G=2 geçiş **zamansal olarak bağımlı** ⇒ ikisini bağımsız saymak **pseudoreplication** | ✅ **Kodla doğrulandı:** varis ebeveynin **adapter'ını** (D-102) ve anılarını miras alıyor ⇒ nesil 2 nesil 1'in durumundan türüyor. Bu kısıtı **hiç yazmamıştık** | **uyumlu — ve bağlayıcı** |
+| **U6** ⛔ | Öneri: G=2 geçişi tohum başına **tek ortalamaya indir** | ⛔ **D-132 ile çelişiyor:** adapter sönümünü (6/6 dizide **1.8×–4.8×**) ölçmek istiyoruz, ortalama tam onu **siliyor**. ⚠ DR'nin kendi saldırı vektörü de bunu söylüyor | **bilinçli sapma adayı** — test istatistiği ortalama olsun, **nesil satırları raporlamada kalsın**. ⛔ Karar Yasin'in |
+| **U7** ⛔ | Eşleştirilmiş fark, Rice'ın küçük-N şişmesini **iptal eder** (iki kol da N=8 ve aynı tohum) | ❌ **Kaynaksız ve boşluğu adreslenmemiş.** Rice'ın bulgusu bir **büyütme** (*"effects of selection are actually amplified"*); büyütme **çarpansal** ise farklı gerçek seçilime sahip kollar **farklı oranda** büyür ve **iptal olmaz**. DR toplamsal-mı-çarpansal-mı sorusuna **hiç değinmiyor**, ve bunu [OPINION] diye de işaretlememiş | **brief yanılmış** — ⚠ **yük taşıyan madde**, §3'ün bütün çaresi buna dayanıyor |
+| **U8** | Kol başına ham `Cov` (shuffle ve null dahil) **ayrıca raporlansın**, etki büyüklüğüne emilmesin | Aletimiz zaten kol başına Price satırı yazıyor ⇒ **neredeyse bedava** | **uyumlu — alınır** |
+| **U9** ⭐⭐ | **İki aşamalı ön-kayıt:** `P_active` (`Var(z) > 0` olan hücre oranı) **+** `Cov_cond` (yalnız aktif hücrelerde kovaryans) | ⭐⭐ **Üçüncü ön-kaydın omurgası olabilir.** D-121 *"tanımsız ≠ sıfır"* ayrımını zaten çizmişti; PROVENANCE_AUDIT ölçülebilir hücre oranını **%22** ölçtü. DR bunu **ön-kayıtlanabilir bir yapıya** çeviriyor | **uyumlu — benimsenir** |
+| **U10** ⚠ | U9'un saldırı vektörü: aktif hücreye koşullamak **survivorship bias** yaratır, çünkü eşiği geçmek **müdahaleden etkilenmiş** olabilir | ⚠ **Bizde varsayımsal değil:** `lived` kolunun eşiği daha sık geçmesi tam olarak beklenen şey ⇒ **`P_active`'in kendisi bir sonuçtur**, bir eleme filtresi değil | **uyumlu — ve U9'un uygulanma biçimini belirliyor:** `P_active` **eş-birincil**, ön-eleme değil |
+| **U11** | Rapor dili kalıpları (yöntem + anlamsız sonuç) | Dil doğru ve L9/L10'un ruhuyla aynı. ⚠ **Ama birebir yapıştırılamaz:** kalıp *"S seeds **per experimental arm**"* diyor — bizde tohumlar **kollar arasında paylaşılıyor** (tohum içi eşleştirme). DR #1'in G12'siyle **aynı sınıf** hata | **uyumlu ama düzeltilerek** |
+| **U12** ⭐ | **Boşluk ilanı:** Price ayrıştırmasını güç/duyarlılık beyanıyla birleştiren **yayımlanmış örnek yok** | ⭐ **R3 ikinci kez tuttu.** ⇒ Taklit edecek örnek yok; sentez **ilan edilerek** yapılacak | **uyumlu — sınır olarak yazılır** |
+| **U13** | *"Bunu özgün bir metodolojik sentez olarak ilan edin"* [OPINION] | ⚠ Gereksiz ve DR'nin kendi saldırı vektörü zaten çürütüyor. Bize gereken **özgünlük iddiası** değil, **sınır ilanı** | **alınmaz** |
+
+## U.3 ⭐ R5 (saldırı vektörleri) — **yeni şart, ve işe yaradı**
+
+Altı bölümün altısında da geldi, ve **ikisi benim de yazacağım itirazdı**:
+
+1. **§1'in vektörü** — permütasyon **değiştirilebilirlik** varsayar; ortak
+   havuzda ajanların yaşam öyküleri **bağımsız değil**. ⚠ Bizde bu **kesin
+   doğru** (P0-①: sıralı erişim, paylaşılan mera) ⇒ U3'ün permütasyon şeması
+   **naif hâliyle uygulanamaz**, tohum içi blok yapısı korunmalı.
+2. **§4'ün vektörü** — U10, yukarıda.
+
+⇒ **R5 kalıcı şart olsun.** Maliyeti sıfır, ve bir turda iki gerçek kusur
+yakalattı.
+
+## U.4 Ne alınıyor, ne alınmıyor
+
+**Alınan:** U1 (`ΔCov` indirgemesi — **2.1'i açan madde**) · U2 · U3
+(tamamlayıcı olarak, ⚠ blok-permütasyon düzeltmesiyle) · U4'ün **fikri**
+(Type S/M sınır olarak ilan edilir) · U5 (**tekrarlama birimi = tohum**,
+bağlayıcı) · U8 · U9 + U10 (`P_active` **eş-birincil**) · U12 (sınır).
+
+**Alınmayan:** U7'nin iptal iddiası (kanıtsız, ⚠ **yük taşıyor**) · U13
+(özgünlük iddiası) · **A3–A6 alıntı metinleri** (dördü de kaynağında yok) ·
+U11'in kalıbı **birebir** (tohum tarifi yanlış).
+
+**Yasin'e giden:** **U6** — nesil geçişleri ortalanacak mı? Test istatistiği
+için *evet*, ama D-132'nin sönüm ölçümü için nesil satırları **kalmalı**.
+Öneri: **ikisi birden** — ortalama test eder, satırlar raporlar.
+
+**Açık kalan:** U7'nin boşluğu. Rice'ın büyütmesi **toplamsal mı çarpansal mı**
+sorusu cevaplanmadan `ΔCov`'un yanlılığı iptal ettiği **iddia edilemez**.
+⇒ Ya kaynaktan çözülür, ya **simülasyonla** ölçülür (GPU'suz: `w` ve `z`'yi
+bilinen bir üretici modelden örnekleyip N=8'de kestirimin yanlılığını ölçmek).

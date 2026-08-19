@@ -10270,3 +10270,124 @@ DR #1'in G11'i (*"iptal, birincilin saf olduğunu doğruluyor"*) bir
 - §1'in hükmü `RECONCILIATION.md` §G.3'ün **kendi cümlesine** dayanıyor,
   yorumuma değil.
 - §3'ün maliyet sütunu **tahmindir**, ölçüm değil (K4).
+
+---
+
+## D-140 · 2026-08-19 · **DR #12 mutabakatı** — ⭐ 2.1 **açıldı**, ve şart listesi **dört uydurma alıntı** yakaladı
+
+**Mutabakat tablosu:** `RECONCILIATION.md` **§U** (13 iddia) ·
+**Ham cevap:** `docs/research/2026-08-19_DR12-answer-raw.md`
+
+### 1. ⭐⭐ Turun asıl kazancı: Q1 **indirgemeyle** cevaplandı
+
+D-139 boşluğu *"bir kovaryans için MDE nasıl hesaplanır, bilmiyoruz"* diye
+tarif etmişti. DR'nin cevabı **problemi çözmüyor, ortadan kaldırıyor**:
+
+> Kovaryansı **tohum başına bir skalere** indir —
+> `ΔCov = Cov_lived(w,z) − Cov_shuffle(w,z)` — sonra tohumlar arası
+> **Cohen's `d_z`**. Bu noktadan sonra D-052'nin kullandığı makine
+> (Lakens 2022, bütçe-kısıtlı N + duyarlılık analizi) **olduğu gibi** çalışır.
+
+⇒ **Yeni istatistik gerekmiyor.** Ve indirgeme tasarımla uyumlu: birincil
+karşıtlık zaten `lived ↔ shuffle` (D-131), tohumlar zaten kollar arasında
+**eşleştirilmiş**.
+
+⇒ ⭐ **Kuyruk 2.1'in B seçeneği cevaplandı.** Geriye kalan **tohum sayısı**,
+ve o **bütçeden** seçilir — tıpkı D-052'de olduğu gibi.
+
+### 2. ⭐ İkinci kazanç: **tekrarlama birimi = tohum**, ve bunu hiç yazmamıştık
+
+Lazic 2010 (`10.1186/1471-2202-11-5`, **Crossref'ten doğrulandı**):
+üç iç içe sayımdan yalnız **tohum** gerçek tekrarlama birimi.
+
+- 8 ajan **alt-örneklem**: kovaryansın **ölçüm gürültüsünü** düşürür,
+  istatistiksel örneklem büyüklüğünü **artırmaz**.
+- G=2 geçiş **zamansal olarak bağımlı** — ✅ **kodla doğrulandı:** varis
+  ebeveynin **adapter'ını** (D-102) ve anılarını miras alıyor.
+
+⇒ İkisini bağımsız saymak **pseudoreplication** olurdu. Bu kısıt üçüncü
+ön-kayıta **bağlayıcı** olarak girer.
+
+### 3. ⭐⭐ Üçüncü kazanç: eşikli uç nokta için **ön-kayıtlanabilir bir yapı**
+
+DR'nin iki aşamalı çerçevesi (U9):
+
+| | uç nokta |
+|---|---|
+| **`P_active`** | `Var(z) > 0` olan hücrelerin oranı |
+| **`Cov_cond`** | yalnız **aktif** hücrelerde kovaryans |
+
+⇒ D-121'in *"tanımsız ≠ sıfır"* ayrımı ilk kez bir **ön-kayıt yapısına**
+dönüşüyor. PROVENANCE_AUDIT aktif oran için **%22** ölçmüştü.
+
+⚠ **Ve DR'nin kendi saldırı vektörü uygulama biçimini belirledi (U10):**
+aktif hücreye koşullamak **survivorship bias** yaratır, çünkü eşiği geçmek
+**müdahaleden etkilenmiş** olabilir — ki bizde bu **varsayımsal değil**,
+`lived`'in daha sık geçmesi tam olarak beklenen şey.
+⇒ **`P_active` eş-birincildir, ön-eleme filtresi değil.**
+
+### 4. ⛔ Alınmayan: §3'ün yanlılık iptali (U7) — **yük taşıyan ve kanıtsız**
+
+DR diyor ki: iki kol da N=8 ve aynı tohum olduğu için Rice'ın küçük-N
+şişmesi **çıkarmada iptal olur**.
+
+❌ **Kaynaksız, ve boşluğu adreslenmemiş.** Rice'ın bulgusu bir **büyütme**
+(*"the effects of selection are actually amplified by random variation in
+fitness"*). Büyütme **çarpansal** ise, farklı gerçek seçilime sahip kollar
+**farklı oranda** büyür ve **iptal olmaz**. DR toplamsal-mı-çarpansal-mı
+sorusuna hiç değinmiyor, ve iddiayı `[OPINION]` diye de işaretlememiş.
+
+⇒ **Açık kalıyor.** Ya kaynaktan çözülür, ya **GPU'suz simülasyonla** ölçülür
+(`w` ve `z`'yi bilinen bir üretici modelden örnekle, N=8'de kestirimin
+yanlılığını ölç). ⇒ Kuyruğa **2.0b** olarak eklendi.
+
+### 5. ⛔ R2 (birebir alıntı) **kısmen çöktü** — dört alıntı kaynağında yok
+
+⭐ **Kimlikler mükemmel: 4/4 doğrulandı** (Gelman & Carlin ve Lazic
+Crossref'ten; Lakens ve Rice zaten yerel doğrulanmıştı). **12 kimlik
+hatasından sonra ikinci temiz tur.**
+
+⛔ **Ama alıntılar değil:**
+
+| | kusur |
+|---|---|
+| **A3, A4** | Lakens'ten *"birebir"* diye verilen iki alıntı **yapısal olarak imkânsız**: biri kendi gövde metninde **kendini** parantezle anıyor, öteki Lakens'ten **üçüncü şahısla** söz ediyor ⇒ ikisi de **Lakens'i anan başka bir metinden** |
+| **A5, A6** | Gelman & Carlin'in iki *"tanımı"* **makalede yok** — PDF tam metninde arandı, bulunamadı |
+
+**Makalenin kendi cümlesi:** *"(a) the probability that claims with confidence
+have the wrong sign (Type S [sign] error) and (b) the factor by which the
+magnitude of an effect might be overestimated (Type M [magnitude] error or
+exaggeration ratio)"*.
+
+⚠ **Ve uydurma tanım bir şeyi düşürüyor:** gerçek tanımlar **anlamlılığa
+koşullu**; DR'nin sürümünde o koşul **yok**, ki Type S/M'in bütün anlamı odur.
+
+⇒ ⭐ **R2 tam da bunun için konmuştu ve yakaladı.** **Yalnız DOI
+doğrulamasıyla dördü de geçerdi** — D-080'in §O'da yazdığı desenin aynısı,
+bu kez alıntı düzeyinde.
+
+### 6. ⭐ R5 (saldırı vektörü) — yeni şart, **kalıcı olsun**
+
+Altı bölümün altısında da geldi ve **ikisi benim de yazacağım itirazdı**:
+permütasyonun **değiştirilebilirlik** varsayımı (bizde P0-① yüzünden **ihlal**)
+ve U10'un survivorship bias'ı. **Maliyeti sıfır, bir turda iki gerçek kusur.**
+
+### 7. ⛔ Yasin'e giden tek karar: **U6 — nesil geçişleri ortalanacak mı**
+
+DR *"G=2'yi tohum başına tek ortalamaya indir"* diyor. ⛔ Bu **D-132 ile
+çelişiyor**: adapter sönümünü (6/6 dizide **1.8×–4.8×**) ölçmek istiyoruz ve
+ortalama tam onu siliyor. DR'nin kendi saldırı vektörü de bunu söylüyor.
+
+⭐ **Claude Code'un önerisi: ikisi birden.** Ortalama **test eder** (U5'in
+pseudoreplication kısıtını karşılar), nesil satırları **raporlamada kalır**
+(D-132'nin sönüm sorusunu açık tutar). Çelişki yok — biri istatistik, öteki
+betimleme.
+
+### 8. Sınırlar
+
+- U7 **açık** ve §3'ün çaresi ona dayanıyor ⇒ `ΔCov`'un yanlılığı iptal ettiği
+  **henüz iddia edilemez**.
+- Lakens'in A1/A2 alıntıları **arama sonucuyla** teyit edildi, tam metinden
+  değil (yayıncı 403 döndü) ⇒ *"ifade örtüşüyor"* düzeyinde.
+- U9'un `P_active`'i **ön-kayıt yapısıdır**, henüz karar değil — 2.2'nin işi.
+- Bu tur **hiçbir sabiti** değiştirmedi, **hiçbir kod** yazılmadı.
