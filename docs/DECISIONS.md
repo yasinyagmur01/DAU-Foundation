@@ -10877,3 +10877,107 @@ yeni bir sonda** ister.
   oranlar **aynı tabana** oturmuyor; ⚠ ama fark (%78 ↔ %25) bu farkı
   taşıyamayacak kadar büyük.
 - Hiçbir kol karşıtlığı, kovaryans veya etki büyüklüğü hesaplanmadı.
+
+---
+
+## D-147 · 2026-08-19 · 🔍 **KUSUR AVI — üç bulgu, üçü de koşumu sessizce bozabilecek türden**
+
+**Yetki:** Yasin, 2026-08-19: *"avlan"*. Av alanları D-146'da önerildiği gibi:
+**(1)** analiz aracı, **(2)** kapı envanteri. **GPU yok.**
+
+⚠ **Hiçbiri düzeltilmedi** — üçü de gerçek koşumu okuyacak aracı ya da
+ön-kaydı değiştiriyor ⇒ §2.3, karar Yasin'in.
+
+### 0. ⚠ Önce kendi ölçüm aracım yanıldı
+
+İlk taramam *"32 testin 0'ı çok-tohumlu"* dedi. **Yanlıştı** — regex'im
+fixture'ları görmüyordu. Dosya okununca `_multi_seed` (3 tohum × 3 kol)
+fixture'ı çıktı, docstring'i **D-127'yi ve K2'yi** anıyor. ⇒ **K5'in dersi
+üçüncü kez:** güvenilmez olan kod değil **ölçüm aracımdı**. Aşağıdaki üç
+bulgu bu yüzden **gerçek çıktı üzerinde** doğrulandı, regex'le değil.
+
+### 1. ⛔ AV-1 — rapor, satırın **hangi tohuma** ait olduğunu söylemiyor
+
+`analyze_population_run` C2 üzerinde koşuldu. **Level 0** ve **Level 1**
+listeleri yalnız `kol` + `nesil` etiketliyor:
+
+```
+  lived    gen1: Var(w)=1.2500 ...   ← s9911
+  lived    gen1: Var(w)=1.5000 ...   ← s9912
+  lived    gen1: Var(w)=2.2500 ...   ← s9913
+```
+
+Aynı etiket **üç kez**, farklı sayılarla, ve okuyan hangisinin hangi tohum
+olduğunu **bilemiyor**. Aynı kusur `Distinct z`, `Level 1 selection` ve
+`pozitif kontrol` listelerinde de var.
+
+⭐ **Level 2 ve Level 3 tohumu YAZIYOR** (`lived s9911 …`, `s9911 gen1:`)
+⇒ D-127 **toplama** kusurunu düzeltmiş ama **listeleme** kusurunu
+düzeltmemiş. Yarım kalmış bir düzeltme.
+
+⚠ Sayılar **çökmüyor** (27 satırın 27'si basılıyor) ⇒ veri kaybı yok,
+**atfedilebilirlik** kaybı var. Rapor bir insanın koşumu yargılaması için.
+
+### 2. ⛔⛔ AV-2 — Level 3'ün *"kol mesafesi"* bir **yapısal yokluğu** büyüklük sanıyor
+
+**Ölçüldü ve tam olarak doğrulandı** (s9912, nesil 2):
+
+| kol | `mean_z` |
+|---|---|
+| `lived` | `{energy: 0.087899}` |
+| `null` | `{}` — **alan hiç yok** |
+| `shuffle` | `{}` |
+
+Rapor: `‖lived − null‖ = 0.087899`.
+⇒ **Mesafenin TAMAMI `lived`'in kendi değeri.** `null` o alanda hiçbir okuma
+taşımıyor; `l2` yokluğu **0** sayıyor (`analyze_population_run.py:237`) ve
+fark, bir karşılaştırma değil **tek kolun büyüklüğü** oluyor.
+
+⚠ **Bu yeni bir kusur değil — 2026-08-11'de görülmüştü** ve
+`RECONCILIATION.md` **§G.2** onu tek-soy tasarımı için yazmıştı:
+
+> *"L2 mesafesi bir **kategorik uyuşmazlığı** büyüklük farkı gibi okuyor."*
+
+⛔ **Popülasyon aracında hâlâ canlı**, ve bu kez **sayısı var**.
+
+⚠ Ve **D-142 bunu ağırlaştırıyor**: L2 bir **magnitude kanalıdır**, null'ı
+sıfır değildir ve etkiyi ~5 kat sıkıştırır.
+
+### 3. ⛔⛔ AV-3 — **26 değişmezin yalnız 6'sı** popülasyon yolunda bağlı
+
+C2'nin raporladığı: `I0.3 · I0.4 · I0.6 · I0.7 · I1.1 · I4.1`.
+**Bağlı olmayan 20:** `I0.1 I0.2 I0.5 I1.2 I1.3 I1.3b I1.4 I1.5 I2.1 I2.2
+I2.3 I3.1 I3.2 I3.3 I3.4 I4.2 I5.1 I5.2 I5.3 I5.4`.
+
+**İkisi doğrudan bu deneyin iddiasına dokunuyor:**
+
+| kapı | ne yapar | neden önemli |
+|---|---|---|
+| **I4.2** (ABORT) | *"Gen2 öncesi RNG durum hash'i üç kolda aynı"* — GAP-12 | Koşum **çok nesilli**; nesiller arası determinizmi kapıya bağlayan tek şey buydu ve **bağlı değil** |
+| **I5.4** (FLAG) | *"Inherited somatic scale gen2'de ≥1 kez uygulandı"* — GAP-3 | ⛔ **İddiamız kalıtım hakkında**, ve sembolik kanalın varise **ulaştığını** doğrulayan kapı bu |
+
+⚠ **I2.1** (*"kollar birbirinin aynısı değilse dur"*, ABORT) bağlı değil —
+ama popülasyonda **gen1 tasarım gereği özdeş** ⇒ olduğu gibi bağlansa
+**meşru bir durumda abort ederdi**. ⇒ *"eksik"* değil **uyarlanmamış**, ve
+bunu hiç kimse yazmamış.
+
+⇒ ⛔ **Ve bu benim taslağıma doğrudan dokunuyor:** `PREREGISTRATION_3.md`
+§5'in **V1 kapısı** *"preflight **6/6**"* diyor. Bu **tam kapsam gibi
+okunuyor**, oysa **6/26**. Bir hakem bunu böyle okur. **V1 yeniden
+yazılmalı.**
+
+### 4. Yasin'e giden üç karar
+
+| | ne | sınıf |
+|---|---|---|
+| **AV-1** | Level 0/1 listelerine tohum etiketi | ⭐ **saf raporlama, tersine çevrilebilir** — bence yapılmalı |
+| **AV-2** | *"Alan yokluğu"* ile *"alan var, değeri 0"* mesafede nasıl ayrılacak | ⛔ **tasarım kararı** — L2 korunacak mı, yoksa mesafe yalnız **ortak alanlar** üzerinde mi hesaplanacak |
+| **AV-3** | Hangi kapılar popülasyon yoluna bağlanacak (**I4.2** ve **I5.4** öncelikli), hangileri **N/A ilan** edilecek | ⛔ **kapsam kararı** + ön-kayıt metni |
+
+### 5. Sınırlar
+
+- Av **iki alanla sınırlı** kaldı (analiz aracı + kapı envanteri). Önerilen
+  3–5 (L1–L19 doğrulaması · brief'lerden benimsenenler · C2'nin okunmamış
+  alanları) **yapılmadı**.
+- AV-2 tek tohumdan (`s9912`) doğrulandı; deseni C2'nin tamamında saymadım.
+- Hiçbir kol karşıtlığı yorumlanmadı (L9) — okunan yalnız **mekanizma**.

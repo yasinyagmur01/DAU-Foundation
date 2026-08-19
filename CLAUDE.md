@@ -23,7 +23,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
 - **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-146.** Sıradaki kayıt **D-147** olarak açılır.
+- **Son D-kaydı: D-147.** Sıradaki kayıt **D-148** olarak açılır.
+- 🔍 **Kusur avı (D-147): üç bulgu.** Rapor tohum etiketlemiyor (L0/L1) ·
+  Level 3'ün mesafesi **yapısal yokluğu büyüklük sanıyor** (§G.2 hâlâ canlı) ·
+  ⛔ **26 kapının yalnız 6'sı** popülasyon yolunda bağlı (**I4.2 · I5.4** dahil).
 - ⭐⭐ **D-146 ölçtü: darboğaz bütçe değil, `z`'nin EŞİKLİ olması.**
   `F_agent` **%78** · sürekli nicelik **%78** · ⛔ `z` **%25** ⇒ seçilim
   makinesi çalışıyor, ölü olan tek şey uç nokta.
