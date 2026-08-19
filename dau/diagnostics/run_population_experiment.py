@@ -125,6 +125,7 @@ from dau.foundation.delta import DELTA_THRESHOLD_DEEP, DOMAIN_ATTR
 from dau.foundation.drift import DriftState
 from dau.foundation.constraints import LANDMARK_EVENT, TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
+from dau.generation.fitness import classify_fitness
 from dau.foundation.generation import (
     INHERITED_WARNING_KEY,
     SOMATIC_SCALE_KEY,
@@ -1357,6 +1358,14 @@ def _run_arm_generations(
                     {
                         "agent_id": row.agent_id,
                         "f_agent": row.f_agent,
+                        # D-150. The BAND, not just the number: the inherited
+                        # warning that feeds the somatic channel fires only in
+                        # the low or high band, and C2 reported f_agent for 216
+                        # agents while never saying that 0 of them were low and
+                        # 12 were high. Derived through `classify_fitness` so
+                        # the report cannot disagree with the rule that
+                        # actually gates transfer (§2.8).
+                        "fitness_class": classify_fitness(row.f_agent),
                         "f_agent_inputs": row.f_agent_inputs,
                         "events_lived": row.events_lived,
                         "landmark": row.landmark,

@@ -11160,3 +11160,91 @@ iddia.
 - Kalan **18** kapı hâlâ sınıflandırılmadı.
 - GAP-3'ün **düzeltilmesi** bu kayıtta **yapılmadı** — ölçüldü ve ilan edildi.
   Düzeltmek fizik değiştirir ve **Yasin'in kararıdır**.
+
+---
+
+## D-150 · 2026-08-19 · ⛔⛔ **GAP-3'ün kökü bulundu — ve önerdiğim düzeltme §2.7'ye çarpıyor**
+
+**Yetki:** Yasin *"önerdiğin yolu uygula"* (= D-149'un **A** seçeneği: GAP-3'ü
+düzelt). ⚠ **Uygulayamadım, ve sebebi kaydın konusu.** Ölçüm yapıldı, teşhis
+değişti, ve düzeltme artık **Yasin'in bir sabit kararına** bağlı.
+
+### 1. ⛔ Teşhis, belgede yazandan **üç kez** farklı çıktı
+
+`CLAUDE.md` GAP-3'ü *"gen2 ilk olayda somatik ölçek boşluğu —
+`apply_inherited_somatic_scale` sadece `delta_log` dolu olunca çalışıyor"*
+diye taşıyordu. **Kod okundu, üçü de yanlış çıktı:**
+
+| sanılan | ölçülen |
+|---|---|
+| *"ilk olayda kaçırılıyor"* | ⛔ **hiç uygulanmıyor** — `skipped=0`, fonksiyon **çağrılmıyor bile** |
+| *"`delta_log` boş olduğu için"* | ⛔ Sebep **uygulama tarafı değil, YAZMA tarafı**: `retrieval_context`'e hiçbir zaman `inherited_warning` girmiyor (C2: **0/144**) |
+| — | ⛔ Uyarı **iki şart** istiyor ve biri **yapısal olarak ölü** |
+
+### 2. Kök sebep — ölçülmüş sayılarla
+
+`select_for_transfer` (`generation.py:158`) bir travma anısını miras uyarısına
+**yalnız iki bantta** çeviriyor:
+
+```
+f_agent <  FITNESS_LOW_THRESHOLD  (0.35)  ve trauma   →  uyarı
+f_agent >= FITNESS_HIGH_THRESHOLD (0.70)  ve trauma   →  uyarı
+```
+
+**C2'nin 216 ajanı** (`classify_fitness` ile, kendi fonksiyonuyla):
+
+| bant | sayı |
+|---|---|
+| ⛔ `low` | **0 / 216** |
+| `normal` | 204 |
+| `high` | **12 / 216** (%5.6) |
+
+⇒ ⛔ **`FITNESS_LOW_THRESHOLD = 0.35`, gözlenen dağılımın TAMAMININ altında**
+(min **0.3919**). Alt dal **yapısal olarak ulaşılamaz**.
+
+⭐ **Ve sebebi kayıtta duruyor: D-086.** O düzeltme `F_agent`'ı **0.14 → 0.45**
+taşıdı; eşik **eski dağılım için** kalibreydi ve **kimse geri dönüp
+bakmadı**. ⇒ D-087/D-088'in deseninin aynısı: *"kalibre edildiği niceliğin
+yerine başkasına uygulanan eşik"*, bu kez **kalibre edildiği dağılımın yerine
+başkasına**.
+
+**Üst dal ölü değil ama nadir:** `high` %5.6, `is_trauma` %11 ⇒ ikisinin
+**aynı yaşamda** buluşması ≈ **%0.6** ⇒ 144 variste **0** gözlemi tutarlı.
+
+### 3. ⛔ Neden düzeltmeyi uygulamadım — §2.7
+
+Düzeltmenin üç yolu var ve **üçü de bir karar istiyor**:
+
+| | yol | engel |
+|---|---|---|
+| **a** | `FITNESS_LOW_THRESHOLD`'a yeni değer | ⛔ **§2.7**: dağılımı **gördüm** (min 0.3919) ⇒ bugün seçilecek her değer **etkiye bakılarak** seçilmiş olur |
+| **b** | Bantları **göreli** yap (hücre içi sıra) | ⭐ Tasarımla **tutarlı** — turnuva zaten göreli (k=2) — ama **mekanizma değişikliği**, sabit değil |
+| **c** | Sabitlerden türetilen bir eşitsizlik | Aranıyor; `FITNESS_HIGH_THRESHOLD = 0.70` ile `DELTA_THRESHOLD_DEEP = 0.70` **aynı sayı** ⇒ bir bağ olabilir ama **doğrulanmadı** |
+
+⇒ **Karar Yasin'in** (D-007). Kendi başıma değer seçmek, bu projenin
+sekiz oturumdur savunduğu tek kuralı çiğnemek olurdu.
+
+### 4. ✅ Bu turda **yapılan** — §2.7'ye uyan kısım
+
+`fitness_class` ajan satırına eklendi (`classify_fitness` **çağrılıyor**,
+yeniden yazılmadı — §2.8). ⇒ C2'nin *"216 ajanın f_agent'ını yazıp bandını
+hiç söylememesi"* durumu bitti; bir sonraki koşum bandı **kendi dosyasında**
+raporlar.
+
+**K2** üç bantla · **K3** sonuç dosyasından · suite **611 → 613**.
+
+### 5. ⇒ Ön-kayıta etkisi
+
+**L20 güncellenmeli:** *"somatik kanal çalışmıyor"* yetersiz bir tarif.
+Doğrusu: **alt bant yapısal olarak ölü** (eşik dağılımın altında), **üst bant
+canlı ama nadir** (%0.6 birleşim). İkisi farklı şeyler ve farklı düzeltmeler
+ister.
+
+### 6. Sınırlar
+
+- Bant dağılımı **tek koşumdan** (C2, 3 tohum, 216 ajan).
+- `high ∧ trauma` birleşimini **doğrudan saymadım** — iki marjinalden
+  çarpımla **tahmin ettim** (%0.6), ve bağımsızlık varsaydım. ⚠ **Tahmin**,
+  ölçüm değil (K4).
+- §3-c'nin *"0.70 = 0.70"* gözlemi **bir bağ değil, bir tesadüf olabilir**;
+  doğrulanmadı.

@@ -339,7 +339,13 @@ eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 | **L17** | **`to_landmark.max` reddedildi** (D-129, **2/4**) ve bu koşumda **kullanılmaz**. Yeniden açılması **üç şart** ister | D-143 §5 |
 | **L18** | **Davranış çökük** — olayların %94–100'ünde DEFECT; K7 bilişsel önseli aksiyom gerekçesiyle kapattı ve bu **açık risktir** | D-068, D-074 |
 | **L19** | **GAP-4'ün ikinci yarısı** (silinen anının LoRA izi) **açık** | GAP tablosu |
-| **L20** ⭐⭐ | ⛔ **Sembolik kanalın somatik yarısı varise HİÇ ULAŞMIYOR.** C2'de 144 varisin **0'ında** somatik ölçek, **0'ında** miras uyarısı vardı — buna karşılık **anılar geçti** (varis başına ~10, `n_inherited_by_parent` ort. **9.74**) ve **adapter geçti** (96/144 = eğitim alan iki kol). ⇒ Kanal 1'in **engram yarısı çalışıyor, somatik yarısı çalışmıyor** (GAP-3). ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
+| **L20** ⭐⭐ | ⛔ **Sembolik kanalın somatik yarısı varise HİÇ ULAŞMIYOR.** C2'de 144 varisin **0'ında** somatik ölçek, **0'ında** miras uyarısı vardı — buna karşılık **anılar geçti** (varis başına ~10, `n_inherited_by_parent` ort. **9.74**) ve **adapter geçti** (96/144 = eğitim alan iki kol). ⇒ Kanal 1'in **engram yarısı çalışıyor, somatik yarısı çalışmıyor** (GAP-3).
+⭐ **D-150 kökü buldu:** uyarı **iki bantta** doğuyor — `f < 0.35` ya da
+`f ≥ 0.70`. C2'de **alt bant 0/216** (eşik dağılımın **tamamının** altında,
+min 0.3919 — D-086 `F_agent`'ı 0.14→0.45 taşımış, eşik geri dönülmemiş) ve
+üst bant **12/216**, ki travmayla aynı yaşamda buluşması ≈ **%0.6**.
+⇒ **Alt bant yapısal olarak ölü, üst bant canlı ama nadir** — iki farklı sorun.
+⛔ Düzeltme **§2.7'ye takılıyor** (dağılım görüldü) ⇒ **karar Yasin'in**. ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
 
 ---
 

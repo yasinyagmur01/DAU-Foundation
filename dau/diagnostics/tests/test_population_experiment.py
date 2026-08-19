@@ -2386,3 +2386,50 @@ def test_k_and_precision_reach_the_results_file_per_agent(monkeypatch) -> None:
         assert precision["n_events"] == agent["events_lived"], "another agent leaked in"
         assert precision["min"] is not None
         assert precision["n_distinct"] >= 1
+
+
+def test_the_results_name_the_fitness_band_not_only_the_number() -> None:
+    """⭐ D-150. The band is what gates the somatic channel, and it was invisible.
+
+    `select_for_transfer` converts a trauma memory into an inherited warning
+    only in the LOW band (f < 0.35) or the HIGH one (f >= 0.70). C2 printed
+    f_agent for 216 agents and never said that 0 of them were low — the
+    threshold sits BELOW the whole observed distribution (min 0.3919), so that
+    branch could not fire, and nothing in the results file said so.
+
+    Read through `classify_fitness` rather than compared here, so the report
+    cannot drift from the rule that actually decides (§2.8).
+    """
+
+    from dau.generation.fitness import (
+        FITNESS_HIGH_THRESHOLD,
+        FITNESS_LOW_THRESHOLD,
+        classify_fitness,
+    )
+
+    # K2: three values, one per band — with a single value the mapping could be
+    # constant and the test would not see it.
+    below = FITNESS_LOW_THRESHOLD / 2
+    between = (FITNESS_LOW_THRESHOLD + FITNESS_HIGH_THRESHOLD) / 2
+    at_high = FITNESS_HIGH_THRESHOLD
+
+    assert classify_fitness(below) == "low"
+    assert classify_fitness(between) == "normal"
+    assert classify_fitness(at_high) == "high", "the boundary belongs to high"
+
+
+def test_the_fitness_band_reaches_the_results_file(monkeypatch) -> None:
+    """K3 — the band is worthless if the artefact never carries it."""
+
+    from dau.generation.fitness import classify_fitness
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    agents = results["arms"][0]["generations"][0]["agents"]
+    assert agents
+    for agent in agents:
+        assert "fitness_class" in agent
+        assert agent["fitness_class"] == classify_fitness(agent["f_agent"])
