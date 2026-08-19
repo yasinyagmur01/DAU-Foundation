@@ -170,10 +170,26 @@ bir uç nokta tanımla (D-124'ün penceresi bunun için aletlendi).
 ⛔ **Karar Yasin'in** — sabit değişikliği (D-007), ve §2.7 bağlayıcı: değer
 **etkiye bakılarak seçilemez**, sabitlerden türetilen bir eşitsizlikle gelir.
 
-## ⬜ 2.1 · ⛔⛔ KARAR — **"en küçük anlamlı etki"**
-**En eski borç: DR #1'den beri açık, hâlâ verilmedi.**
-⛔ Bu verilmeden **güç hesabı yapılamaz**, güç hesabı olmadan Faz 3'ün tohum
-sayısı bilinemez. ⇒ **Faz 3'ün ön koşulu budur.**
+## ⬜ 2.1 · ⛔⛔ KARAR — **soru yeniden çerçevelendi (D-139)**
+⚠ **Eski hâli:** *"en küçük anlamlı etki, DR #1'den beri açık."*
+⛔ **Denetim bunu düşürdü:** DR #1 cevapladı ve **benimsedik** —
+`RECONCILIATION.md` §G.3: *"SESOI ilan edilmiyor. Yerine bütçe-kısıtlı N +
+duyarlılık analizi"* (Lakens 2022, `10.1525/collabra.33267`). D-052 bunu
+uyguladı (N=40 bütçeden, MDE `d_z = 0.465` ilan edildi).
+
+⭐ **Gerçek boşluk başka yerde:** usul sağlam ama **istatistik değişti** —
+`Cov(w, z)` için MDE'nin nasıl hesaplanacağını bilmiyoruz. Üstüne üç iç içe
+sayım (tohum · 8 ajan · 2 geçiş), Rice 2008'in küçük-N yanlılığı, ve eşikli
+uç noktanın **tanımsız** hücreleri var.
+
+⛔ **Yasin'in seçimi (D-139 §3):** **A** 2.1'i düşür · **B** ⭐ kovaryans için
+duyarlılık analizi olarak yeniden yaz (**DR #12 gönderilmeyi bekliyor**) ·
+**C** permütasyonla ampirik MDE üret.
+**Claude Code önerisi: B, ve C'yi B'nin cevabına göre karara bağla.**
+
+📄 **DR #12 hazır:** `docs/research/2026-08-19_price-sensitivity-and-seed-budget_PLAIN.txt`
+(saf ASCII · İngilizce · tablosuz · etki sorulmuyor · DR #1'in iki kusuruna
+önlem yazılı).
 
 ## ⬜ 2.2 · Ön-kayıt taslağı
 Kilitlenecekler: sosyal kuplaj fiziği · uç nokta (0.2'den) · birincil

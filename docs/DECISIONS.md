@@ -10175,3 +10175,98 @@ sonucudur, evrenin değil. **Gerçek koşumun sayısıdır.**
 - ⇒ **Faz 0 bitti.** Sıradaki iş **Faz 2**, ve önündeki iki ⛔ karar Yasin'in:
   **2.0** (travma eşiği) ve **2.1** (*"en küçük anlamlı etki"* — DR #1'den beri
   açık, Faz 3'ün ön koşulu).
+
+---
+
+## D-139 · 2026-08-19 · 🔍 **Kuyruk 2.1'in seçim uzayı — ve soru yanlış sorulmuş olabilir**
+
+⚠ **Bu bir karar kaydı değil, bir hazırlık kaydıdır.** Karar Yasin'in (D-007).
+İki çıktısı var: **(a)** aşağıdaki yeniden çerçeveleme, **(b)** DR brief #12
+(`docs/research/2026-08-19_price-sensitivity-and-seed-budget_PLAIN.txt`).
+
+### 1. ⛔ Önce bulunan şey: **DR #1 bu soruyu zaten cevapladı ve cevabı benimsedik**
+
+`CLAUDE.md` ve kuyruk 2.1 *"en küçük anlamlı etki — DR #1'den beri açık,
+hâlâ verilmedi"* diyor. Denetim (`RECONCILIATION.md` §G.3) bunun **eksik bir
+okuma** olduğunu gösteriyor:
+
+> **"Alınan (S4 slotunu kapatan): SESOI ilan edilmiyor. Yerine bütçe-kısıtlı
+> N + duyarlılık analizi (G1, G2, G9)."**
+
+Yani DR #1 *"eşiği söyle"* sorusuna **"söyleme"** cevabını verdi, kaynağıyla
+(**Lakens 2022**, *Sample Size Justification*, Collabra: Psychology 8(1):33267,
+`10.1525/collabra.33267` — yerel doğrulamada **gerçek ve doğru anılmış**), ve
+biz o cevabı **uyguladık**: D-052'de N=40 **bütçeden** seçildi ve
+**MDE `d_z = 0.465`** ilan edildi.
+
+⇒ **S4 kapandı, açık kalan S2'ydi** (N'in **değeri**), ve o da **D-052'de
+kapandı** — birinci ön-kayıt için.
+
+⇒ ⚠ **Kuyruk 2.1 bugünkü hâliyle, vermemeye karar verdiğimiz bir sayıyı
+istiyor.** Bu, 0.1 maddesinin başına gelenin aynısı (D-135): soru sorulduğu
+biçimde **düşüyor**.
+
+### 2. ⭐ Ama gerçek bir boşluk **var** — sadece başka yerde
+
+DR #1'den bu yana değişen şey eşik değil, **istatistiğin kendisi**:
+
+| | birinci ön-kayıt (DR #1'in cevapladığı) | üçüncü ön-kayıt (bugün) |
+|---|---|---|
+| istatistik | eşleştirilmiş fark, Wilcoxon | **Price seçilim terimi** `Cov(w, z)` |
+| birim | tohum başına bir sayı | popülasyon içi kovaryans, **geçiş başına** |
+| MDE aleti | `d_z`, kapalı form | ⛔ **bilinmiyor** |
+| yanlılık | yok | ⚠ **Rice 2008: küçük N'de şişkin** |
+| örneklem katmanı | tek (tohum) | **üç iç içe** (tohum · 8 ajan · 2 geçiş) |
+| uç nokta | sürekli | **eşikli** ⇒ çoğu hücrede `Var(z) = 0` |
+
+⇒ **Boşluk şu:** *"bütçeden N seç, MDE ilan et"* usulü sağlam — ama bir
+**kovaryans** için MDE'nin nasıl hesaplanacağını **bilmiyoruz**, ve yerel
+taramada bulamadım.
+
+### 3. Yasin'in önündeki seçim uzayı
+
+| | seçenek | ne demek | maliyet |
+|---|---|---|---|
+| **A** | 2.1'i **düşür**, DR #1'in cevabı geçerli say | *"SESOI ilan etmiyoruz"* zaten karar; geriye yalnız **tohum sayısı** kalır ve o **bütçeden** seçilir | sıfır. ⚠ Ama MDE'yi **hesaplayamadığımız** için ilan edemeyiz ⇒ D-052'nin yaptığı şeyi yapamayız |
+| **B** ⭐ | 2.1'i **yeniden yaz**: *"kovaryans için duyarlılık analizi"* | Asıl boşluk bu. DR #12 tam bunu soruyor | bir DR turu |
+| **C** | Permütasyon temelli **ampirik** MDE kendimiz üret | Kapalı form yoksa null'ı permütasyonla simüle edip saptanabilir bölgeyi ölçmek | GPU'suz ama **aletleme** işi; ⚠ ve usulün kabul görüp görmediğini **bilmiyoruz** ⇒ B'nin cevabı bunu söyleyebilir |
+
+⭐ **Claude Code'un önerisi: B, ve C'yi B'nin cevabına göre karara bağla.**
+Gerekçe: A dürüst değil — MDE ilan edemeyeceksek *"bütçe-kısıtlı
+gerekçelendirme"* yarım kalır, ve Lakens'in yönteminin **çalışan yarısı** tam
+olarak duyarlılık analizidir. C ise B'den önce yapılırsa, kabul görmeyen bir
+usule aletleme yazma riski taşır.
+
+### 4. DR brief #12 — ne soruluyor, ne sorulmuyor
+
+Dosya: `docs/research/2026-08-19_price-sensitivity-and-seed-budget_PLAIN.txt`
+(**saf ASCII doğrulandı**, İngilizce, tablosuz — D-110'un biçimi).
+
+**Altı soru:** Q1 kovaryans için duyarlılık analizi var mı · Q2 üç iç içe
+sayımdan **hangisi** tekrarlama birimi · Q3 Rice 2008'in yanlılığı güç
+hesabıyla **etkileşiyor mu** · Q4 eşikli uç noktanın **tanımsız** hücreleri
+nasıl raporlanır · Q5 bütçe-kısıtlı çerçeve kovaryans için **hâlâ geçerli mi**
+· Q6 taklit edilebilecek **yayımlanmış örnek** var mı.
+
+⚠ **Etki sorulmuyor** (L9) — §0 bunu açıkça yazıyor ve kendi sayılarımızı
+**bilerek vermiyoruz**.
+
+**DR #1'in iki kusuru brief'e önlem olarak girdi (§1):**
+1. *"Determinizm ⇒ `r ≥ 0.85`"* çıkarımı — brief artık **açıkça** yasaklıyor.
+   O çıkarım bizim *"koşum-arası gürültü sıfır"* cümlemizden türemişti.
+2. Kaynaksız etki bandı — R1/R2/R3 (DOI · **birebir alıntı** · **boşluk
+   ilanı** + kaynakça) bağlayıcı olarak yazıldı; D-110'da bu üçü birlikte
+   **ilk kez** tutmuştu.
+
+**Ek olarak R5:** her tavsiyenin **nasıl eleştirileceği** isteniyor.
+DR #1'in G11'i (*"iptal, birincilin saf olduğunu doğruluyor"*) bir
+**non sequitur**'du ve rapora girseydi hakem tam oradan girerdi.
+
+### 5. Bu hazırlığın sınırları
+
+- Yerel tarama **sistematik derleme değil**; *"kovaryans için MDE usulü yok"*
+  benim **bulamadığım** anlamına gelir, **yok** anlamına değil. Q1 tam da
+  bunu soruyor.
+- §1'in hükmü `RECONCILIATION.md` §G.3'ün **kendi cümlesine** dayanıyor,
+  yorumuma değil.
+- §3'ün maliyet sütunu **tahmindir**, ölçüm değil (K4).

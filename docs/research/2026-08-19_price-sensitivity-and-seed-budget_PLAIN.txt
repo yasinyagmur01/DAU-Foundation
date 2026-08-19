@@ -1,0 +1,239 @@
+DR BRIEF #12 -- SENSITIVITY ANALYSIS AND SAMPLE-SIZE JUSTIFICATION FOR A
+PRICE-EQUATION COVARIANCE MEASURED OVER A VERY SMALL NUMBER OF SELECTION
+EPISODES
+
+Date: 2026-08-19
+Target: ChatGPT Deep Research
+Format: plain text on purpose. Please answer in plain prose. Do not use
+tables. Do not use LaTeX. The answer is read and quoted by hand.
+
+
+-----------------------------------------------------------------------
+0. WHAT THIS BRIEF IS NOT ASKING
+-----------------------------------------------------------------------
+
+We are NOT asking how large our effect is, or how large it is likely to be,
+or what effect size is typical in our field. We deliberately withhold our own
+measured numbers. Any answer that estimates our effect for us is unusable to
+us, because our protocol forbids choosing a threshold after looking at an
+outcome.
+
+We are asking a METHODS question: given a statistic and a budget, how is the
+sample size justified and how is the resulting insensitivity declared.
+
+
+-----------------------------------------------------------------------
+1. WHY THIS BRIEF EXISTS, GIVEN THAT WE ALREADY ASKED SOMETHING SIMILAR
+-----------------------------------------------------------------------
+
+We previously asked how to justify a smallest effect size of interest
+(SESOI). The answer we received and adopted was: do NOT declare a SESOI when
+no reference effect exists in the literature for your endpoint; instead use a
+budget-constrained sample-size justification plus a sensitivity power
+analysis, and report the minimum detectable effect (MDE) rather than claiming
+absence of effect. The source given was Lakens (2022), "Sample Size
+Justification", Collabra: Psychology 8(1):33267, doi 10.1525/collabra.33267.
+We verified that source and it is real and correctly described. We used it,
+and it worked: our primary endpoint at the time was a paired per-seed
+difference tested with a Wilcoxon signed-rank test, and a sensitivity
+analysis gave us a clean MDE in d_z units.
+
+That machinery no longer applies, and this is the whole reason for this
+brief. Our statistic has changed. It is now a COVARIANCE between reproductive
+success and a trait value, computed inside a population, once per generation
+transition -- the selection term of the Price equation. We do not know how to
+run a sensitivity analysis on that, and we could not find one.
+
+Two failure modes from that earlier round that we would like to avoid
+repeating, both of which were caused partly by our own brief:
+
+(a) We wrote that our runs are bit-level deterministic. The answer inferred
+    from this that the correlation between paired arms must be very high
+    (r >= 0.85), and used that to argue our design was more sensitive than it
+    looked. That inference was invalid: determinism means that re-running the
+    SAME arm gives the same bytes. It says nothing about the correlation
+    between DIFFERENT arms across seeds. Please do not make this inference.
+
+(b) The answer gave a range of effect sizes said to be typical for studies of
+    internal representations, with no citation attached. We could not use it.
+    Every quantitative claim in your answer must carry a source.
+
+
+-----------------------------------------------------------------------
+2. THE DESIGN, DESCRIBED HONESTLY
+-----------------------------------------------------------------------
+
+This is a simulation study of whether experience acquired by an artificial
+agent during its life leaves a trace that is transmitted to its offspring,
+and whether that trace is subject to selection.
+
+Agents. Each agent is a local Llama-3.1-8B-Instruct model in 4-bit
+quantization with its own LoRA adapter. One decision per event.
+
+Life. An agent lives a fixed number of events in a shared common-pool
+resource environment with scarcity and crisis pressure, a memory store with
+forgetting, and a prediction-error signal computed from sentence-embedding
+distance. There is no human labelling and no model-as-judge anywhere.
+
+Population. Each experimental arm has its own population of 8 agents and its
+own separate resource pool. Population size is fixed: when an agent dies, a
+replacement heir is produced from the winner of a tournament of size 2, so
+the number of offspring per parent, w, takes values 0, 1, 2, and so on. The
+run covers 3 generations, which yields 2 generation transitions per arm per
+seed.
+
+Arms. Three arms per seed, paired within seed by construction:
+  - lived: the adapter is trained on preference pairs derived from the
+    agent's own lived events
+  - shuffle: the same pairs with the preference direction reversed
+  - null: no training at all
+The primary contrast is lived versus shuffle. null is descriptive only.
+
+Endpoint. The trait z is a drift magnitude read at a FIXED event ordinal in
+each life, so that lives of unequal length are compared at the same age. It
+is a THRESHOLDED quantity: it is written only when an event's magnitude
+crosses a fixed severity threshold. In many cells no agent crosses it, so z
+has zero within-cell variance in those cells.
+
+Statistic. Per generation transition, the selection term of the Price
+equation, i.e. the covariance across the 8 agents of the population between w
+(number of heirs) and z (the trait). Replicated over independent seeds.
+
+Determinism. Same seed plus same code gives bit-identical results. Different
+seeds give different results. Seeds are the only source of variance. Please
+read this exactly as written and see section 1(a).
+
+Cost. Measured, not estimated: about 2 hours of GPU time per seed, with a
+spread of about 2.3x depending on the environment the founders are born into.
+The run is a single shot: once the pre-registration is locked we cannot add
+seeds afterwards, because that would make the analysis post-hoc.
+
+
+-----------------------------------------------------------------------
+3. CONSTRAINTS THAT CANNOT BE RELAXED
+-----------------------------------------------------------------------
+
+Please do not propose anything that requires breaking these. If you believe a
+constraint should be broken, say so explicitly and separately, and say why.
+
+C1. No trait injection. No personality or trait value is ever assigned to an
+    agent. Traits may only emerge from lived events.
+C2. All metrics are deterministic code. No model is used as a judge.
+C3. No wall-clock time. Only event ordering.
+C4. Constants may not be tuned by looking at an outcome. A constant may be
+    chosen from the literature, or derived from other constants by an
+    inequality, but never selected because it made a result come out.
+C5. Reproducibility requirement. The same seed with the same code must give
+    the same result. NOTE: this does not mean we run one seed. We have
+    previously run 40 seeds. Repeating a seed must reproduce; using many
+    seeds is expected and required.
+C6. No post-hoc protocol change. Everything is locked before the run.
+C7. Null and underpowered results are legitimate outputs and are published as
+    such. We are not looking for a way to get a positive result.
+
+
+-----------------------------------------------------------------------
+4. QUESTIONS
+-----------------------------------------------------------------------
+
+Q1. SENSITIVITY ANALYSIS FOR A COVARIANCE STATISTIC.
+
+Is there an established way to perform a sensitivity or minimum-detectable-
+effect analysis when the primary statistic is a covariance between two
+variables measured within a small group, replicated over independent runs?
+What is the standard effect-size metric for such a statistic, and what is the
+standard way to report "we were only powered to detect covariances at least
+this large"? If the established practice is instead to simulate the null by
+permutation and report the detectable region empirically, say so and cite
+where that practice is described.
+
+Q2. WHICH SAMPLE SIZE IS "THE" SAMPLE SIZE.
+
+Our design has three nested counts: the number of independent seeds, the
+number of agents inside one population (8), and the number of generation
+transitions per seed (2). Statistical power presumably does not depend on all
+three the same way. Which of these is the replication unit for a covariance
+statistic of this kind, and what happens to the other two? Specifically: is
+the covariance over 8 individuals best treated as one noisy observation per
+transition, or as an estimate with its own internal standard error that
+should be propagated?
+
+Q3. THE SMALL-N BIAS OF THE PRICE ESTIMATOR.
+
+We are aware of Rice (2008), "A stochastic version of the Price equation
+reveals the interplay of deterministic and stochastic processes in
+evolution", BMC Evolutionary Biology 8:262, doi 10.1186/1471-2148-8-262,
+which indicates that in very small populations the expected selection
+differential departs systematically from the classical deterministic
+expectation, and that this departure shrinks as population size grows. We
+have already recorded this as a declared limitation.
+
+Our question is narrower: does this bias interact with a power or sensitivity
+analysis, and if so how? Concretely, if the estimator is biased away from
+zero at small N, is a sensitivity analysis computed on the unbiased
+assumption optimistic, pessimistic, or neither? Is there a recommended
+correction, or a recommended way to report the covariance so that the bias is
+visible rather than absorbed?
+
+Q4. A THRESHOLDED ENDPOINT WITH MANY ZERO-VARIANCE CELLS.
+
+Our trait z is written only when a severity threshold is crossed. In many
+cells of the design, no member of the population crosses it, so z is constant
+within that cell and the covariance is exactly zero -- not because nothing
+was selected, but because the endpoint recorded nothing to select on.
+
+How is this situation handled in the methodological literature? Is there an
+accepted name for a cell in which the endpoint is undefined rather than null?
+How should such cells enter, or be excluded from, a sample-size or
+sensitivity calculation, and how should their proportion be reported so that
+a reader cannot mistake "undefined" for "zero"? We would rather change how we
+REPORT than change the threshold, because changing the threshold after seeing
+which cells are empty would violate C4.
+
+Q5. IS THE BUDGET-CONSTRAINED FRAME STILL CORRECT HERE.
+
+Given Q1 through Q4, is "choose the number of seeds from the compute budget,
+then declare the minimum detectable effect" still the defensible frame for a
+covariance statistic, as it was for our earlier paired-difference statistic?
+If yes, please give the exact wording pattern a paper should use so that a
+reader cannot confuse insensitivity with absence. If no, say what replaces
+it.
+
+Q6. PRIOR ART.
+
+Are there published simulation or agent-based studies that report a Price
+equation decomposition together with an explicit power, sensitivity, or
+detectability statement? We are specifically looking for a worked example we
+can imitate, not for a theoretical treatment of the Price equation. If none
+exists, say so explicitly -- see section 5.
+
+
+-----------------------------------------------------------------------
+5. REQUIRED FORM OF THE ANSWER
+-----------------------------------------------------------------------
+
+These three requirements are binding. A previous round met all three and was
+by a wide margin the most usable answer we have received.
+
+R1. DOI OR EQUIVALENT IDENTIFIER for every source. Author, year, venue, and a
+    resolvable identifier. We check every one of them. Across earlier rounds
+    we found twelve claims attached to sources that did not contain them, or
+    to sources that did not exist under the name given.
+
+R2. A VERBATIM QUOTATION for every substantive claim. Not a line number, not
+    a section number, not a paraphrase: the sentence or clause from the
+    source that carries the claim, in quotation marks. Line and section
+    numbers have never survived across copies of a document; the quotation is
+    what lets us find the passage and check it.
+
+R3. DECLARE YOUR GAPS. If you cannot find a source for something we asked,
+    write that no source was found. Do not fill the gap with a plausible
+    sentence. An explicit "no specific claim found in the sources consulted"
+    is more valuable to us than a confident unsourced answer, and we will act
+    on it. Please also include a bibliography at the end.
+
+R4. Where you give an opinion rather than a sourced finding, label it as
+    your opinion.
+
+R5. Please state, for each recommendation, how it would be ATTACKED by a
+    reviewer of our paper. We would rather hear the objection now.
