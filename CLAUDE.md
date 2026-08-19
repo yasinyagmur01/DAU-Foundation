@@ -22,7 +22,14 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-153.** Sıradaki kayıt **D-154** olarak açılır.
+- **Son D-kaydı: D-154.** Sıradaki kayıt **D-155** olarak açılır.
+- ▶▶ **SIRADAKİ İŞ: SONDA-3** (GPU, ~2 sa — aralık 1.5–4 sa). 🔒 **K1 kontrolü
+  ve ön-taahhüt D-154'te, koşumdan ÖNCE commit'li** — koşum sonrası kural
+  **gevşetilemez**. Komut ve okuma kuralları
+  **`docs/EXECUTION_QUEUE.md`'nin başında**.
+- ⛔ **Beklenti dürüstçe:** sonda *"olumlu sonuç"* için değil **karar** için.
+  Bugünkü fizikle pahalı koşum yapılsa **yine evren null'ı** beklenir — ama bu
+  kez **belgelenmiş** olanı. ⇒ **Alet dürüstleşti, evren cömertleşmedi.**
 - ⭐ **K6 bağlayıcı oldu:** kayda geçen kusur, **bir kapıya bağlanmadıkça**
   kapanmamıştır. ⚠ Ve eklerken **D-070'ten beri süren bir ad çakışması**
   bulunup kapatıldı (iki ayrı `K`-serisi).
