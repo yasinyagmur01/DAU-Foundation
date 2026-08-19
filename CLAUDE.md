@@ -22,8 +22,10 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-147.** Sıradaki kayıt **D-148** olarak açılır.
+- **Son D-kaydı: D-148.** Sıradaki kayıt **D-149** olarak açılır.
+- **Suite:** `611 passed, 2 deselected`.
+- ⭐⭐ **K5'te delik bulundu ve kapatıldı (D-148):** `no:cacheprovider` bytecode
+  önbelleğini kapatmıyor ⇒ mutasyon teste hiç ulaşmayabiliyordu.
 - 🔍 **Kusur avı (D-147): üç bulgu.** Rapor tohum etiketlemiyor (L0/L1) ·
   Level 3'ün mesafesi **yapısal yokluğu büyüklük sanıyor** (§G.2 hâlâ canlı) ·
   ⛔ **26 kapının yalnız 6'sı** popülasyon yolunda bağlı (**I4.2 · I5.4** dahil).
@@ -995,7 +997,7 @@ Aşağısı bağlayıcıdır.
 | **K2** | ⛔ **Boyut testi.** Bir boyut (tohum · kol · nesil · ajan) üzerinde toplayan her raporlama fonksiyonunun testinde o boyutta **en az iki farklı değer** olmak zorunda | Analiz testlerinin tamamı **tek tohumluydu** ⇒ iki ayrı çakıştırma kusuru görünmez kaldı |
 | **K3** | **Çağrı yeri testi.** Düzeltmenin testi, düzeltmenin **çağrıldığı yerden** geçmeli | *"kod tabanında var, koşum yolunda yok"* — bir oturumda **dört kez** |
 | **K4** | **Sayı disiplini.** Kayda/commit'e yazılan hiçbir sayı, o turda çıktıdan **okunmamış** olamaz. Tahmin **"tahmin"** diye ve **dayanağıyla** yazılır | suite sayısı yanlış commit'lendi; süre tahminleri iki kez tuttu**ma**dı |
-| **K5** | **Mutasyon koşumu kendini kanıtlar.** Mutasyondan önce/sonra dosyanın **md5'i** doğrulanır ve `-p no:cacheprovider` kullanılır | Toplu mutasyon betiğim **çelişkili sonuç** verdi; kod değil **ölçüm aracım** güvenilmezdi |
+| **K5** | **Mutasyon koşumu kendini kanıtlar.** Mutasyondan önce/sonra dosyanın **md5'i** doğrulanır · `-p no:cacheprovider` · ⭐ **ve `__pycache__` silinir + `PYTHONDONTWRITEBYTECODE=1`** | Toplu mutasyon betiğim **çelişkili sonuç** verdi; kod değil **ölçüm aracım** güvenilmezdi. ⭐ **D-148 üçüncü şartı ekledi:** `no:cacheprovider` yalnız **pytest**'in önbelleğini kapatıyor, CPython'un **bytecode** önbelleğini değil ⇒ geri yükleme aynı bayt uzunluğunda olunca sonraki koşum **mutasyonlu bytecode'u** çalıştırıyor ve mutasyon *"hiçbir test kırılmadı"* diye raporlanıyor. **Ölçüldü** |
 
 ⚠ **K1'in en önemli kısmı (b).** Bir koşumu ucuzlatırken kapattığın şeyin,
 **ölçmek istediğin şeyi üreten mekanizma** olup olmadığını sor.

@@ -183,7 +183,7 @@ uç noktalar **yorumlanmaz**.
 
 | # | kapı |
 |---|---|
-| **V1** | `run_quality = clean` · preflight **6/6** |
+| **V1** | `run_quality = clean` · ⚠ **preflight 6/6 — ama 6/26** (aşağıya bak) |
 | **V2** | **I4.1 replay `identical`** |
 | **V3** | `PYTHONHASHSEED=0` · `TORCH_DETERMINISTIC_WARN_ONLY=False` (I0.6) |
 | **V4** | I0.7 temiz başlangıç — tohum bloğu diskte adapter bırakmamış |
@@ -197,6 +197,34 @@ hakkında **bilgisizdir**.
 
 ⚠ **V6 `null` kolunu KAPSAMAZ** — D-129 o kolun bu nişte donmuş olabileceğini
 ölçtü ve D-131 onu betimleyiciye indirdi.
+
+### ⛔ 5.1 Kapı kapsamı — *"6/6"* **tam kapsam değildir** (D-147/AV-3)
+
+⚠ **Bu satır bir düzeltmedir.** V1 önce yalnız *"preflight 6/6"* diyordu ve bu
+**tam kapsam gibi okunuyordu**. Ölçüldü: `PREFLIGHT_INVARIANTS.md` **26**
+değişmez tanımlıyor, popülasyon yolunda **6'sı** bağlı.
+
+| durum | kapılar |
+|---|---|
+| ✅ **bağlı** (6) | `I0.3` · `I0.4` · `I0.6` · `I0.7` · `I1.1` · `I4.1` |
+| ⛔ **bağlı değil** (20) | `I0.1 I0.2 I0.5 I1.2 I1.3 I1.3b I1.4 I1.5 I2.1 I2.2 I2.3 I3.1 I3.2 I3.3 I3.4 I4.2 I5.1 I5.2 I5.3 I5.4` |
+
+**İkisi bu deneyin iddiasına doğrudan dokunuyor ve ön-kayıttan ÖNCE
+bağlanmalıdır:**
+
+- **`I4.2`** (ABORT) — *gen2 öncesi RNG durumu kol-bağımsız* (GAP-12). Koşum
+  çok nesilli; nesiller arası determinizmi kapıya bağlayan tek şey buydu.
+- **`I5.4`** (FLAG) — *inherited somatic scale gen2'de ≥1 kez uygulandı*
+  (GAP-3). ⛔ İddia **kalıtım** hakkında ve sembolik kanalın varise
+  ulaştığını doğrulayan kapı budur.
+
+⚠ **`I2.1`** (*"iki kol özdeşse dur"*, ABORT) olduğu gibi bağlanamaz:
+popülasyonda **gen1 tasarım gereği özdeştir** ⇒ meşru bir durumda abort
+ederdi. **Uyarlanması** gerekir, ve bunu bugüne kadar kimse yazmamıştı.
+
+⚠ Kalan 17 kapı **sınıflandırılmadı** — hangisinin N/A hangisinin eksik
+olduğu **denetlenmedi**. Kilitten önce sınıflandırılır ya da *"bağlı değil,
+sınıflandırılmadı"* diye **ilan edilir**. Sessizce geçilmez.
 
 ---
 

@@ -211,6 +211,16 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 (pseudoreplication kısıtı karşılanır), nesil satırları **raporlamada kalır**
 (D-132'nin sönüm sorusu açık kalır). Biri istatistik, öteki betimleme.
 
+## ⬜ 2.1b · Kapıları popülasyon yoluna bağla — **I4.2 · I5.4** (D-147/AV-3)
+**Borç:** 26 değişmezin **6'sı** bağlı. İkisi iddiaya doğrudan dokunuyor:
+**I4.2** (ABORT, gen2 RNG kol-bağımsız, GAP-12) · **I5.4** (FLAG, inherited
+somatic scale, GAP-3 — **kalıtım iddiasının kapısı**).
+⚠ **I4.2 ABORT'tur** ⇒ 24 saatlik koşuma yarım bağlanmaz: **K1 zorunlu**
+(hangi mekanizma, hangi bayrak kapatır, dejenere olmadığının kanıtı).
+⚠ **I2.1 olduğu gibi bağlanamaz** — popülasyonda gen1 tasarım gereği özdeş.
+**Bitti sayılır:** iki kapı koşum yolunda · K2/K3/K5 · kalan 17 kapı **N/A mı
+eksik mi** sınıflandırıldı ya da öyle **ilan edildi**.
+
 ## 🔴 2.2 · Ön-kayıt taslağı — **D-145: KİLİTLENEMEZ, dört kusur bulundu**
 📝 `docs/PREREGISTRATION_3.md` yazıldı (D-144), ⛔ **kilit öncesi denetim
 durdurdu** (D-145, Yasin'in talebiyle).

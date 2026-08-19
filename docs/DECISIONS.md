@@ -10981,3 +10981,92 @@ yazılmalı.**
   alanları) **yapılmadı**.
 - AV-2 tek tohumdan (`s9912`) doğrulandı; deseni C2'nin tamamında saymadım.
 - Hiçbir kol karşıtlığı yorumlanmadı (L9) — okunan yalnız **mekanizma**.
+
+---
+
+## D-148 · 2026-08-19 · ✅ **AV-1 ve AV-2 düzeltildi, AV-3 ayrıldı** — ve ⭐⭐ **K5'in kendisinde bir delik bulundu**
+
+**Yetki:** Yasin, *"önerdiğin şekilde yap"*. D-147'nin üç bulgusu.
+**Suite 607 → 611.**
+
+### 1. ⛔ Önce D-147 §2'yi düzeltiyorum — kendi tarifim fazla sertti
+
+D-147'de *"`l2` yokluğu 0 sayıyor"*u bir **hata** gibi yazmıştım. **Değil.**
+`mean_z` **birleşim** alanları üzerinden çağrılıyor ve bayraklanmamış bir alan
+gerçekten **birikmiş büyüklük taşımıyor** ⇒ yokluk = 0 **uç noktanın kendi
+tanımı**, ve docstring bunu zaten doğru yazmış.
+
+⚠ **Kendi sondam farklı bir fonksiyon hesaplamıştı** (alanları kolun kendi
+z'sinden türetmiştim) ⇒ ölçümüm koda oturmuyordu. **Gerçek fonksiyonlarla
+yeniden koşuldu.**
+
+⇒ **Bulgu ayakta ama daha zayıf ve daha kesin:** aritmetik doğru, eksik olan
+**yorumlanabilirlik**. `‖lived − null‖ = 0.087899` **doğru bir sayı**, ama
+%100'ü `null`'ın **hiç girmediği** bir eksenden geliyor ⇒ bir **fark** değil
+bir **varlık**.
+
+### 2. ✅ AV-1 — her liste artık tohumu yazıyor
+
+Level 0'ın iki listesi, Level 1'in başlığı ve pozitif kontrol listesi
+`s{seed}` taşıyor. **Hesap değişmedi.**
+
+### 3. ✅ AV-2 — mesafe **ayrıştırılıyor**, aritmetiği **değişmiyor**
+
+`one_sided_share()` eklendi: `(n_shared, n_one_sided, one_sided_fraction)`.
+Level 3 mesafenin yanına yazıyor:
+
+```
+‖lived − null‖ = 0.087899  ⚠ 100% of it from 1 axis/axes only one arm entered
+‖lived − null‖ = 0.588788                     ← uyarı yok: paylaşılan eksen
+```
+
+⇒ §G.2'nin **2026-08-11'de** adlandırdığı okuma ilk kez **görünür**. Ve
+`l2`'ye **dokunulmadı** — D-136'nın deseni: kazananın **yanına**, yerine değil.
+
+### 4. ⭐⭐ K5'in kendisinde delik: `-p no:cacheprovider` **yetmiyor**
+
+Mutasyon koşumu **P4'ü *"hiçbir test kırılmadı"*** diye raporladı. Sebep
+kodda değildi:
+
+> `-p no:cacheprovider` **pytest**'in önbelleğini kapatıyor, **CPython'un
+> bytecode önbelleğini değil**. Geri yükleme **aynı bayt uzunluğunda** olunca
+> `.pyc`'nin mtime iddiası tutuyor ve sonraki koşum **mutasyonlu bytecode'u**
+> çalıştırıyor ⇒ mutasyon teste **hiç ulaşmıyor**.
+
+**Ölçüldü:** `__pycache__` silindikten sonra aynı suite **36/36 temiz**
+geçti. ⇒ **K5'e üçüncü şart eklendi** (`CLAUDE.md §2.4-b`): `__pycache__`
+silinir **ve** `PYTHONDONTWRITEBYTECODE=1`.
+
+⚠ **Bu delik bugünkü üç mutasyon koşumunun hepsinde açıktı** (D-136, D-138,
+D-148). Yönü **iyi haber**: bayat bytecode **eski** kodu çalıştırır ⇒ hata
+*"kırılmadı"* yönünde olur, *"kırıldı"* yönünde değil. D-136'nın 6/6'sı ve
+D-138'in 7/7'si **kırıldı** raporlamıştı ⇒ o sonuçlar **etkilenmemiş**.
+
+### 5. ⭐ Düzeltilmiş koşum **iki zayıf testimi** yakaladı
+
+| mutasyon | neden sağ kaldı |
+|---|---|
+| **P2** *"level-1 başlığından tohumu kaldır"* | Testim `_multi_seed()`'i **`price=None`** ile çağırıyordu ⇒ level 1 **hiç satır üretmiyordu** |
+| **P4** *"oranı sayı olarak raporla"* | Testimde **tek** tek-taraflı eksen vardı ⇒ `count = 1` ile `fraction = 1.0` **aynı değer** |
+
+İkisi de düzeltildi (level 1'e gerçek `price`, ve **karışık** bir durum:
+1 paylaşılan + 1 tek-taraflı ⇒ oran kesinlikle `0 < x < 1`).
+⇒ **Altı mutasyon, altı doğru test.**
+
+### 6. ⏸ AV-3 **bağlanmadı, ayrıldı** — ve gerekçesi
+
+`I4.2` **ABORT**'tur. 24 saatlik bir koşuma yarım bağlanan bir abort kapısı,
+çözdüğünden çok sorun yaratır ⇒ kendi adımı ve kendi **K1** kontrolü olmalı.
+⇒ Kuyruğa **2.1b** olarak açıldı.
+
+✅ **Ama honestlik açığı ŞİMDİ kapatıldı:** `PREREGISTRATION_3.md` §5'in
+V1 kapısı *"preflight 6/6"* diyordu ve **tam kapsam gibi okunuyordu**.
+Yeni **§5.1** bağlı 6'yı, bağlı olmayan 20'yi, `I2.1`'in **uyarlanma**
+ihtiyacını ve kalan 17'nin **sınıflandırılmadığını** açıkça yazıyor.
+
+### 7. Sınırlar
+
+- Av hâlâ **iki alanla** sınırlı; önerilen 3–5 (L1–L19 doğrulaması ·
+  brief'lerden benimsenenler · C2'nin okunmamış alanları) **yapılmadı**.
+- AV-2'nin ayrışımı **raporlama**dır; hiçbir hesaba girmiyor.
+- Kalan 17 kapı sınıflandırılmadı — ön-kayıtta **öyle ilan edildi**.
