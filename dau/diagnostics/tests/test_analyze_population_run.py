@@ -796,3 +796,123 @@ def test_an_empty_partition_is_not_called_a_pre_D121_run() -> None:
     # is correct. What must never appear is the ESTIMABILITY one.
     assert "estimability ABSENT" not in lines
     assert "empty" in lines, "an empty partition must still be reported as empty"
+
+
+# ---------------------------------------------------------------------------
+# D-148 — what the report could not say about ITSELF (D-147's hunt)
+# ---------------------------------------------------------------------------
+
+
+def test_every_listing_says_which_seed_the_row_belongs_to() -> None:
+    """⭐ AV-1: three seeds printed the same label with different numbers.
+
+    D-127 fixed the COLLAPSE in levels 2 and 3, where an arm-keyed dict let the
+    last seed overwrite the others. The listings in levels 0 and 1 never
+    collapsed — every row was printed — but they carried no seed, so `lived
+    gen1` appeared three times with three different Var(w) values and a reader
+    could not attribute any of them. A half-applied fix.
+
+    Measured on the real C2 output before this change: 27 Var(w) rows, 9 of
+    them labelled `lived gen…`, none of them attributable.
+    """
+
+    # ⚠ price=... on purpose: with the default None every level-1 row is
+    # skipped and the section produces no lines at all, so a seedless heading
+    # there would sail through. Measured — the first version of this test did
+    # exactly that and the mutation "drop the seed from level 1" survived it.
+    run = _run(_multi_seed(price={RESOURCE: {"selection": 0.1,
+                                             "transmission": 0.0,
+                                             "delta_zbar": 0.1,
+                                             "z_variance": 0.5,
+                                             "selection_estimable": True}}))
+    views = arm_views(run)
+    level1 = level1_selection(run, views)
+    assert level1, "level 1 produced no rows — the test cannot see its labels"
+    text = "\n".join(level0_gate(run, views) + level1)
+
+    for seed in (9901, 9902, 9903):
+        assert f"s{seed}" in text, f"seed {seed} is not attributable anywhere"
+    # And the ambiguous form must be gone: a row that starts with the arm name
+    # is a row whose seed the reader has to guess.
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("lived", "null", "shuffle")):
+            raise AssertionError(f"row without a seed label: {line!r}")
+
+
+def test_a_distance_made_only_of_one_sided_axes_is_marked_as_such() -> None:
+    """⭐⭐ AV-2: is this distance a DIFFERENCE, or one arm's own magnitude?
+
+    ⚠ The arithmetic is right and stays right: an unflagged domain really has
+    no accumulated magnitude, so absent IS zero. What `l2` alone cannot say is
+    whether both arms entered the axis. Measured on C2 (s9912, gen2):
+    ‖lived − null‖ = 0.087899 and 100% of it came from `energy`, an axis `null`
+    never entered — a distance that reads like a contrast and is a presence.
+
+    RECONCILIATION §G.2 named this reading on 2026-08-11 for the single-lineage
+    design. It survived into the population reader because nothing reported the
+    decomposition, which is what this pins.
+    """
+
+    from dau.diagnostics.analyze_population_run import one_sided_share
+
+    domains = ["energy", "resource"]
+    only_one_entered = ({"energy": 0.0879, "resource": 0.0},
+                        {"energy": 0.0, "resource": 0.0})
+    both_entered = ({"energy": 0.4, "resource": 0.0},
+                    {"energy": 0.1, "resource": 0.0})
+
+    shared, one_sided, share = one_sided_share(*only_one_entered, domains)
+    assert (shared, one_sided) == (0, 1)
+    assert share == pytest.approx(1.0), "a pure presence read as a difference"
+
+    shared, one_sided, share = one_sided_share(*both_entered, domains)
+    assert (shared, one_sided) == (1, 0)
+    assert share == pytest.approx(0.0), "a real difference marked as one-sided"
+
+    # ⭐ The mixed case is the one that pins share as a FRACTION rather than a
+    # count. With a single one-sided axis both readings equal 1.0 and the two
+    # are indistinguishable — measured: the mutation "return the count instead
+    # of the fraction" survived a test that only had that case.
+    mixed = (
+        {"energy": 0.5, "resource": 0.3, "social": 0.0},
+        {"energy": 0.1, "resource": 0.0, "social": 0.0},
+    )
+    shared, one_sided, share = one_sided_share(*mixed, ["energy", "resource", "social"])
+    assert (shared, one_sided) == (1, 1)
+    expected = 0.3 ** 2 / (0.4 ** 2 + 0.3 ** 2)
+    assert share == pytest.approx(expected)
+    assert 0.0 < share < 1.0, "a fraction collapsed to a count"
+
+
+def test_identical_arms_attribute_nothing_rather_than_dividing_by_zero() -> None:
+    """Two arms that coincide have no distance, so nothing to attribute."""
+
+    from dau.diagnostics.analyze_population_run import one_sided_share
+
+    same = {"energy": 0.3, "resource": 0.0}
+    shared, one_sided, share = one_sided_share(same, dict(same), ["energy", "resource"])
+
+    assert one_sided == 0
+    assert share == 0.0, "an attribution was invented where there is no distance"
+
+
+def test_the_one_sided_warning_reaches_the_report(monkeypatch) -> None:
+    """K3 — the decomposition is worthless if level 3 never prints it."""
+
+    lopsided = [
+        {
+            "arm": "lived", "seed": 9901,
+            "generations": [_generation(1, [_agent("l0", {"energy": 0.4}),
+                                            _agent("l1", {"energy": 0.4})])],
+        },
+        {
+            "arm": "null", "seed": 9901,
+            "generations": [_generation(1, [_agent("n0", {RESOURCE: 0.0}),
+                                            _agent("n1", {RESOURCE: 0.0})])],
+        },
+    ]
+    text = "\n".join(level3_arm_contrast(arm_views(_run(lopsided))))
+
+    assert "only one arm entered" in text
+    assert "100%" in text

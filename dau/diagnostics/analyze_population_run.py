@@ -234,6 +234,45 @@ def all_domains(views: list[ArmGenerationView]) -> list[str]:
     return sorted(domains)
 
 
+def one_sided_share(
+    a: dict[str, float], b: dict[str, float], domains: list[str]
+) -> tuple[int, int, float]:
+    """How much of the squared distance comes from axes only ONE arm entered.
+
+    ⚠ D-147/AV-2. ``l2`` is arithmetically right and stays untouched: an
+    unflagged domain really has no accumulated magnitude, so absent IS zero.
+    What the number cannot say on its own is whether a distance is a
+    DIFFERENCE — two arms that both entered an axis and landed apart — or a
+    PRESENCE — one arm entered an axis the other never reached at all.
+
+    Measured on C2 (s9912, gen2): ‖lived − null‖ = 0.087899, and 100% of it
+    came from `energy`, an axis `null` never entered. RECONCILIATION §G.2 named
+    this reading in 2026-08-11 for the single-lineage design; it survived into
+    the population reader because nothing reported the decomposition.
+
+    Returns (n_shared_axes, n_one_sided_axes, one_sided_fraction_of_squared).
+    Fraction is 0.0 when the arms coincide everywhere — no distance, nothing
+    to attribute.
+    """
+
+    shared = one_sided = 0
+    total_sq = one_sided_sq = 0.0
+    for domain in domains:
+        first = float(a.get(domain, DRIFT_ABSENT_MAGNITUDE))
+        second = float(b.get(domain, DRIFT_ABSENT_MAGNITUDE))
+        gap = (first - second) ** 2
+        total_sq += gap
+        entered_first = first > DRIFT_ABSENT_MAGNITUDE
+        entered_second = second > DRIFT_ABSENT_MAGNITUDE
+        if entered_first and entered_second:
+            shared += 1
+        elif entered_first or entered_second:
+            one_sided += 1
+            one_sided_sq += gap
+    fraction = 0.0 if total_sq <= 0.0 else one_sided_sq / total_sq
+    return shared, one_sided, fraction
+
+
 def l2(a: dict[str, float], b: dict[str, float], domains: list[str]) -> float:
     """Distance over the union of domains, absent = 0.
 
@@ -412,13 +451,13 @@ def level0_gate(run: dict[str, Any], views: list[ArmGenerationView]) -> list[str
     for view in views:
         if view.w_variance is None:
             lines.append(
-                f"  {view.arm:<8} gen{view.generation}: no transition "
+                f"  s{view.seed} {view.arm:<8} gen{view.generation}: no transition "
                 "(final generation produces no heirs)"
             )
             continue
         verdict = "OPEN" if view.selection_measurable else "⛔ CLOSED"
         lines.append(
-            f"  {view.arm:<8} gen{view.generation}: Var(w)={view.w_variance:.4f} "
+            f"  s{view.seed} {view.arm:<8} gen{view.generation}: Var(w)={view.w_variance:.4f} "
             f"distinct(w)={view.w_n_distinct} "
             f"F_agent spread={view.f_agent_spread:.4f} → {verdict}"
         )
@@ -426,7 +465,7 @@ def level0_gate(run: dict[str, Any], views: list[ArmGenerationView]) -> list[str
     lines.append("Distinct z per generation (D-104 compared 1/8 vs 4/8):")
     for view in views:
         lines.append(
-            f"  {view.arm:<8} gen{view.generation}: {distinct_z(view)} distinct "
+            f"  s{view.seed} {view.arm:<8} gen{view.generation}: {distinct_z(view)} distinct "
             f"among {len(view.z_by_agent)} reading(s), landmark reached "
             f"{view.landmark_reached}/{view.n_agents}"
         )
@@ -443,7 +482,10 @@ def level1_selection(
     for view in views:
         if view.price is None:
             continue
-        lines.append(f"  {view.arm:<8} gen{view.generation} closes the previous transition:")
+        lines.append(
+            f"  s{view.seed} {view.arm:<8} gen{view.generation} "
+            "closes the previous transition:"
+        )
         for domain in sorted(view.price):
             part = view.price[domain]
             # D-121. Var(z) = 0 within a cell makes the selection term zero BY
@@ -532,7 +574,7 @@ def positive_control(views: list[ArmGenerationView]) -> list[str]:
     for view, control in rows:
         mark = "" if control.get(CONTROL_KEY_ESTIMABLE) else f"  {UNDEFINED_MARK}"
         lines.append(
-            f"    {view.arm:<8} gen{view.generation}  "
+            f"    s{view.seed} {view.arm:<8} gen{view.generation}  "
             f"Cov(w, control)={float(control[CONTROL_KEY_COVARIANCE]):+.6f}  "
             f"Var(control)={float(control[CONTROL_KEY_VARIANCE]):.6f}{mark}"
         )
@@ -625,9 +667,18 @@ def level3_arm_contrast(views: list[ArmGenerationView]) -> list[str]:
                         "(an arm has no landmark reading)"
                     )
                     continue
+                shared, one_sided, share = one_sided_share(
+                    means[first], means[second], domains
+                )
+                note = ""
+                if one_sided:
+                    note = (
+                        f"  ⚠ {share:.0%} of it from {one_sided} axis/axes only "
+                        f"one arm entered ({shared} shared)"
+                    )
                 lines.append(
                     f"    ‖{first} − {second}‖ = "
-                    f"{l2(means[first], means[second], domains):.6f}"
+                    f"{l2(means[first], means[second], domains):.6f}{note}"
                 )
     lines.append("")
     lines.append(
