@@ -22,13 +22,15 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-152.** Sıradaki kayıt **D-153** olarak açılır.
+- **Son D-kaydı: D-153.** Sıradaki kayıt **D-154** olarak açılır.
+- ⭐ **K6 bağlayıcı oldu:** kayda geçen kusur, **bir kapıya bağlanmadıkça**
+  kapanmamıştır. ⚠ Ve eklerken **D-070'ten beri süren bir ad çakışması**
+  bulunup kapatıldı (iki ayrı `K`-serisi).
 - ✅ **D-152: fitness bantları GÖRELİ oldu** — eşik **değerleri değişmeden**,
   D-088'in deseniyle. İki ölü bant canlandı. ⚠ **Fizik değişti.**
 - ⛔ **c yolu kapandı (D-151):** `0.35` keyfi değil, **üst eşiğin tam yarısı**
   ⇒ zaten türetilmiş; sorun **sabitte değil fizikte** (evren düşük-uygunluklu
   ajan üretmiyor). ⇒ **Yasin'in seçimi: b (göreli bant) ya da d (sınır ilan).**
-- ⭐ **K6 adayı:** kayda geçen kusur, **bir kapıya bağlanmadıkça** kapanmamıştır.
 - ⛔⛔ **D-149: sembolik kanalın SOMATİK yarısı varise hiç ulaşmıyor.** C2'de
   144 varisin **0'ında** somatik ölçek (anılar geçiyor, ~10/varis). Ve C2 bunu
   **`clean`** raporlamıştı — I5.4 bağlı değildi. ⇒ **GAP-3 karar bekliyor.**
@@ -993,7 +995,18 @@ kestiğinden test her koşulda geçiyordu. Mutasyon (256'ya geri dön) geçti �
 test boştu → "kesme oldu mu" sorusuna çevrildi. **Mutasyon kontrolü
 olmadan repoya işe yaramaz bir bekçi girecekti.**
 
-## 2.4-b ⛔ BEŞ EK KONTROL (D-127) — kapılar aletin arızasını yakalıyordu, **benimkini yakalayan yoktu**
+## 2.4-b ⛔ ALTI EK KONTROL (D-127 · K6: D-151) — kapılar aletin arızasını yakalıyordu, **benimkini yakalayan yoktu**
+
+⚠ **Ad çakışması, D-153'te fark edildi ve burada kapatılıyor.** İki ayrı
+`K`-serisi var ve ikisi de D-070'ten beri aynı adları kullanıyor:
+
+| seri | ne | durum |
+|---|---|---|
+| **Bu bölümün K1–K6'sı** | ⭐ **çalışma kontrolleri** — her adımda geçerli | **YÜRÜRLÜKTE** |
+| §4'ün K1–K7'si | **ikinci ön-kaydın kilit kararları** (uç nokta, N, eşikler) | 🔒 **kapanmış, tarihçe** |
+
+⇒ İşaretsiz bir `K5` bundan sonra **bu bölümün** K5'idir. Kilit kararına
+atıf yapılıyorsa **"kilit K5"** diye yazılır.
 
 2026-08-18'de bir oturumda **beş kusur** çıktı ve hepsi aynı yerden geldi:
 *"yazdığım şeyi doğruluyorum, sistemin yaptığı şeyi değil."* Bedeli **~50 dk
@@ -1006,6 +1019,7 @@ Aşağısı bağlayıcıdır.
 | **K2** | ⛔ **Boyut testi.** Bir boyut (tohum · kol · nesil · ajan) üzerinde toplayan her raporlama fonksiyonunun testinde o boyutta **en az iki farklı değer** olmak zorunda | Analiz testlerinin tamamı **tek tohumluydu** ⇒ iki ayrı çakıştırma kusuru görünmez kaldı |
 | **K3** | **Çağrı yeri testi.** Düzeltmenin testi, düzeltmenin **çağrıldığı yerden** geçmeli | *"kod tabanında var, koşum yolunda yok"* — bir oturumda **dört kez** |
 | **K4** | **Sayı disiplini.** Kayda/commit'e yazılan hiçbir sayı, o turda çıktıdan **okunmamış** olamaz. Tahmin **"tahmin"** diye ve **dayanağıyla** yazılır | suite sayısı yanlış commit'lendi; süre tahminleri iki kez tuttu**ma**dı |
+| **K6** ⭐ | ⛔ **Kayda geçen kusur, bir KAPIYA bağlanmadıkça kapanmamıştır.** Bir D-kaydı bir mekanizmanın çalışmadığını ölçtüyse, **aynı turda** ya bir preflight kapısına ya da kuyruğa **bitti-ölçütüyle** bağlanır. Aksi hâlde *"biliniyordu"* ile *"bilinmiyordu"* arasında **pratik fark kalmaz** | **Ölçülen bedel (D-151):** D-086'nın Bulgu 2'si *"alt fitness bandı öldü"* diye **aritmetiğiyle** yazıldı → sekiz oturum → C2 koştu ve **`clean`** raporladı → **144 varişte 0** somatik kalıtım. Kapı (I5.4) tanımlıydı, **bağlı değildi** |
 | **K5** | **Mutasyon koşumu kendini kanıtlar.** Mutasyondan önce/sonra dosyanın **md5'i** doğrulanır · `-p no:cacheprovider` · ⭐ **ve `__pycache__` silinir + `PYTHONDONTWRITEBYTECODE=1`** | Toplu mutasyon betiğim **çelişkili sonuç** verdi; kod değil **ölçüm aracım** güvenilmezdi. ⭐ **D-148 üçüncü şartı ekledi:** `no:cacheprovider` yalnız **pytest**'in önbelleğini kapatıyor, CPython'un **bytecode** önbelleğini değil ⇒ geri yükleme aynı bayt uzunluğunda olunca sonraki koşum **mutasyonlu bytecode'u** çalıştırıyor ve mutasyon *"hiçbir test kırılmadı"* diye raporlanıyor. **Ölçüldü** |
 
 ⚠ **K1'in en önemli kısmı (b).** Bir koşumu ucuzlatırken kapattığın şeyin,

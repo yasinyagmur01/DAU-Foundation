@@ -11458,3 +11458,98 @@ kazanıyor mu"*) ⇒ **5/5**.
   ateşlenebilir, ama zincirin geri kalanı (`is_trauma` olan bir anının
   **var olması**) hâlâ travma eşiğine bağlı ⇒ **GAP-3 tam kapanmadı**,
   darboğazı **bir adım ileri taşındı**. I5.4 bunu gerçek koşumda ölçecek.
+
+---
+
+## D-153 · 2026-08-19 · **K6 bağlayıcı oldu · sınırlar doğrulandı · D seçeneğinin ön-taahhüdü yazıldı**
+
+**Yetki:** Yasin *"önerdiğin şekilde işlemleri bitirip öyle gel"*.
+**GPU yok.** Üç iş: **K6**, **L-sınırlarının denetimi**, **D seçeneği**.
+
+### 1. ✅ K6 `CLAUDE.md §2.4-b`'ye bağlayıcı kural olarak girdi
+
+> **Kayda geçen kusur, bir KAPIYA bağlanmadıkça kapanmamıştır.**
+
+Ölçülen bedeli kuralın yanında duruyor: D-086'nın Bulgu 2'si → sekiz oturum →
+C2'nin `clean` raporu → **144 varişte 0** somatik kalıtım. Kapı (I5.4)
+**tanımlıydı, bağlı değildi**.
+
+### 2. ⛔ Ve K6'yı eklerken bir **ad çakışması** çıktı — D-070'ten beri varmış
+
+İki ayrı `K`-serisi aynı adları kullanıyor:
+
+| seri | ne | durum |
+|---|---|---|
+| `§2.4-b` **K1–K6** | çalışma kontrolleri | **yürürlükte** |
+| `§4` **K1–K7** | ikinci ön-kaydın **kilit kararları** | 🔒 kapanmış |
+
+Ölçüldü: `DECISIONS.md`'de `K5` **30 kez** geçiyor ve **her iki anlamda da**
+kullanılmış (ör. *"`z` = landmark drift, K5"* = kilit kararı;
+*"K5 mutasyon koşumu"* = kontrol).
+
+⇒ **Kapatıldı, yeniden adlandırmadan:** `§2.4-b`'ye disambiguation tablosu
+eklendi — işaretsiz `K5` bundan sonra **kontrol serisinin** K5'i, kilit
+kararına atıf **"kilit K5"** diye yazılır. ⚠ Eski kayıtlar
+**append-only** olduğu için düzeltilemez; kural **ileriye dönük**.
+
+### 3. ✅ Av alanı 3 — ilan edilen sınırların **kodda** denetimi
+
+*"On dokuz sınır ilan ettim; kaçını doğruladım, kaçını kopyaladım?"*
+sorusunun cevabı, **kod okunarak**:
+
+| sınır | doğrulama |
+|---|---|
+| **L3** `z` tek boyutlu | ✅ `DAERM_LOAD_DOMAINS` **`energy` içermiyor** ⇒ hedef ekseni asla energy olamaz |
+| **L4** tekrarlama birimi tohum | ✅ `inherit_adapter` çağrısı var ⇒ nesiller **gerçekten bağımlı** |
+| **L5** `Cov` işaretli | ✅ rapor `+.6f` basıyor · ✅ `selection` üzerinde `abs()`/norm **yok** |
+| **L10** G ≥ 3 | ✅ `MINIMUM_GENERATIONS_INFORMATIVE = 3` |
+| **L14** kriz sabit alana | ✅ `CRISIS_AFFECTED_DOMAIN = 'resource'` |
+| **L15** I0.1/I0.2 bağlı değil | ✅ C2'nin kapı bloğunda **yok** |
+| **L16** spillover skaler | ✅ `CROSS_AXIS_SPILLOVER = 0.2` (float) |
+| **L17** `to_landmark.max` kullanılmıyor | ✅ ön-kayıt §3'te **geçmiyor** |
+| **L20** göreli bant çalışıyor | ✅ üç bandı da üretiyor |
+
+⇒ **10/10 doğrulandı.** ⚠ Kalanlar (**L1 · L2 · L6 · L7 · L8 · L9 · L11 ·
+L12 · L13 · L18 · L19**) **kod özelliği değil** — literatür, tasarım ya da
+tarihsel ölçüm beyanları. **Kod denetimiyle sınanamazlar** ve bu, ilan
+edilmiş bir sınırdır, kusur değil.
+
+### 4. 🔒 D seçeneği — **ön-taahhüt yazıldı, karar YAZILMADI**
+
+**Durum:** GPU'suz **kapanamaz**, ve zorlamak D-129'un yasakladığı şey olur.
+
+**Neden:** iki sürekli aday da kapalı — `energy_mean_over_life` **pozitif
+kontroldür** (D-121, aynı niceliği hem uç nokta hem kontrol yapmak kontrolü
+yok eder) · `to_landmark.max` **reddedilmiştir** (D-129, **2/4**) ve D-143 §5
+yeniden açılmasını **üç şarta** bağlamıştır.
+
+⚠ **Ve teknik bir kaçamak var, bilerek almıyorum:** D-129 *pencere* sürümünü
+reddetti; ömür-boyu kardeşi (`delta_profile.max`) **adı geçmediği için**
+serbest görünüyor. ⛔ Bunu kullanmak, kuralı **sayıyı gördükten sonra dar
+yorumlamak** olurdu — D-129 §4'ün önceden adlandırdığı tuzak.
+
+⭐ **Üçüncü aday, ve D-152'nin mantığının aynısı:** `is_trauma`'yı da
+**göreli** yapmak — *"bir yaşamın en şiddetli olayı o yaşamın travmasıdır."*
+⚠ **Bedeli çok ağır ve peşinen yazıyorum:** her yaşamda **tam olarak bir**
+travma olur ⇒ `z` her hücrede dolar ⇒ ama *"travma"* kelimesi **şiddet**
+anlamını kaybeder ve **sıralama** anlamına gelir. Bu, D-152'den **çok daha
+büyük** bir iddia değişikliğidir. ⛔ **Önermiyorum**, tabloda duruyor.
+
+🔒 **ÖN-TAAHHÜT (D-125 deseni — sonda koşulmadan ÖNCE yazılıyor):**
+
+> Sürekli bir uç nokta adayı **ancak** şu üç şart birlikte sağlanırsa
+> üçüncü ön-kayıta girer:
+> 1. Sonda **`lived` ve `shuffle`** kollarını içerir (D-129'unki `lived null`
+>    koşmuştu; bugünkü birincil karşıtlık `lived ↔ shuffle`);
+> 2. **4 hücrenin en az 3'ünde** aday `Var > 0` taşır;
+> 3. Kural **taze veriye** uygulanır — D-129'un sayıları **yeniden okunmaz**.
+>
+> ⛔ Kovaryans · kol farkı · etki büyüklüğü **hesaplanmaz** (L9).
+
+### 5. Sınırlar
+
+- §3'ün denetimi **kod özelliği olan** sınırlarla sınırlı; 11 sınır **doğası
+  gereği** kod denetimine kapalı.
+- §4 bir **taahhüttür**, bir sonuç değil. Sondayı koşmadan D **kapanmaz**.
+- Av alanları **4 ve 5** (brief'lerden yerel doğrulaması yapılmadan
+  benimsenenler · C2'nin hiç okunmamış alanları) **yapılmadı**.

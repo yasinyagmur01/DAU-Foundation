@@ -9,8 +9,9 @@ borçlar **tek listede**, yapılma sırasına göre.
    D-kaydı yaz, commit + push et.
 2. Madde **⛔ KARAR** ile işaretliyse **Yasin'e sor**, kendin karar verme (D-007).
 3. Her maddede *bitti sayılma ölçütü* yazılı — ona bakmadan ✅ işaretleme.
-4. ⚠ **K1–K5** (`CLAUDE.md §2.4-b`) her maddede geçerli. GPU koşumu öncesi
-   **K1 yazılmadan** koşum başlamaz.
+4. ⚠ **K1–K6** (`CLAUDE.md §2.4-b`) her maddede geçerli. GPU koşumu öncesi
+   **K1 yazılmadan** koşum başlamaz, ve **K6**: kayda geçen kusur bir kapıya
+   bağlanmadan madde ✅ işaretlenmez.
 5. Sıra değiştirilecekse **gerekçesiyle** D-kaydına yazılır.
 
 ---
@@ -244,6 +245,19 @@ durdurdu** (D-145, Yasin'in talebiyle).
 
 ## ⬜ 2.3 · Kilit
 Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).
+
+---
+
+## ⬜ 2.4 · ⛔ KARAR — sürekli uç nokta (D seçeneği), **sonda gerektirir**
+🔒 **Ön-taahhüt D-153 §4'te yazılı ve commit'li** (D-125 deseni: sıra kanıttır).
+**İş:** taze tohumla bir sonda — **`lived` ve `shuffle`** kolları, 4 hücrenin
+en az 3'ünde aday `Var > 0` mı. ⛔ Kovaryans/kol farkı/etki **hesaplanmaz** (L9).
+⚠ İki sürekli aday kapalı: `energy_mean_over_life` **pozitif kontrol** (D-121) ·
+`to_landmark.max` **reddedilmiş** (D-129, 2/4).
+⚠ Üçüncü aday (`is_trauma`'yı göreli yapmak) tabloda ama **önerilmiyor** —
+*"travma"* kelimesi şiddet değil **sıralama** anlamına gelirdi.
+**Bitti sayılır:** sonda koşuldu, kural **taze veriye** uygulandı, sonucu ne
+olursa olsun D-kaydında.
 
 ---
 
