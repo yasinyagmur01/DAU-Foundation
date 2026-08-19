@@ -22,7 +22,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-151.** Sıradaki kayıt **D-152** olarak açılır.
+- **Son D-kaydı: D-152.** Sıradaki kayıt **D-153** olarak açılır.
+- ✅ **D-152: fitness bantları GÖRELİ oldu** — eşik **değerleri değişmeden**,
+  D-088'in deseniyle. İki ölü bant canlandı. ⚠ **Fizik değişti.**
 - ⛔ **c yolu kapandı (D-151):** `0.35` keyfi değil, **üst eşiğin tam yarısı**
   ⇒ zaten türetilmiş; sorun **sabitte değil fizikte** (evren düşük-uygunluklu
   ajan üretmiyor). ⇒ **Yasin'in seçimi: b (göreli bant) ya da d (sınır ilan).**
@@ -30,7 +32,7 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 - ⛔⛔ **D-149: sembolik kanalın SOMATİK yarısı varise hiç ulaşmıyor.** C2'de
   144 varisin **0'ında** somatik ölçek (anılar geçiyor, ~10/varis). Ve C2 bunu
   **`clean`** raporlamıştı — I5.4 bağlı değildi. ⇒ **GAP-3 karar bekliyor.**
-- **Suite:** `613 passed, 2 deselected`.
+- **Suite:** `618 passed, 2 deselected`.
 - ⭐⭐ **K5'te delik bulundu ve kapatıldı (D-148):** `no:cacheprovider` bytecode
   önbelleğini kapatmıyor ⇒ mutasyon teste hiç ulaşmayabiliyordu.
 - 🔍 **Kusur avı (D-147): üç bulgu.** Rapor tohum etiketlemiyor (L0/L1) ·

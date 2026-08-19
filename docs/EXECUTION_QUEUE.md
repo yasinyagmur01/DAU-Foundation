@@ -221,8 +221,10 @@ için **iki aşamalı yapı** (`P_active` + `Cov_cond`, ve `P_active`
 yarısı çalışmıyor** (GAP-3). ⚠ Ve C2 bunu **`clean`** diye raporlamıştı,
 çünkü kapı bağlı değildi.
 
-⛔ **GAP-3 düzeltilmedi** — düzeltmek fizik değiştirir, **karar Yasin'in**.
-Ön-kayıta **L20** olarak yazıldı.
+✅ **GAP-3 kısmen kapandı (D-152):** fitness bantları **göreli** yapıldı, eşik
+**değeri değişmeden**. İki ölü bant canlandı ⇒ miras uyarısı dalı
+**ulaşılabilir**. ⚠ **Tam kapanmadı** — zincirin geri kalanı `is_trauma`
+eşiğine bağlı; darboğaz **bir adım ileri taşındı**, I5.4 koşumda ölçecek.
 
 ## 🔴 2.2 · Ön-kayıt taslağı — **D-145: KİLİTLENEMEZ, dört kusur bulundu**
 📝 `docs/PREREGISTRATION_3.md` yazıldı (D-144), ⛔ **kilit öncesi denetim

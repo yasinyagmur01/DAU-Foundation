@@ -11365,3 +11365,96 @@ sorun **fizikte** ⇒ d'nin gerekçesi eskisinden **güçlü**.
 > *"biliniyordu"* ile *"bilinmiyordu"* arasında **pratik fark kalmaz**.
 > **Ölçülen bedel:** D-086'nın Bulgu 2'si → sekiz oturum → C2'nin
 > `clean` raporu → 144 variste 0 somatik kalıtım.
+
+---
+
+## D-152 · 2026-08-19 · ✅ **UYGULANDI: fitness bantları GÖRELİ** — iki ölü bant canlandı
+
+**Yetki:** Yasin *"ne öneriyorsan öyle yapalım"* (= D-151 §5'in **b** yolu).
+**Suite 613 → 618.** ⚠ **Bu bir fizik değişikliğidir.**
+
+### 1. Ne değişti — ve ne DEĞİŞMEDİ
+
+⛔ **Hiçbir eşik değeri değişmedi.** `FITNESS_LOW_THRESHOLD = 0.35` ve
+`FITNESS_HIGH_THRESHOLD = 0.70` **aynen duruyor**. Değişen şey **uygulandıkları
+nicelik**:
+
+| | önce | sonra |
+|---|---|---|
+| bant | `f_agent`'ın **mutlak** değeri | hücre içinde **göreli konumu** (min-max, [0,1]) |
+
+⇒ Bu **tam olarak D-088'in yaptığı düzeltme**: *"çıta, kalibre edildiği
+niceliğe uygulanır."* Eşikler [0,1] yayılan bir nicelik için kalibreydi;
+D-086 `F_agent`'ı ortaya sıkıştırınca çıta havada kaldı. Şimdi yine [0,1]
+yayılan bir nicelik görüyor.
+
+⚠ **§2.7 ihlal edilmedi:** hiçbir **değer** veriden seçilmedi. Kural
+değişti, ve referans **popülasyonun kendisi**.
+
+### 2. Neden göreli — iç tutarlılık
+
+Bu deneyin seçilimi **zaten göreli**: turnuva `k = 2` iki ajanı **birbirine**
+karşı yarıştırıyor (P2/D-094). `fitness_class` geriye kalan **tek mutlak
+kural**dı. ⇒ Göreli yapmak bir uyarlama değil, **var olan mantığın
+tamamlanması**.
+
+### 3. ⛔ Yasak referans — ve testle çivilendi
+
+En çekici göreli referans **turnuva sonucu** (`w = 0` ⇒ *"en uygunsuz"*).
+⛔ **Yasak:** bant hangi anıların aktarılacağını belirliyor ⇒ `z`'yi
+şekillendiriyor ⇒ `w`'den türetilseydi `Cov(w, z)` **kısmen özdeşlik**
+olurdu. D-075'in totolojisi, P4'ün üç katmanı ayrı tutma sebebi.
+
+⇒ Referans **`F_agent` değerleri**, ve
+`test_the_band_is_not_derived_from_heir_count` imzayı **kilitliyor**.
+
+### 4. Ölçülen etki
+
+C2'nin gerçek yayılımıyla (min 0.3919 … max 0.7696):
+
+| | bantlar |
+|---|---|
+| **mutlak** (bugüne kadar) | `normal` ×7, `high` ×1 — **low: 0** |
+| ⭐ **göreli** | `low, low, low, normal, normal, high, high, high` |
+
+⇒ **İki ölü bant canlandı**, ve miras uyarısı dalı **ulaşılabilir** oldu.
+
+⚠ **Düz hücrede hiçbir şey uydurulmuyor:** yayılım ≤ epsilon ise
+`normalize_fitness` **`None`** döner ve herkes `normal` olur. Özdeş ajanlarda
+kimse *"göreli olarak uygunsuz"* değildir — ve düz hücre varsayımsal değil,
+D-129 donmuş bir `null` kolu ölçtü.
+
+### 5. İlan edilen bedel
+
+⚠ **Min-max, her hücrede birini `low` birini `high` yapar.** Bu bir tasarım
+iddiasıdır: *"her nesilde birileri göreli olarak uygunsuzdur."* Gizlemiyorum
+— mekanizmayı ateşlenebilir kılan şey tam olarak bu.
+
+⚠ **`F_agent` hem `w`'yi hem hangi anıların aktarıldığını etkiliyor.** Bu
+**yeni değil** (D-088 kabul etmişti: *"F_agent hangi anıların aktarılacağını
+şekillendirir, aktarılıp aktarılmayacağını değil"*) ama göreli hâlde de
+**geçerli** ⇒ sınır olarak yazıldı.
+
+⚠ **Tek-soy yolu değişmedi:** referans verilmezse mutlak bantlar çalışır.
+Bir ajan yalnız yaşarken **göreli olacağı bir hücre yoktur**.
+
+### 6. K1–K5
+
+**K2** hücrede spread var, üç bant birden · **K3** hem sonuç dosyasından hem
+`select_for_transfer`'dan · **K5** **beş mutasyon**, bytecode şartıyla.
+
+⭐ **Ve K5 yine kazandırdı:** ilk turda **Q4 ve Q5 sağ kaldı** — testlerim
+sınıflandırıcıyı kapsıyordu ama **aktarım yolunu** kapsamıyordu, ki asıl
+davranış değişikliği orada. İki test eklendi (*"göreli bant
+`select_for_transfer`'a ulaşıyor mu"* + *"hücrenin üst ucu da uyarı
+kazanıyor mu"*) ⇒ **5/5**.
+
+### 7. Sınırlar
+
+- Etki **C2'nin yayılımıyla** gösterildi; yeni fizikte yayılımın ne olacağı
+  **bilinmiyor**.
+- ⚠ **Fizik değişti** ⇒ C2 ve öncesi **karşılaştırılamaz** (zaten öyleydi).
+- Somatik ölçeğin varise **gerçekten ulaştığı** doğrulanmadı — bant artık
+  ateşlenebilir, ama zincirin geri kalanı (`is_trauma` olan bir anının
+  **var olması**) hâlâ travma eşiğine bağlı ⇒ **GAP-3 tam kapanmadı**,
+  darboğazı **bir adım ileri taşındı**. I5.4 bunu gerçek koşumda ölçecek.

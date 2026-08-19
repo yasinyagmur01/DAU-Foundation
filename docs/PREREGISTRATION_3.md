@@ -86,8 +86,9 @@ Sınanan parça (aksiyomun **tamamı değil**):
 | — | N · G · olay | **N = 8** · **G = 3** · **30 olay** | D-107, C2 |
 | ⭐ **YENİ-1** | **Birincil karşıtlık** | **`lived` ↔ `shuffle`**; `null` **betimleyici** | **D-131** |
 | ⭐ **YENİ-2** | **Test birimi** | tohum başına **ortalanmış** değer; nesil satırları **raporlanır ama test edilmez** | **D-141** |
+| ⭐ **YENİ-3** | **Fitness bantları** | **göreli** (hücre içi min-max); eşik **değerleri değişmedi** | **D-152** |
 
-⚠ **Hiçbir sabit değişmedi.** `constraints.py` C2'deki hâliyle; özellikle
+⚠ **Hiçbir sabit DEĞERİ değişmedi.** `constraints.py` C2'deki hâliyle; özellikle
 `DELTA_THRESHOLD_DEEP = 0.70` (D-143) ve `CROSS_AXIS_SPILLOVER = 0.20`
 (D-137) **korunuyor**.
 
@@ -345,7 +346,13 @@ eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 min 0.3919 — D-086 `F_agent`'ı 0.14→0.45 taşımış, eşik geri dönülmemiş) ve
 üst bant **12/216**, ki travmayla aynı yaşamda buluşması ≈ **%0.6**.
 ⇒ **Alt bant yapısal olarak ölü, üst bant canlı ama nadir** — iki farklı sorun.
-⛔ Düzeltme **§2.7'ye takılıyor** (dağılım görüldü) ⇒ **karar Yasin'in**. ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
+✅ **D-152 düzeltti — ve hiçbir eşik değeri değişmeden.** Bantlar artık
+**göreli**: eşikler hücre içi min-max konumuna uygulanıyor (D-088'in deseni —
+*"çıta kalibre edildiği niceliğe uygulanır"*). C2'nin yayılımıyla iki ölü bant
+**canlandı**. ⚠ **Bedeli ilan edildi:** min-max her hücrede birini `low`
+birini `high` yapar. ⚠ **Ve GAP-3 tam kapanmadı** — bant ateşlenebilir oldu,
+ama zincirin geri kalanı hâlâ `is_trauma` eşiğine bağlı; darboğaz **bir adım
+ileri taşındı** ve I5.4 gerçek koşumda ölçecek. ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
 
 ---
 
