@@ -23,7 +23,9 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
 - **Suite:** `607 passed, 2 deselected`. Çalışma ağacı temiz.
-- **Son D-kaydı: D-142.** Sıradaki kayıt **D-143** olarak açılır.
+- **Son D-kaydı: D-143.** Sıradaki kayıt **D-144** olarak açılır.
+- ✅ **Faz 2'nin açık kararlarının hepsi kapandı** (2.0 · 2.0b · 2.1) ⇒
+  sıradaki iş **2.2 ön-kayıt taslağı**.
 - ✅ **DR #12 cevaplandı ve mutabakata bağlandı (§U).** ⭐ **Kuyruk 2.1 açıldı:**
   `ΔCov` indirgemesiyle **yeni istatistik gerekmiyor**.
 - ✅ **FAZ 0 BİTTİ** (D-135 · D-136 · D-138). ⛔ **Sıradaki iş Faz 2, ve
@@ -112,6 +114,7 @@ Verilmeden güç hesabı, dolayısıyla Faz 3'ün tohum sayısı **bilinemez**.
 | **D-137** | ✅ **GAP-10 kararı (Yasin): skaler kalıyor, sınır ilan ediliyor.** Matris `k` sabit olduğu için (192/192) skalerin **üç kopyalı hâli**; eşiği de geçirmiyor. ⛔ Ve asıl darboğazın **travma kapısı** olduğu ortaya çıktı ⇒ **kuyruk 2.0** açıldı |
 | **D-138** | ⭐ Kuyruk 0.2b + 0.3 — `k` ve π raporlanıyor ⇒ **D-137'nin tetiği gözlenebilir**, ve **L13 ilk kez çürütülebilir**. π *"tavanda takılı"* değilmiş, **1.0 ↔ 1.2** arasında oynuyor (`n_distinct = 2`) |
 | **D-139** | 🔍 Kuyruk 2.1'in seçim uzayı — ⛔ **soru düştü:** DR #1 *"SESOI ilan etme"* cevabını vermiş ve **benimsemişiz** (§G.3). Gerçek boşluk **kovaryans için MDE**. 📄 **DR #12 yazıldı** |
+| **D-143** | ✅ **Travma eşiği kararı (devredilmiş yetki): eşik DEĞİŞMİYOR, `P_active` eş-birincil.** ⛔ Ve kendi önceki önerimi geri çektim — (c) zaten ön-taahhütle reddedilmişti (D-129) |
 | **D-141/142** | ✅ **U6 kararı (ikisi birden)** · ⭐⭐ **2.0b ölçüldü:** işaretli kestirimci null'da **yansız** (0.89 SE) ⇒ DR'nin U7'si olmayan bir sorunu çözüyormuş. ⛔ **Asıl tehlike magnitude'de:** null'da `E[\|Cov\|] = 0.046` ve etki **4.86 kat** sıkışıyor |
 | **D-140** | ⭐⭐ **DR #12 mutabakatı — 2.1 açıldı.** `ΔCov` indirgemesi ⇒ D-052'nin makinesi aynen çalışıyor. Ayrıca: tekrarlama birimi **tohum** (pseudoreplication) · eşikli uç nokta için **`P_active` + `Cov_cond`** · ⛔ **dört alıntı kaynağında yok** (kimlikler 4/4 temiz) |
 
@@ -843,7 +846,7 @@ sütunu bağlayıcı — o adıma gelindiğinde GAP **kendiliğinden** gündeme 
 | GAP | Tetik | Neden o an optimal | Nasıl çözülür |
 |---|---|---|---|
 | **GAP-10** (spillover) | ✅ **KARARA BAĞLANDI — D-137 (Yasin): skaler kalıyor** | Ateşlendi (D-136 §6), ölçüldü, ve **önerilen düzeltme vaat ettiğini yapmadı**: `k` 192/192 `resource_load`'a kilitli ⇒ matris skalerin **üç kopyalı hâli**; eşiği de geçirmiyor (+%2.29, tepeler 0.62 → 0.634, kapı 0.70) | ⏸ **Kapanmadı, ertelendi.** Yeniden açılma tetiği: **`k` ajanlar arasında değişkenleşirse** (D-137 §7). Sınır ön-kayıta yazılacak |
-| **Travma eşiği** (yeni, D-137 §8) | ⛔ **AÇIK — kuyruk 2.0** | GAP-10 çözülünce ortaya çıktı ki `Var(z)=0`'ın sebebi boyut değil **kapı**: tepeler 0.42–0.62, `DELTA_THRESHOLD_DEEP = 0.70`. Spillover'ın **üç seçeneği de** geçirmiyordu ⇒ bağımsız sorun | Yasin kararı, üçüncü ön-kayıtta. §2.7: değer **etkiye bakılarak seçilemez** |
+| **Travma eşiği** (D-137 §8) | ✅ **KARARA BAĞLANDI — D-143** (yetki devredildi) | Üç seçenek de kapalı çıktı: (a) §2.7 — dağılımı zaten gördük, ve tek doğal eşitsizlik **bağlamıyor** (`M(1.0)=0.82 ≥ 0.70`) · (b) fizik değişir · (c) **zaten reddedilmiş** (D-129, 2/4) | ✅ **(d): eşik değişmiyor, `P_active` eş-birincil.** Sıfır yeni sabit. ⏸ `to_landmark.max` üç şartla yeniden açılabilir |
 | ~~GAP-18~~ | ✅ **ÖLÇÜLDÜ (B2)** — `uniq_rejected` **100 / 94** · `uniq_chosen` 1025 / 971 · `max_rejected_reuse` **47 / 45** · `texts_in_both_roles` 28 / 51, 1707+1741 çift üzerinde. Şiddet artık sayıyla biliniyor: reddedilen taraf 10 kat daha az çeşitli. ⚠ **KTO kararı ikinci ön-kayıta** — kilit kapalı | ikinci ön-kayıt |
 | ~~GAP-17~~ | ✅ **RAPORDA NOT EDİLDİ** — `docs/B2_RESULTS.md` §6, "açıklanmadı" olarak. Bisect yapılmadı; 08-09 tabanı `tool_identity` öncesi olduğu için delil değeri yok | kapandı (not olarak) |
 

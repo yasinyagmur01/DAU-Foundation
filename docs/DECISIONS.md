@@ -10512,3 +10512,101 @@ Yeniden kurmak için gereken her şey §2'de; kullanılan tohumlar:
 tek-kol taramasında **`4242 + round(100·β)`**, eşli farkta kol A **777**,
 kol B **999**, deterministik referansta **`4342 + round(100·β)`**
 (= tek-kol tohumu + 100 000). `PYTHONHASHSEED=0`.
+
+---
+
+## D-143 · 2026-08-19 · ✅ **KARAR: travma eşiği DEĞİŞMİYOR — `P_active` eş-birincil uç nokta olur** (kuyruk 2.0)
+
+**Yetki:** ⚠ Bu madde kuyrukta **⛔ KARAR** işaretliydi ve D-007 gereği
+Yasin'indir. **Yasin 2026-08-19'da açıkça devretti** (*"önerdiğin yolla
+kararları al"*). Karar Claude Code tarafından alındı, **devir kayda geçti**.
+
+⛔ **Ve karar hiçbir sayı seçmiyor** — aşağıdaki gerekçenin bütün ağırlığı
+tam da bunun üzerinde.
+
+### 1. ⛔ Önce kendi önerimi geri çekiyorum
+
+Bir önceki turda seçenek (c)'yi — *"eşik-öncesi bir uç nokta tanımla"* —
+**en umut verici** diye sunmuştum. **Yanlıştı:** o seçenek zaten
+**ön-taahhüt edilmiş, ölçülmüş ve reddedilmiştir**.
+
+| kayıt | ne |
+|---|---|
+| **D-125/D-128** | Kural **koşumdan önce** yazıldı: *"4 hücrenin en az 3'ünde `Var(to_landmark.max) > 0` ⇒ aday girer"* |
+| **D-129** | Sonuç **2/4** ⇒ ⛔ **ADAY GİRMEZ**. `lived` 2/2 tanımlı, `null` 0/2 dejenere |
+
+⚠ **Ve "ama D-131 `null`'ı betimleyiciye indirdi, `lived` 2/2 geçiyor" denemez.**
+D-129 §4 tam bu tuzağı **önceden** adlandırmış:
+
+> *"Yalnız `lived` koşulsaydı sonuç 2/2 = %100 çıkacak, aday 'geçti' diye ilan
+> edilecek ve gerçek deneyde `null` hücreleri yine boş çıkacaktı."*
+
+Aynı sayıları, sonradan değişmiş bir kol yapısıyla yeniden okumak **kuralı
+sayıyı gördükten sonra yeniden yazmaktır**. ⇒ (c) **kapalı**.
+
+### 2. Seçenek uzayı — üçü de kapalı çıktı
+
+| | seçenek | neden kapalı |
+|---|---|---|
+| **a** | Eşiği indir | ⛔ **§2.7.** Dağılımı **zaten gördük** (tepeler 0.39–0.64) ⇒ bugün seçilecek her değer **etkiye bakılarak** seçilmiş olur. ⚠ Ve sabitlerden türetilebilecek tek doğal eşitsizlik **bağlamıyor**: *"kapı azami PE ile ulaşılabilir olmalı"* ⇒ `M(1.0) = 0.8200 ≥ 0.70` **zaten sağlanıyor** (pay 0.12; kapıyı geçmek için ham PE ≥ **0.8537**). Ölçüldü, uydurulmadı |
+| **b** | `magnitude` formülünü değiştir | ⛔ **Fizik değişir** ⇒ bugüne kadarki bütün sayılar karşılaştırılamaz olur; üstelik yeni formül de **tepelerin nerede durduğuna bakılarak** seçilirdi |
+| **c** | Eşik-öncesi uç nokta | ⛔ **§1** — ön-taahhüt edilmiş, ölçülmüş, reddedilmiş |
+
+### 3. ✅ Seçilen: **(d) — eşiği düzeltme, geçme oranını ÖLÇ**
+
+> **`DELTA_THRESHOLD_DEEP = 0.70` değişmiyor.** Bunun yerine, eşiğin
+> **geçilme oranı** `P_active` **eş-birincil uç nokta** olarak ön-kayıta
+> yazılır (DR #12 / U9, D-140 §3).
+
+| | uç nokta |
+|---|---|
+| **`P_active`** | `Var(z) > 0` olan hücrelerin oranı — **eş-birincil** |
+| **`Cov_cond`** | yalnız **aktif** hücrelerde `ΔCov` (D-140 §1'in indirgemesi) |
+
+⭐ **Neden bu, bir kaçamak değil:**
+
+1. **Sıfır yeni sabit, sıfır fizik değişikliği, sıfır ön-taahhüt ihlali** —
+   a/b/c'nin üçünün de düştüğü yerlerden hiçbirine dokunmuyor.
+2. **Sorunu ölçüme çeviriyor.** *"Hücrelerin %78'i boş"* bir arıza değil,
+   **evrenin bir özelliği**; `P_active` onu bir arıza olmaktan çıkarıp
+   **raporlanan bir nicelik** yapıyor.
+3. **Dışarıdan geldi:** DR #12 bunu bizim eşik sorunumuzu bilmeden önerdi
+   (U9), ve D-140'ta zaten benimsenmişti. Bu karar onu **uygular**, yeni bir
+   şey icat etmez.
+4. **D-121 ile aynı çizgide:** *"tanımsız"* ile *"sıfır"* ayrımı zaten
+   verilmiş bir karardı; `P_active` o ayrımın **sayısal hâli**.
+
+⚠ **Ve U10'un kısıtı bağlayıcı:** `P_active` **ön-eleme filtresi değildir**.
+Eşiği geçmek **müdahaleden etkilenmiş** olabilir — bizde bu varsayımsal değil,
+`lived` kolunun daha sık geçmesi tam olarak beklenen şey ⇒ `P_active`
+**kendisi bir sonuçtur** ve öyle raporlanır.
+
+### 4. Bunun bedeli — açıkça
+
+- **Aktif hücre oranı ~%22** (PROVENANCE_AUDIT) ⇒ `Cov_cond`'un dayandığı
+  hücre sayısı az; **güç 2.2'nin duyarlılık analizinde** açıkça çıkacak ve
+  **ilan edilecek** (D-140 §1'in `ΔCov` makinesi).
+- ⇒ **Bu karar uç noktayı güçlü yapmıyor**; onu **dürüst** yapıyor.
+  *"Ölçemedik"* ile *"ölçtük, yoktu"* ayrımı `P_active` sayesinde ilk kez
+  **tek bir sayıyla** kuruluyor.
+
+### 5. `to_landmark.max` yeniden ne zaman açılır
+
+⏸ **Kapanmadı, ertelendi.** Yeniden açılma koşulu **üç şartın üçü birden**:
+
+1. **Yeni** bir ön-taahhüt yazılır (D-125 deseni: koşumdan **önce** commit),
+2. sonda **`shuffle` kolunu içerir** — D-129'un sondası `lived null` koşmuştu,
+   bugünkü birincil karşıtlık ise `lived ↔ shuffle` (D-131) ⇒ mevcut veri o
+   karşıtlık hakkında **hiçbir şey söylemiyor**,
+3. okuma kuralı **taze veriye** uygulanır; D-129'un sayıları **tekrar
+   okunmaz**.
+
+### 6. Sınırlar
+
+- Karar **devredilmiş yetkiyle** alındı (§Yetki). Yasin geri almak isterse
+  bu kayıt **tek yerde** duruyor.
+- `P_active`'in **eşiği yok ve olmayacak**: *"kaç aktif hücre yeterli"*
+  sorusu bir SESOI sorusudur ve DR #1'den beri cevabımız **eşik ilan
+  etmemek** (§G.3) ⇒ bütçeden tohum, **ilan edilmiş MDE**.
+- Bu kayıt **hiçbir kod değiştirmiyor**; `P_active` zaten ölçülebilir
+  (`selection_estimable`, D-121) — 2.2'nin işi onu **ön-kayıta yazmak**.

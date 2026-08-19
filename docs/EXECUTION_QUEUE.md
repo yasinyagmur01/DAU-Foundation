@@ -159,16 +159,25 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 # FAZ 2 — üçüncü ön-kayıt (GPU'suz)
 
-## ⬜ 2.0 · ⛔ KARAR — **travma eşiği**, uç noktanın asıl darboğazı
-**D-137 §8 bunu ayrı madde yaptı.** `Var(z) = 0` çıkan 14/18 geçişin sebebi
-uç noktanın **boyutu değil**, travma kapısıydı: bireysel kanalın tepe
-değerleri **0.42–0.62**, kapı **`DELTA_THRESHOLD_DEEP = 0.70`** (D-124).
-⚠ Spillover'ın üç seçeneğinin **hiçbiri** bunu geçirmiyordu (D-137 §4) ⇒
-bu bağımsız bir sorundur, GAP-10'un yan ürünü değil.
-**Seçenek uzayı:** eşiği indir · `magnitude` formülünü değiştir · eşik-öncesi
-bir uç nokta tanımla (D-124'ün penceresi bunun için aletlendi).
-⛔ **Karar Yasin'in** — sabit değişikliği (D-007), ve §2.7 bağlayıcı: değer
-**etkiye bakılarak seçilemez**, sabitlerden türetilen bir eşitsizlikle gelir.
+## ✅ 2.0 · Travma eşiği — **D-143: eşik DEĞİŞMİYOR, `P_active` eş-birincil**
+⚠ **Yetki devredildi** (Yasin, 2026-08-19: *"önerdiğin yolla kararları al"*).
+
+⛔ **Üç seçenek de kapalı çıktı:** **(a)** eşiği indir — dağılımı **zaten
+gördük** (§2.7), ve sabitlerden türetilebilecek tek eşitsizlik **bağlamıyor**
+(`M(1.0) = 0.8200 ≥ 0.70` zaten sağlanıyor) · **(b)** formülü değiştir — fizik
+değişir · **(c)** eşik-öncesi uç nokta — ⛔ **zaten ön-taahhüt edilmiş,
+ölçülmüş, reddedilmiş** (D-125/128/129, **2/4**).
+
+✅ **Seçilen (d): eşiği düzeltme, geçilme oranını ÖLÇ.** `P_active`
+(`Var(z) > 0` hücre oranı) **eş-birincil**, `Cov_cond` yalnız aktif hücrelerde.
+**Sıfır yeni sabit · sıfır fizik değişikliği · sıfır ön-taahhüt ihlali.**
+⚠ `P_active` **ön-eleme değil, sonuçtur** (U10). ⚠ Ve bu karar uç noktayı
+**güçlü** yapmıyor, **dürüst** yapıyor — aktif oran ~%22, güç 2.2'de ilan
+edilecek.
+
+⏸ **`to_landmark.max` yeniden açılabilir** ama **üç şart birden**: yeni
+ön-taahhüt · sonda **`shuffle` içerir** (D-129'unki `lived null`'dı) · kural
+**taze veriye** uygulanır.
 
 ## ✅ 2.0b · Rice yanlılığı ölçüldü — **D-142**, ve tehlike başka yerde çıktı
 ✅ **GPU'suz, gerçek fonksiyonlarla** (`allocate_heirs` + `price_partition`
