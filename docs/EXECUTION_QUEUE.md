@@ -158,6 +158,51 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
+# ▶▶ SIRADAKİ İŞ — **2.4 · SONDA-3** (GPU, ~2 sa) 🔒 ön-taahhüt commit'li
+
+⛔ **"devam et" denince BU madde alınır.** Ön-taahhüt ve K1 kontrolü
+**D-154'te, koşumdan önce commit edilmiş** durumda — sıra kanıttır, ve
+koşum sonrası kural **gevşetilemez**.
+
+## ⬜ 2.4 · Sonda-3 — **üç soruyu birden** cevaplıyor
+
+| # | soru | ön-taahhüt edilmiş okuma kuralı |
+|---|---|---|
+| **S1** | Sürekli uç nokta (`to_landmark.max`) taze veride tanımlı mı? | **4 hücrenin ≥ 3'ünde** `Var > 0` ⇒ **girer**, aksi hâlde **girmez** |
+| **S2** | `I5.4` geçiyor mu (D-152 somatik kanalı canlandırdı mı)? | **Tahmin: geçer**, ≥1 varis `has_somatic_scale`. **Sıfır ⇒ D-152 vaadini tutmadı** |
+| **S3** | `I4.2` ne diyor (kollar aynı RNG durumundan mı giriyor)? | **Tahmin: FLAG basar.** **Geçerse** öncül yanlıştı ⇒ ABORT'a yükseltilir |
+
+**Komut — tam olarak bu:**
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9916 --n-agents 8 --n-generations 3 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle \
+  --results dau_runs/probe3_endpoint_s9916.json
+```
+
+⚠ **Dış `timeout` YOK** (D-126: replay'i keserse sonuç dosyası hiç yazılmaz) ·
+⚠ `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez** (D-116) · ⚠ tohum **9916 taze**,
+deneyde kullanılmaz · ⚠ süre **1.5–4 sa** (tahmin; D-126/D-129'da iki kez
+tutmadı).
+
+⛔ **Okunmayacaklar (L9):** kovaryans · kol farkı · etki büyüklüğü · işaret.
+
+**Bitti sayılır:** koşum tamamlandı (`complete: true`), üç sorunun üçü de
+D-kaydında **kuralın yazıldığı gibi** okundu, ve D-154 §5'in dört yolundan
+hangisine girildiği **yazıldı**.
+
+### ⇒ Sonda bittikten sonra (D-154 §5)
+
+| S1 | S2 | sıradaki iş |
+|---|---|---|
+| geçti | geçti | ⭐ Uç nokta çevrilir, ön-kayıt §3/§4/§7 yeniden yazılır ⇒ **2.2 → 2.3 kilit** |
+| geçti | düştü | Uç nokta çevrilir, somatik kanal **sınır** ilan edilir ⇒ 2.2 |
+| düştü | geçti | `z` kalır ⇒ ⛔ **D-145'in 3. kusuru açık** ⇒ **S≥30 mu kestirim mi**, karar Yasin'in |
+| düştü | düştü | ⛔ *"Bu fizikle test edilemez"* **kanıtla** yazılır ⇒ Yön 3 yeniden açılır |
+
+---
+
 # FAZ 2 — üçüncü ön-kayıt (GPU'suz)
 
 ## ✅ 2.0 · Travma eşiği — **D-143: eşik DEĞİŞMİYOR, `P_active` eş-birincil**
@@ -248,19 +293,6 @@ Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).
 
 ---
 
-## ⬜ 2.4 · ⛔ KARAR — sürekli uç nokta (D seçeneği), **sonda gerektirir**
-🔒 **Ön-taahhüt D-153 §4'te yazılı ve commit'li** (D-125 deseni: sıra kanıttır).
-**İş:** taze tohumla bir sonda — **`lived` ve `shuffle`** kolları, 4 hücrenin
-en az 3'ünde aday `Var > 0` mı. ⛔ Kovaryans/kol farkı/etki **hesaplanmaz** (L9).
-⚠ İki sürekli aday kapalı: `energy_mean_over_life` **pozitif kontrol** (D-121) ·
-`to_landmark.max` **reddedilmiş** (D-129, 2/4).
-⚠ Üçüncü aday (`is_trauma`'yı göreli yapmak) tabloda ama **önerilmiyor** —
-*"travma"* kelimesi şiddet değil **sıralama** anlamına gelirdi.
-**Bitti sayılır:** sonda koşuldu, kural **taze veriye** uygulandı, sonucu ne
-olursa olsun D-kaydında.
-
----
-
 # FAZ 3 — tek pahalı koşum
 
 ## ⬜ 3.1 · Doğrulayıcı koşum
@@ -303,3 +335,13 @@ tanımlı (alet null'ı / evren null'ı / etki null'ı / pozitif).
    sor.** Bu oturumda beş okuma bu yüzden çürüdü.
 5. **Kullanılmış tohumlar:** …9901–9904 (C2 öncesi) · **9911–9913** (C2) ·
    **9915** (sonda-2) · 9305–9310 (mock). Taze blok: **9916+**.
+   ⚠ **9916 sonda-3'e ayrıldı** (D-154) ⇒ deneyin tohumları **9917+**.
+6. ⭐ **K6 (yeni, D-151):** kayda geçen kusur **bir kapıya bağlanmadıkça**
+   kapanmamıştır. Bir madde bir mekanizmanın çalışmadığını ölçtüyse, ✅
+   işaretlenmeden önce ya bir preflight kapısına ya da kuyruğa bağlanır.
+7. ⚠ **`K`-serisi çakışması** (D-153): işaretsiz `K5` **çalışma kontrolüdür**
+   (`CLAUDE.md §2.4-b`); ikinci ön-kaydın kilit kararına atıf **"kilit K5"**
+   diye yazılır.
+8. ⛔ **Ön-kayıt (`PREREGISTRATION_3.md`) KİLİTLENEMEZ durumda** — D-145'in
+   dört kusuru duruyor, ve 3.'sü (uç noktanın yapısal test edilemezliği)
+   **sonda-3'ün cevabına** bağlı.

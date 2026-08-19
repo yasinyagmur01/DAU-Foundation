@@ -11553,3 +11553,147 @@ büyük** bir iddia değişikliğidir. ⛔ **Önermiyorum**, tabloda duruyor.
 - §4 bir **taahhüttür**, bir sonuç değil. Sondayı koşmadan D **kapanmaz**.
 - Av alanları **4 ve 5** (brief'lerden yerel doğrulaması yapılmadan
   benimsenenler · C2'nin hiç okunmamış alanları) **yapılmadı**.
+
+---
+
+## D-154 · 2026-08-19 · 🔒 **K1 MEKANİZMA KONTROLÜ + ÖN-TAAHHÜT — sonda-3, koşumdan ÖNCE yazıldı**
+
+⚠ **Bu kayıt sonda KOŞULMADAN önce commit edilmiştir.** Sırası kasıtlıdır:
+sonra yazılsaydı sayıyı görüp kriteri ona göre seçmiş olurdum (§2.7 / L9).
+**Commit sırası bunun kanıtıdır** (D-125/D-128 deseni).
+
+**Yetki:** Yasin, 2026-08-19: *"şu 2 saatlik run üzerinden tüm sorunlarımızı
+çözmeye çalışalım."*
+
+---
+
+### 1. Sonda **üç** soruyu birden cevaplıyor
+
+Üçü de bugün **bilinmiyor** ve üçü de pahalı koşumdan **önce** bilinmeli.
+
+| # | soru | neden şimdi |
+|---|---|---|
+| **S1** | Sürekli bir uç nokta adayı **taze veride** daha sık tanımlı mı? | D seçeneğinin tek kapısı (D-153 §4 ön-taahhüdü) |
+| **S2** | **I5.4** geçiyor mu — somatik kanal D-152'den sonra canlandı mı? | D-152 bir **tahmin**; sonda onu çürütebilir |
+| **S3** | **I4.2** ne diyor — kollar aynı RNG durumundan mı giriyor? | GAP-12; ölçülmemiş bir öncül, ve stub'la ölçülemez |
+
+---
+
+### 2. K1 — mekanizma kontrolü (bağlayıcı, `CLAUDE.md §2.4-b`)
+
+**(a) Ölçülen niceliği hangi mekanizma üretiyor**
+
+| nicelik | zincir |
+|---|---|
+| **S1** aday | sıralı erişim + rotasyon → hasat farkı → enerji farkı → **adapter eğitimi (Kanal 2)** → varis farklı ağırlıkla doğar → farklı karar → farklı PE → `delta_profile` |
+| **S2** `I5.4` | `F_agent` yayılımı → **göreli bant** (D-152) → `low`/`high` ajan → **travma sınıfı anı** → `inherited_warning` → varişte `somatic_scale` → `apply_inherited_somatic_scale` |
+| **S3** `I4.2` | nesil 1'in eğitimi global torch akışını tüketiyorsa → `lived`/`shuffle` nesil 2'ye `null`'dan **farklı** durumdan girer |
+
+**(b) ⛔ Seçtiğim bayraklardan hangisi bu mekanizmayı kapatır**
+
+| bayrak | etkisi | kararım |
+|---|---|---|
+| ⛔ `--no-lora` | **Kanal 2'yi kapatır** ⇒ S1'in zinciri hiç doğmaz, S3'ün sorusu **anlamsızlaşır** | ⛔ **KULLANILMIYOR** (D-126'da 50 dk buna gitti) |
+| ⛔ `--mock-llm` | Eğitim yok, kararlar kanned ⇒ S2 **her zaman** flag basar | ⛔ **KULLANILMIYOR** (yalnız kuru provada) |
+| `--n-generations 3` | Price **G−1** satır ister; G=2 yalnız sıfır raporlar (D-107) | **3** |
+| `--events 30` · `--n-agents 8` | Deneyle aynı | **aynı** |
+| `--fresh-pasture` | Deneyle aynı (D-104) | **aynı** |
+| **`--arms lived shuffle`** | ⭐ **Ön-taahhüdün 1. şartı** (D-153 §4) | **`lived shuffle`** |
+| dış `timeout` | D-126'da I4.1 replay'i kesti, **sonuç dosyası hiç yazılmadı** | ⛔ **YOK** |
+
+⚠ **`null` bilerek dışarıda, ve gerekçesi D-129'unkinin tersi değil aynısı.**
+D-129 *"yalnız güçlü kolu koşma"* diyordu; bugünkü **birincil karşıtlık
+`lived ↔ shuffle`** (D-131) ve ikisi de eğitim alıyor ⇒ sonda tam olarak
+**ön-kayıtın ölçeceği popülasyonu** ölçüyor. `null` betimleyici olduğu için
+tanımlılık sorusunun parçası **değil**.
+⚠ **Bedeli ilan ediyorum:** bu sonda `null`'ın tanımlılığı hakkında **hiçbir
+şey söylemez**, ve söylemeye de çalışılmayacak.
+
+**(c) Bu yapılandırmada dejenere olmadığının **mevcut veriden** kanıtı**
+
+| | C2'den (gerçek koşum, aynı yapılandırma) |
+|---|---|
+| `F_agent` yayılımı | **21/27 hücrede > 0** (D-146) ⇒ göreli bant **girdi bulacak** |
+| sürekli nicelik tanımlılığı | **21/27 = %78** (D-146) ⇒ S1'in adayı **dejenere değil** |
+| bireysel kanal travma geçişi | **24/216 = %11** ⇒ S2'nin ikinci şartı **var ama nadir** |
+| `lived`/`shuffle` eğitim | **96/144 varis adapter aldı** ⇒ Kanal 2 **çalışıyor** |
+
+---
+
+### 3. 🔒 ÖN-TAAHHÜT — okuma kuralları, **koşumdan önce**
+
+#### S1 — sürekli uç nokta
+
+**Aday:** `delta_profile.to_landmark.max` (bireysel kanalın pencere içi tepesi).
+
+⚠ **Bu D-129'un reddettiği niceliktir ve bilerek aynısı seçildi.** Ret
+`lived null` koşumundan geldi ve `null`'ın donmuşluğu yüzündeydi (0/2).
+D-143 §5 yeniden açılmayı **üç şarta** bağladı; üçü de burada sağlanıyor:
+**(1)** sonda `shuffle` içeriyor · **(2)** kural aşağıda, koşumdan önce ·
+**(3)** D-129'un sayıları **yeniden okunmayacak**.
+
+> **KURAL:** **4 hücrenin (2 kol × 2 nesil geçişi) en az 3'ünde**
+> `Var(to_landmark.max) > 0` ⇒ aday üçüncü ön-kayıta **girer**.
+> Aksi hâlde **girmez**, ve bu **kapanmış** bir sorudur.
+
+⛔ **Hesaplanmayacaklar:** kovaryans · kol farkı · etki büyüklüğü · herhangi
+bir işaret. (L9)
+
+#### S2 — somatik kanal
+
+> **TAHMİN (çürütülebilir):** `I5.4` **geçer**, ve **≥ 1** varis
+> `has_somatic_scale = true` taşır.
+> **Aritmetik:** göreli bant ajanların ~%65'ini `low`/`high`'a koyuyor ×
+> travma anısı %11 ⇒ 48 variste **~3**, 144 variste ~10 beklenir.
+> ⚠ **Bağımsızlık varsayımıyla çarpım — tahmin, ölçüm değil (K4).**
+> ⛔ **Sıfır çıkarsa D-152 vaat ettiğini yapmamıştır** ve öyle raporlanır.
+
+#### S3 — RNG asimetrisi
+
+> **TAHMİN:** `I4.2` **FLAG basar** (kollar farklı RNG durumundan girer).
+> Gerekçe: bu koşucu `_lock_seeds`'i döngünün **önünde bir kez** çağırıyor,
+> ve `fork_rng` yalnız adapter init'ini koruyor.
+> ⛔ **Geçerse** öncül yanlıştı, ve I4.2 **ABORT'a yükseltilir**.
+
+---
+
+### 4. Yapılandırma ve komut
+
+**Tohum: 9916** (taze blok; kullanılmışlar …9915 · 9305–9310).
+⚠ Sonda **keşifsel** — tohum 9916 deneyde **kullanılmaz**.
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9916 --n-agents 8 --n-generations 3 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle \
+  --results dau_runs/probe3_endpoint_s9916.json
+```
+
+⚠ **Dış `timeout` YOK** (D-126). ⚠ `PYTORCH_CUDA_ALLOC_CONF` **elle
+verilmez** (D-116).
+
+**Süre tahmini: ~2 sa** (C2'den: kol-tohum başına ~39 dk × 2 + replay).
+⚠ **Tahmin, ve tahminlerim D-126/D-129'da iki kez tutmadı.** Nişler arası
+yayılım **2.3 kat** ⇒ gerçekçi aralık **1.5–4 sa**.
+
+---
+
+### 5. Sonda bittiğinde ne olur — dört yol, hepsi önceden yazılı
+
+| S1 | S2 | ne yapılır |
+|---|---|---|
+| **geçti** | geçti | ⭐ Uç nokta `to_landmark.max`'a çevrilir, ön-kayıt §3/§4/§7 yeniden yazılır, **kilit yolu açılır** |
+| **geçti** | düştü | Uç nokta çevrilir; **somatik kanal sınır** olarak ilan edilir (L20 güncellenir) |
+| **düştü** | geçti | Uç nokta `z` olarak kalır; ⛔ D-145'in 3. kusuru **açık kalır** ⇒ **S ≥ 30 mu, kestirim mi** kararı Yasin'e döner |
+| **düştü** | düştü | ⛔ *"Bu fizikle test edilemez"* **kanıtla** yazılır ⇒ Yön 3 tartışması yeniden açılır |
+
+⛔ **Hiçbir yolda kural sonradan gevşetilmez.** *"3/4 olmadı ama 2/4 da
+fena değil"* denmez — D-129'da denmedi, burada da denmeyecek.
+
+### 6. Sınırlar
+
+- **Tek tohum, tek niş.** C2'de tanımlılık nişe göre değişiyordu ⇒ 3/4
+  sonucu **genellenemez**, yalnız *"aday girer/girmez"* kararını verir.
+- Sonda **`null` hakkında hiçbir şey** söylemez (§2-b).
+- S2'nin aritmetiği **bağımsızlık varsayıyor**; gerçek birleşim farklı olabilir.
+- Sonda **keşifsel**; sonuç dosyası `note` alanıyla öyle damgalanır.
