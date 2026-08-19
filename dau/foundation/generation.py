@@ -18,9 +18,11 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 from dau.generation.fitness import (
-    FITNESS_HIGH_THRESHOLD,
-    FITNESS_LOW_THRESHOLD,
+    FITNESS_LABEL_HIGH,
+    FITNESS_LABEL_LOW,
     WARNING_SOMATIC_SCALE,
+    classify_fitness,
+    classify_fitness_relative,
     compute_w_transfer,
 )
 from dau.memory.decay import compute_strength_init
@@ -132,6 +134,7 @@ def select_for_transfer(
     f_agent: float | None = None,
     reward_marker: float = DEFAULT_REWARD_MARKER,
     threat_marker: float = DEFAULT_THREAT_MARKER,
+    f_agent_reference: list[float] | None = None,
 ) -> list[TransferCandidate]:
     """Keep only memories that earned survival into the next generation.
 
@@ -150,13 +153,30 @@ def select_for_transfer(
         return _legacy_select_for_transfer(memories, drift_state)
 
     f_value = float(f_agent)
+    # D-152. Which BAND gates this life's transfer policy. With a reference
+    # population the band is relative — where this agent sits inside its own
+    # cell — because C2 measured 216 of 216 agents in `normal`, leaving two of
+    # the three band rules unreachable and the inherited-warning branch dead
+    # (0 of 144 heirs carried a somatic scale). Without a reference the
+    # absolute bands stand, which is what the single-lineage runner needs:
+    # one agent has no cell to be relative to.
+    #
+    # ⛔ The reference is the cell's F_agent values, NOT w. Deriving the band
+    # from heir count would make z a function of w by construction and hollow
+    # out Cov(w, z) — the tautology D-075 pinned and P4 keeps three layers
+    # apart to avoid.
+    band = (
+        classify_fitness_relative(f_value, f_agent_reference)
+        if f_agent_reference
+        else classify_fitness(f_value)
+    )
     selected: list[TransferCandidate] = []
     for candidate in memories:
         if candidate.recall_count < GENERATION_MIN_RECALL:
             continue
 
         trauma = is_trauma(candidate.record)
-        if f_value < FITNESS_LOW_THRESHOLD and trauma:
+        if band == FITNESS_LABEL_LOW and trauma:
             candidate.inherited_warning = True
             candidate.somatic_scale = -WARNING_SOMATIC_SCALE
             selected.append(candidate)
@@ -196,7 +216,7 @@ def select_for_transfer(
         if candidate.memory_score < GENERATION_TRANSFER_THRESHOLD:
             continue
 
-        if trauma and f_value >= FITNESS_HIGH_THRESHOLD:
+        if trauma and band == FITNESS_LABEL_HIGH:
             selected.append(
                 replace(
                     candidate,
@@ -286,6 +306,7 @@ def consolidate_generation(
     f_agent: float | None = None,
     reward_marker: float = DEFAULT_REWARD_MARKER,
     threat_marker: float = DEFAULT_THREAT_MARKER,
+    f_agent_reference: list[float] | None = None,
 ) -> GenerationRecord:
     """Package earned memories and current drift for the next generation.
 
@@ -311,6 +332,7 @@ def consolidate_generation(
         f_agent=f_agent,
         reward_marker=reward_marker,
         threat_marker=threat_marker,
+        f_agent_reference=f_agent_reference,
     )
     warning_candidates = [
         c

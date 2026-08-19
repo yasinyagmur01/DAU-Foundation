@@ -125,7 +125,7 @@ from dau.foundation.delta import DELTA_THRESHOLD_DEEP, DOMAIN_ATTR
 from dau.foundation.drift import DriftState
 from dau.foundation.constraints import LANDMARK_EVENT, TRAIN_SKIP_NO_PAIRS
 from dau.foundation.emotional_weight import MARKER_REWARD, MARKER_THREAT
-from dau.generation.fitness import classify_fitness
+from dau.generation.fitness import classify_fitness_relative
 from dau.foundation.generation import (
     INHERITED_WARNING_KEY,
     SOMATIC_SCALE_KEY,
@@ -1068,6 +1068,10 @@ def consolidate_parents(
     rule.
     """
 
+    # D-152. The cell's own F_agent values, so the transfer band is relative.
+    # Built once and shared by every parent of the cell — a per-parent rebuild
+    # would let two agents of one generation disagree about what "low" means.
+    cell_reference = [float(row.f_agent) for row in rows]
     return {
         row.agent_id: consolidate_generation(
             states[row.agent_id],
@@ -1075,6 +1079,7 @@ def consolidate_parents(
             f_agent=row.f_agent,
             reward_marker=row.reward_marker,
             threat_marker=row.threat_marker,
+            f_agent_reference=cell_reference,
         )
         for row in rows
     }
@@ -1365,7 +1370,13 @@ def _run_arm_generations(
                         # 12 were high. Derived through `classify_fitness` so
                         # the report cannot disagree with the rule that
                         # actually gates transfer (§2.8).
-                        "fitness_class": classify_fitness(row.f_agent),
+                        # D-152: the RELATIVE band, because that is the one
+                        # that actually gates transfer. Reporting the absolute
+                        # band beside a run governed by the relative one is
+                        # §2.8's error in its plainest form.
+                        "fitness_class": classify_fitness_relative(
+                            row.f_agent, [float(r.f_agent) for r in rows]
+                        ),
                         "f_agent_inputs": row.f_agent_inputs,
                         "events_lived": row.events_lived,
                         "landmark": row.landmark,

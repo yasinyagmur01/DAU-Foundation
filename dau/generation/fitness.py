@@ -29,6 +29,11 @@ FITNESS_W_SURVIVAL: float = 0.3  # weight: time survived
 # formula ran rather than letting a reader assume).
 FITNESS_ENERGY_READING: str = "mean_over_life"
 
+# Below this spread a cell has no relative structure to read (D-152). Named
+# rather than testing == 0.0 because F_agent is a sum of floats and an exact
+# tie is not the only way to have nothing to compare.
+FITNESS_SPREAD_EPSILON: float = 1e-12
+
 FITNESS_LOW_THRESHOLD: float = 0.35  # below: trauma → cautionary inherited_warning
 FITNESS_HIGH_THRESHOLD: float = 0.70  # above: trauma → inherited warning
 
@@ -113,13 +118,74 @@ def compute_fitness(
 
 
 def classify_fitness(f_agent: float) -> str:
-    """Map F_agent onto low / normal / high transfer policy bands."""
+    """Map F_agent onto low / normal / high transfer policy bands — ABSOLUTE.
+
+    ⚠ Kept, and kept unchanged, because the single-lineage runner still reads
+    it: there is no population to be relative TO when one agent lives alone.
+    The population path uses ``classify_fitness_relative`` (D-152).
+    """
 
     if float(f_agent) < FITNESS_LOW_THRESHOLD:
         return FITNESS_LABEL_LOW
     if float(f_agent) >= FITNESS_HIGH_THRESHOLD:
         return FITNESS_LABEL_HIGH
     return FITNESS_LABEL_NORMAL
+
+
+def normalize_fitness(f_agent: float, reference: list[float]) -> float | None:
+    """Where this F_agent sits INSIDE its own cell, in [0, 1]. None if flat.
+
+    ⚠ D-152, and the reason is arithmetic rather than preference. The bands
+    were calibrated against a quantity spanning [0, 1]; D-086 then moved
+    F_agent from ~0.14 to ~0.45 and the observed range collapsed into the
+    middle. Measured on C2: 216 of 216 agents landed in `normal`, the low band
+    got 0 of 216, and the minimum F_agent (0.3919) sat ABOVE the low threshold
+    (0.35). Two of three bands were unreachable, so the transfer policy the
+    design wrote three rules for had one rule.
+
+    ⛔ The threshold is NOT the defect and was NOT changed: 0.35 is exactly
+    FITNESS_HIGH_THRESHOLD / 2, so it is derived, not magic (D-151). What
+    changed is the QUANTITY it is applied to — the same correction D-088 made
+    when a bar calibrated for memory_score was found gating a product.
+
+    Relative rather than absolute is also what the rest of this design already
+    is: the tournament (P2, k=2) decides fitness by comparing two agents to
+    each other. ``fitness_class`` was the one absolute rule left.
+
+    ⚠ Declared cost, not hidden: min-max means the least fit agent of a cell
+    always normalizes to 0.0 and the most fit to 1.0, so every cell with any
+    spread now names a low and a high. That is a design claim — "in every
+    generation somebody is relatively unfit" — and it is what makes the
+    inherited-warning branch reachable at all.
+
+    ⚠ Returns None when the cell is FLAT (spread at or below epsilon): with
+    identical agents nobody is relatively anything, and inventing a band there
+    would manufacture a difference the universe did not make. Callers read
+    None as "no relative differentiation exists", not as zero.
+    """
+
+    if not reference:
+        return None
+    low = min(float(v) for v in reference)
+    high = max(float(v) for v in reference)
+    if (high - low) <= FITNESS_SPREAD_EPSILON:
+        return None
+    return (float(f_agent) - low) / (high - low)
+
+
+def classify_fitness_relative(f_agent: float, reference: list[float]) -> str:
+    """The band this F_agent occupies WITHIN its cell (D-152).
+
+    Uses the same two thresholds as ``classify_fitness`` — they are not
+    re-derived here, because the point of the change is the quantity, not the
+    bar. A flat cell reports `normal` for everyone: no agent is relatively
+    unfit when all are identical.
+    """
+
+    normalized = normalize_fitness(f_agent, reference)
+    if normalized is None:
+        return FITNESS_LABEL_NORMAL
+    return classify_fitness(normalized)
 
 
 def compute_w_transfer(

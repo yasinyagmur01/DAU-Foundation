@@ -2388,6 +2388,79 @@ def test_k_and_precision_reach_the_results_file_per_agent(monkeypatch) -> None:
         assert precision["n_distinct"] >= 1
 
 
+def test_a_flat_cell_names_nobody_low_and_nobody_high() -> None:
+    """⚠ D-152's guard: identical agents have no relative structure.
+
+    Min-max normalisation on a flat cell is 0/0. Inventing a band there would
+    manufacture a difference the universe did not make — and flat cells are not
+    hypothetical here: D-129 measured a `null` arm whose eight agents were
+    identical in every quantity.
+    """
+
+    from dau.generation.fitness import classify_fitness_relative, normalize_fitness
+
+    flat = [0.5, 0.5, 0.5, 0.5]
+
+    assert normalize_fitness(0.5, flat) is None, "a flat cell reported a position"
+    assert [classify_fitness_relative(v, flat) for v in flat] == ["normal"] * 4
+
+
+def test_relative_bands_revive_the_two_dead_bands() -> None:
+    """⭐⭐ D-152. The change exists for exactly one measured number.
+
+    C2 put 216 of 216 agents in `normal`: the low band got 0 and the high band
+    12, so the inherited-warning branch that feeds the somatic channel fired 0
+    times in 144 heirs. The SAME spread, read relatively, has to name both
+    ends — otherwise the change bought nothing.
+
+    ⚠ K2: this needs a cell with spread, not a single value. With one agent the
+    normalisation is degenerate and the test would pass against a stub.
+    """
+
+    from dau.generation.fitness import (
+        FITNESS_LABEL_HIGH,
+        FITNESS_LABEL_LOW,
+        classify_fitness,
+        classify_fitness_relative,
+    )
+
+    # C2's observed span: min 0.3919, max 0.7696 — every one of these is
+    # `normal` on the absolute scale.
+    cell = [0.3919, 0.45, 0.52, 0.60, 0.6026, 0.68, 0.72, 0.7696]
+    absolute = {classify_fitness(v) for v in cell}
+    relative = [classify_fitness_relative(v, cell) for v in cell]
+
+    assert absolute == {"normal", "high"}, "the fixture stopped resembling C2"
+    assert FITNESS_LABEL_LOW in relative, "the low band is still unreachable"
+    assert FITNESS_LABEL_HIGH in relative
+    # The extremes are the extremes — min-max puts them at 0.0 and 1.0.
+    assert relative[0] == FITNESS_LABEL_LOW
+    assert relative[-1] == FITNESS_LABEL_HIGH
+
+
+def test_the_band_is_not_derived_from_heir_count() -> None:
+    """⛔ P4's separation: z must not become a function of w by construction.
+
+    The tempting relative reference is the tournament — an agent that won
+    nothing is the population's own definition of unfit. It is forbidden:
+    the band gates which memories transfer, so it shapes z, and deriving it
+    from w would make Cov(w, z) partly an identity (D-075's tautology).
+    So the reference is F_agent, and this pins that the signature offers no
+    other one.
+    """
+
+    import inspect
+
+    from dau.foundation.generation import select_for_transfer
+
+    params = inspect.signature(select_for_transfer).parameters
+    assert "f_agent_reference" in params
+    assert not any("w" == name or "heir" in name for name in params), (
+        "select_for_transfer gained a heir-count input — that closes the "
+        "Price loop on itself"
+    )
+
+
 def test_the_results_name_the_fitness_band_not_only_the_number() -> None:
     """⭐ D-150. The band is what gates the somatic channel, and it was invisible.
 
@@ -2433,3 +2506,90 @@ def test_the_fitness_band_reaches_the_results_file(monkeypatch) -> None:
     for agent in agents:
         assert "fitness_class" in agent
         assert agent["fitness_class"] == classify_fitness(agent["f_agent"])
+
+
+def _trauma_candidate(record_id: str):
+    """One durable memory whose delta is trauma-class — the branch's other half."""
+
+    from dau.foundation.delta import DELTA_THRESHOLD_DEEP, DeltaRecord
+    from dau.foundation.generation import TransferCandidate
+
+    return TransferCandidate(
+        record=DeltaRecord(
+            timestamp=1,
+            # At the boundary, which classify_delta counts as TRAUMA.
+            magnitude=DELTA_THRESHOLD_DEEP,
+            affected_domain="energy",
+            snapshot_before={},
+            snapshot_after={},
+        ),
+        record_id=record_id,
+        memory_score=1.0,
+        recall_count=1,
+    )
+
+
+def test_transfer_uses_the_relative_band_not_the_absolute_one() -> None:
+    """⭐⭐ K3 for D-152 — the classifier is not the change; THIS is.
+
+    Measured: with the classifier correct but `select_for_transfer` still
+    reading the absolute band, every test above still passed. The behaviour
+    that matters is whether a trauma memory becomes an inherited warning, and
+    only this exercises it.
+
+    The agent below is `normal` on the absolute scale (0.3919 sits between
+    0.35 and 0.70 — that is C2's actual minimum) and the LOWEST of its cell.
+    Absolute: no warning. Relative: warning.
+    """
+
+    from dau.foundation.drift import DriftState
+    from dau.foundation.generation import select_for_transfer
+    from dau.generation.fitness import classify_fitness
+
+    lowest = 0.3919
+    cell = [lowest, 0.52, 0.6026, 0.7696]
+    assert classify_fitness(lowest) == "normal", "the fixture stopped resembling C2"
+
+    absolute = select_for_transfer(
+        [_trauma_candidate("m0")], DriftState(), f_agent=lowest
+    )
+    relative = select_for_transfer(
+        [_trauma_candidate("m0")],
+        DriftState(),
+        f_agent=lowest,
+        f_agent_reference=cell,
+    )
+
+    assert not any(c.inherited_warning for c in absolute), (
+        "the absolute path started warning — the fixture no longer isolates the change"
+    )
+    assert any(c.inherited_warning for c in relative), (
+        "the relative band did not reach select_for_transfer"
+    )
+
+
+def test_the_highest_of_a_cell_also_earns_a_warning() -> None:
+    """Both ends, not one: the high band writes a warning through transfer_kind.
+
+    ⚠ K2 in the band dimension — a change that only revived `low` would pass a
+    test that only looked at `low`, and the design writes a rule for each end.
+    """
+
+    from dau.foundation.drift import DriftState
+    from dau.foundation.generation import (
+        TRANSFER_KIND_INHERITED_WARNING,
+        select_for_transfer,
+    )
+
+    cell = [0.3919, 0.52, 0.6026, 0.7696]
+    top = select_for_transfer(
+        [_trauma_candidate("m1")],
+        DriftState(),
+        f_agent=0.7696,
+        f_agent_reference=cell,
+    )
+
+    assert any(
+        c.transfer_kind == TRANSFER_KIND_INHERITED_WARNING or c.inherited_warning
+        for c in top
+    ), "the high end of the cell earned nothing"
