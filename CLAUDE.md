@@ -22,11 +22,23 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-20) — ⛔ **Sonda-3 koştu: dördüncü yol, karar Yasin'de**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-157.** Sıradaki kayıt **D-158** olarak açılır.
-- ▶▶ **SIRADAKİ İŞ: kuyruk 2.5** (GPU'suz, saf raporlama — somatik zincirin
-  kırıldığı halkayı sayaçla). Ardından **2.6** (kurucu nesil kapısı).
-  ⛔ **2.2 Yasin'in A/B/C kararını bekliyor** ve D-157 ona **üç yeni girdi**
-  ekledi.
+- **Son D-kaydı: D-159.** Sıradaki kayıt **D-160** olarak açılır.
+- ▶▶ **SIRADAKİ İŞ: 2.2 — ⛔ KARAR (Yasin'in).** ⛔ **Kuyrukta yapılabilecek iş
+  kalmadı**; 2.4b · 2.5 · 2.6 kapandı. **İki karar birleşti ve sırası var:**
+  önce **alan** (D-145 kusur #2), sonra **bütçe/G** (A/B/C) — çünkü D-157 §2
+  ölçtü ki alan kararı verilmeden bütçe kararı **anlamsız** (eski fizikte
+  `energy` ile `ΔCov` **0/3 tohumda** tanımlı olurdu).
+- ✅ **Kuyruk 2.5 (D-158):** aktarım kapısı **sekiz sayaçla** aletlendi
+  (`transfer_gates`) ⇒ somatik zincirin **hangi halkada** koptuğu artık
+  ölçülebilir. Hesap değişmedi. K2/K3/K5 ✅ (**8 mutasyon, 8 doğru test**).
+  ⚠ Sayaçlar ancak **gerçek koşumda** dolar.
+- ✅⭐ **Kuyruk 2.6 (D-159): I5.5 kapısı bağlandı**, **iki yönlü** (ölü
+  puanlanan geçiş **ve** ölçülebilir çıkan kurucu geçiş — ikincisi D-157'nin
+  yeniden açılma tetiği). Kapı **9**, `PREFLIGHT_INVARIANTS` **27 madde**.
+  ⛔⛔ **Geriye dönük koşuldu ve hemen buldu:** C2'nin puanlanan **6 geçişinin
+  5'i ölü** — ve C2 bunu **`clean`** raporlamıştı. **K6'nın bedeli üçüncü kez.**
+  ⛔ 2.6'nın kendi tarifini **ölçümle değiştirdim**: *"`F_agent` **ve** uç nokta
+  yayılımı ikisi birden sıfır"* koşulu 9 kurucu hücrenin **6'sını kaçırırdı**.
 - ✅ **KARAR: B yolu (D-156, Yasin).** Kurucu nesil **ısınma neslidir**; Price
   yalnız ebeveyni **gen ≥ 2** olan geçişlerden okunur ⇒ kullanılabilir geçiş
   **G − 2**. ⛔ **A (kıtlık rejimi) elenmedi, ertelendi.**

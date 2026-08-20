@@ -158,10 +158,14 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# ▶▶ SIRADAKİ İŞ — **2.5** (GPU'suz, saf raporlama)
+# ▶▶ SIRADAKİ İŞ — **2.2 · ⛔ KARAR (Yasin'in)**
 
-⛔ **"devam et" denince BU madde alınır.** 2.4b **karara bağlandı** (B),
-2.2 ise Yasin'in A/B/C kararını bekliyor ⇒ sırayı 2.5 ve 2.6 açıyor.
+⛔ **Kuyrukta yapılabilecek iş kalmadı.** 2.4b · 2.5 · 2.6 kapandı
+(D-156…D-159); **2.2 ve 2.3 karara bağlı** ve karar Yasin'in (D-007).
+⛔ **İki karar birleşti ve sırası var:** önce **alan** (D-145 kusur #2 —
+`energy` mi, tohum başına değişken mi), sonra **bütçe/G** (A/B/C).
+D-157 §2 ölçtü ki alan kararı verilmeden bütçe kararı **anlamsız**:
+eski fizikte `energy` ile `ΔCov` **0/3 tohumda** tanımlı olurdu.
 
 ## ✅ 2.4b · **KARAR VERİLDİ: B yolu** — **D-156** (Yasin: *"önerdiğin şekilde devam et"*)
 ✅ **B: kurucu nesil ısınma neslidir**; Price yalnız ebeveyni **gen ≥ 2** olan
@@ -219,36 +223,42 @@ PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
 ```
 </details>
 
-## ⬜ 2.5 · Somatik zincirin **kırıldığı halka** ölçülsün (K6, D-155 §6)
+## ✅ 2.5 · Somatik zincirin kırıldığı halka sayaçlandı — **D-158**
+✅ `select_for_transfer` sekiz sayaç yazıyor (`candidates` · `dropped_recall` ·
+`trauma` · `warning_low` · `dropped_salience` · `warning_high` ·
+`dropped_drift` · `standard`); `consolidate_generation` sayacı açıyor,
+koşucu ajan satırına **`transfer_gates`** olarak yazıyor. **Hesap değişmedi.**
+K2 ✅ (dört aday dört farklı kader + iki farklı bant) · K3 ✅ (iki çağrı yeri) ·
+K5 ✅ (**8 mutasyon, 8 doğru test**, md5'li).
 
-**Borç:** D-155 §2 dört halkanın **üçünün çalıştığını** ölçtü (göreli bant ·
-travma eşiği 48/48 · `low` bant üreyebiliyor), ama varis **0/32**
-`inherited_warning` alıyor. Kalan şüpheli `select_for_transfer`
-(`generation.py:175–183`) üçlü şartının son iki bileşeni:
-`recall_count ≥ GENERATION_MIN_RECALL` ve `is_trauma(candidate.record)`.
-⛔ **Bugünkü hâli çıkarım, ölçüm değil** — sonuç dosyası `recall_count`
-taşımıyor.
+⭐ **İki uyarı yolu AYRI sayılıyor** — alt bant salience çıtasını atlıyor, üst
+bant geçmek zorunda; birleştirilse yalnız üst yolun ateşlediği bir koşum
+*"alt yol çalışıyor"* gibi okunurdu (D-155 §2'nin bıraktığı karışıklık).
+⚠ **İlan:** bu madde bir **sayı üretmedi**, bir soruyu **üretilebilir** hâle
+getirdi — sayaçlar ancak **gerçek koşumda** dolar (stub değerleri teşhis
+dayanağı **değil**, D-138'in PE_w dersi).
 
-**İş:** saf raporlama — `select_for_transfer`'a giren adaylardan kaçının
-recall kapısında, kaçının `is_trauma` kapısında, kaçının bant kapısında
-düştüğü sayılsın ve ajan satırına yazılsın. **Hesap değişmez.**
-**Bitti sayılır:** üç sayaç sonuç dosyasında · **K2** · **K3** · **K5**.
-⚠ §2.11: `n_at_or_above_trauma` (PE-delta) ile `is_trauma(record)` (anı
-imprint sınıfı) **ayrı niceliklerdir**; sayaç ikisini karıştırmamalı.
+## ✅ 2.6 · Kurucu nesil bir kapıya bağlandı — **D-159**, ve kapı hemen bir kusur buldu
+✅ **I5.5** (FLAG) bağlandı, **iki yönlü**: ebeveyni gen ≥ 2 olan bir geçişte
+hiçbir alan ölçülebilir değilse **bayrak**; kurucu geçiş **ölçülebilir
+çıkarsa da bayrak** (YENİ-4 kullanılabilir veri atıyor demek ⇒ D-157'nin
+yeniden açılma tetiği). Kapı sayısı **8 → 9**; `PREFLIGHT_INVARIANTS.md`
+**27 madde**.
 
-## ⬜ 2.6 · Kurucu neslin dejenerasyonu bir **kapıya** bağlansın (K6, D-155 §6)
+⛔ **2.6'nın kendi tarifi ölçümle değişti:** *"`F_agent` **ve** uç nokta
+yayılımı ikisi birden sıfırsa"* koşulu C2'nin **9 kurucu hücresinin 6'sını
+kaçırırdı** (s9911 · s9913 yayılımı sıfır **değil**, `Var(z)` yine 0).
+Karar veren nicelik **`selection_estimable`**; `F_agent` yayılımı
+**raporlanır, verdict'e girmez**.
 
-**Borç:** D-155 §1 ölçtü ki gen1'in 8 ajanı iki kolda da özdeş ⇒ birinci Price
-geçişi yapısal olarak `Var = 0`. **Bugün bunu yakalayan kapı yok** —
-`selection_estimable` alan başına yazılıyor ama *"kurucu nesil dejenere"*
-diye bir bayrak yok, ve C2 bu durumu **`clean`** raporlamıştı (D-149 deseni).
+⭐⭐ **Geriye dönük koşuldu:** sonda-3 **geçti**, ⛔ **C2 bayrak** —
+puanlanan **6 geçişin 5'i ölü**, ve C2 bunu **`clean`** raporlamıştı.
+**K6'nın bedeli üçüncü kez ölçüldü.**
 
-**İş:** yeni bir preflight maddesi (**FLAG**) — bir nesil geçişinde ebeveyn
-kümesinin `F_agent` **ve** uç nokta yayılımı ikisi birden sıfırsa bayrak.
-⚠ **Eşik yok, sabit yok:** koşul `Var == 0` (`Z_VARIANCE_EPSILON` zaten var).
-**Bitti sayılır:** kapı `invariants` sözlüğünde · bu koşumun dosyasında
-**geriye dönük** ateşlendiği gösterildi · K2 · K3 · K5.
-⚠ **2.4b'nin kararından bağımsız** — hangi yol seçilirse seçilsin kapı gerekli.
+⚠ **Kalan iş, karara bağlı:** kapı *"herhangi bir alan"* diye soruyor, ön-kayıt
+ise **bir alan** ilan ediyor (`energy`). `s9911`'in hücreleri `resource`'ta
+geçti, `energy` ile **düşerdi** ⇒ **alan kararı verilince (2.2) kapı o alana
+daraltılmalı.**
 
 ---
 
