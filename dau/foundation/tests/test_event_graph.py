@@ -39,6 +39,9 @@ STUB_DECISION: str = NPC_ACTION_EXTRACT_MODERATE
 STUB_DECISION_BY_AGENT: dict[str, str] = {}
 # Stock too thin to serve both announcements, so the proportional split engages.
 POOL_THIN: float = 1.0
+# D-163: thick enough that the harvest ceiling cuts a defector's 8.0 but not a
+# cooperator's 2.0, so a short-fall exists AND the two decisions still differ.
+POOL_CEILING_SEPARATES: float = 40.0
 
 
 def _decision_row(state: DAUAgentState):
@@ -194,13 +197,19 @@ def test_run_round_result_does_not_depend_on_act_order(monkeypatch) -> None:
     monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
     monkeypatch.setitem(STUB_DECISION_BY_AGENT, SECOND_ID, NPC_ACTION_COOPERATE)
     app = build_event_graph()
+    # D-163: POOL_THIN used to make the split engage; under the stock-
+    # proportional ceiling a stock that thin caps BOTH asks to the same number,
+    # and "who got more" stops being a question. The pasture is therefore set
+    # where the ceiling separates the two decisions — it cuts the defector's
+    # 8.0 while leaving the cooperator's 2.0 untouched, which is the regime the
+    # experiment actually runs in.
     forward = run_round(
-        EnvironmentState(pool=POOL_THIN),
+        EnvironmentState(pool=POOL_CEILING_SEPARATES),
         [_birth_state_named(AGENT_ID), _birth_state_named(SECOND_ID)],
         app,
     )
     backward = run_round(
-        EnvironmentState(pool=POOL_THIN),
+        EnvironmentState(pool=POOL_CEILING_SEPARATES),
         [_birth_state_named(SECOND_ID), _birth_state_named(AGENT_ID)],
         app,
     )

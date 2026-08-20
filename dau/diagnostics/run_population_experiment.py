@@ -367,6 +367,92 @@ def run_population_phase0(
     return gate
 
 
+SHORTFALL_KEY_ROWS: str = "n_rows"
+SHORTFALL_KEY_SHORT: str = "n_short"
+SHORTFALL_KEY_FIRST_EVENT: str = "first_event"
+SHORTFALL_KEY_MAX: str = "max_shortfall"
+SHORTFALL_EPSILON: float = 1e-9
+
+
+def harvest_shortfall_summary(pool_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """How often the commons gave less than was asked, this generation (D-163).
+
+    Reads the ledger the physics already writes — both `requested` and
+    `extraction` are on every pool row — rather than recomputing the ceiling
+    beside it, so the summary cannot end up describing a rule the run no longer
+    uses (§2.8).
+
+    `first_event` is None when nothing was ever short: that is a real state
+    (the ceiling never bit) and must not be reported as event 0.
+    """
+
+    n_short = 0
+    first_event: int | None = None
+    largest = 0.0
+    for row in pool_rows:
+        gap = float(row.get("requested", 0.0)) - float(row.get("extraction", 0.0))
+        if gap <= SHORTFALL_EPSILON:
+            continue
+        n_short += 1
+        largest = max(largest, gap)
+        event = int(row.get("event_counter", 0))
+        if first_event is None or event < first_event:
+            first_event = event
+    return {
+        SHORTFALL_KEY_ROWS: len(pool_rows),
+        SHORTFALL_KEY_SHORT: n_short,
+        SHORTFALL_KEY_FIRST_EVENT: first_event,
+        SHORTFALL_KEY_MAX: largest,
+    }
+
+
+def check_harvest_ceiling_binds(arms: list[dict[str, Any]]) -> tuple[bool, str]:
+    """I5.6 — the ceiling produced a short-fall in every generation (D-163).
+
+    Layer 1 exists for exactly one thing: a gradient for sequential access to
+    differentiate on. If no agent was ever served less than it asked, the
+    ceiling never bit and the layer did nothing — and without this gate the run
+    would look identical to one where it worked, because `pool_ratio_end` reads
+    the same whether the pasture is full from restraint or from abundance.
+
+    That failure mode is not hypothetical here: the layer it replaces produced
+    EXACTLY ZERO short-fall through event 16 while every summary in the results
+    file looked healthy (D-162 §1). A measured defect with no gate is what K6
+    was written for.
+    """
+
+    silent: list[str] = []
+    late: list[str] = []
+    seen = 0
+    for arm in arms:
+        for row in arm.get("generations", []) or []:
+            summary = row.get("harvest_shortfall")
+            if not summary:
+                continue
+            seen += 1
+            label = f"s{arm.get('seed')} {arm.get('arm')} gen{row.get('generation')}"
+            if int(summary.get(SHORTFALL_KEY_SHORT, 0)) <= 0:
+                silent.append(label)
+                continue
+            first = summary.get(SHORTFALL_KEY_FIRST_EVENT)
+            if first is not None and int(first) >= LANDMARK_EVENT:
+                late.append(f"{label} first={first}")
+    if not seen:
+        return False, "no generation reported a harvest short-fall summary"
+    if silent:
+        return False, "ceiling never bound in: " + "; ".join(silent)
+    if late:
+        # Not the same failure: the ceiling worked, but it opened after the
+        # window the primary endpoint is read in, so the gradient cannot be in
+        # the landmark measurement. Reported separately so the two are never
+        # confused in a post-mortem.
+        return False, (
+            f"short-fall opened at or after LANDMARK_EVENT={LANDMARK_EVENT} in: "
+            + "; ".join(late)
+        )
+    return True, f"{seen} generations, all short before event {LANDMARK_EVENT}"
+
+
 def check_selection_estimable_where_claimed(
     arms: list[dict[str, Any]],
 ) -> tuple[bool, str]:
@@ -1452,6 +1538,15 @@ def _run_arm_generations(
                 "arm_digest": digest,
                 "pool_ratio_end": get_pool_ratio(env),
                 "hit_round_cap": outcome.hit_round_cap,
+                # D-163 / I5.6. Whether the harvest ceiling actually bit this
+                # generation. `pool_ratio_end` alone cannot say: a pasture can
+                # end the run half full because nobody was hungry OR because
+                # the ceiling was holding everyone back, and those are opposite
+                # states. The whole layer is the short-fall, so the run has to
+                # report it rather than let the reader infer it.
+                "harvest_shortfall": harvest_shortfall_summary(
+                    graph_mod.get_pool_event_log()
+                ),
                 "agents": [
                     {
                         "agent_id": row.agent_id,
@@ -1839,6 +1934,25 @@ def run_population_experiment(
     gate.check(
         "I5.5",
         lambda: check_selection_estimable_where_claimed(arm_results),
+        mode=MODE_FLAG,
+    )
+    # I5.6 (D-163 / Layer 1) — did the harvest ceiling actually bite? FLAG
+    # rather than ABORT for the same reason as I4.2 and I5.5: a commons that
+    # was never short is a statement about the universe, and refusing to record
+    # it would throw away the measurement. What it must not do is pass silently.
+    #
+    # ⚠ Skipped under a canned LLM, and the first version of this line got the
+    # reason wrong. The short-fall looks like pure arithmetic on the ledger, so
+    # it seemed model-independent — but only the SUPPLY side is. The DEMAND
+    # side is the decision, and a stub decides for its own reasons: a canned
+    # agent that always cooperates asks for 2.0, never reaches a ceiling that
+    # opens at 8.0, and would report "the ceiling never bound" about the stub
+    # rather than about the commons. Records None, like I4.1 and I5.4.
+    gate.check(
+        "I5.6",
+        (lambda: (None, "not evaluated under a canned LLM"))
+        if use_mock
+        else (lambda: check_harvest_ceiling_binds(arm_results)),
         mode=MODE_FLAG,
     )
     gate.enforce()

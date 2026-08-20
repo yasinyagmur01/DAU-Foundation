@@ -22,6 +22,60 @@ POOL_INIT: float = 80.0
 COLLAPSE_EPSILON: float = 0.05
 POOL_MIN: float = 0.0
 
+# ---------------------------------------------------------------------------
+# Stock-proportional harvest ceiling — Layer 1 (D-162)
+# ---------------------------------------------------------------------------
+# The commons used to serve a CONSTANT quota: whatever an agent announced was
+# handed over in full until the stock ran out, and then nobody got anything.
+# Measured consequence (real `step_pool`, 8 agents, all defecting): the
+# short-fall is EXACTLY ZERO through event 16 and the pool is at absolute zero
+# from event ~18 onward. So the pasture had two stable regimes and nothing in
+# between — D-081's "no gradual scarcity, only a scarcity moment" — and P0-①
+# had nothing to differentiate on until the collapse had already happened.
+#
+# That this is the binding problem, rather than "scarcity never bites", was
+# measured across four seeds: in the ONE founder generation whose pool actually
+# collapsed the eight founders came out with three distinct F_agent values,
+# while in the three whose pool never bit they were bit-identical (D-162 §1).
+# Sequential access works. It just needs a short-fall to work on.
+#
+# The ceiling makes the squeeze GRADUATED: what an agent may take falls with
+# the stock, so a short-fall exists from the second event on and grows
+# smoothly, and the pool relaxes toward an equilibrium instead of hitting an
+# absorbing zero.
+#
+# ⛔ DEMAND IS UNTOUCHED. EXTRACTION_DEFECT stays 8.0 and the decision→outcome
+# map is not edited: what an agent WANTS is behaviour, and reaching into it
+# would be the cognitive prior K7 closed on axiom grounds. Only what the
+# commons can GIVE changed — a property of the environment, which is the test
+# D-082 §P.5 set for a legitimate lever.
+#
+# ⭐ The ratio is DERIVED, not chosen. A ceiling makes the stock settle where
+# what the herd may take equals what the pasture regrows, and that equilibrium
+# is a closed form: r*p = REGEN*p*(1 - p/capacity) gives p/capacity = 1 - r/REGEN.
+# So the ratio IS the choice of where the commons comes to rest, and the
+# defensible place to put it is the floor the code already calls collapse:
+#
+#     equilibrium = COLLAPSE_EPSILON  ⇒  r = POOL_REGEN_RATE * (1 - COLLAPSE_EPSILON)
+#
+# The criterion is structural — the universe must be able to traverse the
+# regimes it defines — and no run data enters it, which is the same standard
+# LANDMARK_EVENT met by being tied to METABOLIC_GRACE_EVENTS.
+#
+# ⛔ The obvious alternative, r = EXTRACTION_DEFECT / POOL_INIT ("bind the
+# maximum demand at the initial stock"), was DERIVED JUST AS CLEANLY and was
+# rejected on a measurement: it puts the equilibrium at capacity/3 = 0.333,
+# above POOL_CRISIS_THRESHOLD = 0.30, so the pool can never enter crisis. The
+# crisis channel is not decorative — it fires in 127 of 192 lives in the last
+# real run (1461 events), and D-070's K6 defines S5's first trauma as exactly
+# this event. A ratio that silently deletes a pre-registered channel is worse
+# than one that starts biting five events later (D-163).
+#
+# Written as the expression, not as 0.1425, so the derivation cannot quietly
+# become a tuned number (§2.8) and so a change to either constant carries the
+# ceiling with it.
+EXTRACTION_LIMIT_RATIO: float = POOL_REGEN_RATE * (1.0 - COLLAPSE_EPSILON)
+
 # Somatic enforcement — pool crisis → amplified resource trauma
 POOL_CRISIS_THRESHOLD: float = 0.30
 CRISIS_TRAUMA_MULTIPLIER: float = 2.5
@@ -69,6 +123,28 @@ def _clamp_pool(value: float, capacity: float = POOL_MAX) -> float:
     return max(POOL_MIN, min(float(capacity), value))
 
 
+def harvest_ceiling(available: float, n_requesters: int) -> float:
+    """The most one agent may take from this stock right now (D-162).
+
+    Biology analogy: a thinning pasture does not just run out one day — each
+    mouthful gets smaller as the sward gets shorter.
+
+    Proportional to the PER-CAPITA stock, so the rule reads the same for one
+    agent as for eight: N grazers on a pasture N times larger face the same
+    ceiling each, which is the invariant D-081 locked when the commons was
+    scaled with N.
+
+    A caller with no requesters gets the whole stock as its ceiling rather than
+    a ZeroDivisionError; there is nobody to serve, so the number is unused, and
+    a silent zero here would look like "the ceiling closed everything" in the
+    ledger — the kind of fallback §2.9 forbids.
+    """
+
+    if n_requesters <= 0:
+        return max(POOL_MIN, float(available))
+    return EXTRACTION_LIMIT_RATIO * (max(POOL_MIN, float(available)) / n_requesters)
+
+
 def realized_extractions(
     regenerated: float,
     requested: dict[str, float],
@@ -88,15 +164,21 @@ def realized_extractions(
     """
 
     available = max(POOL_MIN, float(regenerated) - POOL_MIN)
-    total_requested = sum(max(0.0, float(amount)) for amount in requested.values())
+    # D-162. The ceiling applies here too: it is a property of the commons, not
+    # of the service order, so a run that turns sequential access off must not
+    # quietly get the old constant-quota physics back.
+    ceiling = harvest_ceiling(available, len(requested))
+    capped = {
+        agent: min(max(0.0, float(amount)), ceiling)
+        for agent, amount in requested.items()
+    }
+    total_requested = sum(capped.values())
     if total_requested <= available:
-        return {agent: max(0.0, float(amount)) for agent, amount in requested.items()}
+        return capped
     if total_requested <= POOL_MIN:
         return {agent: 0.0 for agent in requested}
     share = available / total_requested
-    return {
-        agent: max(0.0, float(amount)) * share for agent, amount in requested.items()
-    }
+    return {agent: amount * share for agent, amount in capped.items()}
 
 
 def realized_extractions_sequential(
@@ -123,10 +205,16 @@ def realized_extractions_sequential(
     """
 
     available = max(POOL_MIN, float(regenerated) - POOL_MIN)
+    n_requesters = len(requested)
     granted: dict[str, float] = {}
     for agent_id, amount in requested.items():
         want = max(0.0, float(amount))
-        take = min(want, available)
+        # D-162. Recomputed from what is STILL THERE when this agent's turn
+        # comes, and that is the whole mechanism: an agent served earlier looks
+        # at a larger stock and may take more. A ceiling computed once per
+        # round would cap everyone identically and identical agents would stay
+        # identical — the degeneracy this layer exists to break.
+        take = min(want, harvest_ceiling(available, n_requesters), available)
         granted[agent_id] = take
         available -= take
     return granted

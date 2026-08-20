@@ -23,8 +23,11 @@ from dau.foundation.lod import CognitiveMode, LODState, NPC_ACTION_EXTRACT_MODER
 from dau.foundation.state import DAUAgentState, Event, InternalState
 from dau.society.environment import (
     POOL_CRISIS_THRESHOLD,
+    POOL_MAX,
+    POOL_REGEN_RATE,
     EnvironmentState,
     get_pool_ratio,
+    harvest_ceiling,
     step_pool,
     crisis_trauma_magnitude,
 )
@@ -536,8 +539,17 @@ def test_advance_commons_matches_the_single_agent_node() -> None:
     assert direct[AGENT_ID].drift_state.flags == node_patch["drift_state"].flags
 
 
-def test_advance_commons_splits_a_shortfall_in_proportion_to_the_request() -> None:
-    """An exhausted pasture serves both grazers pro rata, not first-come."""
+def test_advance_commons_serves_a_thin_pasture_through_the_ceiling() -> None:
+    """⚠ D-163 rewrote this test's claim, and the old claim is worth keeping
+    visible: an exhausted pasture used to serve both grazers PRO RATA, so a
+    3:1 ask came back 3:1 even when nothing was left.
+
+    With a stock-proportional ceiling that regime is gone. On a thin pasture
+    every ask above the ceiling is levelled to it, so the ratio of the asks
+    stops showing up in the ratio of the harvests. What survives — and what
+    this test now protects — is that nobody is served more than the commons
+    allows and that the ask still decides whenever it sits UNDER the ceiling.
+    """
 
     graph_mod.reset_pool_event_log()
     graph_mod.reset_body_event_log()
@@ -552,8 +564,20 @@ def test_advance_commons_splits_a_shortfall_in_proportion_to_the_request() -> No
 
     big = outcomes[AGENT_ID].granted
     small = outcomes[SECOND_AGENT_ID].granted
+    regenerated = POOL_MIN_STOCK + POOL_REGEN_RATE * POOL_MIN_STOCK * (
+        1.0 - POOL_MIN_STOCK / POOL_MAX
+    )
+    ceiling = harvest_ceiling(regenerated, 2)
     assert big < BIG_REQUEST and small < SMALL_REQUEST, "pasture was not short"
-    assert big / small == pytest.approx(BIG_REQUEST / SMALL_REQUEST)
+    # This call takes the DEFAULT (proportional) path, where the ceiling is
+    # read once for the round: two asks above it come back identical, and the
+    # 3:1 ratio the old test asserted is simply not there any more.
+    assert big == pytest.approx(ceiling)
+    assert small == pytest.approx(ceiling)
+    assert big / small == pytest.approx(1.0), "pro-rata behaviour is back"
+    # ⚠ The order advantage lives in the SEQUENTIAL path, not this one — see
+    # test_sequential_service_favours_the_earlier_position. Asserting it here
+    # would claim the population's physics for a function that does not run it.
 
 
 def test_advance_commons_writes_one_row_per_agent_on_its_own_clock() -> None:
@@ -592,12 +616,17 @@ def test_advance_commons_feeds_each_agent_from_its_own_harvest() -> None:
         ],
     )
 
+    # D-163: read the HARVEST, not the request. The two were the same number
+    # while a full pasture served every ask in full; now the ceiling can cut
+    # the big one, and asserting against the announcement would be testing the
+    # fixture rather than the metabolic loop (§2.8).
     assert outcomes[AGENT_ID].internal_state.energy == pytest.approx(
-        ENERGY_HALF + metabolic_gain(BIG_REQUEST)
+        ENERGY_HALF + metabolic_gain(outcomes[AGENT_ID].granted)
     )
     assert outcomes[SECOND_AGENT_ID].internal_state.energy == pytest.approx(
-        ENERGY_HALF + metabolic_gain(SMALL_REQUEST)
+        ENERGY_HALF + metabolic_gain(outcomes[SECOND_AGENT_ID].granted)
     )
+    assert outcomes[AGENT_ID].granted > outcomes[SECOND_AGENT_ID].granted
     assert (
         outcomes[AGENT_ID].internal_state.energy
         > outcomes[SECOND_AGENT_ID].internal_state.energy

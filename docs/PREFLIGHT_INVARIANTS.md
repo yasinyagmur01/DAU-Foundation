@@ -143,6 +143,7 @@ hiç çalıştı mı?"**
 | I5.3 | **Hafıza yazıldı mı.** `_memory_written[agent_id] > 0`. | FLAG | boş vault zinciri (K6) | ✅ |
 | I5.4 | **Inherited somatic scale uygulandı mı.** Gen2'de ≥1 kez. | FLAG | GAP-3 | ✅ |
 | I5.5 | **Seçilim terimi, tasarımın okuduğu yerde ölçülebilir mi.** Ebeveyni gen ≥ 2 olan her geçişte en az bir alan `selection_estimable` · **ve** kurucu geçiş ölçülebilir **çıkarsa da** bayrak (YENİ-4'ün öncülü kırılmış demektir). ⛔ `F_agent` yayılımı **rapor edilir, karara girmez** | FLAG | ⛔ *"sıfır, çünkü yapı gereği"* ile *"sıfır, çünkü seçilim yok"* ayrımı — C2 bunu **`clean`** raporlamıştı | ✅ |
+| I5.6 | **Hasat tavanı bağladı mı.** Her nesilde en az bir olayda `talep > alınan`, **ve** ilk eksik alma `LANDMARK_EVENT`'ten **önce**. İki kusur **ayrı** raporlanır: *hiç bağlamadı* (katman hiçbir şey yapmadı) ile *geç bağladı* (çalıştı ama uç noktanın penceresi dışında). ⚠️ Kanned LLM'de **değerlendirilmez** — talebi stub belirler | FLAG | ⛔ Sabit kotada eksik alma **olay 16'ya kadar tam sıfırdı** ve her özet sağlıklı görünüyordu | ✅ |
 
 GAP-14 kararı verilene kadar I5.1 FLAG kalır. "PPR bağlansın" kararı
 çıkarsa ABORT'a yükselir.

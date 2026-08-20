@@ -15,7 +15,12 @@ from dau.diagnostics.preflight import RUN_QUALITY_CLEAN, PreflightAbort
 # false-green suite and an unwired gate — so the tests assert the flagged SET
 # instead, which is a stronger statement than `clean` ever was: it says which
 # gates fired AND that no other did.
-STUB_EXPECTED_FLAGS: frozenset[str] = frozenset({"I5.4"})
+# ⚠ D-163 adds I5.6 to the same list, for the same class of reason. The stub
+# decides for its own reasons, and its announcements never climb high enough to
+# meet the harvest ceiling — so "the ceiling never bound" is a fact about the
+# canned agent, not about the commons. The gate is right to fire and the suite
+# is right to expect it.
+STUB_EXPECTED_FLAGS: frozenset[str] = frozenset({"I5.4", "I5.6"})
 
 
 def _flagged(results: dict[str, Any]) -> frozenset[str]:
@@ -34,8 +39,6 @@ def assert_only_expected_flags(results: dict[str, Any]) -> None:
 
     unexpected = _flagged(results) - STUB_EXPECTED_FLAGS
     assert not unexpected, f"a gate fired that this test did not expect: {unexpected}"
-    if not _flagged(results):
-        assert_only_expected_flags(results)
 from dau.diagnostics.run_population_experiment import (
     build_arm_population,
     founder_id,
@@ -2828,3 +2831,157 @@ def test_i55_ignores_a_price_block_on_the_first_generation() -> None:
     assert passed, detail
     assert "gen0->gen1" not in detail, "a pre-run transition was scored"
     assert "1 founder" in detail
+
+
+def _shortfall_arm(arm: str, seed: int, per_generation: list[tuple[int, int | None]]) -> dict:
+    """Results-shaped arm whose generations report chosen short-fall summaries.
+
+    `per_generation` is a list of (n_short, first_event) — the two fields the
+    gate actually decides on.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        SHORTFALL_KEY_FIRST_EVENT,
+        SHORTFALL_KEY_MAX,
+        SHORTFALL_KEY_ROWS,
+        SHORTFALL_KEY_SHORT,
+    )
+
+    return {
+        "arm": arm,
+        "seed": seed,
+        "generations": [
+            {
+                "generation": index + 1,
+                "harvest_shortfall": {
+                    SHORTFALL_KEY_ROWS: 240,
+                    SHORTFALL_KEY_SHORT: n_short,
+                    SHORTFALL_KEY_FIRST_EVENT: first_event,
+                    SHORTFALL_KEY_MAX: 1.0 if n_short else 0.0,
+                },
+            }
+            for index, (n_short, first_event) in enumerate(per_generation)
+        ],
+    }
+
+
+def test_i56_separates_a_silent_ceiling_from_a_late_one() -> None:
+    """⭐ D-163 / I5.6 — two different failures that must not be merged.
+
+    A ceiling that NEVER bound means the layer did nothing at all. A ceiling
+    that bound only at or after LANDMARK_EVENT means it worked but opened too
+    late for the primary endpoint to see it. Reporting both as one verdict
+    would leave a post-mortem unable to tell "the physics change failed" from
+    "the physics change was mistimed".
+
+    ⚠ K2: several generations across two arms, with different values — a gate
+    that looked only at the first generation, or that pooled them, would pass a
+    single-cell fixture.
+    """
+
+    from dau.diagnostics.run_population_experiment import check_harvest_ceiling_binds
+    from dau.foundation.constraints import LANDMARK_EVENT
+
+    healthy = [
+        _shortfall_arm("lived", 1, [(120, 6), (140, 5), (130, 4)]),
+        _shortfall_arm("shuffle", 1, [(110, 7), (150, 6), (120, 6)]),
+    ]
+    passed, detail = check_harvest_ceiling_binds(healthy)
+    assert passed, detail
+    assert "6 generations" in detail
+
+    silent = [
+        _shortfall_arm("lived", 1, [(120, 6), (0, None)]),
+        _shortfall_arm("shuffle", 1, [(110, 7), (130, 5)]),
+    ]
+    passed, detail = check_harvest_ceiling_binds(silent)
+    assert not passed
+    assert "never bound" in detail and "lived gen2" in detail
+
+    late = [_shortfall_arm("lived", 1, [(120, LANDMARK_EVENT)])]
+    passed, detail = check_harvest_ceiling_binds(late)
+    assert not passed
+    assert "never bound" not in detail, "a late ceiling was reported as a silent one"
+    assert str(LANDMARK_EVENT) in detail
+
+
+def test_i56_refuses_a_run_that_reported_no_summary() -> None:
+    """⚠ An empty verdict must fail, not pass — the D-149 shape again: a gate
+    that saw no data read exactly like a gate that saw clean data.
+    """
+
+    from dau.diagnostics.run_population_experiment import check_harvest_ceiling_binds
+
+    passed, detail = check_harvest_ceiling_binds([])
+    assert not passed
+    assert "no generation" in detail
+
+
+def test_shortfall_summary_reads_the_ledger_the_physics_wrote() -> None:
+    """⚠ K2 + §2.8. The summary must aggregate over rows, and it must read
+    `requested` vs `extraction` rather than recompute the ceiling beside the
+    rule — a second implementation could agree with a ceiling that no longer
+    exists.
+
+    Rows deliberately mix short and full service, and the short ones do not
+    arrive first, so a summary that took the earliest ROW rather than the
+    earliest EVENT would be caught.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        SHORTFALL_KEY_FIRST_EVENT,
+        SHORTFALL_KEY_MAX,
+        SHORTFALL_KEY_ROWS,
+        SHORTFALL_KEY_SHORT,
+        harvest_shortfall_summary,
+    )
+
+    rows = [
+        {"event_counter": 9, "requested": 8.0, "extraction": 8.0},
+        {"event_counter": 11, "requested": 8.0, "extraction": 5.0},
+        {"event_counter": 7, "requested": 8.0, "extraction": 6.5},
+        {"event_counter": 12, "requested": 2.0, "extraction": 2.0},
+    ]
+    summary = harvest_shortfall_summary(rows)
+
+    assert summary[SHORTFALL_KEY_ROWS] == 4
+    assert summary[SHORTFALL_KEY_SHORT] == 2
+    assert summary[SHORTFALL_KEY_FIRST_EVENT] == 7, "took the first row, not the first event"
+    assert summary[SHORTFALL_KEY_MAX] == pytest.approx(3.0)
+
+    # Nothing short at all is a real state and must not be reported as event 0.
+    empty = harvest_shortfall_summary(
+        [{"event_counter": 3, "requested": 2.0, "extraction": 2.0}]
+    )
+    assert empty[SHORTFALL_KEY_SHORT] == 0
+    assert empty[SHORTFALL_KEY_FIRST_EVENT] is None
+
+
+def test_i56_and_its_summary_reach_the_results_file(monkeypatch) -> None:
+    """⚠ K3 — wired, not merely written. D-147/AV-3 measured 6 of 26 gates live
+    on this path and D-149 found I5.4 defined-but-unbound after it had been
+    silent through a six-hour run.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    from dau.diagnostics.run_population_experiment import (
+        SHORTFALL_KEY_ROWS,
+        check_harvest_ceiling_binds,
+    )
+
+    assert "I5.6" in results["invariants"], "the gate never ran"
+    recorded = results["invariant_details"]["I5.6"]
+    expected_passed, expected_detail = check_harvest_ceiling_binds(results["arms"])
+    assert recorded["detail"] == expected_detail, (
+        "the registered predicate is not the one under test"
+    )
+    assert recorded["passed"] == expected_passed
+
+    for arm in results["arms"]:
+        for generation in arm["generations"]:
+            summary = generation["harvest_shortfall"]
+            assert summary[SHORTFALL_KEY_ROWS] > 0, "no pool rows reached the summary"
