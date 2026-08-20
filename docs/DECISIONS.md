@@ -12267,3 +12267,159 @@ bu kez **kendi testimde**.
   **geçti**; ⚠ **birincil alan `energy` ile bakılsaydı düşerdi** — kapı
   *"herhangi bir alan"* diye soruyor, ön-kayıt ise **bir alan** ilan ediyor.
   ⇒ **Alan kararı verilince (kuyruk 2.2) kapı o alana daraltılmalı.**
+
+---
+
+## D-160 · 2026-08-20 · 🔒 **TANIMLILIK PİLOTU — K1 kontrolü + ön-taahhüt, KOŞUMDAN ÖNCE yazıldı**
+
+**Yetki:** Yasin, 2026-08-20: *"önerdiğin şekilde yap"* ⇒ 3 tohumluk tanımlılık
+pilotu (~9 sa) onaylandı.
+
+⚠️ **Bu kayıt koşum BAŞLAMADAN önce commit edilmiştir.** Sırası kasıtlıdır
+(D-125/D-128/D-154/D-156 deseni): sonra yazılsaydı sayıyı görüp kriteri ona
+göre seçmiş olurdum (§2.7 / L9). **Commit sırası bunun kanıtıdır.**
+
+---
+
+### 1. Pilot neyi satın alıyor
+
+⛔ **Bu pilot bir sonuç değil, bir KARAR üretiyor.** Kuyruk 2.2'nin iki
+kararı (**alan** ve **bütçe/G**) bugün **tahminle** verilmek zorunda; pilot
+ikisini de aritmetiğe çeviriyor.
+
+**Bugünkü kanıt durumu:** `energy` alanının bugünkü fizikte yaşadığına dair
+elimizde **tek tohum** var (sonda-3). Aksini söyleyen kanıt (C2, 0/3) **eski
+fizikten** geliyor — D-152 aktarım yolunu değiştirdi ve varislerin ayrışması
+tam da o yoldan geçiyor (D-157 §2).
+
+⚠️ **Pilotun istatistiği zayıf ve bu ilan ediliyor:** 3 ikili gözlem. Gerçek
+oran C2'deki kadar kötüyse (%33) 3/3 görme olasılığı **%3.6**; gerçek oran
+%90 ise ≤1/3 görme olasılığı **%2.8**. ⇒ **Uçlarda ayırt edici, ortada kör.**
+Bu bir kestirim değil, **ele/geç ekranıdır**.
+
+---
+
+### 2. K1 — mekanizma kontrolü (bağlayıcı, `CLAUDE.md §2.4-b`)
+
+**(a) Ölçülen niceliği hangi mekanizma üretiyor**
+
+`Var(z) > 0` ⇐ hücre içindeki ajanlar farklı drift taşıyor ⇐ soylar ayrışmış
+⇐ **iki kanal birden**: varis ebeveynin **adapter'ını** miras alıyor (Kanal 2,
+D-102) **ve** D-152'den beri **bandına göre farklı anılar** miras alıyor
+(Kanal 1). C2'de ikinci yarı yoktu ve varisler özdeş bitiyordu.
+
+**(b) ⛔ Seçtiğim bayraklardan hangisi bu mekanizmayı kapatır**
+
+| bayrak | etkisi | kararım |
+|---|---|---|
+| ⛔ `--no-lora` | Kanal 2'yi kapatır ⇒ ayrışmanın yarısı ölür | **KULLANILMIYOR** |
+| ⛔ `--mock-llm` | Kararlar kanned ⇒ yaşamlar özdeşleşir, tanımlılık **yapay** çıkar | **KULLANILMIYOR** |
+| ⚠️ `--n-generations` | **G−2 = puanlanan geçiş.** G=3 tohum başına **1**, G=4 **2** geçiş verir. Kural 2 iki geçiş **olmadan sorulamaz** | **4** |
+| `--events 30` · `--n-agents 8` · `--fresh-pasture` | Deneyle aynı | **aynı** |
+| `--arms lived shuffle` | Birincil karşıtlık (D-131); `null` betimleyici | **`lived shuffle`** |
+| dış `timeout` | D-126'da replay'i kesti, sonuç dosyası hiç yazılmadı | **YOK** |
+
+⚠️ **G = 4 bu koşumun tek yapılandırma değişikliğidir** ve gerekçesi
+sonuçtan bağımsız: **Kural 2 tanım gereği iki puanlanan geçiş istiyor.**
+
+**(c) Bu yapılandırmada dejenere olmadığının **mevcut veriden** kanıtı**
+
+| | sonda-3'ten (aynı fizik, aynı yapılandırma, G=3) |
+|---|---|
+| puanlanan hücrelerin tanımlılığı | **2/2** ölçülebilir (`energy`) |
+| ebeveyn yayılımı | `f_agent_spread` gen2'de **0.154** ve **0.080** (iki kol) |
+| Kanal 2 aktif mi | **32/32** varis adapter miras aldı |
+| Kanal 1 aktif mi | varis başına **7.19** anı (min 5, maks 11) |
+| ölçüm makinesi | I4.1 **identical**, `complete: true` |
+
+---
+
+### 3. 🔒 ÖN-TAAHHÜT — okuma kuralları
+
+**Puanlanan geçiş** = ebeveyni **gen ≥ 2** olan geçiş (YENİ-4 / D-156).
+G = 4 ⇒ kol başına **iki** puanlanan geçiş: gen2→gen3 ve gen3→gen4.
+**Bir tohum "kullanılabilir"** = en az bir puanlanan geçişte **`energy` alanı
+İKİ KOLDA BİRDEN** `selection_estimable`.
+
+> **KURAL 1 — ALAN.** 3 tohumun kaçı kullanılabilir?
+> **3/3 ya da 2/3** ⇒ `energy` **birincil alan olarak kalır**, ön-kayıt §3
+> değişmez, ve D-145'in 1./2. kusuru ölçümle kapanır.
+> **1/3 ya da 0/3** ⇒ `energy` **yaşamıyor**. ⛔ **Bu, skaler `z`'ye geçildiği
+> anlamına GELMEZ** — o seçenek kendi ayrı ön-taahhüdüyle sınanır. Bu kural
+> yalnız `energy`'yi eler.
+
+> **KURAL 2 — G.** Kaç tohumda **ikinci** puanlanan geçiş, **birincisi
+> kullanılamazken** kullanılabilirdi (yani tohumu kurtardı)?
+> **≥ 1/3** ⇒ G = 4 kendi +%33'ünü ödüyor, G = 4 önerilir.
+> **0/3** ⇒ bu kanıtla G = 4'ün bedeli **haklı çıkmadı**, G = 3 kalır.
+
+> **KURAL 3 — TAVAN RİSKİ.** Puanlanan **hücrelerin** (tohum × kol × geçiş,
+> toplam 12) kaçı `energy`'de ölçülebilir?
+> **12/12** ⇒ ⛔ **`P_active` tavanda donmuş demektir** — iki kol da her zaman
+> tanımlıysa `ΔP_active` yapı gereği sıfırdır ve eş-birincil uç nokta
+> **hareket edemez**. Bu, D-145'in 3. kusurunun **tavan** hâlidir ve kilit
+> öncesi **yeniden açılır**.
+> **1–11 / 12** ⇒ tavan riski gerçekleşmedi, `P_active` yaşayabilir.
+> ⚠️ **Bu bir SEVİYE okumasıdır, kol farkı DEĞİL** — `ΔP_active` hesaplanmıyor.
+
+> **KURAL 4 — SOMATİK ZİNCİR (betimleyici, eşiksiz).** D-158'in sayaçları
+> (`transfer_gates`) tüm ajanlar üzerinde toplanır ve **hangi kapının** en çok
+> aday yuttuğu **adıyla** yazılır. ⛔ Eşik yok, karar yok — D-155 §2'nin
+> *"çıkarım"* diye bıraktığı soru **ölçüme** çevriliyor, o kadar.
+
+⛔ **OKUNMAYACAKLAR (L9):** kovaryansın **değeri** · **işareti** · `lived` ile
+`shuffle` **arasındaki fark** · etki büyüklüğü · **`ΔP_active`**.
+⛔ **`to_landmark.max` açılmayacak** — D-155'te reddedildi, kapalı soru.
+
+---
+
+### 4. Yapılandırma ve komut
+
+**Tohumlar: 9917 · 9918 · 9919** — üçü de taze (`dau_runs/adapters/` altında
+**0** eşleşme, kontrol edildi). ⚠️ Pilot **keşifsel**; bu üç tohum deneyde
+**kullanılmaz** ⇒ deneyin tohumları **9920+**.
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9917 9918 9919 --n-agents 8 --n-generations 4 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle \
+  --results dau_runs/pilot_definedness_g4_s9917_9919.json
+```
+
+⚠️ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
+(D-116).
+
+**Süre tahmini: ~8 sa 40 dk.** ⚠️ **Tahmin, ve dayanağı yazılı (K4):**
+sonda-3 **2 sa 09 dk 47 sn** sürdü, 6 kol-nesil ⇒ kol-nesil başına **~21.6 dk**;
+G=4'te kol-nesil sayısı 8 ⇒ tohum başına ~2 sa 53 dk × 3 tohum.
+⚠️ **Gerçekçi aralık 7–13 sa** — nişler arası ömür yayılımı 2.3 kat (D-154),
+ve süre tahminlerim üçte ikisinde tutmadı.
+
+**Disk:** 51 GB boş; beklenen adapter yazımı ~2.7 GB (192 dizin × ~14 MB).
+⚠️ **Tahmin.** Çökme hâlinde `.partial.json` ölçümleri bırakır (D-111).
+
+---
+
+### 5. Koşum bittiğinde ne olur — önceden yazılı
+
+| Kural 1 | ne yapılır |
+|---|---|
+| **3/3 · 2/3** | `energy` kalır ⇒ Kural 2 G'yi belirler ⇒ §7 bütçe slotu **hesapla** doldurulur ⇒ 2.3 kilit yolu açılır. ⚠️ Kural 3 **12/12** derse kilit **yine durur** — bu kez `P_active` yüzünden |
+| **1/3 · 0/3** | ⛔ `energy` elenir. Büyük koşum **başlatılmaz**. Ertelenen **A yolu** (kıtlık rejimi, D-082/D-084) gerekçesiyle Yasin'e döner |
+
+⛔ **Hiçbir dalda kural gevşetilmez.** *"2/3 olmadı ama 1/3 de fena değil"*
+denmeyecek — D-129'da, D-155'te denmedi.
+
+### 6. Sınırlar (ilan)
+
+- **3 tohum.** Uçlarda ayırt edici, **ortada kör** (§1'in aritmetiği).
+- Pilot **keşifsel**; hiçbir sabit ona bakılarak seçilmeyecek (§2.7).
+- Kural 1 **yalnız `energy`'yi** sınıyor; başka bir alanın ya da skaler `z`'nin
+  yaşayıp yaşamadığı hakkında **hiçbir şey** söylemez.
+- `null` kolu yok ⇒ pilot `null` hakkında **hiçbir şey** söylemez.
+- G=4, **L10'un ilan ettiği G=3'ten sapmadır** ve yalnız **pilotta** geçerli;
+  deneyin G'si Kural 2'nin sonucuyla ayrıca kararlaştırılacak.
+- ⚠️ **L11 (adapter sönümü)** G=4'te bir nesil daha derinleşiyor ⇒ dördüncü
+  neslin sinyali üçüncüden zayıf olabilir. Bu **tanımlılığı** etkileyebilir ve
+  Kural 2'nin sonucu bu etkiyi **içerir**, ondan ayrıştırılamaz.
+- **9917–9919 harcanıyor**; deneyin tohumları 9920+.
