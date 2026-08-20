@@ -158,30 +158,33 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# ▶▶ SIRADAKİ İŞ — **2.4b · ⛔ KARAR (Yasin'in)** — sonda-3 dördüncü yola girdi
+# ▶▶ SIRADAKİ İŞ — **2.5** (GPU'suz, saf raporlama)
 
-⛔ **"devam et" denince BU madde alınır, ama kendim karar veremem** (D-007).
-Sonda koştu, üç sorunun üçü de ön-taahhüdün yazdığı gibi okundu (**D-155**),
-ve sonuç D-154 §5'in **dördüncü yolu**: *"bu fizikle test edilemez"*.
+⛔ **"devam et" denince BU madde alınır.** 2.4b **karara bağlandı** (B),
+2.2 ise Yasin'in A/B/C kararını bekliyor ⇒ sırayı 2.5 ve 2.6 açıyor.
 
-## ⬜ 2.4b · ⛔ **KARAR** — kurucu neslin dejenerasyonu ne yapılacak
+## ✅ 2.4b · **KARAR VERİLDİ: B yolu** — **D-156** (Yasin: *"önerdiğin şekilde devam et"*)
+✅ **B: kurucu nesil ısınma neslidir**; Price yalnız ebeveyni **gen ≥ 2** olan
+geçişlerden okunur ⇒ kullanılabilir geçiş **G − 2**. ⛔ **A elenmedi,
+ertelendi** — kıtlık rejimi dejenerasyonun **sebebine** dokunuyor ama önünde
+bir **sabit kararı** var (§2.7, D-082/D-084).
 
-**Sondanın verdiği kanıt (D-155 §1):** gen1'in sekiz ajanı **iki kolda da bit
-düzeyinde özdeş** (`pool_ratio_end = 0.757` ⇒ kıtlık gen1'de hiç ısırmıyor)
-⇒ birinci Price geçişi **hangi uç nokta seçilirse seçilsin** `Var = 0`.
-Uç nokta değiştirmek düzeltmiyor — sonda tam da bunu sınadı ve aday **girmedi**
-(2/4, kural ≥3/4).
+✅ **Öncül sınandı ve geçti (D-157, GPU'suz, ön-taahhüt D-156'da commit'li):**
+C2'nin kurucu geçişinde **Var(z) > 0 olan hücre 0** (7 satır + 2 hiç satır
+üretmeyen hücre). Sonda-3'le birlikte **4 tohum · 3 kol · 11 kurucu hücre,
+ölçülebilir 0** — ve **iki ayrı fizikte** aynı ⇒ dejenerasyon **yapısal**.
+⚠ **K4:** D-156'da *"9 satır"* demiştim, gerçekte **7** çıktı; karar
+değişmiyor ama tahmin **düzeltilerek** kayda geçti.
 
-| | yol | bedeli | sondanın söylediği |
-|---|---|---|---|
-| **A** | **Yön 3'ü aç** — kıtlık rejimini değiştir (Holling II / kapasite, D-082/D-084) | bugünkü sayılar **taşınmaz**, ve §2.7 sınırında **bir sabit** kararı ister (`h` ya da kapasite) | ⭐ dejenerasyonun sebebine **doğrudan** dokunuyor |
-| **B** ⭐ | **Kurucu nesli ölçümün dışında bırak** — Price yalnız gen ≥ 2 geçişlerinden okunur, G artırılır | koşum ~1.5 kat uzar; sıfır yeni sabit | gen2→gen3 hücrelerinin **ikisi de** `estimable=True` çıktı ⇒ varsayım bu koşumla **zaten sınanabilir** |
-| **C** | **Kestirim damgasıyla devam** (P7-b / D-096) | ucuz | ⛔ D-145'in 3. kusuru **açık kalır**, uç nokta da düzelmedi |
+⛔⛔ **B2 uyardı: B gerekli ama YETERLİ DEĞİL.** Kurucu nesil atıldıktan sonra
+bile eski fizikte hücrelerin yalnız 4'ü ölçülebilir, ve **birincil alanla
+(`energy`) bakılınca `ΔCov` 0/3 tohumda tanımlı olurdu** ⇒ D-145'in **1. ve
+2. kusuru B'den etkilenmiyor** ⇒ **2.2'ye bağlandı**.
 
-⚠ **Claude Code'un önerisi: B önce ölçülsün, A onun yanında değerlendirilsin.**
-Gerekçe D-155 §5'te. **Öneri, karar değil.**
-
-**Bitti sayılır:** Yasin bir yol seçti, seçim D-kaydına gerekçesiyle yazıldı.
+✅ **Taslağa yazıldı:** `PREREGISTRATION_3.md` **YENİ-4** (tasarım) + **L21**
+(sınır); **L17** ve **L20** taze ölçümle güncellendi.
+⛔ **Yazılmadı çünkü karar: G kaç olacak** — `G − 2` bugünkü `G = 3`'ü tohum
+başına **tek geçişe** düşürüyor ⇒ doğrudan bütçe slotu ⇒ **2.2**.
 
 ## ✅ 2.4 · Sonda-3 — **koştu, üç soru da okundu** (**D-155**)
 ✅ `dau_runs/probe3_endpoint_s9916.json` · `complete: true` ·
@@ -333,6 +336,21 @@ durdurdu** (D-145, Yasin'in talebiyle).
 **hipotez testi yok** (P7-b/D-096 damgası) · **B** test koşumu S ≥ 30,
 **60 sa** (aralık 40–91) · **C** uç noktayı düzelt — ⛔ **§2.7 yasaklıyor**.
 **Öneri A.**
+
+⚠ **D-155/D-157 bu maddeye üç şey ekledi — karar verilirken birlikte
+görülmeli:**
+
+1. ⛔ **Kusur 4 tekrarlandı ve genelleşti:** kusur #1 (`energy` nadiren
+   ölçülebilir) ve #2 (alan **tohuma** bağlı) **kurucu nesli atmaktan
+   etkilenmiyor**. Eski fizikte, gen1 atıldıktan **sonra bile**, birincil
+   alanda `ΔCov` **0/3 tohumda** tanımlı olurdu (D-157 §2). ⇒ **Alan kararı
+   bütçe kararından önce gelir.**
+2. **`G` yeniden hesaplanmalı:** YENİ-4 ile kullanılabilir geçiş **G − 2**
+   ⇒ `G = 3` tohum başına **tek** geçiş bırakıyor. `G = 4` koşumu ~1.5 kat
+   uzatır ve süre kestirimleri buna göre yeniden yazılmalı.
+3. ⭐ **Kusur 3 (`ΔP_active` sıfır-şişkin) hâlâ açık** — sonda-3 uç nokta
+   adayını **reddetti** (L17), yani bu kusuru çözecek sürekli uç nokta yolu
+   **kapandı**.
 
 ## ⬜ 2.3 · Kilit
 Slotlar kapanınca 🔒, commit hash, alet kimliği dondurulur (§12 deseni).

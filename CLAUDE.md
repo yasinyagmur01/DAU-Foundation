@@ -22,11 +22,21 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 # 1. Şu An Neredeyiz (2026-08-20) — ⛔ **Sonda-3 koştu: dördüncü yol, karar Yasin'de**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-155.** Sıradaki kayıt **D-156** olarak açılır.
-- ▶▶ **SIRADAKİ İŞ: 2.4b — ⛔ KARAR (Yasin'in).** Sonda koştu ve üç sorunun
-  üçü de ön-taahhüdün yazdığı gibi okundu ⇒ **D-154 §5'in dördüncü yolu**:
-  *"bu fizikle test edilemez"*. Üç seçenek ve öneri
-  **`docs/EXECUTION_QUEUE.md` 2.4b**'de.
+- **Son D-kaydı: D-157.** Sıradaki kayıt **D-158** olarak açılır.
+- ▶▶ **SIRADAKİ İŞ: kuyruk 2.5** (GPU'suz, saf raporlama — somatik zincirin
+  kırıldığı halkayı sayaçla). Ardından **2.6** (kurucu nesil kapısı).
+  ⛔ **2.2 Yasin'in A/B/C kararını bekliyor** ve D-157 ona **üç yeni girdi**
+  ekledi.
+- ✅ **KARAR: B yolu (D-156, Yasin).** Kurucu nesil **ısınma neslidir**; Price
+  yalnız ebeveyni **gen ≥ 2** olan geçişlerden okunur ⇒ kullanılabilir geçiş
+  **G − 2**. ⛔ **A (kıtlık rejimi) elenmedi, ertelendi.**
+- ✅ **Öncül sınandı ve geçti (D-157, GPU'suz):** **11 kurucu hücrenin 0'ı**
+  ölçülebilir (4 tohum · 3 kol · **iki ayrı fizikte**) ⇒ dejenerasyon
+  **yapısal**, tohuma bağlı kaza değil.
+- ⛔⛔ **Ama B yeterli değil:** kurucu nesil atıldıktan **sonra bile** eski
+  fizikte birincil alanda (`energy`) `ΔCov` **0/3 tohumda** tanımlı olurdu ⇒
+  **D-145'in 1. ve 2. kusuru B'den etkilenmiyor**; asıl darboğaz **alan
+  kararı**, ve o **bütçe kararından önce** gelir.
 - ⛔⛔ **SONDA-3 SONUCU (D-155):** **S1 düştü (2/4, kural ≥3/4)** ⇒ sürekli uç
   nokta adayı **girmedi**, kapanmış soru · **S2 düştü (0/32 varis)** ⇒
   **D-152 vaadini tutmadı**, somatik kanal hâlâ ölü · **S3 tahmin tuttu**

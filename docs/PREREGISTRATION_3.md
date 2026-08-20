@@ -87,6 +87,17 @@ Sınanan parça (aksiyomun **tamamı değil**):
 | ⭐ **YENİ-1** | **Birincil karşıtlık** | **`lived` ↔ `shuffle`**; `null` **betimleyici** | **D-131** |
 | ⭐ **YENİ-2** | **Test birimi** | tohum başına **ortalanmış** değer; nesil satırları **raporlanır ama test edilmez** | **D-141** |
 | ⭐ **YENİ-3** | **Fitness bantları** | **göreli** (hücre içi min-max); eşik **değerleri değişmedi** | **D-152** |
+| ⭐ **YENİ-4** | **Kurucu nesil = ısınma** | Price **yalnız ebeveyni gen ≥ 2 olan** geçişlerden okunur ⇒ kullanılabilir geçiş **G − 2** | **D-156/D-157** |
+
+⛔ **YENİ-4 bir düzeltme değil, ilan edilmiş bir KAPSAM kısıtıdır.** Kurucu
+nesil ölçülebilir hâle gelmiyor; ölçüm onu **dışarıda bırakıyor**. Gerekçe
+mekanizma, veri değil: kurucular **özdeş doğar**, farklılaşmanın tek kaynağı
+**adapter**'dır (D-129/D-130), ve adapter ancak birinci nesil **bittikten
+sonra** doğar ⇒ birinci geçiş **hangi uç noktayla olursa olsun** `Var = 0`.
+**Ölçüldü: 4 tohum · 3 kol · 11 kurucu hücre, ölçülebilir olan 0** — ve iki
+ayrı fizikte (D-152 öncesi/sonrası) aynı (D-155 §1, D-157 §1).
+⚠ **Bedeli L21'de ilan edildi.** ⛔ **G'nin değeri bu kuralla birlikte
+değişebilir ve §7'nin (SLOT 3) konusudur** — burada seçilmiyor.
 
 ⚠ **Hiçbir sabit DEĞERİ değişmedi.** `constraints.py` C2'deki hâliyle; özellikle
 `DELTA_THRESHOLD_DEEP = 0.70` (D-143) ve `CROSS_AXIS_SPILLOVER = 0.20`
@@ -337,7 +348,7 @@ eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 | **L14** | **Kriz müdahale-sonrasıdır** ve bütün kola **aynı anda** vurur ⇒ `z`'nin `resource` bileşeni hücre içi bilgi taşımaz | D-119/120, D-130 |
 | **L15** | **I0.1/I0.2 popülasyon yolunda bağlı değil** | D-105 |
 | **L16** | **GAP-10 / spillover skaler kalıyor.** Matris `k` sabit olduğu için skalerin üç kopyalı hâli olurdu; eşiği de geçirmiyordu (+%2.29) | D-137 |
-| **L17** | **`to_landmark.max` reddedildi** (D-129, **2/4**) ve bu koşumda **kullanılmaz**. Yeniden açılması **üç şart** ister | D-143 §5 |
+| **L17** | **`to_landmark.max` reddedildi** ve bu koşumda **kullanılmaz**. ⭐ **Üç şart yerine getirilerek YENİDEN AÇILDI, taze veriyle sınandı ve YİNE reddedildi** (D-154 ön-taahhüdü → D-155): sonda `shuffle` içeriyordu, kural koşumdan önce yazılmıştı, ve D-129'un sayıları yeniden okunmadı. Sonuç **yine 2/4** (kural ≥ 3/4). ⇒ **Kapalı soru**; bir daha açılmaz | D-143 §5, **D-155 §1** |
 | **L18** | **Davranış çökük** — olayların %94–100'ünde DEFECT; K7 bilişsel önseli aksiyom gerekçesiyle kapattı ve bu **açık risktir** | D-068, D-074 |
 | **L19** | **GAP-4'ün ikinci yarısı** (silinen anının LoRA izi) **açık** | GAP tablosu |
 | **L20** ⭐⭐ | ⛔ **Sembolik kanalın somatik yarısı varise HİÇ ULAŞMIYOR.** C2'de 144 varisin **0'ında** somatik ölçek, **0'ında** miras uyarısı vardı — buna karşılık **anılar geçti** (varis başına ~10, `n_inherited_by_parent` ort. **9.74**) ve **adapter geçti** (96/144 = eğitim alan iki kol). ⇒ Kanal 1'in **engram yarısı çalışıyor, somatik yarısı çalışmıyor** (GAP-3).
@@ -352,7 +363,18 @@ min 0.3919 — D-086 `F_agent`'ı 0.14→0.45 taşımış, eşik geri dönülmem
 **canlandı**. ⚠ **Bedeli ilan edildi:** min-max her hücrede birini `low`
 birini `high` yapar. ⚠ **Ve GAP-3 tam kapanmadı** — bant ateşlenebilir oldu,
 ama zincirin geri kalanı hâlâ `is_trauma` eşiğine bağlı; darboğaz **bir adım
-ileri taşındı** ve I5.4 gerçek koşumda ölçecek. ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı | **D-149** |
+ileri taşındı** ve I5.4 gerçek koşumda ölçecek. ⚠ Ve C2 bunu `run_quality = clean` diye raporladı, çünkü **I5.4 bağlı değildi** — D-149'da bağlandı ve ilk koşumda **FLAG** bastı.
+⛔⛔ **SONDA-3 ÖLÇTÜ VE D-152'NİN TAHMİNİ ÇÜRÜDÜ (D-155 §2):** bugünkü fizikle,
+göreli bantlarla koşulan taze veride **32 varisin 0'ında** somatik ölçek,
+**0'ında** miras uyarısı — `I5.4` yine `never applied`. ⚠ Ama zincirin
+**hangi halkasının** tuttuğu ölçüldü: göreli bant **çalışıyor** (48 yaşamın
+10'u `low`, 15'i `high`), travma eşiği **48/48** aşılıyor, ve `low` bant
+ajanı **üreyebiliyor** da (w = 3/1/1). ⇒ Kırılma **bandın arkasında** ve
+kalan şüpheli `select_for_transfer`'ın recall/`is_trauma` şartı — ⚠ **çıkarım,
+ölçüm değil** (kuyruk 2.5).
+⇒ 🔒 **Bu koşum için sınır: sembolik kanalın somatik yarısı AKMIYOR ve bu
+biliniyor.** Aksiyomun *"iki kanal"* iddiasının bu yarısı **test edilmiyor** | **D-149**, **D-155** |
+| **L21** ⭐ | ⛔ **Kurucu nesil hakkında hiçbir iddia yok** (YENİ-4). Price yalnız ebeveyni gen ≥ 2 olan geçişlerden okunuyor ⇒ tasarım **birinci nesildeki seçilim hakkında sessizdir**, ve bu bir bulgu değil **kapsam kısıtıdır**. ⚠ **Ve B tek başına tanımlılığı kurtarmıyor:** eski fizikte kurucu nesil atıldıktan sonra bile birincil alanda (`energy`) `ΔCov` **0/3 tohumda** tanımlı olurdu (D-157 §2). Bugünkü fizikte karşı-veri var ama **n = 1** | **D-156**, **D-157** |
 
 ---
 
