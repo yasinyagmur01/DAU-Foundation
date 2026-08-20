@@ -11987,3 +11987,101 @@ bayrak, hangi tasarım seçilirse seçilsin durumu **görünür** kılıyor.
   paylaşıyor) ⇒ etkin n **3'e yakın**, 9'a değil.
 - Hiçbir sabit bu okumaya bakılarak seçilmiyor; B bir **kapsam** kararıdır,
   bir eşik kararı değil (§2.7 kapsam dışı).
+
+---
+
+## D-157 · 2026-08-20 · ✅ **B1 GEÇTİ: kurucu neslin dejenerasyonu yapısal** — ⛔ **ama B2 uyardı: B gerekli, YETERLİ DEĞİL**
+
+D-156'nın ön-taahhüdü uygulandı. Okunan nicelikler yalnız `z_variance` ve
+`selection_estimable`. ⛔ `selection` · `transmission` · `delta_zbar` · kol
+farkı · işaret **okunmadı**; `to_landmark.max` **hiç açılmadı** (kapalı soru).
+
+---
+
+### 1. KURAL B1 — kurucu geçiş: **0 / 9 ölçülebilir** ⇒ öncül **doğrulandı**
+
+C2 (`c2_population_n8_g3_s3.json`, tohum 9911–9913 × üç kol):
+
+| tohum | kol | alan | `z_variance` | estimable |
+|---|---|---|---|---|
+| 9911 | lived · null · shuffle | resource | **0** (üçü de) | ❌ |
+| 9912 | lived | energy | **0** | ❌ |
+| 9912 | **null · shuffle** | — | ⛔ **Price satırı YOK** (`price = {}`) | ❌ |
+| 9913 | lived · null · shuffle | resource | **0** (üçü de) | ❌ |
+
+⇒ **Var(z) > 0 olan kurucu hücre sayısı: 0.** Ön-taahhüdün çürütücü şartı
+(*"≥ 1 hücrede `Var > 0`"*) **ateşlenmedi** ⇒ **B uygulanır.**
+
+⚠ **K4 — kendi paydam tutmadı, ilan ediyorum.** D-156'da *"9 hücre"* yazmıştım;
+gerçekte bu geçiş **7 Price satırı** üretti, iki hücre (`s9912 null`,
+`s9912 shuffle`) **hiç satır üretmedi**. Karar değişmiyor — satırı olmayan
+hücre *"tanımlı"* olamaz, yani çürütücü şart iki okumada da ateşlenmiyor —
+ama **tahmin ettiğim sayı yanlıştı ve düzeltilmeden geçirilmiyor.**
+(Bu, D-145'in 4. kusurunun bağımsız tekrarıdır.)
+
+⭐ **Sonda-3'ün iki kurucu hücresiyle birlikte: 4 tohum · 3 kol · 11 kurucu
+hücre, ölçülebilir olan 0.** İki ayrı fizikte (D-152 öncesi ve sonrası) aynı.
+
+⇒ 🔒 **İlan:** *Bu tasarımda kurucu neslin seçilim geçişi ölçülemez, ve bu
+tohuma bağlı bir kaza değil mekanizmanın sonucudur* — kurucular özdeş doğar,
+farklılaşmanın tek kaynağı adapter'dır (D-129/D-130), ve adapter **ancak
+birinci nesil bittikten sonra** doğar.
+
+---
+
+### 2. KURAL B2 (bağlam) — ⛔ **B tek başına yetmiyor**
+
+Aynı dosyanın gen2→gen3 hücreleri (**eski fizik** — D-152 aktarım yolunu
+değiştirdi ⇒ **B'yi haklı çıkarmak için kullanılamaz**, D-156 §2):
+
+| tohum | kol | alan | estimable |
+|---|---|---|---|
+| 9911 | lived | **energy** | ❌ (`Var = 0`) |
+| 9911 | lived · null · shuffle | resource | ✅ (0.00189159, üçü de) |
+| 9912 | lived | **energy** | ✅ (0.0540837) |
+| 9912 | shuffle | **energy** | ❌ |
+| 9912 | null | — | ⛔ Price satırı yok |
+| 9913 | lived · null · shuffle | resource | ❌ (`Var = 0`) |
+
+⇒ Kurucu nesil atıldıktan **sonra bile** hücrelerin yalnız **4'ü** ölçülebilir.
+
+⛔⛔ **Ve ön-kayıtın ilan ettiği birincil alanla (`energy`, D-144) bakılınca
+tablo daha da sert:** `energy` yalnız **s9912 lived**'de ölçülebilir. Birincil
+karşıtlık `lived ↔ shuffle` (YENİ-1) **iki kolun da** tanımlı olmasını
+istediğine göre, eski fizikte **`ΔCov` hiçbir tohumda tanımlı olmazdı (0/3).**
+
+⚠ **Bu D-145'in 1. ve 2. kusurunun bağımsız tekrarıdır** — ve B onlara
+**dokunmuyor**. B yalnız *garantili ölü* hücreyi ölçümün dışına çıkarıyor.
+
+⭐ **Karşı-veri, ve zayıf:** sonda-3'te (bugünkü fizik) gen2→gen3'ün **iki
+kolu da** `energy`'de ölçülebilir çıktı ⇒ o tohumda `ΔCov` **tanımlı olurdu**.
+⚠ **n = 1.** İki fizik arasındaki farkın D-152'den mi tohumdan mı geldiği
+**bilinmiyor**, ve bu koşumla bilinemez.
+
+---
+
+### 3. ⇒ Ne yapıldı, ne yapılmadı
+
+✅ **Yapıldı:** B ön-kayıt taslağına **tasarım kuralı (YENİ-4)** ve **sınır
+(L21)** olarak yazıldı; L17 ve L20 taze ölçümle güncellendi.
+
+⛔ **Yapılmadı, çünkü karar:** **G kaç olacak.** B ile bir koşumun
+kullanılabilir geçiş sayısı **G − 2**'ye düşüyor ⇒ bugünkü `G = 3` **tohum
+başına tek geçiş** bırakıyor. G'yi 4'e çıkarmak koşumu ~1.5 kat uzatır ve
+doğrudan **bütçe slotunun** (§7, SLOT 3 **AÇIK**) konusudur — ki o slot zaten
+D-145'in **A/B/C kararını** bekliyor. ⇒ **Tek bir karar noktasında birleşti**
+ve Yasin'in.
+
+⛔ **Ve B2'nin gösterdiği asıl darboğaz alan kararı** (D-145 kusur #2): alan
+tohuma bağlı olduğu sürece, kurucu nesli atmak tanımlılığı **kurtarmıyor**.
+⇒ Kuyruk **2.2**'ye bu bağlandı.
+
+### 4. Sınırlar
+
+- B1 öncülün **birinci yarısını** doğruladı; ikinci yarısı (*gen ≥ 2 tanımlı*)
+  bugünkü fizikte hâlâ **n = 1**.
+- C2'nin 9 hücresi bağımsız değil (tohum başına 3 kol ortak çevre) ⇒ etkin n
+  **3'e yakın**.
+- §2 tablosu **eski fizik**; oran olarak taşınamaz, yalnız *"B yeterli mi"*
+  sorusuna uyarı üretir.
+- Hiçbir sabit bu okumayla seçilmedi; B bir **kapsam** kararıdır.
