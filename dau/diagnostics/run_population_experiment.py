@@ -144,6 +144,8 @@ from dau.generation.population import (
 )
 from dau.generation.reproduction import (
     HEIRS_PER_TOURNAMENT_WIN,
+    PRICE_KEY_ESTIMABLE,
+    PRICE_KEY_Z_VARIANCE,
     TOURNAMENT_K,
     Candidate,
     positive_control_partition,
@@ -363,6 +365,97 @@ def run_population_phase0(
     gate.check("I0.6", check_determinism_settings, mode=MODE_ABORT)
     gate.check("I0.7", lambda: check_no_stale_adapters(agent_ids), mode=MODE_ABORT)
     return gate
+
+
+def check_selection_estimable_where_claimed(
+    arms: list[dict[str, Any]],
+) -> tuple[bool, str]:
+    """I5.5 — the transitions the design counts on carry a measurable term.
+
+    D-155/D-157 measured the hole this closes: across 4 seeds and 3 arms, 11 of
+    11 FOUNDER transitions had ``Var(z) = 0`` — the selection term is zero by
+    construction there, because founders are born identical and the only source
+    of differentiation is the adapter, which does not exist until generation 1
+    has ended. C2 reported such a run as ``clean``. A number that is zero by
+    construction and a number that is zero because selection did nothing look
+    identical in the results file, and nothing said which was which (K6).
+
+    The check is deliberately two-sided, because the design's scope rule
+    (YENİ-4 / D-156) can fail in both directions:
+
+    * a transition with a gen ≥ 2 parent that has NO estimable domain — the
+      part of the run the pre-registration actually reads is dead;
+    * a FOUNDER transition that IS estimable — then the founder generation was
+      not degenerate after all, YENİ-4 is discarding usable data, and D-157's
+      re-open trigger has fired.
+
+    ⛔ ``F_agent`` spread is reported beside the verdict, never as part of it.
+    Measured in C2: two of three seeds had a non-zero founder spread (0.0079,
+    0.0101) while every founder ``Var(z)`` was still exactly 0. ANDing the two
+    would have missed 6 of those 9 cells — the gate would have been green on
+    precisely the runs that motivated it.
+
+    ⚠ Reads ``selection_estimable`` as the Price partition wrote it. Deriving
+    estimability again here would let the gate agree with a rule the
+    experiment no longer uses (§2.8).
+    """
+
+    dead: list[str] = []
+    unexpected: list[str] = []
+    founder: list[str] = []
+    seen = 0
+    for arm in arms:
+        rows = arm.get("generations", []) or []
+        spread_by_generation = {
+            int(row.get("generation", 0)): (row.get("reproduction_report") or {}).get(
+                "f_agent_spread"
+            )
+            for row in rows
+        }
+        for row in rows:
+            price = row.get("price_for_previous_transition")
+            if price is None:
+                continue
+            child = int(row.get("generation", 0))
+            parent = child - 1
+            if parent < FIRST_GENERATION:
+                continue
+            seen += 1
+            estimable = [
+                domain
+                for domain, terms in price.items()
+                if bool(terms.get(PRICE_KEY_ESTIMABLE))
+            ]
+            spread = spread_by_generation.get(parent)
+            label = (
+                f"s{arm.get('seed')} {arm.get('arm')} gen{parent}->gen{child}"
+                f" (f_agent_spread={spread})"
+            )
+            if parent == FIRST_GENERATION:
+                founder.append(label + (f" estimable={estimable}" if estimable else ""))
+                if estimable:
+                    unexpected.append(label)
+                continue
+            if not estimable:
+                widest = max(
+                    (float(t.get(PRICE_KEY_Z_VARIANCE, 0.0)) for t in price.values()),
+                    default=0.0,
+                )
+                dead.append(f"{label} max_z_variance={widest:g}")
+
+    if not seen:
+        return False, "no Price transitions were recorded"
+    if unexpected:
+        return False, (
+            "FOUNDER transition is estimable — YENİ-4 discards usable data: "
+            + "; ".join(unexpected)
+        )
+    if dead:
+        return False, "no estimable domain in: " + "; ".join(dead)
+    return True, (
+        f"{seen} transitions; {len(founder)} founder (out of scope by YENİ-4), "
+        f"{seen - len(founder)} scored and estimable"
+    )
 
 
 def check_generation_rng_uniform(arms: list[dict[str, Any]]) -> tuple[bool, str]:
@@ -1732,6 +1825,20 @@ def run_population_experiment(
         (lambda: (None, "not evaluated under a canned LLM"))
         if use_mock
         else check_somatic_scale_applied,
+        mode=MODE_FLAG,
+    )
+    # I5.5 (D-159 / queue 2.6) — is the selection term measurable where the
+    # design says it reads it? FLAG, not ABORT, and for the same reason I4.2
+    # is: a non-estimable transition is a legitimate finding about the universe
+    # (D-123's "universe null"), not a broken tool. Aborting on it would refuse
+    # to record the very result this experiment is willing to report. What was
+    # NOT acceptable was reporting it as `clean`, which is what C2 did.
+    # ⚠ Evaluated under a canned LLM too, unlike I4.1/I5.4: the estimability of
+    # Var(z) is a property of the recorded numbers, not of the language model,
+    # so a stub run's answer is about the pipeline and worth having.
+    gate.check(
+        "I5.5",
+        lambda: check_selection_estimable_where_claimed(arm_results),
         mode=MODE_FLAG,
     )
     gate.enforce()

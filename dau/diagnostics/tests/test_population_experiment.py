@@ -2641,3 +2641,190 @@ def test_transfer_gate_census_reaches_the_results_file_per_agent(monkeypatch) ->
         )
         assert gates[GATE_KEY_DROPPED_RECALL] >= 0
         assert gates[GATE_KEY_STANDARD] >= 0
+
+
+def _price_arm(arm: str, seed: int, cells: dict[int, dict[str, bool]],
+               spreads: dict[int, float | None]) -> dict:
+    """One arm shaped like the results file, with chosen estimability per cell.
+
+    `cells` maps CHILD generation -> {domain: estimable}. `spreads` maps a
+    generation to its parents' f_agent spread.
+    """
+
+    from dau.generation.reproduction import PRICE_KEY_ESTIMABLE, PRICE_KEY_Z_VARIANCE
+
+    generations = []
+    for generation in sorted(set(cells) | set(spreads)):
+        price = None
+        if generation in cells:
+            price = {
+                domain: {
+                    PRICE_KEY_ESTIMABLE: estimable,
+                    PRICE_KEY_Z_VARIANCE: 0.5 if estimable else 0.0,
+                }
+                for domain, estimable in cells[generation].items()
+            }
+        generations.append(
+            {
+                "generation": generation,
+                "price_for_previous_transition": price,
+                "reproduction_report": {"f_agent_spread": spreads.get(generation)},
+            }
+        )
+    return {"arm": arm, "seed": seed, "generations": generations}
+
+
+def test_i55_ignores_the_founder_but_flags_a_dead_scored_transition() -> None:
+    """⭐ D-159 / queue 2.6 — the two cases the gate must tell apart.
+
+    The founder transition is zero BY CONSTRUCTION (11 of 11 measured across
+    two physics, D-155/D-157) and YENİ-4 declares it out of scope, so flagging
+    it would fire on every run forever and mean nothing. A gen ≥ 2 transition
+    with no estimable domain is the opposite: that is the part the
+    pre-registration actually reads, and C2 reported exactly that as `clean`.
+
+    ⚠ K2: two arms and two transitions per arm — a version that collapsed the
+    cells, or looked only at the first, would pass with one of each.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    healthy = [
+        _price_arm("lived", 1, {2: {"energy": False}, 3: {"energy": True}},
+                   {1: 0.0, 2: 0.2}),
+        _price_arm("shuffle", 1, {2: {"energy": False}, 3: {"energy": True}},
+                   {1: 0.0, 2: 0.3}),
+    ]
+    passed, detail = check_selection_estimable_where_claimed(healthy)
+    assert passed, detail
+    assert "2 founder" in detail and "2 scored" in detail
+
+    one_dead = [
+        _price_arm("lived", 1, {2: {"energy": False}, 3: {"energy": True}},
+                   {1: 0.0, 2: 0.2}),
+        _price_arm("shuffle", 1, {2: {"energy": False}, 3: {"energy": False}},
+                   {1: 0.0, 2: 0.3}),
+    ]
+    passed, detail = check_selection_estimable_where_claimed(one_dead)
+    assert not passed
+    assert "shuffle gen2->gen3" in detail
+    assert "lived" not in detail, "the healthy arm was dragged into the verdict"
+
+
+def test_i55_also_fires_when_the_founder_turns_out_measurable() -> None:
+    """⭐ D-159. The scope rule can break in the OTHER direction too.
+
+    YENİ-4 throws the founder transition away on the grounds that it cannot
+    carry a term. If one ever does, the design is discarding usable data and
+    D-157's re-open trigger has fired — silence there would hide the good news
+    as thoroughly as it once hid the bad.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    passed, detail = check_selection_estimable_where_claimed(
+        [_price_arm("lived", 7, {2: {"energy": True}, 3: {"energy": True}},
+                    {1: 0.4, 2: 0.4})]
+    )
+    assert not passed
+    assert "FOUNDER" in detail and "gen1->gen2" in detail
+
+
+def test_i55_verdict_does_not_depend_on_f_agent_spread() -> None:
+    """⛔ D-159 — why the gate is NOT an AND of the two spreads.
+
+    Queue 2.6 first proposed firing only when F_agent spread AND endpoint
+    spread were both zero. C2 kills that version: two of three seeds had a
+    non-zero founder spread (0.0079, 0.0101) with every founder Var(z) still
+    exactly 0, and `s9913 lived` reached a spread of 0.1595 on a gen2→gen3
+    transition whose z variance was 0. The AND would have been green on the
+    runs that motivated the gate. Spread is reported, never decisive.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    wide_spread_dead_endpoint = [
+        _price_arm("lived", 9913, {2: {"resource": False}, 3: {"resource": False}},
+                   {1: 0.0100, 2: 0.1595})
+    ]
+    passed, detail = check_selection_estimable_where_claimed(wide_spread_dead_endpoint)
+    assert not passed, "a wide F_agent spread masked a dead endpoint"
+    assert "f_agent_spread=0.1595" in detail, "spread must still be REPORTED"
+
+
+def test_i55_reaches_the_invariants_block(monkeypatch) -> None:
+    """⚠ K3 — the predicate has to be wired, not merely written.
+
+    D-147/AV-3 measured 6 of 26 invariants actually live on this path, and
+    D-149 found I5.4 defined-but-unbound after it had been silent through a
+    six-hour run. A gate that exists only in a unit test repeats that.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=3, events_budget=EVENTS
+    )
+    assert "I5.5" in results["invariants"], "the gate never ran"
+    # ⚠ Key presence is not enough: a stubbed-out lambda registered under the
+    # same id would satisfy it (K5 caught exactly that). Pin the verdict to
+    # what THIS predicate says about THIS run's arms.
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    expected_passed, expected_detail = check_selection_estimable_where_claimed(
+        results["arms"]
+    )
+    recorded = results["invariant_details"]["I5.5"]
+    assert recorded["detail"] == expected_detail, (
+        "the registered predicate is not the one under test"
+    )
+    assert recorded["passed"] == expected_passed
+    assert results["invariants"]["I5.5"] == expected_passed
+
+
+def test_i55_refuses_a_run_with_no_price_transitions() -> None:
+    """⚠ K5 caught this empty too. `no transitions recorded` must be a FAILURE,
+    not a green: an empty verdict is the shape D-149 found on I5.4, where a
+    gate that never saw data read as a gate that saw clean data.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    passed, detail = check_selection_estimable_where_claimed([])
+    assert not passed
+    assert "no Price transitions" in detail
+
+
+def test_i55_ignores_a_price_block_on_the_first_generation() -> None:
+    """⚠ K5 caught this one empty. The `parent < FIRST_GENERATION` guard
+    survived a mutation because every real run writes `None` there (verified in
+    both `c2_population_n8_g3_s3.json` and `probe3_endpoint_s9916.json`), so no
+    fixture reached it. Kept rather than deleted — the runner's transition
+    bookkeeping has changed twice (D-101, D-107) — but now pinned: generation 1
+    has no parent generation inside this run, so a block appearing there is a
+    transition from OUTSIDE the run and cannot be scored against it.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        check_selection_estimable_where_claimed,
+    )
+
+    arm = _price_arm("lived", 3, {2: {"energy": False}, 3: {"energy": True}},
+                     {1: 0.0, 2: 0.2})
+    arm["generations"][0]["price_for_previous_transition"] = {
+        "energy": {"selection_estimable": False, "z_variance": 0.0}
+    }
+
+    passed, detail = check_selection_estimable_where_claimed([arm])
+    assert passed, detail
+    assert "gen0->gen1" not in detail, "a pre-run transition was scored"
+    assert "1 founder" in detail

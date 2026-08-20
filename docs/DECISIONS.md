@@ -12164,3 +12164,106 @@ koşumda** cevaplanacak.
 ⚠ **`trauma` sayacı §2.11'in iki okumasından `is_trauma(record)` olanıdır** —
 `n_at_or_above_trauma` (PE-delta kanalı) **başka bir niceliktir** ve sayaç
 onunla karıştırılmamalı. İkisinin örtüşmesi **hâlâ ölçülmedi**.
+
+---
+
+## D-159 · 2026-08-20 · ✅ **Kuyruk 2.6 — I5.5 kapısı bağlandı**, ve kapı ilk bakışta **C2'nin 5 ölü geçişini** buldu
+
+**Borç (D-155 §6, K6):** kurucu neslin dejenerasyonunu yakalayan **kapı yoktu**.
+*"Sıfır, çünkü yapı gereği"* ile *"sıfır, çünkü seçilim yok"* sonuç dosyasında
+**aynı görünüyordu**, ve C2 tam bu durumu `run_quality = clean` diye
+raporlamıştı — D-149'un I5.4'te bulduğu desenin aynısı.
+
+### 1. Kapı ne yapıyor — **iki yönlü**
+
+`I5.5` (**FLAG**), `check_selection_estimable_where_claimed`:
+
+| durum | verdict |
+|---|---|
+| ebeveyni **gen ≥ 2** olan bir geçişte **hiçbir alan** `selection_estimable` değil | ⛔ **bayrak** — ön-kayıtın okuduğu kısım ölü |
+| **kurucu** geçiş (ebeveyn = gen 1) ölçülemiyor | ✅ **beklenen** — YENİ-4 onu kapsam dışı ilan etti, ayrıntıda yazılır |
+| ⭐ **kurucu** geçiş **ölçülebilir çıkarsa** | ⛔ **bayrak** — YENİ-4 kullanılabilir veriyi atıyor demektir ⇒ **D-157'nin yeniden açılma tetiği** |
+
+⇒ Kapı aynı zamanda **D-156/D-157'nin kapsam kuralının bekçisi**: kural iki
+yönde de kırılabilir ve ikisinde de sessiz kalmıyor.
+
+⚠ **FLAG, ABORT değil**, ve gerekçesi yazılı: ölçülemeyen bir geçiş **evren
+hakkında meşru bir bulgudur** (D-123'ün *"evren null'ı"*), bozuk bir alet
+değil. ABORT, deneyin raporlamaya razı olduğu sonucu **kaydetmeyi
+reddederdi**. Kabul edilemez olan şey onu **`clean`** diye raporlamaktı.
+
+### 2. ⛔ Kuyruk 2.6'nın kendi tarifini değiştirdim — **ve ölçümle**
+
+**2.6 şöyle yazıyordu** (benim kalemimden, D-155 §6): *"ebeveyn kümesinin
+`F_agent` **ve** uç nokta yayılımı **ikisi birden** sıfırsa bayrak."*
+
+⛔ **Uygulamaya geçerken C2 bu tarifi çürüttü:**
+
+| | `f_agent_spread` | kurucu `Var(z)` |
+|---|---|---|
+| s9911 (üç kol) | **0.0079** (sıfır değil) | **0** |
+| s9913 (üç kol) | **0.0101** (sıfır değil) | **0** |
+| s9912 (üç kol) | 0.0 | 0 |
+| s9913 lived gen2→gen3 | **0.1595** | **0** |
+
+⇒ *"İkisi birden sıfır"* koşulu C2'nin **9 kurucu hücresinin 6'sını
+kaçırırdı** — yani kapıyı gerektiren koşumların tam da üzerinde **yeşil**
+yanardı. Ve `s9913 lived`'de yayılım **0.16** iken uç nokta yine ölü.
+
+⇒ **Karar veren nicelik `selection_estimable`'dır**; `F_agent` yayılımı
+**ayrıntıda raporlanır, verdict'e girmez**. ⚠ Bu bir tasarım daraltması değil
+**bir düzeltme**: eski tarif ölçülünce yanlış çıktı (§2.11 — çelişki sessizce
+seçilmedi, kayda yazıldı). Ve tarifi yazan bendim, Yasin değil.
+
+### 3. ⭐ Kapı geriye dönük koşuldu — **ilk bakışta bir kusur buldu**
+
+| dosya | verdict |
+|---|---|
+| `probe3_endpoint_s9916.json` (sonda-3) | ✅ **geçti** — *"4 geçiş; 2 kurucu (YENİ-4 ile kapsam dışı), 2 puanlanan ve ölçülebilir"* |
+| `c2_population_n8_g3_s3.json` (C2) | ⛔ **bayrak** — puanlanan **6 geçişin 5'i** ölü: `s9912 null`, `s9912 shuffle`, `s9913 lived`, `s9913 null`, `s9913 shuffle` |
+
+⛔⛔ **C2 bunu `clean` raporlamıştı.** Kapı olsaydı, D-123'ün *"evren null'ı"*
+sonucu koşumun **kendi yüzünde** yazılı olurdu — sekiz oturum sonra elle
+kazılarak değil. **K6'nın bedeli üçüncü kez ölçüldü.**
+
+### 4. Kontroller
+
+- **K2** ✅ — iki kol × iki geçiş; hücreleri toplayan ya da yalnız ilkine
+  bakan bir sürüm **tek kol/tek geçişle geçerdi**. Sağlıklı kolun ölü kolun
+  verdict'ine **karışmadığı** da sınandı.
+- **K3** ✅ — kapı `invariants` sözlüğünde, **ve** kaydedilen verdict'in
+  gerçek yüklemenin bu koşumun kollarında ürettiği değere **eşit** olduğu
+  sınandı (yalnız *"anahtar var mı"* demek yetmiyordu — K5 bunu yakaladı).
+- **K5** ✅ — **7 mutasyon, 7 doğru test kırılması.** md5 her turda doğrulandı
+  (`run_population_experiment.py` tabanı `1d72f7d8`), `no:cacheprovider` +
+  `__pycache__` silme + `PYTHONDONTWRITEBYTECODE=1`.
+
+| # | mutasyon | ilk tur | son |
+|---|---|---|---|
+| R1 | kurucu muafiyeti kaldırıldı | 2 failed ✅ | ✅ |
+| R2 | kurucu ölçülebilirse sessiz kal | 1 failed ✅ | ✅ |
+| R3 | ölü geçiş bayrak basmıyor | 2 failed ✅ | ✅ |
+| R4 | gen0 geçişi de sayılıyor | ⛔ **SAĞ KALDI** | ✅ test eklendi |
+| R5 | kapı bağlantısı koparıldı (`lambda: (True, "skipped")`) | ⛔ **SAĞ KALDI** | ✅ test sıkılaştırıldı |
+| R6 | *"hiç geçiş yok"* yeşil sayılıyor | ⛔ **SAĞ KALDI** | ✅ test eklendi |
+| R7 | mod ABORT'a çevrildi | 1 failed ✅ | ✅ |
+
+⭐ **Üç mutasyon ilk turda sağ kaldı ve üçü de gerçek bir boşluktu** — özellikle
+**R5**: K3 testim *"`I5.5` anahtarı var mı"* diye soruyordu, ki **stub bir
+lambda da** o testi geçerdi. Tam olarak D-149'un I5.4'te bulduğu hata sınıfı,
+bu kez **kendi testimde**.
+
+- **Suite:** `622 → 628 passed, 2 deselected`.
+- **Belge:** `PREFLIGHT_INVARIANTS.md` I5.5 satırı eklendi (**27 madde
+  tanımlı**).
+
+### 5. Sınırlar
+
+- Kapı **tanımlılığı** ölçer, **etkiyi değil** (L9) — hiçbir kovaryans değeri,
+  işaret ya da kol farkı okumuyor.
+- Kurucu muafiyeti **YENİ-4'e bağlı**; YENİ-4 kalkarsa kapının ilk satırı
+  yeniden yazılmalı.
+- `s9911`'in gen2→gen3 hücreleri `resource` alanında ölçülebilir olduğu için
+  **geçti**; ⚠ **birincil alan `energy` ile bakılsaydı düşerdi** — kapı
+  *"herhangi bir alan"* diye soruyor, ön-kayıt ise **bir alan** ilan ediyor.
+  ⇒ **Alan kararı verilince (kuyruk 2.2) kapı o alana daraltılmalı.**
