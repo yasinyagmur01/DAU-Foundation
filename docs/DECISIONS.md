@@ -12754,3 +12754,111 @@ başlıyor (bugün: olay 17), tur içi yayılım **0.33–0.56** (D-083 bugünk�
 kuralla **0.071** ölçmüştü ⇒ ~5–8 kat), havuz **%36'da dengeleniyor** ⇒ çöküş
 **soğurucu olmaktan çıkıyor**.
 ⚠️ **Bunlar tahmindir**; pilot ölçecek.
+
+---
+
+## D-163 · 2026-08-20 · ⚠️ **D-162'nin SABİTİ DEĞİŞTİ — uygulama sırasında bir kanalı öldürdüğü ölçüldü**
+
+**Yetki:** Yasin, 2026-08-20: *"D ya önerdiğin gibi"*.
+
+⚠️ **Bu kayıt D-162'yi düzeltir.** D-162 append-only olduğu için orada
+düzenlenmedi; **karar burada revize edilmiştir** ve `environment.py`'deki
+gerekçe bu kayda işaret eder.
+
+---
+
+### 1. Ne oldu
+
+D-162 sabiti şöyle türetmişti:
+`EXTRACTION_LIMIT_RATIO = EXTRACTION_DEFECT / POOL_INIT = 0.10`
+(*"azami talep başlangıç stokunda tam bağlayıcı olsun"*).
+
+⛔ **Kod yazılırken ortaya çıkan sonuç ölçüldü ve kabul edilemez:** tavan
+konunca havuz artık sıfıra çakılmıyor, bir **dengeye** oturuyor ve denge
+kapalı formda:
+
+```
+r·p = REGEN·p·(1 − p/kapasite)   ⇒   denge = 1 − r/REGEN
+```
+
+`r = 0.10` için **denge = 0.333**, kriz eşiği ise **0.30** ⇒ havuz eşiğin
+**hep üstünde** kalır ⇒ ❌ **kriz kanalı yapısal olarak ölür.**
+
+⇒ **Sabit seçimi aslında "havuz nerede duracak" seçimidir.** D-162 bunu
+görmemişti; oradaki türetme *başlangıç* hakkındaydı, oysa belirleyici olan
+**yörüngenin sonu**.
+
+### 2. Neden bu kabul edilemez — ölçüldü
+
+| | sayı |
+|---|---|
+| Kriz kanalının bugün ateşlendiği yaşam | **127 / 192** (pilot) · **144 / 216** (C2) |
+| Toplam kriz olayı | **1461** (pilot) · 1386 (C2) |
+| Ön-kayıt bağı | **D-070 / K6:** *"S5'in ilk travması = commons krizi"* |
+
+⇒ `r = 0.10` **ön-kayıtlı bir kanalı sessizce silerdi.**
+
+### 3. Yeni türetme
+
+```
+denge = COLLAPSE_EPSILON  ⇒  EXTRACTION_LIMIT_RATIO = POOL_REGEN_RATE × (1 − COLLAPSE_EPSILON)
+                            = 0.15 × 0.95 = 0.1425
+```
+
+**Ölçüt yapısal:** *evren, kodun kendi tanımladığı rejimleri (normal → kriz →
+çöküş) kat edebilmelidir.* Hiçbir koşum verisi girmiyor; `LANDMARK_EVENT`'in
+`METABOLIC_GRACE_EVENTS`'e bağlanmasıyla aynı standart. **Yeni serbest
+parametre yok** — yine iki mevcut sabitin ifadesi.
+
+### 4. Üç aday, gerçek sabitlerle hesaplandı
+
+| | `r` | türetme | ilk eksik alma | landmark'tan önce? | kriz / 30 olay | **landmark penceresinde yayılım** |
+|---|---|---|---|---|---|---|
+| **bugün** | — | — | olay 17 | ❌ | 20 | ❌ **0.0000** |
+| A | 0.1000 | `DEFECT / POOL_INIT` | olay 1 | ✅ | ❌ **0** | 0.5361 |
+| B | 0.1050 | `REGEN × (1 − KRİZ)` | olay 1 | ✅ | ❌ **0** | 0.5290 |
+| **D** ✅ | **0.1425** | `REGEN × (1 − ÇÖKÜŞ)` | **olay 6** | ✅ | ✅ **15** | ✅ **0.3923** |
+
+⭐⭐ **Tablonun asıl bulgusu son sütun:** bugün, birincil uç noktanın okunduğu
+**landmark anında ortamdan gelen ayrışma tam olarak `0.0000`**. C2'nin ve
+sonda-3'ün *"kurucular bit düzeyinde özdeş"* sonucu burada **tek bir sayıya**
+indi — ve bu katmanın gerekçesi artık bu sayıdır.
+
+✅ **D'nin landmark'tan önce açılması tesadüf değil, ölçüt:** D-084 kapasite
+tartışmasında aynı kriteri kullanmıştı — *"kıtlık anı < `LANDMARK_EVENT`"*.
+Olay 6 < 10 ⇒ gradyan, uç nokta okunmadan önce mevcut.
+
+### 5. Gerçek kodla doğrulama (`step_pool`, 8 ajan, hepsi DEFECT)
+
+| olay | havuz oranı | ilk / son alan | tur içi yayılım |
+|---|---|---|---|
+| 5 | 0.555 | 8.000 / 8.000 | 0.0000 *(tavan henüz bağlamıyor)* |
+| **6** | 0.514 | 8.000 / 7.453 | **0.5475** |
+| **10 (landmark)** | 0.394 | 6.479 / 5.713 | **0.7660** |
+| 20 | 0.248 | 4.078 / 3.596 | 0.4821 |
+| 30 | 0.179 | 2.953 / 2.604 | 0.3491 |
+
+Kriz **15 / 30** olayda aktif. ⚠️ Bunlar hepsi-DEFECT varsayımıyla; gerçek
+koşumda talep karışık olacağı için havuz **daha yüksek** kalır ve bu sayılar
+**üst sınır** değil, **senaryo**dur.
+
+### 6. Ders (K4'ün akrabası)
+
+⚠️ **Bir sabitin türetmesi "temiz" olması onu doğru yapmıyor.** A da B kadar
+temiz türetilmişti ve ikisi de bir kanalı öldürüyordu. Fark ölçümden çıktı:
+*"bu sabit sistemin hangi rejimlerini erişilebilir bırakıyor?"* sorusu
+türetmenin **parçası** olmalı.
+⇒ **Bundan sonra:** bir hasat/havuz sabiti önerilirken **denge noktası ve
+hangi eşiklerin altında/üstünde kaldığı** aynı kayda yazılır.
+
+### 7. Değişmeyen her şey
+
+D-162'nin §5 ön-taahhüdü (**P1 · P2 · P3**), K1 kontrolü, pilot yapılandırması
+(9920–9922, N=8, G=4, `lived shuffle`) ve okunmayacaklar listesi **aynen
+geçerlidir**. Değişen tek şey **sabitin türetmesi ve değeri**.
+⚠️ P1'in eşiği (*"ilk eksik alma olay ≤ 3"*) `r = 0.10` varsayımıyla
+yazılmıştı; `r = 0.1425` ile projeksiyon **olay 6** diyor ⇒ **P1'in eşiği
+`olay ≤ 8` olarak güncellenir**, gerekçesi: eşik *"landmark'tan (10) önce"*
+olmayı sınamalı, keyfi bir erkenliği değil.
+⛔ **Bu bir gevşetme değil, ölçütün asıl amacına döndürülmesidir** — ve
+**pilottan önce** yazılıyor.
