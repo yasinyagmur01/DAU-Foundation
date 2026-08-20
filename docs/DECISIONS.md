@@ -11697,3 +11697,193 @@ fena değil"* denmez — D-129'da denmedi, burada da denmeyecek.
 - Sonda **`null` hakkında hiçbir şey** söylemez (§2-b).
 - S2'nin aritmetiği **bağımsızlık varsayıyor**; gerçek birleşim farklı olabilir.
 - Sonda **keşifsel**; sonuç dosyası `note` alanıyla öyle damgalanır.
+
+---
+
+## D-155 · 2026-08-20 · ⛔⛔ **SONDA-3 KOŞTU — S1 düştü (2/4), S2 düştü (0/32), S3 tahmin tuttu** ⇒ D-154 §5'in **dördüncü yolu**
+
+**Koşum:** `dau_runs/probe3_endpoint_s9916.json` · tohum **9916** · 8 ajan ·
+3 nesil · 30 olay · kollar **`lived shuffle`** · `--lora --fresh-pasture` ·
+komut **D-154 §4'ün birebir aynısı**, dış `timeout` yok.
+**Süre: 2 sa 09 dk 47 sn** (01:43:25 → 03:53:12, dosya damgalarından okundu).
+⭐ Tahmin (~2 sa) **ilk kez tuttu** — D-126/D-129'da iki kez tutmamıştı.
+
+`complete: true` · `run_quality=flagged` · **I4.1 `identical`** (replay birebir).
+Kapılar: I0.3 ✅ · I0.4 ✅ · I0.6 ✅ · I0.7 ✅ · I1.1 ✅ · I4.1 ✅ ·
+**I4.2 ✗ (flag)** · **I5.4 ✗ (flag)**.
+
+⛔ **Okunmayanlar (L9, ön-taahhüt):** kovaryans değeri · kol farkı · etki
+büyüklüğü · işaret. Aşağıdaki her sayı **tanımlılık** sayısıdır.
+
+---
+
+### 1. S1 — sürekli uç nokta: **2/4 ⇒ aday GİRMEZ**
+
+🔒 **Kural (D-154 §3, koşumdan önce):** 4 hücrenin (2 kol × 2 nesil geçişi)
+**en az 3'ünde** `Var(to_landmark.max) > 0` ⇒ aday üçüncü ön-kayıta girer.
+
+Tahmin edici ve eşik `price_partition`'ınkiyle **aynı** (§2.8): popülasyon
+varyansı + `Z_VARIANCE_EPSILON = 1e-12`. Hiçbir hücrede eksik değer yok (8/8).
+
+| kol | geçiş | n | `Var(to_landmark.max)` | Var > 0 |
+|---|---|---|---|---|
+| lived | gen1→gen2 | 8/8 | **0** | ❌ |
+| lived | gen2→gen3 | 8/8 | 0.00104645 | ✅ |
+| shuffle | gen1→gen2 | 8/8 | **0** | ❌ |
+| shuffle | gen2→gen3 | 8/8 | 0.00032915 | ✅ |
+
+⇒ **2/4 < 3/4 ⇒ aday GİRMEZ, ve bu kapanmış bir sorudur.**
+⛔ *"2/4 da fena değil"* denmiyor — D-129'da denmedi, burada da denmedi.
+⚠ Ve sayı **D-129'un aldığı 2/4'ün aynısı**, bu kez `shuffle`'lı ve taze
+veriyle: ret **iki bağımsız yapılandırmada** tekrarlandı.
+
+#### ⭐⭐ Asıl bulgu ret değil, **retin deseni**
+
+Düşen iki hücre **rastgele değil**: ikisi de **gen1**, ve ikisi de **her iki
+kolda**. Sebep ham veride açık — gen1'in **sekiz ajanı bit düzeyinde özdeş**:
+
+```
+lived   gen1: 8/8 ajan  to_landmark.max = 0.5390205025672912,  F_agent = 0.5458143853860838
+shuffle gen1: 8/8 ajan  to_landmark.max = 0.5390205025672912,  F_agent = 0.5458143853860838
+```
+
+`pool_ratio_end = 0.757` ⇒ **havuz gen1'de hiç ısırmadı**. P0 ①'in (sıralı
+erişim + rotasyon) farklılaştırma zinciri **kıtlıkla** başlıyor (D-081); kıtlık
+olmayınca zincir hiç doğmuyor. Farklılaşma **yalnız gen2'den itibaren**
+görünüyor ve kaynağı **adapter** (Kanal 2, D-129/D-130'un teşhisi).
+
+⇒ **Bu tek bir uç noktanın kusuru değil.** Aynı desen bugünkü uç noktada da
+var, sonuç dosyasından okundu (yalnız `z_variance` ve `selection_estimable`;
+kovaryans **okunmadı**):
+
+| kol | geçiş | alan | `z_variance` | estimable |
+|---|---|---|---|---|
+| lived | gen1→gen2 | energy | **0** | ❌ |
+| lived | gen2→gen3 | energy | 0.0972 | ✅ |
+| lived | gen2→gen3 | resource | 0 | ❌ |
+| shuffle | gen1→gen2 | energy | **0** | ❌ |
+| shuffle | gen2→gen3 | energy | 0.0197438 | ✅ |
+| shuffle | gen2→gen3 | resource | 0 | ❌ |
+
+⇒ ⛔ **Kurucu nesil yapısal olarak dejenere:** birinci Price geçişi
+(gen1→gen2) **hangi uç nokta seçilirse seçilsin** `Var = 0` verir. Uç nokta
+değiştirmek bunu düzeltmez — **fizik düzeltir**. Bu, D-123'ün *"evren null'ı"*
+teşhisinin **mekanizma düzeyinde** tekrarıdır.
+⚠ **Sınır:** tek tohum, tek niş (D-154 §6). Desen **genellenemez**, ama iki
+kolda birden ve iki ayrı uç noktada aynı çıkması rastlantı okumasını zorlaştırır.
+
+---
+
+### 2. S2 — somatik kanal: **0/32 ⇒ D-152 vaat ettiğini yapmadı**
+
+🔒 **Tahmin (D-154 §3):** `I5.4` **geçer**, ≥1 varis `has_somatic_scale`.
+Aritmetik ~%65 × %11 ⇒ 48 variste ~3 bekleniyordu.
+
+**Ölçülen:**
+
+| nicelik | sayı |
+|---|---|
+| varis (doğum kaydı) | **32** |
+| `has_somatic_scale` | **0** |
+| `has_inherited_warning` | **0** |
+| `adapter_inherited` | **32 / 32** ⇒ Kanal 2 çalışıyor |
+| anı (`n_retrieval_context`) ort. | **7.19** (min 5, max 11) ⇒ engram yarısı çalışıyor |
+| `I5.4` | `never applied (skipped=1563)` |
+
+⇒ ⛔ **Tahmin çürütüldü, ve öyle raporlanıyor.** D-149'un bulduğu tablo
+**aynen duruyor**: Kanal 1'in **engram yarısı akıyor, somatik yarısı akmıyor**
+(GAP-3). D-152 bunu kapatmayı **ummuştu**, kapatmadı.
+
+#### ⭐ Ama D-152'nin *hangi yarısı* tuttu — ölçüldü
+
+| zincir halkası | durum |
+|---|---|
+| göreli bant ajan sınıflandırıyor | ✅ **çalışıyor** — 48 yaşamın 10'u `low`, 15'i `high` (mutlak bantta 48/48 tek sınıftı) |
+| travma eşiği aşılıyor | ✅ **48/48 yaşam** en az bir kez aşıyor (`n_at_or_above_trauma_either_channel > 0`) |
+| `low` bant ajanı **üreyebiliyor** | ✅ **çalışıyor** — `shuffle` gen2'de üç `low` ebeveyn w = 3/1/1 ⇒ 5 varis |
+| varis `inherited_warning` alıyor | ❌ **0 / 32** |
+
+⇒ **Kırılma bandın kendisinde değil, bandın ARKASINDA.** `select_for_transfer`
+(`generation.py:175–183`) üç şart birden istiyor:
+`recall_count ≥ GENERATION_MIN_RECALL` **ve** `band == low` **ve**
+`is_trauma(candidate.record)`. İlk üç halka sağlandığına göre kalan tek şüpheli
+**travma-sınıfı anının hiç geri çağrılmamış olması** (ya da Ebbinghaus'un onu
+silmiş olması, GAP-4).
+⚠ **Bu çıkarım, ölçüm değil (K4).** Sonuç dosyası `recall_count` taşımıyor;
+bu yüzden **kuyruk 2.5** açılıyor (K6, aşağıda).
+⚠ Ayrıca §2.11'in iki travma okuması **burada da ayrı**: `n_at_or_above_trauma`
+PE-delta kanalıdır, `is_trauma(record)` anı imprint sınıfıdır. İkisinin
+örtüşüp örtüşmediği **ölçülmedi**.
+
+---
+
+### 3. S3 — RNG asimetrisi: **tahmin tuttu, I4.2 FLAG bastı**
+
+🔒 **Tahmin:** `I4.2` FLAG basar (kollar farklı RNG durumundan girer).
+**Ölçülen:** `arms entered a generation from different RNG states: s9916 gen3: 2 states`
+
+⇒ Öncül **doğru** ⇒ ön-taahhüdün *"geçerse ABORT'a yükseltilir"* şartı
+**ateşlenmedi**; I4.2 **FLAG olarak kalıyor** (gerekçesi ön-kayıt §5.1).
+⚠ Ve artık **stub'la değil gerçek koşumla** ölçülmüş durumda — GAP-12'nin
+ölçülmemiş öncülü kapandı.
+
+---
+
+### 4. ⇒ D-154 §5'in **dördüncü yolu**: S1 düştü · S2 düştü
+
+> ⛔ *"Bu fizikle test edilemez"* **kanıtla** yazılır ⇒ **Yön 3 tartışması
+> yeniden açılır.**
+
+**Kanıt, üç cümlede:**
+
+1. Kurucu nesil **bit düzeyinde özdeş** (8/8, iki kolda) çünkü kıtlık gen1'de
+   hiç ısırmıyor (`pool_ratio_end = 0.757`) ⇒ birinci Price geçişi **hangi uç
+   noktayla olursa olsun** `Var = 0`.
+2. Farklılaşmanın tek kaynağı **hâlâ adapter** (D-129/D-130 aynen geçerli) ⇒
+   ölçülebilir hücreler yalnız gen2'den sonra doğuyor ⇒ G nesil koşumun
+   **G−1 geçişinin yalnız G−2'si** kullanılabilir.
+3. Sembolik kanalın **somatik yarısı hâlâ ölü** (0/32) ⇒ aksiyomun *"iki ayrı
+   kanal"* iddiasının bir yarısı popülasyon yolunda **hiç akmıyor**.
+
+⛔ **Yasin'in kararı gerekiyor** (D-007) ve seçenekler §5'te.
+
+---
+
+### 5. ⛔ KARAR — Yasin'in, ve sonda bunu **daraltarak** verdi
+
+| | yol | bedeli | sondanın söylediği |
+|---|---|---|---|
+| **A** | **Yön 3'ü aç** — evrenin fiziğini değiştir (ajan-ajan kuplajı D-135'te elendi ⇒ geriye **kıtlık rejimi** kalıyor: Holling II / kapasite, D-082/D-084) | en büyük iş, bugünkü sayılar **taşınmaz** | ⭐ **En doğrudan cevap:** gen1'in dejenerasyonunun sebebi tam olarak *"kıtlık ısırmıyor"* |
+| **B** | **Kurucu neslini ölçümün dışında bırak** — Price yalnız gen ≥ 2 geçişlerinden okunur, G artırılır | G=4 için koşum süresi ~1.5 kat | ⚠ Sıfır fizik değişikliği, ama **tohum başına maliyet artıyor** ve gen1 yine de koşuluyor |
+| **C** | **Kestirim damgasıyla devam** (P7-b / D-096) — test değil kestirim | ucuz | ⛔ D-145'in 3. kusuru **açık kalır**, ve S1 düştüğü için uç nokta da düzelmedi |
+
+⚠ **Claude Code'un önerisi: A ile B birlikte değerlendirilsin, ama önce B
+ölçülsün** — çünkü B'nin *"gen1 hariç"* varsayımı **bu koşumla zaten
+sınanabilir** (gen2→gen3 hücrelerinin ikisi de `estimable=True` çıktı) ve
+sıfır yeni sabit istiyor. A ise §2.7'nin sınırında bir sabit kararı
+(`h` ya da kapasite) gerektiriyor ve D-084'ten beri açık.
+⚠ **Bu bir öneridir, karar değil.** İkisi de fizik/tasarım kararı ⇒ D-007.
+
+---
+
+### 6. K6 — kayda geçen kusur bir kapıya bağlandı
+
+| kusur | bağlandığı yer |
+|---|---|
+| somatik kanal 0/32 | **I5.4** zaten kapı (D-149) ve **flag bastı** ⇒ bağlı ✅ |
+| kollar farklı RNG durumundan giriyor | **I4.2** zaten kapı (D-149) ve **flag bastı** ⇒ bağlı ✅ |
+| ⛔ **kurucu nesil dejenere** (`Var = 0`, gen1, 2 kol) | **kapı YOK** ⇒ **kuyruk 2.6** açıldı, bitti-ölçütüyle |
+| ⛔ **somatik zincirin kırıldığı halka bilinmiyor** | **kuyruk 2.5** açıldı, bitti-ölçütüyle |
+
+---
+
+### 7. Sınırlar (ilan)
+
+- **Tek tohum (9916), tek niş.** C2'de tanımlılık nişe göre değişiyordu ⇒
+  hiçbir oran genellenemez; sonda yalnız *"aday girer/girmez"* kararını verdi.
+- Sonda **`null` hakkında hiçbir şey söylemiyor** (D-154 §2-b, bilerek).
+- **Keşifsel** — sonuç dosyası ön-kayıt damgası taşımıyor, ve hiçbir sabit
+  bu koşuma bakılarak seçilmedi (§2.7).
+- §2'nin *"kırılma travma anısının geri çağrılmamasında"* cümlesi **çıkarımdır**;
+  ölçüm 2.5'te yapılacak.
+- Tohum **9916 harcandı**, deneyde kullanılmaz.
