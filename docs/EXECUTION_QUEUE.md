@@ -158,14 +158,31 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# ▶▶ SIRADAKİ İŞ — **2.2 · ⛔ KARAR (Yasin'in)**
+# SIRADAKİ İŞ — **KARAR (senin)**
 
-⛔ **Kuyrukta yapılabilecek iş kalmadı.** 2.4b · 2.5 · 2.6 kapandı
-(D-156…D-159); **2.2 ve 2.3 karara bağlı** ve karar Yasin'in (D-007).
-⛔ **İki karar birleşti ve sırası var:** önce **alan** (D-145 kusur #2 —
-`energy` mi, tohum başına değişken mi), sonra **bütçe/G** (A/B/C).
-D-157 §2 ölçtü ki alan kararı verilmeden bütçe kararı **anlamsız**:
-eski fizikte `energy` ile `ΔCov` **0/3 tohumda** tanımlı olurdu.
+## İşaretler
+✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
+*(bitti)* iş tamamlandı, sonucu iyi de olabilir kötü de.
+⚠️ Aşağıdaki eski maddelerde eski işaretler (⛔ ⭐ 🔒) hâlâ duruyor.
+
+**Kuyrukta yapılabilecek iş kalmadı.** 2.4b · 2.5 · 2.6 bitti (D-156…D-159).
+Kalan iki madde (2.2 ve 2.3) **karara bağlı** ve karar senin (D-007).
+
+**İki karar var ve sırası önemli:**
+
+1. **Alan kararı** — `Cov(w, z)` hangi alanda okunacak? (D-145 kusur #2)
+2. **Bütçe / G kararı** — kaç tohum, kaç nesil, test mi kestirim mi?
+
+⚠️ **Neden bu sıra:** D-157 §2 ölçtü ki alan kararı verilmeden bütçe kararı
+**anlamsız** — eski fizikte `energy` ile hesap **3 tohumun 0'ında** tanımlı
+olurdu. Bütçe, kaç tohumun **kullanılabilir** olacağına bağlı; o oran da
+alana bağlı.
+
+⚠️ **Ve I5.5 kapısının kalan işi bu karara bağlı:** kapı şu an *"herhangi bir
+alan ölçülebilir mi"* diye soruyor, ön-kayıt ise **tek bir alan** ilan ediyor.
+Alan kararı verilince kapı o alana daraltılmalı.
+
+---
 
 ## ✅ 2.4b · **KARAR VERİLDİ: B yolu** — **D-156** (Yasin: *"önerdiğin şekilde devam et"*)
 ✅ **B: kurucu nesil ısınma neslidir**; Price yalnız ebeveyni **gen ≥ 2** olan

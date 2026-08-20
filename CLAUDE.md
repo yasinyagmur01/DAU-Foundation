@@ -19,96 +19,98 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-20) — ⛔ **Sonda-3 koştu: dördüncü yol, karar Yasin'de**
+# 1. Şu An Neredeyiz (2026-08-20)
 
-- **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-159.** Sıradaki kayıt **D-160** olarak açılır.
-- ▶▶ **SIRADAKİ İŞ: 2.2 — ⛔ KARAR (Yasin'in).** ⛔ **Kuyrukta yapılabilecek iş
-  kalmadı**; 2.4b · 2.5 · 2.6 kapandı. **İki karar birleşti ve sırası var:**
-  önce **alan** (D-145 kusur #2), sonra **bütçe/G** (A/B/C) — çünkü D-157 §2
-  ölçtü ki alan kararı verilmeden bütçe kararı **anlamsız** (eski fizikte
-  `energy` ile `ΔCov` **0/3 tohumda** tanımlı olurdu).
-- ✅ **Kuyruk 2.5 (D-158):** aktarım kapısı **sekiz sayaçla** aletlendi
-  (`transfer_gates`) ⇒ somatik zincirin **hangi halkada** koptuğu artık
-  ölçülebilir. Hesap değişmedi. K2/K3/K5 ✅ (**8 mutasyon, 8 doğru test**).
-  ⚠ Sayaçlar ancak **gerçek koşumda** dolar.
-- ✅⭐ **Kuyruk 2.6 (D-159): I5.5 kapısı bağlandı**, **iki yönlü** (ölü
-  puanlanan geçiş **ve** ölçülebilir çıkan kurucu geçiş — ikincisi D-157'nin
-  yeniden açılma tetiği). Kapı **9**, `PREFLIGHT_INVARIANTS` **27 madde**.
-  ⛔⛔ **Geriye dönük koşuldu ve hemen buldu:** C2'nin puanlanan **6 geçişinin
-  5'i ölü** — ve C2 bunu **`clean`** raporlamıştı. **K6'nın bedeli üçüncü kez.**
-  ⛔ 2.6'nın kendi tarifini **ölçümle değiştirdim**: *"`F_agent` **ve** uç nokta
-  yayılımı ikisi birden sıfır"* koşulu 9 kurucu hücrenin **6'sını kaçırırdı**.
-- ✅ **KARAR: B yolu (D-156, Yasin).** Kurucu nesil **ısınma neslidir**; Price
-  yalnız ebeveyni **gen ≥ 2** olan geçişlerden okunur ⇒ kullanılabilir geçiş
-  **G − 2**. ⛔ **A (kıtlık rejimi) elenmedi, ertelendi.**
-- ✅ **Öncül sınandı ve geçti (D-157, GPU'suz):** **11 kurucu hücrenin 0'ı**
-  ölçülebilir (4 tohum · 3 kol · **iki ayrı fizikte**) ⇒ dejenerasyon
-  **yapısal**, tohuma bağlı kaza değil.
-- ⛔⛔ **Ama B yeterli değil:** kurucu nesil atıldıktan **sonra bile** eski
-  fizikte birincil alanda (`energy`) `ΔCov` **0/3 tohumda** tanımlı olurdu ⇒
-  **D-145'in 1. ve 2. kusuru B'den etkilenmiyor**; asıl darboğaz **alan
-  kararı**, ve o **bütçe kararından önce** gelir.
-- ⛔⛔ **SONDA-3 SONUCU (D-155):** **S1 düştü (2/4, kural ≥3/4)** ⇒ sürekli uç
-  nokta adayı **girmedi**, kapanmış soru · **S2 düştü (0/32 varis)** ⇒
-  **D-152 vaadini tutmadı**, somatik kanal hâlâ ölü · **S3 tahmin tuttu**
-  (I4.2 FLAG) ⇒ ABORT'a yükseltilmiyor. Koşum `complete` · I4.1 `identical` ·
-  **2 sa 09 dk 47 sn** (⭐ süre tahmini ilk kez tuttu).
-- ⭐⭐ **Retin deseni retten önemli:** düşen iki hücrenin ikisi de **gen1**, ve
-  **iki kolda da** — çünkü gen1'in 8 ajanı **bit düzeyinde özdeş**
-  (`pool_ratio_end = 0.757`, kıtlık gen1'de ısırmıyor). Aynı `Var = 0` deseni
-  **bugünkü uç noktada da** var ⇒ ⛔ **kusur uç noktada değil FİZİKTE**;
-  birinci Price geçişi **hangi uç noktayla olursa olsun** ölçülemez.
-- ⭐ **D-152'nin hangi yarısı tuttu ölçüldü:** göreli bant **çalışıyor**
-  (48 yaşamın 10'u `low`, 15'i `high`) ve `low` bant **üreyebiliyor** da
-  (w = 3/1/1) ⇒ kırılma **bandın arkasında** — kuyruk **2.5** açıldı.
-- ⛔ **Beklenti dürüstçe (tuttu):** sonda *"olumlu sonuç"* için değil **karar**
-  için koşuldu ve **karar verdi** — evren yine cömertleşmedi, ama bu kez
-  **belgelenmiş** olarak. ⇒ **Alet dürüstleşti, evren cömertleşmedi.**
-- ⭐ **K6 bağlayıcı oldu:** kayda geçen kusur, **bir kapıya bağlanmadıkça**
-  kapanmamıştır. ⚠ Ve eklerken **D-070'ten beri süren bir ad çakışması**
-  bulunup kapatıldı (iki ayrı `K`-serisi).
-- ✅ **D-152: fitness bantları GÖRELİ oldu** — eşik **değerleri değişmeden**,
-  D-088'in deseniyle. İki ölü bant canlandı. ⚠ **Fizik değişti.**
-- ⛔ **c yolu kapandı (D-151):** `0.35` keyfi değil, **üst eşiğin tam yarısı**
-  ⇒ zaten türetilmiş; sorun **sabitte değil fizikte** (evren düşük-uygunluklu
-  ajan üretmiyor). ⇒ **Yasin'in seçimi: b (göreli bant) ya da d (sınır ilan).**
-- ⛔⛔ **D-149: sembolik kanalın SOMATİK yarısı varise hiç ulaşmıyor.** C2'de
-  144 varisin **0'ında** somatik ölçek (anılar geçiyor, ~10/varis). Ve C2 bunu
-  **`clean`** raporlamıştı — I5.4 bağlı değildi. ⇒ **GAP-3 karar bekliyor.**
-- **Suite:** `618 passed, 2 deselected`.
-- ⭐⭐ **K5'te delik bulundu ve kapatıldı (D-148):** `no:cacheprovider` bytecode
-  önbelleğini kapatmıyor ⇒ mutasyon teste hiç ulaşmayabiliyordu.
-- 🔍 **Kusur avı (D-147): üç bulgu.** Rapor tohum etiketlemiyor (L0/L1) ·
-  Level 3'ün mesafesi **yapısal yokluğu büyüklük sanıyor** (§G.2 hâlâ canlı) ·
-  ⛔ **26 kapının yalnız 6'sı** popülasyon yolunda bağlı (**I4.2 · I5.4** dahil).
-- ⭐⭐ **D-146 ölçtü: darboğaz bütçe değil, `z`'nin EŞİKLİ olması.**
-  `F_agent` **%78** · sürekli nicelik **%78** · ⛔ `z` **%25** ⇒ seçilim
-  makinesi çalışıyor, ölü olan tek şey uç nokta.
-- ⛔⛔ **KİLİT DURDURULDU (D-145).** Kilit öncesi denetim taslakta **dört
-  kusur** buldu; en ağırı: `ΔP_active` sıfır-şişkin ⇒ **S=12'de testin
-  reddedebilme ihtimali %6.6** (güç değil, **mümkün olma**).
-- ⛔ **Yasin'in kararı bekleniyor:** **A** kestirim koşumu (24 sa, test yok,
-  ⭐ öneri) · **B** test koşumu S≥30 (**60 sa**) · **C** ⛔ §2.7 yasaklıyor.
-- ✅ **DR #12 cevaplandı ve mutabakata bağlandı (§U).** ⭐ **Kuyruk 2.1 açıldı:**
-  `ΔCov` indirgemesiyle **yeni istatistik gerekmiyor**.
-- ✅ **FAZ 0 BİTTİ** (D-135 · D-136 · D-138). ⛔ **Sıradaki iş Faz 2, ve
-  önündeki ilk iki madde KARAR:** **2.0** travma eşiği · **2.1** *"en küçük
-  anlamlı etki"*. İkisi de Yasin'in (D-007), ikisi de §2.7'ye tabi.
-- ✅ **GAP-10 / spillover karara bağlandı (D-137, Yasin): skaler kalıyor**,
-  sınır ilan edildi. ⏸ **Kapanmadı** — `k` ajanlar arasında değişkenleşirse
-  yeniden açılır. ⛔ **Ama eşik sorunu açıkta ve artık ayrı madde: kuyruk 2.0.**
-- 🗺 **"devam et" ⇒ `docs/EXECUTION_QUEUE.md`** — fazlar ve eski borçlar tek sırada.
-- 🔒 **İkinci ön-kayıt KİLİTLİ ve KOŞULDU** — `docs/PREREGISTRATION_2.md`
-  (`72df476ebd54`); tek koşumu **C2** (tohum 9911–9913). Sonuç: **evren null'ı**
-  (D-123). ⇒ Bu ön-kayıt **kapanmış bir bölümdür**; sıradaki iş **üçüncü**
-  ön-kayıt.
-- **Koşum dosyaları:** `dau_runs/c2_population_n8_g3_s3.json` (+ `_report.md`) ·
-  sonda-2 `dau_runs/probe2_endpoint_window_s9915.json` (keşifsel).
-- ⚠ **Evrenin fiziği ve alet defalarca değişti.** `dau_runs/` altındaki
-  **hiçbir** eski koşum bugünün aletiyle karşılaştırılamaz.
-- 📋 **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` (her nicelik: kim yazıyor ·
-  ne besliyor · **ne zaman dejenere**) · `docs/ROADMAP.md` (Yön 3'e geçiş).
+## İşaretlerin anlamı (bu bölüm ve `EXECUTION_QUEUE.md` için)
+
+| işaret | anlamı |
+|---|---|
+| ✅ | **iyi haber** — çalıştı, beklendiği gibi oldu |
+| ❌ | **kötü haber** — çalışmadı, öldü, reddedildi |
+| ⚠️ | **uyarı / sınır** — iyi ya da kötü değil, akılda tutulacak şey |
+| **KARAR** | **senin vereceğin karar** — ben veremem (D-007) |
+| *(bitti)* | iş tamamlandı — ⚠️ **sonucu iyi de olabilir kötü de** |
+
+⚠️ **Eski bölümlerde (§3 ve sonrası, `DECISIONS.md`) eski işaretler duruyor**
+(⛔ ⭐ 🔒 🗺). Onlar **append-only** kayıtlar; geçmişe dönük değiştirilmedi.
+Yukarıdaki tablo **bundan sonrası** için geçerli.
+
+---
+
+## Tek cümlede
+
+Makine çalışıyor, ölçüm dürüst, **ama evren hâlâ ölçülebilir bir seçilim
+üretmiyor** — ve sıradaki adım kod değil, **iki karar**.
+
+## Durum
+
+- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-159**
+  (sıradaki: D-160). **Suite:** 628 passed, 2 deselected.
+- **SIRADAKİ İŞ: KARAR (senin).** Kuyrukta yapılabilecek iş kalmadı.
+  İki karar var ve **sırası önemli**: önce **alan**, sonra **bütçe/G**.
+  Ayrıntı: `docs/EXECUTION_QUEUE.md` madde 2.2.
+
+## Son oturumda ne oldu
+
+### Sonda-3 koştu (D-155) — üç soru soruldu, ikisi kötü cevap verdi
+
+| soru | sonuç |
+|---|---|
+| Sürekli uç nokta adayı taze veride tanımlı mı? | ❌ **hayır** — 4 hücrenin 2'sinde (kural: en az 3). Aday **girmedi**, soru **kapandı** |
+| Somatik miras varise ulaşıyor mu? | ❌ **hayır** — 32 varisin **0'ında**. D-152 vaadini tutmadı |
+| Kollar aynı RNG durumundan mı giriyor? | ✅ **tahmin tuttu** — bayrak bastı, öncül doğruymuş |
+
+✅ Koşum temiz tamamlandı (`complete`, replay birebir, **2 sa 10 dk** — süre
+tahmini **ilk kez tuttu**).
+
+❌ **Asıl kötü haber retin kendisi değil, deseni:** düşen iki hücrenin ikisi de
+**birinci nesil**, ve **iki kolda da**. Sebep: birinci neslin 8 ajanı **bit
+düzeyinde özdeş** doğuyor ve kıtlık o nesilde hiç ısırmıyor
+(`pool_ratio_end = 0.757`). ⚠️ Aynı desen **bugünkü uç noktada da** var ⇒
+**sorun uç noktada değil, evrenin fiziğinde.**
+
+### Buna karşı ne yapıldı
+
+- ✅ **KARAR verildi: B yolu (D-156, senin onayınla).** Birinci nesil artık
+  **ısınma nesli** — Price yalnız ebeveyni 2. nesil ve sonrası olan
+  geçişlerden okunuyor. Kullanılabilir geçiş sayısı `G − 2`.
+- ✅ **Gerekçesi ölçüldü (D-157):** **11 kurucu hücrenin 0'ı** ölçülebilir
+  (4 tohum, 3 kol, **iki ayrı fizikte**) ⇒ dejenerasyon **yapısal**, tohuma
+  bağlı bir kaza değil.
+- ❌ **Ama B tek başına yetmiyor:** birinci nesil atıldıktan **sonra bile**,
+  eski fizikte birincil alanla (`energy`) hesap **3 tohumun 0'ında** tanımlı
+  olurdu. ⇒ **Asıl darboğaz alan kararı**, ve o bütçe kararından **önce** gelir.
+- ✅ **Aktarım kapısı sayaçlandı (D-158):** somatik zincirin **hangi halkada**
+  koptuğu artık ölçülebilir (8 sayaç, ajan başına). ⚠️ Sayaçlar ancak **gerçek
+  koşumda** dolar — bugün elde bir sayı **yok**.
+- ✅ **Yeni kapı I5.5 bağlandı (D-159):** *"seçilim terimi, tasarımın okuduğu
+  yerde ölçülebilir mi"*. Kapı sayısı 9.
+  ❌ **Ve bağlanır bağlanmaz bir kusur buldu:** C2'nin puanlanan **6 geçişinin
+  5'i ölüymüş** — ve C2 bunu **temiz** diye raporlamıştı.
+  ⚠️ Maddenin kendi tarifini **ölçümle değiştirdim**: *"F_agent ve uç nokta
+  yayılımı ikisi birden sıfır"* koşulu 9 hücrenin **6'sını kaçırırdı**.
+
+## Elimizdeki koşum dosyaları
+
+| dosya | ne |
+|---|---|
+| `dau_runs/probe3_endpoint_s9916.json` | **sonda-3**, bugünkü fizik, 1 tohum |
+| `dau_runs/c2_population_n8_g3_s3.json` | **C2**, eski fizik, 3 tohum ⚠️ **D-152 öncesi** |
+
+⚠️ **Evrenin fiziği ve alet defalarca değişti** — `dau_runs/` altındaki eski
+koşumlar bugünün aletiyle **karşılaştırılamaz**. C2'nin yalnız **birinci nesil**
+hücreleri okunabilir (gerekçe D-156 §2).
+
+## Arka planda duran, kapanmamış şeyler
+
+- ⚠️ **GAP-3 açık:** sembolik kanalın somatik yarısı varise ulaşmıyor
+  (D-149 · D-155). Zincirin ilk üç halkası **çalışıyor**, kırılma daha geride.
+- ⚠️ **GAP-10 ertelendi** (D-137): spillover skaler kalıyor; `k` ajanlar
+  arasında değişkenleşirse yeniden açılır.
+- ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
+- ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · **9916
+  (sonda-3)** · 9305–9310 (mock). Taze blok: **9917+**.
+- **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
 
