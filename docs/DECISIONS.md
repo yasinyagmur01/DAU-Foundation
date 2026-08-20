@@ -12423,3 +12423,189 @@ denmeyecek — D-129'da, D-155'te denmedi.
   neslin sinyali üçüncüden zayıf olabilir. Bu **tanımlılığı** etkileyebilir ve
   Kural 2'nin sonucu bu etkiyi **içerir**, ondan ayrıştırılamaz.
 - **9917–9919 harcanıyor**; deneyin tohumları 9920+.
+
+---
+
+## D-161 · 2026-08-20 · ✅ **TANIMLILIK PİLOTU KOŞTU — dört kural da okundu, ve G=3 olsaydı büyük koşum SIFIR kullanılabilir tohum verecekti**
+
+**Koşum:** `dau_runs/pilot_definedness_g4_s9917_9919.json` · tohum
+**9917 · 9918 · 9919** · 8 ajan · **4 nesil** · 30 olay · kollar
+`lived shuffle` · `--lora --fresh-pasture` · komut **D-160 §4'ün birebir
+aynısı**, dış `timeout` yok.
+
+`complete: true` · `run_quality = flagged` · **I4.1 `identical`** ·
+I5.4 ✅ **GEÇTİ** · I4.2 ✗ (beklenen, D-155/S3) · I5.5 ✗ (aşağıda).
+
+**Süre: 6 sa 10 dk 41 sn** (10:38:34 → 16:49:15).
+⚠️ **K4 — tahminim yine tutmadı, bu kez TERS yönde ve ilan ettiğim aralığın
+DIŞINDA.** D-160'ta *"~8 sa 40 dk, aralık 7–13 sa"* yazmıştım. Hata kaynağı
+tespit edildi: sonda-3'ün kol-nesil başına **21.6 dk**'sını taban aldım, bu
+tohumlarda gerçekleşen **~14.7 dk** — ömürler daha kısa. ⇒ **Süre modelim
+kol-nesil sayısını doğru, birim maliyeti yanlış tahmin ediyor**, ve birim
+maliyet tohuma göre **%47 oynuyor**. Bundan sonraki tahminlerde aralık bu
+oynamayı içermeli.
+
+⛔ **Okunmayanlar (L9, ön-taahhüt):** kovaryans değeri · işareti · kol farkı ·
+etki büyüklüğü · `ΔP_active`. `to_landmark.max` **açılmadı**.
+
+---
+
+### 1. KURAL 1 (ALAN) — **2/3 ⇒ `energy` KALIR**
+
+Puanlanan hücreler (ebeveyni gen ≥ 2), **`energy` alanında**:
+
+| tohum | gen2→gen3 | gen3→gen4 | tohum kullanılabilir mi |
+|---|---|---|---|
+| **9917** | lived ✗ · shuffle ✗ | lived ✗ · shuffle ✗ | ❌ **hayır** |
+| **9918** | lived ✗ · shuffle ✓ | **lived ✓ · shuffle ✓** | ✅ **evet** |
+| **9919** | lived ✗ · shuffle ✗ | **lived ✓ · shuffle ✓** | ✅ **evet** |
+
+⇒ **2/3** ⇒ ön-taahhüdün *"3/3 ya da 2/3"* dalı ⇒ **`energy` birincil alan
+olarak kalır**, ön-kayıt §3 değişmez, **D-145'in 1. ve 2. kusuru** (alan
+nadiren ölçülebilir · alan tohuma bağlı) **bugünkü fizikte kapanır**.
+
+⚠️ **Dürüstlük notu:** 2/3, D-160 §1'de *"ortada kör"* diye ilan ettiğim
+banttır. Kural **koşumdan önce** yazıldı ve *"2/3 ⇒ kalır"* diyor; sonradan
+*"ama 2/3 zayıf, tohum ekleyelim"* **denmiyor** — bu kuralı gevşetmek olurdu.
+Kanıtın zayıflığı **sınır olarak** ilan ediliyor, verdict değiştirilmiyor.
+
+⚠️ **Ve C2'nin `energy` sayısı artık geçersiz sayılmalı:** eski fizikte
+0/3 idi, bugünkü fizikte 2/3. Fark D-152'nin aktarım yolu değişikliğiyle
+uyumlu ama **kanıtlanmış değil** (tohumlarla karışık).
+
+---
+
+### 2. KURAL 2 (G) — **2/3 kurtarma ⇒ G = 4 kendini ödüyor.** ⭐ Ve asıl sayı bu değil
+
+| tohum | birinci geçiş (gen2→gen3) | ikinci geçiş (gen3→gen4) | ikinci kurtardı mı |
+|---|---|---|---|
+| 9917 | ✗ | ✗ | — |
+| 9918 | ✗ | ✓ | ✅ **kurtardı** |
+| 9919 | ✗ | ✓ | ✅ **kurtardı** |
+
+⇒ **2/3 ≥ 1/3** ⇒ **G = 4 önerilir.**
+
+⛔⛔ **Ama tablonun asıl söylediği daha sert: birinci geçiş ÜÇ TOHUMUN
+ÜÇÜNDE de kullanılamaz çıktı.** Yani:
+
+> **G = 3 ile koşulsaydı — ki ön-kayıtın ilan ettiği değer buydu (L10) —
+> bu üç tohumun HİÇBİRİ kullanılamazdı. 0/3.**
+
+⇒ **S = 12 · G = 3'lük ~24 saatlik koşum, sıfır kullanılabilir tohumla
+bitebilirdi.** Pilotun 6 saati **tam olarak bu felaketi** satın aldı, ve
+gerekçesi tahmin değil **ölçüm**.
+
+⚠️ Sebep muhtemelen soyların ayrışmak için **iki nesil** istemesi (varis önce
+adapter + anı miras alıyor, ayrışma bir sonraki nesilde görünür hâle geliyor).
+⚠️ **Bu bir mekanizma çıkarımı, ölçüm değil.**
+
+---
+
+### 3. KURAL 3 (TAVAN RİSKİ) — **5/12 ⇒ tavan gerçekleşmedi** ✅
+
+12 puanlanan hücrenin **5'i** `energy`'de ölçülebilir.
+⇒ **12/12 değil** ⇒ `P_active` **tavanda donmuş değil**, eş-birincil uç nokta
+**hareket edebilir**.
+
+⚠️ D-145'in 3. kusuru (`ΔP_active` sıfır-şişkinliği) **çözülmedi** — yalnız
+**tavan** hâli gerçekleşmedi. Taban tarafı hâlâ bütçe hesabının konusu.
+⚠️ Bu bir **seviye** okumasıdır; `ΔP_active` **hesaplanmadı**.
+
+---
+
+### 4. KURAL 4 (SOMATİK ZİNCİR) — ⭐ **I5.4 İLK KEZ GEÇTİ**
+
+**D-158'in sayaçları ilk kez doldu** (2733 aday, tüm ajanlar):
+
+| kapı | sayı | payı |
+|---|---|---|
+| `candidates` | **2733** | — |
+| `dropped_recall` | **501** | %18 — ⭐ **en çok aday yutan kapı** |
+| `dropped_salience` | **0** | — |
+| `standard` | 2148 | %79 |
+| `trauma` (sınıf sayacı) | **84** | %3 |
+| `warning_low` | 38 | ↓ |
+| `warning_high` | 35 | ↓ |
+| `dropped_drift` | 11 | ↓ |
+
+⭐ **Zincir kapanıyor ve aritmetiği tam:** `38 + 35 + 11 = 84` — travma sınıfı
+her adayın kaderi sayılmış durumda. ⇒ **Travma anısı nadir (%3), ama ortaya
+çıktığında %87'si uyarıya dönüşüyor.** Darboğaz *"uyarıya dönüşme"* değil,
+**travma sınıfı bir anının recall kapısından sağ çıkması**.
+
+⭐⭐ **Ve varise ULAŞIYOR — D-155'in bulamadığı şey:**
+
+| | sonda-3 (D-155) | bu pilot |
+|---|---|---|
+| `has_somatic_scale` | **0 / 32** ❌ | **34 / 144** ✅ |
+| `has_inherited_warning` | 0 / 32 | **34 / 144** |
+| `I5.4` | `never applied` ❌ | ✅ **`applied 918x`** |
+
+⇒ **GAP-3'ün somatik yarısı ilk kez canlı**, ve **D-152 vaadini SONUNDA
+tuttu** — sonda-3'te tutmamış görünmesinin iki sebebi ölçüldü:
+
+**(a) Birinci varis kuşağı YAPISAL olarak sıfır:**
+
+| varisin derinliği | somatik ölçek |
+|---|---|
+| 1. kuşak | **0 / 48** ❌ (sonda-3: **0/16**, birebir aynı) |
+| 2. kuşak | 14 / 48 ✅ |
+| 3. kuşak | 20 / 48 ✅ |
+
+⭐ **Sebep, kurucu neslin dejenerasyonunun ta kendisi:** birinci kuşağın
+ebeveynleri **kurucular** ve hepsi özdeş ⇒ **düz hücre** ⇒ göreli bant kimseyi
+`low`/`high` diye adlandıramıyor (D-152'nin kendi koruması: düz hücrede
+`normalize_fitness` `None` döner) ⇒ **uyarı doğmuyor.**
+⇒ **Aynı kök sebep iki ayrı arızayı üretiyor:** `Var(z) = 0` **ve** somatik
+kanalın ölü görünmesi. **Bu, D-155/D-157'nin bulgusunun bağımsız teyididir.**
+
+**(b) Tohuma bağlılık güçlü:** s9917 **0/48** · s9918 **15/48** · s9919
+**19/48**. ⇒ Sonda-3 tek tohumdu ve **"s9917 gibi" bir tohuma denk gelmiş**.
+
+⭐ **Ve iki arıza AYNI tohumda buluşuyor:** Kural 1'de kullanılamayan tek tohum
+**s9917**, somatik ölçeği sıfır olan tek tohum da **s9917**.
+⚠️ **n = 3, ve bu bir gözlem, iddia değil** — ama *"soylar ayrışmıyorsa ne
+kovaryans ne miras uyarısı doğar"* tek-sebep okumasıyla uyumlu.
+
+---
+
+### 5. I5.5 kapısı taze veride çalıştı ✅
+
+Dün bağlanan kapı (D-159) bu koşumda **4 ölü hücre** işaretledi:
+`s9917 lived gen3→gen4` · `s9918 lived gen2→gen3` · `s9919 lived gen2→gen3` ·
+`s9919 shuffle gen2→gen3`.
+⇒ Koşum `flagged` damgalandı. **Kapı olmasaydı bu koşum da `clean` görünürdü.**
+
+---
+
+### 6. ⇒ Bütçe artık ARİTMETİK (D-160'ın satın aldığı şey)
+
+**Ölçülen girdiler:** tohum kullanılabilirliği **2/3 ≈ 0.67** (G = 4) ·
+tohum başına süre **~1 sa 58 dk** (ana koşum; replay tohum başına değil,
+koşum başına ~18 dk).
+
+| hedef | koşulacak tohum | süre |
+|---|---|---|
+| 8 kullanılabilir | ~12 | **~24 sa** |
+| 12 kullanılabilir | ~18 | **~36 sa** |
+| 20 kullanılabilir | ~30 | **~59 sa** |
+
+⚠️ **`0.67` üç tohumdan geliyor** — güven aralığı geniş (%9–%99). Sayı
+gerçekte %40 ise 12 kullanılabilir tohum ~30 koşum tohumu ister.
+⚠️ Süre modeli **%47 oynayabiliyor** (§başlangıç).
+
+⛔ **Kalan karar Yasin'in (kuyruk 2.2):** kaç kullanılabilir tohum, ve
+**kestirim mi test mi** (D-145'in A/B'si). Alan ve G artık **kararlaştırıldı**.
+
+### 7. Sınırlar (ilan)
+
+- **3 tohum.** Kural 1'in 2/3'ü, önceden *"ayırt edici değil"* diye ilan
+  edilen bantta. Verdict kurala göre verildi, **kanıt zayıf**.
+- Pilot **keşifsel**; hiçbir sabit ona bakılarak seçilmedi.
+- `null` kolu yok ⇒ pilot `null` hakkında **hiçbir şey** söylemiyor.
+- Kural 2'nin *"iki nesil gerekiyor"* açıklaması **çıkarım**; ölçülen şey
+  yalnız *"birinci geçiş 3/3 ölü, ikinci 2/3 canlı"*.
+- **G = 4, L10'un G = 3'ünden sapmadır** ⇒ ön-kayıt §2 ve L10 güncellenmeli.
+- ⚠️ **L11 (adapter sönümü)** dördüncü nesilde bir kat daha derin; Kural 2'nin
+  sonucu bu etkiyi **içerir**, ondan ayrıştırılamaz.
+- **9917–9919 harcandı** ⇒ deneyin tohumları **9920+**.
