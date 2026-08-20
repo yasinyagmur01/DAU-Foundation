@@ -19,17 +19,30 @@ Kilitli her madde bir `D-0XX` kaydına işaret etmelidir.
 
 ---
 
-# 1. Şu An Neredeyiz (2026-08-19) — ⛔ **C2 koşuldu: evren null'ı; yön belirlendi**
+# 1. Şu An Neredeyiz (2026-08-20) — ⛔ **Sonda-3 koştu: dördüncü yol, karar Yasin'de**
 
 - **Branch:** **`main`** tek branch. ✅ **`origin/main` ile senkron.**
-- **Son D-kaydı: D-154.** Sıradaki kayıt **D-155** olarak açılır.
-- ▶▶ **SIRADAKİ İŞ: SONDA-3** (GPU, ~2 sa — aralık 1.5–4 sa). 🔒 **K1 kontrolü
-  ve ön-taahhüt D-154'te, koşumdan ÖNCE commit'li** — koşum sonrası kural
-  **gevşetilemez**. Komut ve okuma kuralları
-  **`docs/EXECUTION_QUEUE.md`'nin başında**.
-- ⛔ **Beklenti dürüstçe:** sonda *"olumlu sonuç"* için değil **karar** için.
-  Bugünkü fizikle pahalı koşum yapılsa **yine evren null'ı** beklenir — ama bu
-  kez **belgelenmiş** olanı. ⇒ **Alet dürüstleşti, evren cömertleşmedi.**
+- **Son D-kaydı: D-155.** Sıradaki kayıt **D-156** olarak açılır.
+- ▶▶ **SIRADAKİ İŞ: 2.4b — ⛔ KARAR (Yasin'in).** Sonda koştu ve üç sorunun
+  üçü de ön-taahhüdün yazdığı gibi okundu ⇒ **D-154 §5'in dördüncü yolu**:
+  *"bu fizikle test edilemez"*. Üç seçenek ve öneri
+  **`docs/EXECUTION_QUEUE.md` 2.4b**'de.
+- ⛔⛔ **SONDA-3 SONUCU (D-155):** **S1 düştü (2/4, kural ≥3/4)** ⇒ sürekli uç
+  nokta adayı **girmedi**, kapanmış soru · **S2 düştü (0/32 varis)** ⇒
+  **D-152 vaadini tutmadı**, somatik kanal hâlâ ölü · **S3 tahmin tuttu**
+  (I4.2 FLAG) ⇒ ABORT'a yükseltilmiyor. Koşum `complete` · I4.1 `identical` ·
+  **2 sa 09 dk 47 sn** (⭐ süre tahmini ilk kez tuttu).
+- ⭐⭐ **Retin deseni retten önemli:** düşen iki hücrenin ikisi de **gen1**, ve
+  **iki kolda da** — çünkü gen1'in 8 ajanı **bit düzeyinde özdeş**
+  (`pool_ratio_end = 0.757`, kıtlık gen1'de ısırmıyor). Aynı `Var = 0` deseni
+  **bugünkü uç noktada da** var ⇒ ⛔ **kusur uç noktada değil FİZİKTE**;
+  birinci Price geçişi **hangi uç noktayla olursa olsun** ölçülemez.
+- ⭐ **D-152'nin hangi yarısı tuttu ölçüldü:** göreli bant **çalışıyor**
+  (48 yaşamın 10'u `low`, 15'i `high`) ve `low` bant **üreyebiliyor** da
+  (w = 3/1/1) ⇒ kırılma **bandın arkasında** — kuyruk **2.5** açıldı.
+- ⛔ **Beklenti dürüstçe (tuttu):** sonda *"olumlu sonuç"* için değil **karar**
+  için koşuldu ve **karar verdi** — evren yine cömertleşmedi, ama bu kez
+  **belgelenmiş** olarak. ⇒ **Alet dürüstleşti, evren cömertleşmedi.**
 - ⭐ **K6 bağlayıcı oldu:** kayda geçen kusur, **bir kapıya bağlanmadıkça**
   kapanmamıştır. ⚠ Ve eklerken **D-070'ten beri süren bir ad çakışması**
   bulunup kapatıldı (iki ayrı `K`-serisi).

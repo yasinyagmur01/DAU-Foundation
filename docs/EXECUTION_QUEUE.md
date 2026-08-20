@@ -158,13 +158,49 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# ▶▶ SIRADAKİ İŞ — **2.4 · SONDA-3** (GPU, ~2 sa) 🔒 ön-taahhüt commit'li
+# ▶▶ SIRADAKİ İŞ — **2.4b · ⛔ KARAR (Yasin'in)** — sonda-3 dördüncü yola girdi
 
-⛔ **"devam et" denince BU madde alınır.** Ön-taahhüt ve K1 kontrolü
-**D-154'te, koşumdan önce commit edilmiş** durumda — sıra kanıttır, ve
-koşum sonrası kural **gevşetilemez**.
+⛔ **"devam et" denince BU madde alınır, ama kendim karar veremem** (D-007).
+Sonda koştu, üç sorunun üçü de ön-taahhüdün yazdığı gibi okundu (**D-155**),
+ve sonuç D-154 §5'in **dördüncü yolu**: *"bu fizikle test edilemez"*.
 
-## ⬜ 2.4 · Sonda-3 — **üç soruyu birden** cevaplıyor
+## ⬜ 2.4b · ⛔ **KARAR** — kurucu neslin dejenerasyonu ne yapılacak
+
+**Sondanın verdiği kanıt (D-155 §1):** gen1'in sekiz ajanı **iki kolda da bit
+düzeyinde özdeş** (`pool_ratio_end = 0.757` ⇒ kıtlık gen1'de hiç ısırmıyor)
+⇒ birinci Price geçişi **hangi uç nokta seçilirse seçilsin** `Var = 0`.
+Uç nokta değiştirmek düzeltmiyor — sonda tam da bunu sınadı ve aday **girmedi**
+(2/4, kural ≥3/4).
+
+| | yol | bedeli | sondanın söylediği |
+|---|---|---|---|
+| **A** | **Yön 3'ü aç** — kıtlık rejimini değiştir (Holling II / kapasite, D-082/D-084) | bugünkü sayılar **taşınmaz**, ve §2.7 sınırında **bir sabit** kararı ister (`h` ya da kapasite) | ⭐ dejenerasyonun sebebine **doğrudan** dokunuyor |
+| **B** ⭐ | **Kurucu nesli ölçümün dışında bırak** — Price yalnız gen ≥ 2 geçişlerinden okunur, G artırılır | koşum ~1.5 kat uzar; sıfır yeni sabit | gen2→gen3 hücrelerinin **ikisi de** `estimable=True` çıktı ⇒ varsayım bu koşumla **zaten sınanabilir** |
+| **C** | **Kestirim damgasıyla devam** (P7-b / D-096) | ucuz | ⛔ D-145'in 3. kusuru **açık kalır**, uç nokta da düzelmedi |
+
+⚠ **Claude Code'un önerisi: B önce ölçülsün, A onun yanında değerlendirilsin.**
+Gerekçe D-155 §5'te. **Öneri, karar değil.**
+
+**Bitti sayılır:** Yasin bir yol seçti, seçim D-kaydına gerekçesiyle yazıldı.
+
+## ✅ 2.4 · Sonda-3 — **koştu, üç soru da okundu** (**D-155**)
+✅ `dau_runs/probe3_endpoint_s9916.json` · `complete: true` ·
+`run_quality=flagged` · **I4.1 identical** · **2 sa 09 dk 47 sn**
+(⭐ süre tahmini ilk kez tuttu).
+
+| # | ön-taahhüt | ölçülen | sonuç |
+|---|---|---|---|
+| **S1** | ≥3/4 hücrede `Var(to_landmark.max) > 0` | **2/4** (düşen ikisi **gen1**, iki kolda da) | ⛔ **aday GİRMEZ** — kapanmış soru |
+| **S2** | `I5.4` geçer, ≥1 varis somatik ölçek | **0 / 32** varis · `never applied (skipped=1563)` | ⛔ **D-152 vaadini tutmadı** |
+| **S3** | `I4.2` FLAG basar | FLAG bastı (`gen3: 2 states`) | ✅ öncül doğru ⇒ **ABORT'a yükseltilmiyor** |
+
+⭐ **Retin deseni retten önemli:** aynı `Var = 0` deseni **bugünkü uç noktada
+da** var (`z_variance`, gen1→gen2, iki kol) ⇒ kusur uç noktada değil **fizikte**.
+⭐ **D-152'nin hangi yarısı tuttu ölçüldü:** göreli bant **çalışıyor** (48
+yaşamın 10'u `low`, 15'i `high`), `low` bant **üreyebiliyor** da (w = 3/1/1) —
+kırılma **bandın arkasında** (⇒ 2.5).
+
+<details><summary>özgün madde (ön-taahhüt, koşumdan önce commit'li)</summary>
 
 | # | soru | ön-taahhüt edilmiş okuma kuralı |
 |---|---|---|
@@ -172,34 +208,44 @@ koşum sonrası kural **gevşetilemez**.
 | **S2** | `I5.4` geçiyor mu (D-152 somatik kanalı canlandırdı mı)? | **Tahmin: geçer**, ≥1 varis `has_somatic_scale`. **Sıfır ⇒ D-152 vaadini tutmadı** |
 | **S3** | `I4.2` ne diyor (kollar aynı RNG durumundan mı giriyor)? | **Tahmin: FLAG basar.** **Geçerse** öncül yanlıştı ⇒ ABORT'a yükseltilir |
 
-**Komut — tam olarak bu:**
-
 ```
 PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
   --seeds 9916 --n-agents 8 --n-generations 3 --events 30 \
   --lora --fresh-pasture --arms lived shuffle \
   --results dau_runs/probe3_endpoint_s9916.json
 ```
+</details>
 
-⚠ **Dış `timeout` YOK** (D-126: replay'i keserse sonuç dosyası hiç yazılmaz) ·
-⚠ `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez** (D-116) · ⚠ tohum **9916 taze**,
-deneyde kullanılmaz · ⚠ süre **1.5–4 sa** (tahmin; D-126/D-129'da iki kez
-tutmadı).
+## ⬜ 2.5 · Somatik zincirin **kırıldığı halka** ölçülsün (K6, D-155 §6)
 
-⛔ **Okunmayacaklar (L9):** kovaryans · kol farkı · etki büyüklüğü · işaret.
+**Borç:** D-155 §2 dört halkanın **üçünün çalıştığını** ölçtü (göreli bant ·
+travma eşiği 48/48 · `low` bant üreyebiliyor), ama varis **0/32**
+`inherited_warning` alıyor. Kalan şüpheli `select_for_transfer`
+(`generation.py:175–183`) üçlü şartının son iki bileşeni:
+`recall_count ≥ GENERATION_MIN_RECALL` ve `is_trauma(candidate.record)`.
+⛔ **Bugünkü hâli çıkarım, ölçüm değil** — sonuç dosyası `recall_count`
+taşımıyor.
 
-**Bitti sayılır:** koşum tamamlandı (`complete: true`), üç sorunun üçü de
-D-kaydında **kuralın yazıldığı gibi** okundu, ve D-154 §5'in dört yolundan
-hangisine girildiği **yazıldı**.
+**İş:** saf raporlama — `select_for_transfer`'a giren adaylardan kaçının
+recall kapısında, kaçının `is_trauma` kapısında, kaçının bant kapısında
+düştüğü sayılsın ve ajan satırına yazılsın. **Hesap değişmez.**
+**Bitti sayılır:** üç sayaç sonuç dosyasında · **K2** · **K3** · **K5**.
+⚠ §2.11: `n_at_or_above_trauma` (PE-delta) ile `is_trauma(record)` (anı
+imprint sınıfı) **ayrı niceliklerdir**; sayaç ikisini karıştırmamalı.
 
-### ⇒ Sonda bittikten sonra (D-154 §5)
+## ⬜ 2.6 · Kurucu neslin dejenerasyonu bir **kapıya** bağlansın (K6, D-155 §6)
 
-| S1 | S2 | sıradaki iş |
-|---|---|---|
-| geçti | geçti | ⭐ Uç nokta çevrilir, ön-kayıt §3/§4/§7 yeniden yazılır ⇒ **2.2 → 2.3 kilit** |
-| geçti | düştü | Uç nokta çevrilir, somatik kanal **sınır** ilan edilir ⇒ 2.2 |
-| düştü | geçti | `z` kalır ⇒ ⛔ **D-145'in 3. kusuru açık** ⇒ **S≥30 mu kestirim mi**, karar Yasin'in |
-| düştü | düştü | ⛔ *"Bu fizikle test edilemez"* **kanıtla** yazılır ⇒ Yön 3 yeniden açılır |
+**Borç:** D-155 §1 ölçtü ki gen1'in 8 ajanı iki kolda da özdeş ⇒ birinci Price
+geçişi yapısal olarak `Var = 0`. **Bugün bunu yakalayan kapı yok** —
+`selection_estimable` alan başına yazılıyor ama *"kurucu nesil dejenere"*
+diye bir bayrak yok, ve C2 bu durumu **`clean`** raporlamıştı (D-149 deseni).
+
+**İş:** yeni bir preflight maddesi (**FLAG**) — bir nesil geçişinde ebeveyn
+kümesinin `F_agent` **ve** uç nokta yayılımı ikisi birden sıfırsa bayrak.
+⚠ **Eşik yok, sabit yok:** koşul `Var == 0` (`Z_VARIANCE_EPSILON` zaten var).
+**Bitti sayılır:** kapı `invariants` sözlüğünde · bu koşumun dosyasında
+**geriye dönük** ateşlendiği gösterildi · K2 · K3 · K5.
+⚠ **2.4b'nin kararından bağımsız** — hangi yol seçilirse seçilsin kapı gerekli.
 
 ---
 
@@ -335,7 +381,7 @@ tanımlı (alet null'ı / evren null'ı / etki null'ı / pozitif).
    sor.** Bu oturumda beş okuma bu yüzden çürüdü.
 5. **Kullanılmış tohumlar:** …9901–9904 (C2 öncesi) · **9911–9913** (C2) ·
    **9915** (sonda-2) · 9305–9310 (mock). Taze blok: **9916+**.
-   ⚠ **9916 sonda-3'e ayrıldı** (D-154) ⇒ deneyin tohumları **9917+**.
+   ⚠ **9916 sonda-3'te HARCANDI** (D-155) ⇒ deneyin tohumları **9917+**.
 6. ⭐ **K6 (yeni, D-151):** kayda geçen kusur **bir kapıya bağlanmadıkça**
    kapanmamıştır. Bir madde bir mekanizmanın çalışmadığını ölçtüyse, ✅
    işaretlenmeden önce ya bir preflight kapısına ya da kuyruğa bağlanır.
@@ -344,4 +390,6 @@ tanımlı (alet null'ı / evren null'ı / etki null'ı / pozitif).
    diye yazılır.
 8. ⛔ **Ön-kayıt (`PREREGISTRATION_3.md`) KİLİTLENEMEZ durumda** — D-145'in
    dört kusuru duruyor, ve 3.'sü (uç noktanın yapısal test edilemezliği)
-   **sonda-3'ün cevabına** bağlı.
+   **sonda-3'te cevaplandı: düzelmedi** (D-155). Sürekli uç nokta adayı
+   **girmedi** (2/4), ve sebep uç noktada değil **kurucu neslin
+   dejenerasyonunda** ⇒ kilit **2.4b kararına** bağlı.
