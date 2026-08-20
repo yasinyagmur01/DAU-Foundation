@@ -1,9 +1,20 @@
 # Fizik Değişikliği — Katman Katman Öneri
 
-**Durum: TASLAK · 2026-08-20 · karar Yasin'in (D-007) · henüz D-kaydı yok**
+**Durum: ✅ ONAYLANDI VE UYGULANDI · 2026-08-20 · D-162 · D-163**
 
-⚠️ Bu belge bir **öneri**dir, karar değil. Kod yazılmadı. Onay gelirse
-ön-taahhüt + D-kaydı **koda dokunmadan önce** commit edilir (D-154/D-160 deseni).
+✅ **Katman 1 uygulandı.** Yasin onayladı, karar D-162'de (koda dokunulmadan
+önce commit edildi), sabit D-163'te **revize edildi**, kod + `I5.6` kapısı +
+testler girdi (suite 636).
+
+⚠️ **Bu belgedeki `EXTRACTION_LIMIT_RATIO = 0.10` türetmesi UYGULANMADI.**
+Uygulama sırasında ölçüldü ki dengeyi 0.333'e koyuyor — kriz eşiğinin (0.30)
+üstüne — ve **kriz kanalını yapısal olarak öldürüyor**. Yerine
+`POOL_REGEN_RATE × (1 − COLLAPSE_EPSILON) = 0.1425` seçildi (D-163).
+Aşağıdaki §3.3 ve §3.4 **bu haliyle tarihçedir**; geçerli olan D-163 ve
+master reference §28.10.
+
+⏭ **Sıradaki: Katman 1 pilotu** — tohum 9920–9922, N=8, G=4, `lived shuffle`.
+Ön-taahhüt D-162 §5'te (P1'in eşiği D-163 §7'de `olay ≤ 8`'e güncellendi).
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin

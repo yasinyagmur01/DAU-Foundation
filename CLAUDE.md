@@ -39,55 +39,66 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Tanımlılık pilotu koştu ve **iki kararı ölçümle kapattı** (alan `energy`,
-`G = 4`); geriye **tek karar** kaldı: **bütçe**.
+Evrenin fiziği **ikinci kez değişti** (Katman 1: kademeli kıtlık); kod ve
+kapılar hazır, **sıradaki iş pilotu koşmak**.
 
 ## Durum
 
-- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-161**
-  (sıradaki: D-162). **Suite:** 628 passed, 2 deselected.
-- **SIRADAKİ İŞ: KARAR (senin) — yalnız bütçe.** Aritmetiği
-  `docs/EXECUTION_QUEUE.md` başında ve D-161 §6'da.
+- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-163**
+  (sıradaki: D-164). **Suite:** 636 passed, 2 deselected. **Kapı: 9.**
+- **SIRADAKİ İŞ: Katman 1 pilotu.** Tohum **9920–9922**, N=8, **G=4**,
+  30 olay, `lived shuffle`, ~6–9 sa. Ön-taahhüt **D-162 §5**'te commit'li
+  (P1'in eşiği D-163 §7'de `olay ≤ 8`'e güncellendi).
 
-## Son koşum: tanımlılık pilotu (D-161)
+## Son iş: KATMAN 1 — fizik değişti (D-162 · D-163)
 
-3 tohum (9917–9919), G=4, `lived`+`shuffle`, **6 sa 10 dk**.
-`complete` · I4.1 `identical` · dört ön-taahhüt kuralı da uygulandı.
+✅ **Hasat kuralı stoka oranlı bir tavana bağlandı.** Talep (`8.0`)
+**değişmedi** — talep davranıştır, ona dokunmak K7 ihlali olurdu. Değişen şey
+**ortamın karnesi**:
 
-| kural | sonuç |
-|---|---|
-| **Alan** | ✅ **2/3 ⇒ `energy` kalıyor.** D-145'in 1. ve 2. kusuru **kapandı** |
-| **G** | ✅ **2/3 kurtarma ⇒ G = 4.** ❌ Ve `G = 3` olsaydı **0/3** — koşum boşa giderdi |
-| **Tavan riski** | ✅ 12 hücrenin **5'i** aktif ⇒ `P_active` **tavanda donmadı**, hareket edebilir |
-| **Somatik zincir** | ✅ **I5.4 İLK KEZ GEÇTİ** — 144 varisin **34'ü** somatik ölçek taşıyor (sonda-3'te 0/32) |
+```
+cap_i = EXTRACTION_LIMIT_RATIO × (kalan_stok / N)      ← sırası gelenin gördüğü stok
+EXTRACTION_LIMIT_RATIO = POOL_REGEN_RATE × (1 − COLLAPSE_EPSILON) = 0.1425
+```
 
-### Pilotun kazandırdığı üç şey
+| | eski (sabit kota) | yeni (tavan) |
+|---|---|---|
+| ilk eksik alma | olay **17** | olay **6** (landmark 10'dan önce) |
+| **landmark penceresinde yayılım** | ❌ **0.0000** | ✅ **0.3923** |
+| olay 30'da havuz | **0.000** (soğurucu) | 0.179, tabana yaklaşıyor |
+| kriz kanalı | aktif | ✅ aktif (15/30 olay) |
 
-1. ❌→✅ **En büyük kazanç bir felaketin önlenmesi:** ön-kayıtın ilan ettiği
-   `G = 3` ile ~24 saatlik koşum **sıfır kullanılabilir tohum** verebilirdi.
-   Pilotun 6 saati bunu ölçümle gösterdi.
-2. ✅ **GAP-3'ün somatik yarısı ilk kez canlı**, ve sonda-3'ün *"0/32"*'sinin
-   sebebi bulundu: **birinci varis kuşağı yapısal olarak sıfır** (0/48 — sonda-3'te
-   de 0/16), çünkü ebeveynleri kurucular ve **düz hücrede göreli bant kimseyi
-   `low`/`high` yapamıyor**. ⇒ Kurucu dejenerasyonu **iki ayrı arızayı** üretiyor.
-   ⚠️ Ayrıca tohuma çok bağlı: s9917 **0/48**, s9918 15/48, s9919 19/48.
-3. ✅ **Bütçe artık aritmetik:** kullanılabilirlik **2/3**, tohum başına
-   **~1 sa 58 dk**. ⚠️ 3 tohumdan geliyor, aralık geniş.
+⚠️ **Teşhisim önce yanlıştı ve düzeltildi.** *"Kıtlık ısırmıyor"* demiştim —
+tek bir sayıdan (0.757) zincir kurmuştum. Ölçüm çürüttü: **34 hücrenin
+22'sinde havuz tamamen çöküyor**. ✅ Ve belirleyici ölçüm teşhisi tersine
+çevirdi: havuzun çöktüğü tohumda kurucular **ayrışıyor** ⇒ **P0-① bozuk
+değil**, sorun havuzun **iki kararlı durumda** olması (ya çöker ya hiç ısırmaz).
 
-⚠️ **Süre tahminim yine tutmadı** (8 sa 40 dk dedim, 6 sa 11 dk sürdü — ilan
-ettiğim aralığın **dışında**). Sebebi bulundu: kol-nesil başına maliyet tohuma
-göre **%47** oynuyor.
+⚠️ **Sabit uygulama sırasında revize edildi (D-163).** İlk türetme
+(`DEFECT/POOL_INIT = 0.10`) aynı temizlikteydi ama dengeyi 0.333'e koyuyordu —
+kriz eşiğinin (0.30) üstüne — ve **kriz kanalını öldürüyordu** (o kanal 192
+yaşamın 127'sinde ateşleniyor). ⇒ **Ders:** bir sabitin türetmesinin temiz
+olması onu doğru yapmıyor; **denge noktası da kayda yazılmalı**.
 
-✅ **Dün bağlanan I5.5 kapısı taze veride çalıştı** — 4 ölü hücre işaretledi;
-kapı olmasaydı bu koşum da `clean` görünürdü.
+✅ **Yeni kapı I5.6** — tavan bağladı mı, ve landmark'tan **önce** mi.
+İki kusur ayrı raporlanıyor: *hiç bağlamadı* ile *geç bağladı*.
+
+⚠️ **İki yapısal sonuç:** çöküş **soğurucu olmaktan çıktı**; orantılı
+paylaştırma dalı **ulaşılamaz** hâle geldi (silinmedi, ulaşılmazlığı testle
+sabitlendi — D-088 deseni).
+
+⚠️ **Bütün sayılar sıfırlandı** — pilot, sonda-3, C2 artık karşılaştırılamaz.
 
 ## Elimizdeki koşum dosyaları
 
 | dosya | ne |
 |---|---|
-| `dau_runs/pilot_definedness_g4_s9917_9919.json` | **tanımlılık pilotu**, bugünkü fizik, 3 tohum, G=4 — **en güncel** |
-| `dau_runs/probe3_endpoint_s9916.json` | **sonda-3**, bugünkü fizik, 1 tohum, G=3 |
-| `dau_runs/c2_population_n8_g3_s3.json` | **C2**, eski fizik, 3 tohum ⚠️ **D-152 öncesi** |
+| `dau_runs/pilot_definedness_g4_s9917_9919.json` | tanımlılık pilotu, 3 tohum, G=4 ⚠️ **Katman 1 öncesi** |
+| `dau_runs/probe3_endpoint_s9916.json` | sonda-3, 1 tohum, G=3 ⚠️ **Katman 1 öncesi** |
+| `dau_runs/c2_population_n8_g3_s3.json` | C2, 3 tohum ⚠️ **D-152 ve Katman 1 öncesi** |
+
+❌ **Katman 1 (D-163) bir fizik değişikliğidir ⇒ yukarıdakilerin hiçbiri
+bugünün aletiyle karşılaştırılamaz.** Sıradaki pilot yeni taban çizgisidir.
 
 ⚠️ **Evrenin fiziği ve alet defalarca değişti** — `dau_runs/` altındaki eski
 koşumlar bugünün aletiyle **karşılaştırılamaz**. C2'nin yalnız **birinci nesil**
@@ -1160,7 +1171,7 @@ kaymış.)
 | Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (**26 madde tanımlı, 24'ü kodda** — I1.2 testte, I2.3 yapısal) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
-| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.4.4** — ⚠ **§26 yeni: evrenin fiziği değişti** (D-054…D-068). `.html`/`.pdf` v2.4.3'te kaldı |
+| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.6** — ⚠ **§28 yeni: C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). `.html`/`.pdf` **v2.5'te kaldı** |
 | Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
 | Gönderilemeyen DR brief'i (#5) | `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` · yerine yapılan yerel tarama: `RECONCILIATION.md` **§K** |

@@ -158,41 +158,50 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# SIRADAKİ İŞ — **KARAR (senin): sadece BÜTÇE kaldı**
+# SIRADAKİ İŞ — **3.0 · Katman 1 pilotu** (GPU, ~6–9 sa)
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
 *(bitti)* iş tamamlandı, sonucu iyi de olabilir kötü de.
 ⚠️ Aşağıdaki eski maddelerde eski işaretler (⛔ ⭐ 🔒) hâlâ duruyor.
 
-**Tanımlılık pilotu koştu (D-161) ve iki kararı ölçümle kapattı:**
+## ⬜ 3.0 · Katman 1 pilotu — tavan işe yaradı mı
 
-| karar | sonuç |
+**Ön-taahhüt D-162 §5'te commit'li** (P1'in eşiği D-163 §7'de güncellendi).
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9920 9921 9922 --n-agents 8 --n-generations 4 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle \
+  --results dau_runs/layer1_pilot_g4_s9920_9922.json
+```
+
+⚠️ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
+(D-116) · tohumlar **taze** (kullanılmışlar …9919).
+
+| kural | ne sorar |
 |---|---|
-| **Alan** | ✅ **`energy` kalıyor** — 3 tohumun **2'si** kullanılabilir (kural: ≥2/3) |
-| **G** | ✅ **G = 4** — birinci geçiş 3/3 ölü, ikinci geçiş 2 tohumu kurtardı |
+| **P1** | Kıtlık kademeli mi oldu? 3 tohumun **≥2'sinde** ilk eksik alma **olay ≤ 8** |
+| **P2** | Kurucular ayrışıyor mu? **6 kurucu hücrenin ≥4'ünde** `Var(F_agent) > 0` ⚠️ bugünkü taban **8'de 2** |
+| **P3** | Zincirin geri kalanı kendiliğinden oynadı mı? ⚠️ **EŞİKSİZ, betimleyici** |
 
-❌ **Ve pilot tam da beklenen felaketi yakaladı:** `G = 3` ile — yani ön-kayıtın
-o güne kadar ilan ettiği değerle — bu üç tohumun **hiçbiri** kullanılabilir
-olmazdı (**0/3**). S=12 · G=3'lük ~24 saatlik koşum **sıfır kullanılabilir
-tohumla** bitebilirdi.
+⛔ **Okunmayacaklar (L9):** kovaryans · işaret · kol farkı · etki büyüklüğü ·
+`ΔP_active`.
 
-## Kalan tek karar: **bütçe**
+**Bitti sayılır:** koşum `complete`, üç kural da D-kaydında **yazıldığı gibi**
+okundu, ve `I5.6` verdict'i raporlandı.
 
-Artık tahmin değil aritmetik (D-161 §6). Ölçülen: tohum kullanılabilirliği
-**2/3**, tohum başına **~1 sa 58 dk**.
+---
 
-| hedef | koşulacak tohum | süre |
-|---|---|---|
-| 8 kullanılabilir | ~12 | ~24 sa |
-| 12 kullanılabilir | ~18 | ~36 sa |
-| 20 kullanılabilir | ~30 | ~59 sa |
+## ⚠️ 2.2 · Bütçe kararı — **ertelendi, iptal değil**
 
-⚠️ **`2/3` üç tohumdan geliyor**, güven aralığı geniş (%9–%99). Gerçek oran
-%40 ise 12 kullanılabilir tohum ~30 koşum tohumu ister.
+Alan (`energy`) ve `G` (**4**) ölçümle kararlaştırıldı (D-161). Kalan bütçe
+kararı (**kaç tohum · kestirim mi test mi**) ❌ **Katman 1'den sonra yeniden
+hesaplanmalı**: aritmetiği besleyen iki sayı — tohum kullanılabilirliği
+(**2/3**) ve tohum başına süre (**~1 sa 58 dk**) — **Katman 1 öncesi fizikten**
+geliyor ve artık geçersiz.
 
-**İkinci yarısı (D-145'ten devreden):** bu koşum **kestirim** mi olacak
-(P7-b/D-096 damgası, hipotez testi yok) yoksa **test** mi (S büyür)?
+⇒ **3.0 pilotu bu iki sayıyı yeniden ölçecek.** Bütçe kararı ondan sonra.
 
 ---
 

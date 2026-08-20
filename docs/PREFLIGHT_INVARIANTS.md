@@ -5,12 +5,13 @@
 **yanlıştı** — kapılar D-039…D-046 arasında yazıldı ve doğrulayıcı koşumda
 (B2, N=40) hepsi çalıştı.
 
-> **26 madde tanımlı, 24'ü kodda kapı olarak uygulanmış.** Sağdaki `Kodda`
+> **28 madde tanımlı, 26'sı kodda kapı olarak uygulanmış.** Sağdaki `Kodda`
 > sütunu bunu gösterir. Kaynak: koşum JSON'unun `invariants` bloğu
 > (`dau_runs/prereg_b2_batch1_2004_2023.json`), **belge değil**.
 >
 > ⚠ **İki koşucu, iki kapı kümesi** (2026-08-18). Popülasyon sarmalayıcısı
-> (`run_population_experiment.py`) **I0.3 · I0.4 · I0.6 · I0.7 · I1.1 · I4.1**
+> (`run_population_experiment.py`) **I0.3 · I0.4 · I0.6 · I0.7 · I1.1 · I4.1 ·
+> I4.2 · I5.4 · I5.5 · I5.6** koşar (⭐ **6 → 9 + I5.6**; D-149 · D-159 · D-163)
 > koşar; **I0.1/I0.2 bilerek yok** (D-105'te gerekçesi yazılı) ve I0.5 bu yolda
 > tanımlı değil. Multigen koşucusu (`run_cprime_multigen.py`, B2'nin yolu)
 > **değişmedi**. Bir kapının *"kodda"* olması, **her koşucuda** koştuğu

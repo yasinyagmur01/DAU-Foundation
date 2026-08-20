@@ -1,8 +1,8 @@
 # DAU — Master Reference
 
-**Versiyon 2.5** · 2026-08-18
+**Versiyon 2.6** · 2026-08-20
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
-*(`.md` kaynaktır. ✅ `.html` ve `.pdf` **v2.5'te yeniden üretildi**
+*(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.5'te kaldı** — v2.6 yalnız `.md`.
 (2026-08-18, pandoc 3.7 + xelatex, 34 sayfa). PDF'te emoji'ler metin
 karşılığına çevriliyor (`✅` → `[OK]`, `⚠` → `[!]`, `⛔` → `[STOP]` …) ve
 DejaVu ailesi kullanılıyor ki Türkçe karakterler kod bloklarında da düşmesin.
@@ -462,6 +462,38 @@ collapse = P_next <= P_max · COLLAPSE_EPSILON
 # POOL_MAX=100, POOL_REGEN_RATE=0.15, COLLAPSE_EPSILON=0.05
 ```
 
+⛔⛔ **HASAT KURALI DEĞİŞTİ (2026-08-20, D-162/D-163) — bu bölüm bu haliyle
+artık tarihçedir.** `Σe_i` yukarıda **sabit kota**ydı: ajan ne ilan ettiyse
+stok bitene kadar tamamı veriliyordu. Ölçüldü ki bu evrene **iki kararlı
+durum** veriyor — ya havuz çöker ya hiç ısırmaz, arada rejim yok (D-081'in
+*"kıtlık anı"*sı, D-163 §1'de doğrudan kanıtlandı).
+
+Bugünkü kural **stoka oranlı bir tavan** ekliyor, ve tavan **sırası gelen
+ajanın gördüğü kalan stoktan** hesaplanıyor:
+
+```
+cap_i    = EXTRACTION_LIMIT_RATIO · (kalan_stok / N)
+alınan_i = min(talep_i, cap_i, kalan_stok)
+EXTRACTION_LIMIT_RATIO = POOL_REGEN_RATE · (1 − COLLAPSE_EPSILON) = 0.1425
+```
+
+⭐ **Sabit türetilmiştir, seçilmemiştir.** Tavanlı bir havuz bir dengeye oturur
+ve denge kapalı formdadır: `denge = 1 − r/REGEN`. Yani oranı seçmek *"havuz
+nerede duracak"* demektir, ve savunulabilir yer kodun **zaten çöküş dediği
+taban**dır. ⛔ Reddedilen alternatif (`DEFECT/POOL_INIT = 0.10`) **aynı
+temizlikte türetilmişti** ama dengeyi 0.333'e koyuyordu — kriz eşiğinin
+(0.30) üstüne — ve **kriz kanalını yapısal olarak öldürüyordu** (o kanal
+gerçek koşumda 192 yaşamın 127'sinde ateşleniyor).
+
+⚠ **Talep DEĞİŞMEDİ.** `EXTRACTION_DEFECT = 8.0` ve karar→çıkarım eşlemesi
+aynen duruyor: talep **davranıştır** ve ona dokunmak K7'nin aksiyom
+gerekçesiyle kapattığı kanaldır. Değişen şey **ortamın karnesi**.
+
+⇒ **İki yapısal sonuç:** çöküş artık **soğurucu değil** (havuz tabana
+yaklaşır, çakılmaz), ve `realized_extractions`'ın **orantılı paylaştırma
+dalı ulaşılamaz** hâle geldi — silinmedi, ulaşılmazlığı testle sabitlendi.
+Ayrıntı §28.
+
 ### ADIM 1 — Somatic Enforcement (kodlandı)
 
 ```
@@ -629,7 +661,8 @@ dau/generation/
                             plan_next_generation / close_transition (D-101)
 
 dau/society/
- ├── environment.py        — pool physics + apply_crisis_trauma (ADIM 1)
+ ├── environment.py        — 381 satır; pool physics + apply_crisis_trauma
+ │                            (ADIM 1) + **stoka oranlı hasat tavanı** (D-163)
  ├── run_convention_pilot*.py / run_meta_ab.py / run_nuance_loss_pilot.py
  └── tests/
 
@@ -638,12 +671,12 @@ dau/diagnostics/
  ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
  ├── run_cprime_multigen.py — 1610 satır; gen1→transfer→gen2 (B2'nin yolu,
  │                          DEĞİŞMEDİ — `prereg/b2-code` etiketi)
- ├── run_population_experiment.py — 1464 satır; **popülasyon sarmalayıcısı**
+ ├── run_population_experiment.py — 2056 satır; **popülasyon sarmalayıcısı**
  │                          (N ajan · G nesil · kol başına ayrı mera);
  │                          I0.3·I0.4·I0.6·I0.7·I1.1·I4.1 + checkpoint
  ├── analyze_population_run.py — 724 satır; dört seviyeye göre okuma;
  │                          **p-değeri üretmez** (test bekçiliğiyle)
- ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.4);
+ ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.6);
  │                          ABORT/FLAG modları
  ├── tool_identity.py      — 299 satır; koşumun alet kimliği; yüklenen
  │                          ağırlığı ve ayarları raporlar (+ cuda_allocator)
@@ -705,11 +738,12 @@ Groq Llama-3.1-8b-instant · (ops.) local 4-bit Llama-3.1-8B + peft · LangSmith
 | Per-agent adapter (ADIM 3) | `test_per_agent_adapter.py` |
 | PPR retrieval (ADIM 4) | `test_ppr_retrieval.py` |
 | Precision PE (ADIM 5) | `test_precision_pe.py` (rolling-history suite) |
-| **Collect (v2.4.4 branch)** | **384 passed, 2 deselected** |
+| **Collect (v2.6)** | **636 passed, 2 deselected** |
 
 *(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” / v2.4.1’deki
-“206” sayıları önceki kesitler; bu belge **bu branch collect=384** ile
-kilitlenir.)*
+“206” / v2.4.4’teki “384” sayıları önceki kesitler; bu belge **collect=636**
+ile kilitlenir. Artış çoğunlukla popülasyon yolunun kapıları ve K2/K3/K5
+disiplininden geliyor — her düzeltme testiyle ve mutasyon turuyla girdi.)*
 
 **NLI flake ÇÖZÜLDÜ (`3d760e8`):** unit path mock HF; gerçek model
 `@pytest.mark.integration` (günlük suite dışı). Kök neden: HF Hub canlı
@@ -1148,6 +1182,11 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.4** | **2026-08-07** | Precision fix (`231c222`: rolling history + `VAR_REF`); memory vault seed API (`apply_generation`); inherited somatic scale EW tüketimi; **206 test**. `.html`/`.pdf` henüz yenilenmedi. |
 | **2.4.1** | **2026-08-08** | Oturum kapanışı. Zincir: `231c222` precision+vault · `a1ec2b4` crisis wiring · `c9bdbaf` adapter cleanup · `3d760e8` NLI flake · `2528e79` dual smoke_gates. Smoke: v1 (`protocol_c_prime_precision_smoke.json`, seeds 9101–9103, evt=10) **INCONCLUSIVE** / instrument starvation · v2 exploratory all-audit (aynı JSON) · **v3 (`…_smoke_v3.json`, seeds 9201–9203, evt=22) RESMİ PASS** (n_pe=396, sat=0.0025, π_n=14, null_clean, n_gated=0). Precision davranışsal doğrulandı. ΔPE lived≈0.107 informal only (N=3; güç yok; “etki doğrulandı” yasak). Sıradaki = multi-gen pre-reg (§23). **206 test**. Push yok. `.pdf` md ile senkron; `.html` henüz stale. |
 
+| **2.4.2** | **2026-08-11** | §24 preflight değişmez sistemi + §25 karar kaydı sistemi eklendi (v2.4.1'de **hiç yoktu**). Yanlışlar yerinde ⚠ ile işaretlendi: `W=10` beş yerde · greedy plato reçetesi · §21 NLI satırı. **Anlatı yeniden yazılmadı.** |
+| **2.4.3** | **2026-08-12** | Faz C belge borcu: §23 baştan yazıldı · D-045…D-053 · consolidation anlatısı ilk ölçülen `deleted_count` ile · `.html`/`.pdf` yeniden üretildi (29 sayfa). B2 sonucu **alet null'ı** olarak sınıflandı. |
+| **2.4.4** | **2026-08-13** | **§26 — evrenin fiziği değişti** (D-054…D-068): metabolik döngü kapandı, ölüm eşiği bağlandı, kasa saati düzeldi. B2 öncesi empirik tablo **karşılaştırılamaz** ilan edildi. |
+| **2.5** | **2026-08-18** | **§27 — popülasyon makinesi ve ikinci ön-kayıt** (D-069…D-122). Tek soy → popülasyon, sabit `w` → değişken `w`. `PREREGISTRATION_2.md` kilitlendi (`72df476ebd54`). `.html`/`.pdf` yeniden üretildi (34 sayfa). |
+| **2.6** | **2026-08-20** | **§28 — C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). C2 = **evren null'ı**; sebebi ölçüldü (kurucu nesil dejenere, farklılaşmanın tek kaynağı adapter). Üçüncü ön-kayıt taslağı **kilitlenemedi** (D-145). Sonda-3 ve tanımlılık pilotu koştu ⇒ alan `energy`, **G = 4**, kurucu nesil **ısınma**. ⭐ **Fizik yeniden değişti:** stoka oranlı hasat tavanı (D-162/D-163). Kapılar 6 → **9**; suite **636**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 ---
 
 ## 23. Nerede Duruyoruz (v2.4.3 — baştan yazıldı)
@@ -1577,3 +1616,232 @@ tohumlar (**9911–9913**).
 
 ⚠ **Birinci ön-kayıt yürürlükte kalır** — ayrı bir deneyi bağlar, bu belge onu
 geçersiz kılmaz.
+
+---
+
+## 28. D-123…D-163: C2'nin null'ı, teşhis zinciri ve Katman 1 (v2.6 — yeni)
+
+⚠ **Bu bölüm §27'nin devamıdır.** §26 evrenin fiziğinin değiştiğini, §27
+deneyin popülasyona geçtiğini anlatıyordu. Burada anlatılan şey **ikinci
+ön-kaydın koşulması, sonucunun ne olduğu, ve o sonucun fiziği ikinci kez
+değiştirmesi**.
+
+⛔ **Bu bölümden sonra, §10'un hasat kuralı dahil, belgenin fizik anlatısının
+bir kısmı tarihçedir** — ilgili yerlere işaret kondu.
+
+---
+
+### 28.1 C2 koşuldu: sonuç **evren null'ı** (D-123)
+
+`dau_runs/c2_population_n8_g3_s3.json` · tohum 9911–9913 · N=8 · G=3 ·
+30 olay · **5 sa 53 dk** · `run_quality = clean` · 6/6 kapı · I4.1 replay
+**identical** · pozitif kontrol **hareket etti**.
+
+⇒ *"Ölçemedik"* ile *"ölçtük, yoktu"* **ilk kez ayrıldı** — ve cevap
+ikisinden de farklı çıktı:
+
+> **18 Price satırının yalnız 4'ü ölçülebilirdi.** Seviye 1 **kurulamadı**;
+> tanımlı terim **tek tohumdaydı**.
+
+⚠ Bu, B2'nin *"alet null'ı"*ndan **kategorik olarak farklı** bir sonuçtur:
+alet çalıştı, **uç nokta ölçmedi**.
+
+### 28.2 Sebep tek cümleye indi (D-129/D-130)
+
+> Farklılaşmanın tek kaynağı **adapter**. Sıralı erişim ancak **kıtlıkta**
+> ısırır, kıtlık ancak davranış farkıyla doğar, davranış farkı ancak
+> adapter'la. ⇒ `null` kolu zengin nişte **donmuş klon popülasyonu**.
+
+Bunun iki doğrudan sonucu oldu:
+
+- **D-131 — birincil karşıtlık değişti:** `lived ↔ shuffle`; `null`
+  **betimleyici**. İki fizik kaldıracı (kapasite · kriz eşiği) **aritmetikle
+  elendi**, çünkü bu evrende kıtlık ile kriz **aynı olay**tır (D-081).
+- **D-132/D-133 — yön arayışı:** DR #11 ajan-ajan etkileşimini önerdi.
+  ⛔ **D-135 onu GPU'suz eledi:** sosyal kuplaj özdeş ajanlarda simetriyi
+  **kırmıyor** — bir **çarpan**, kaynak değil. Faz 1 **iptal**.
+
+### 28.3 `z`'nin tek boyutluluğu ölçüldü (D-136 · D-137 · D-138)
+
+`z` dört alanlı görünüyordu; ölçüm üç şey söyledi:
+
+1. `social`/`uncertainty` **ölü değil** — C2'nin *"sıfır kez"*i bir **argmax
+   artefaktı**ydı.
+2. ⛔ **Ama dört sayı dört boyut değil:** spillover **tekdüze** (`PE × 0.20`)
+   ⇒ üç eksen birincilin **ölçekli kopyası**.
+3. ⛔ **Ve matris çözüm değil:** birincil eksen `k` **192/192** olayda
+   `resource_load`'a kilitli ⇒ asimetrik matris skalerin **üç kopyalı hâli**
+   olurdu; eşiği de geçirmiyordu (`M` 0.820·PE → 0.839·PE, **+%2.29**,
+   tepeler 0.62 → 0.634, kapı 0.70).
+
+⇒ **GAP-10 karara bağlandı (D-137, Yasin): skaler kalıyor, sınır ilan
+ediliyor.** `z` **etkin olarak tek boyutludur**; kovaryans drift'in
+**büyüklüğü** üzerinedir, **alanı** üzerine değil (ön-kayıt L3).
+⏸ Yeniden açılma tetiği: **`k` ajanlar arasında değişkenleşirse.**
+
+### 28.4 Üçüncü ön-kayıt: yazıldı, **kilitlenemedi** (D-144 · D-145)
+
+📝 `docs/PREREGISTRATION_3.md`. Beş slot kapandı, iki **eş-birincil** uç nokta
+tanımlandı (D-143): **`ΔP_active`** (ölçülebilirlik) ve **`ΔCov_cond`**
+(koşullu seçilim). Test birimi **tohum** (D-140/D-141, Lazic 2010 —
+pseudoreplication).
+
+⛔⛔ **Kilit öncesi denetim durdurdu (D-145) — dört kusur.** Üçü sonradan
+ölçümle kapandı, biri kısmen:
+
+| # | kusur | bugünkü durumu |
+|---|---|---|
+| 1 | Birincil alan `energy` C2'de 15 hücrenin 1'inde ölçülebilirdi | ✅ **kapandı (D-161)** — o ölçüm **eski fizikten**miş; bugünkü fizikte 2/3 tohum kullanılabilir |
+| 2 | Alan **kola değil TOHUMA** bağlı | ✅ **kapandı (D-161)** — `energy` sabit kalıyor, atılan tohum oranı **ölçüldü** |
+| 3 | `ΔP_active` sıfır-şişkin ⇒ S=12'de reddedebilme ihtimali **%6.6** | ⚠️ **kısmen** — **tavan** hâli gerçekleşmedi (12 hücrenin 5'i aktif), **taban** açık |
+| 4 | Bir kol-tohumun **hiç** Price satırı olmayabilir | ✅ **kapandı (D-159)** — **I5.5** kapısı yakalıyor |
+
+### 28.5 Darboğaz ölçüldü: bütçe değil, uç nokta (D-146)
+
+`F_agent` **%78** · sürekli nicelik **%78** · ⛔ `z` **%25** ⇒ **seçilim
+makinesi çalışıyor**, ölü olan tek şey **uç noktanın eşikli olması**.
+
+### 28.6 Kapılar bağlandı ve anında kusur buldular (D-149 · D-159)
+
+⛔ **D-147/AV-3 ölçtü: 26 kapının yalnız 6'sı popülasyon yolunda bağlıydı.**
+
+| kapı | bağlandığında ne buldu |
+|---|---|
+| **I4.2** (D-149) | Kollar nesil 2+'ye **farklı RNG durumundan** giriyor (GAP-12) — FLAG, çünkü öncül ölçülmemişti; sonda-3 öncülü **doğruladı** |
+| **I5.4** (D-149) | ⛔⛔ C2'de **144 varisin 0'ında** somatik ölçek — buna karşılık anılar geçmiş (~10/varis) ve adapter geçmiş (96/144). **Kanal 1'in engram yarısı çalışıyor, somatik yarısı çalışmıyor** (GAP-3). ⚠ Ve C2 bunu **`clean`** raporlamıştı |
+| **I5.5** (D-159) | ⛔ Bağlandığı gün C2'nin puanlanan **6 geçişinin 5'ini ölü** buldu — yine `clean` raporlanmış bir koşumda |
+| **I5.6** (D-163) | Katman 1'in kendi bekçisi (§28.10) |
+
+⇒ ⭐ **K6 bağlayıcı kural oldu (D-151/D-153):** *"kayda geçen kusur, bir
+KAPIYA bağlanmadıkça kapanmamıştır."* Bedeli ölçüldü: D-086'nın Bulgu 2'si
+sekiz oturum boyunca *"biliniyordu"* diye durdu ve C2 yine `clean` raporladı.
+
+### 28.7 Fitness bantları göreli yapıldı (D-152)
+
+⛔ **Kök:** eşikler mutlaktı ve C2'de **216 ajanın 216'sı** `normal`'e
+düşüyordu ⇒ miras uyarısı dalı **ulaşılamaz**.
+
+✅ **Düzeltme, hiçbir eşik DEĞERİ değişmeden:** bantlar hücre içi **göreli
+konuma** uygulanıyor (D-088'in deseni — *"çıta kalibre edildiği niceliğe
+uygulanır"*). ⛔ **Yasak referans testle çivilendi:** bant turnuva sonucundan
+(`w`) türetilemez — türetilseydi `Cov(w, z)` kısmen özdeşlik olurdu
+(D-075'in totolojisi).
+
+### 28.8 İki koşum, iki karar (D-155 · D-161)
+
+**Sonda-3** (tohum 9916, G=3, 2 sa 10 dk) ve **tanımlılık pilotu** (9917–9919,
+G=4, 6 sa 11 dk) — ikisi de **ön-taahhütle**, okuma kuralları koşumdan **önce**
+commit edilerek koşuldu (D-154/D-160).
+
+| soru | cevap |
+|---|---|
+| Sürekli uç nokta (`to_landmark.max`) girsin mi? | ❌ **hayır** — 2/4 (kural ≥3/4). Üç şart yerine getirilerek yeniden açıldı, taze veriyle sınandı, **yine reddedildi** ⇒ kapalı soru |
+| Birincil alan? | ✅ **`energy` kalıyor** — 2/3 tohum kullanılabilir |
+| Kaç nesil? | ✅ **G = 4** |
+| Somatik kanal? | ✅ **I5.4 ilk kez geçti** — 144 varisin **34'ü** |
+
+⭐⭐ **Pilotun en büyük kazancı bir felaketin önlenmesi:** birinci puanlanan
+geçiş (gen2→gen3) **üç tohumun üçünde de** kullanılamaz çıktı ⇒ ön-kayıtın o
+güne kadar ilan ettiği **`G = 3` ile bu üç tohumun hiçbiri kullanılabilir
+olmazdı (0/3)**. S=12 · G=3'lük ~24 saatlik koşum **sıfır kullanılabilir
+tohumla** bitebilirdi.
+
+⭐ **Ve GAP-3'ün sebebi bulundu:** somatik miras **birinci varis kuşağında
+yapısal olarak sıfır** (0/48; sonda-3'te de 0/16), çünkü onların ebeveynleri
+**kurucular** ve hepsi özdeş ⇒ **düz hücrede göreli bant kimseyi `low`/`high`
+yapamıyor**. ⇒ **Kurucu neslin dejenerasyonu iki ayrı arızayı üretiyor.**
+
+### 28.9 Kurucu nesil ısınma neslidir (D-156 · D-157)
+
+✅ **Ölçüldü:** **4 tohum · 3 kol · 11 kurucu hücre, ölçülebilir olan 0** — ve
+**iki ayrı fizikte** (D-152 öncesi/sonrası) aynı.
+
+⇒ 🔒 **Kapsam kısıtı (YENİ-4):** Price yalnız ebeveyni **gen ≥ 2** olan
+geçişlerden okunur ⇒ kullanılabilir geçiş **G − 2**.
+⛔ **Bu bir düzeltme değil, ilan edilmiş bir kısıttır** — tasarım kurucu
+nesildeki seçilim hakkında **hiçbir şey söylemez** (L21).
+
+### 28.10 ⭐⭐ Katman 1 — fizik ikinci kez değişti (D-162 · D-163)
+
+⚠ **Teşhis önce yanlış kondu, sonra düzeltildi ve düzeltme kayda geçti.**
+İlk okuma *"kıtlık ısırmıyor"* idi; ölçüm bunu **çürüttü**: 34 nesil
+hücresinin **22'sinde** havuz **tamamen çöküyor**. Hatanın kaynağı **tek bir
+sayıdan zincir kurmak**tı (K4).
+
+⭐ **Belirleyici ölçüm teşhisi tersine çevirdi:** havuzun çöktüğü tohumda
+(s9917) kurucular **ayrışıyor** (3 farklı `F_agent`, 3 farklı `Δhavuz`,
+2 farklı ömür); çökmediği üç tohumda **bit düzeyinde özdeş**.
+
+> ✅ **P0-① (sıralı erişim) bozuk değil.** ❌ **Sorun havuzun iki kararlı
+> durumda olması:** ya çöker ya hiç ısırmaz — **arada rejim yok.**
+
+⇒ **Değiştirilen şey kıtlığın varlığı değil, biçimi** (§10'daki yeni kural).
+
+**Sabitin türetmesi ve reddedilen alternatif:**
+
+| aday | türetme | denge | sonucu |
+|---|---|---|---|
+| A | `DEFECT / POOL_INIT = 0.10` | 0.333 | ❌ kriz eşiğinin (0.30) **üstünde** ⇒ kriz kanalı **ölür** |
+| B | `REGEN × (1 − KRİZ) = 0.105` | 0.300 | ❌ eşiğin tam üstünde ⇒ yine ölür |
+| **D** ✅ | **`REGEN × (1 − ÇÖKÜŞ) = 0.1425`** | **0.050** | ✅ kriz **15/30 olayda** aktif |
+
+⚠ **Ders (D-163 §6):** *bir sabitin türetmesinin temiz olması onu doğru
+yapmıyor.* A da B kadar temiz türetilmişti ve ikisi de bir kanalı
+öldürüyordu. ⇒ **Bundan sonra bir havuz/hasat sabiti önerilirken denge noktası
+ve hangi eşiklerin altında/üstünde kaldığı aynı kayda yazılır.**
+
+**Ölçülen etki (gerçek `step_pool`, 8 ajan, hepsi DEFECT):**
+
+| | sabit kota (eski) | stoka oranlı tavan (bugün) |
+|---|---|---|
+| ilk eksik alma | olay **17** | olay **6** |
+| **landmark penceresinde yayılım** | ❌ **0.0000** | ✅ **0.3923** |
+| olay 30'da havuz | **0.000** (soğurucu) | **0.179**, tabana yaklaşıyor |
+
+⭐⭐ **Tablonun asıl satırı ortadaki:** birincil uç noktanın okunduğu **landmark
+anında**, eski fizikte ortamdan gelen ayrışma **tam olarak sıfırdı**. C2'nin
+ve sonda-3'ün *"kurucular bit düzeyinde özdeş"* sonucu **tek bir sayıya** indi.
+
+**İki yapısal sonuç:**
+1. **Çöküş soğurucu olmaktan çıktı** ⇒ bütün ajanların aynı anda ölmesi bitti,
+   **ömür farkı** doğdu.
+2. ⛔ **Orantılı paylaştırma dalı ulaşılamaz** hâle geldi (`capped toplam ≤
+   r × available < available`). **Silinmedi** — tavan yükseltilirse taşma
+   koruması — ama **ulaşılmazlığı testle sabitlendi**, çünkü herkesin
+   çalıştığını sandığı ama hiç açılmayan bir kapı D-088'in kazdığı hatanın ta
+   kendisidir.
+
+**Bekçisi — `I5.6` (FLAG):** her nesilde en az bir olayda `talep > alınan`,
+**ve** ilk eksik alma `LANDMARK_EVENT`'ten **önce**. ⚠ İki kusur **ayrı**
+raporlanır: *hiç bağlamadı* (katman hiçbir şey yapmadı) ile *geç bağladı*
+(çalıştı ama uç noktanın penceresi dışında).
+
+### 28.11 Katman planı — iddia nasıl genişleyecek
+
+⛔ **Bir katman bitmeden diğeri açılmaz** — birlikte değiştirilirse hangisinin
+işe yaradığı **bilinemez**.
+
+| # | katman | kaldırdığı sınır | iddia ne kazanır |
+|---|---|---|---|
+| **1** ✅ | Kademeli kıtlık | *"farklılaşmanın tek kaynağı adapter"* | ⭐ **İz yaşamaktan doğuyor** — aksiyomun çekirdeği |
+| 1-b | *(yan ürün, ölçülecek)* | **L12** — `null` donmuş klon | Sürüklenme ile seçilim **ayrılabilir** |
+| 2 | `k` değişkenleşsin | **L3** — `z` tek boyutlu | Drift'in **içeriği**, yalnız büyüklüğü değil |
+| 3 | Karar kanalı katılsın | **L18** — davranış çökük | **Kararlar** da ayrıştırıyor |
+| 4 | Birikimli kalıtım | **L10/L11** | Nesiller arası eğilim |
+
+⚠ **Katman 3'ün meşru tek yolu dünyayı pahalı yapmaktır** — *"davranışı
+düzelt"* K7'yi ihlal eder. D-090 ölçtü ki `cooperate` bölgesi **var** (düşük
+enerji + travma-bilgili durum), ajanlar oraya **girmiyor**.
+
+### 28.12 ⚠ Bu bölümün ilan ettiği sınırlar
+
+- **Bütün sayılar sıfırlandı.** Katman 1 bir fizik değişikliğidir ⇒ pilot,
+  sonda-3 ve C2 **bugünün aletiyle karşılaştırılamaz**.
+- **Hipotez hakkında hâlâ sıfır kanıt var.** B2 *"alet null'ı"*, C2 *"evren
+  null'ı"* verdi; üçüncü koşum **henüz koşulmadı**.
+- **En eski borç ödenmedi:** *"en küçük anlamlı etki"* DR #1'den beri açık.
+  D-140 yöntemi çözdü (bütçe-kısıtlı duyarlılık analizi, Lakens) ama eşik
+  **ilan edilmedi**.
+- **Tohum bağımlılığı ciddi:** 3 tohumun biri (s9917) hem kovaryansta hem
+  somatik kanalda sıfır verdi.
+- **`.html` / `.pdf` v2.5'te kaldı** — v2.6 yalnız `.md`.
