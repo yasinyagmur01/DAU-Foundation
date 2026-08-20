@@ -167,6 +167,9 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ## ⬜ 3.0 · Katman 1 pilotu — tavan işe yaradı mı
 
+⚠️ **Tam talimat `CLAUDE.md` §1'de** (*"devam et" = KATMAN 1 PİLOTU*) — komut, üç kural, koşum sonrası adımlar ve tehlikeler orada tek blokta.
+Aşağısı özettir; **çelişki olursa `CLAUDE.md` geçerlidir** (D-001).
+
 **Ön-taahhüt D-162 §5'te commit'li** (P1'in eşiği D-163 §7'de güncellendi).
 
 ```
