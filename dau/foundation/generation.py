@@ -57,6 +57,45 @@ SOMATIC_SCALE_KEY: str = "somatic_scale"
 TRANSFER_KIND_STANDARD: str = "standard"
 TRANSFER_KIND_INHERITED_WARNING: str = "inherited_warning"
 
+# ---------------------------------------------------------------------------
+# Transfer gate census (D-155/D-157 · queue 2.5) — reporting only
+# ---------------------------------------------------------------------------
+# D-155 measured that 0 of 32 heirs carried a somatic scale while three links
+# of the chain demonstrably worked (relative bands populate low/high, the
+# trauma threshold is crossed in 48 of 48 lives, and low-band parents do
+# reproduce). Which of the REMAINING gates swallows the candidate was an
+# inference, not a measurement — the results file carried no recall count and
+# no per-gate tally, so "known" and "unknown" were indistinguishable (K6).
+#
+# ⛔ These counters are written by the gate itself, never re-derived beside it:
+# a second function that re-implements the branch conditions would be §2.8's
+# error and could agree with a gate that no longer exists.
+GATE_KEY_CANDIDATES: str = "candidates"
+GATE_KEY_DROPPED_RECALL: str = "dropped_recall"
+GATE_KEY_TRAUMA: str = "trauma"
+GATE_KEY_WARNING_LOW: str = "warning_low"
+GATE_KEY_DROPPED_SALIENCE: str = "dropped_salience"
+GATE_KEY_WARNING_HIGH: str = "warning_high"
+GATE_KEY_DROPPED_DRIFT: str = "dropped_drift"
+GATE_KEY_STANDARD: str = "standard"
+
+TRANSFER_GATE_KEYS: tuple[str, ...] = (
+    GATE_KEY_CANDIDATES,
+    GATE_KEY_DROPPED_RECALL,
+    GATE_KEY_TRAUMA,
+    GATE_KEY_WARNING_LOW,
+    GATE_KEY_DROPPED_SALIENCE,
+    GATE_KEY_WARNING_HIGH,
+    GATE_KEY_DROPPED_DRIFT,
+    GATE_KEY_STANDARD,
+)
+
+
+def new_transfer_gate_report() -> dict[str, int]:
+    """A zeroed census. Every key present, so absent ≠ zero in the results."""
+
+    return {key: 0 for key in TRANSFER_GATE_KEYS}
+
 DEFAULT_REWARD_MARKER: float = 0.0
 DEFAULT_THREAT_MARKER: float = 0.0
 # Heir vault stamp at lineage handoff (matches MemoryStore.SEED_BIRTH_COUNTER_DEFAULT).
@@ -103,6 +142,10 @@ class GenerationRecord:
     transfer_timestamp: int = 0
     inherited_warning_ids: list[str] = field(default_factory=list)
     inherited_somatic_scales: dict[str, float] = field(default_factory=dict)
+    # D-158 / queue 2.5. Where this life's candidates were lost. Reporting
+    # only — nothing downstream reads it, and the gate's behaviour does not
+    # depend on whether anyone asked for the census.
+    transfer_gate_report: dict[str, int] = field(default_factory=dict)
 
 
 def _legacy_select_for_transfer(
@@ -135,6 +178,7 @@ def select_for_transfer(
     reward_marker: float = DEFAULT_REWARD_MARKER,
     threat_marker: float = DEFAULT_THREAT_MARKER,
     f_agent_reference: list[float] | None = None,
+    gate_report: dict[str, int] | None = None,
 ) -> list[TransferCandidate]:
     """Keep only memories that earned survival into the next generation.
 
@@ -148,6 +192,15 @@ def select_for_transfer(
     longer decides. See the comment on the gate below for why fitness belongs
     on which-memories rather than whether-any.
     """
+
+    # D-158 / queue 2.5. A local sink when nobody asked, so every branch below
+    # writes unconditionally: a branch that only counts "when reporting is on"
+    # is a second code path, and the one that runs in the real experiment
+    # would be the untested one (K3).
+    census = new_transfer_gate_report() if gate_report is None else gate_report
+    for key in TRANSFER_GATE_KEYS:
+        census.setdefault(key, 0)
+    census[GATE_KEY_CANDIDATES] += len(memories)
 
     if f_agent is None:
         return _legacy_select_for_transfer(memories, drift_state)
@@ -173,10 +226,14 @@ def select_for_transfer(
     selected: list[TransferCandidate] = []
     for candidate in memories:
         if candidate.recall_count < GENERATION_MIN_RECALL:
+            census[GATE_KEY_DROPPED_RECALL] += 1
             continue
 
         trauma = is_trauma(candidate.record)
+        if trauma:
+            census[GATE_KEY_TRAUMA] += 1
         if band == FITNESS_LABEL_LOW and trauma:
+            census[GATE_KEY_WARNING_LOW] += 1
             candidate.inherited_warning = True
             candidate.somatic_scale = -WARNING_SOMATIC_SCALE
             selected.append(candidate)
@@ -214,9 +271,11 @@ def select_for_transfer(
         )
         candidate = replace(candidate, w_transfer=w_transfer)
         if candidate.memory_score < GENERATION_TRANSFER_THRESHOLD:
+            census[GATE_KEY_DROPPED_SALIENCE] += 1
             continue
 
         if trauma and band == FITNESS_LABEL_HIGH:
+            census[GATE_KEY_WARNING_HIGH] += 1
             selected.append(
                 replace(
                     candidate,
@@ -231,8 +290,10 @@ def select_for_transfer(
                 drift_state.magnitudes.get(domain, 0.0)
             )
             if drift_magnitude < DRIFT_TRANSFER_MIN:
+                census[GATE_KEY_DROPPED_DRIFT] += 1
                 continue
 
+        census[GATE_KEY_STANDARD] += 1
         selected.append(
             replace(candidate, transfer_kind=TRANSFER_KIND_STANDARD)
         )
@@ -326,6 +387,7 @@ def consolidate_generation(
     if not isinstance(drift, DriftState):
         drift = DriftState()
 
+    gate_report = new_transfer_gate_report()
     selected = select_for_transfer(
         candidates,
         drift,
@@ -333,6 +395,7 @@ def consolidate_generation(
         reward_marker=reward_marker,
         threat_marker=threat_marker,
         f_agent_reference=f_agent_reference,
+        gate_report=gate_report,
     )
     warning_candidates = [
         c
@@ -355,6 +418,7 @@ def consolidate_generation(
             )
             for c in warning_candidates
         },
+        transfer_gate_report=gate_report,
     )
 
 

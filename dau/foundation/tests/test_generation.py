@@ -360,3 +360,129 @@ def test_generation_record_roundtrip_preserves_warning_fields() -> None:
         "m1": -WARNING_SOMATIC_SCALE,
     }
     assert restored.retrieval_context[0][INHERITED_WARNING_KEY] is True
+
+
+# ---------------------------------------------------------------------------
+# D-158 / queue 2.5 — the transfer-gate census
+# ---------------------------------------------------------------------------
+
+
+def test_gate_census_separates_the_four_ways_a_memory_is_lost() -> None:
+    """⭐ D-158. D-155 measured 0 of 32 heirs with a somatic scale but could
+    not say WHICH gate swallowed the candidates, so the diagnosis stayed an
+    inference. The census exists for exactly that question, so its test has to
+    drive every branch and check they land in DIFFERENT counters — a census
+    that lumps two causes together answers nothing.
+
+    ⚠ K2: one candidate cannot test a function that aggregates over candidates.
+    Four candidates, four distinct fates, in one call.
+    """
+
+    from dau.foundation.generation import (
+        GATE_KEY_CANDIDATES,
+        GATE_KEY_DROPPED_DRIFT,
+        GATE_KEY_DROPPED_RECALL,
+        GATE_KEY_DROPPED_SALIENCE,
+        GATE_KEY_STANDARD,
+        GATE_KEY_TRAUMA,
+        new_transfer_gate_report,
+    )
+
+    never_recalled = _candidate(
+        0.2, memory_score=0.9, recall_count=0, record_id="m-recall"
+    )
+    too_dull = _candidate(
+        0.2, memory_score=0.1, recall_count=1, record_id="m-salience"
+    )
+    trauma_without_drift = _candidate(
+        0.9, memory_score=0.9, recall_count=1, record_id="m-drift"
+    )
+    plain_keeper = _candidate(
+        0.2, memory_score=0.9, recall_count=1, record_id="m-standard"
+    )
+
+    census = new_transfer_gate_report()
+    selected = select_for_transfer(
+        [never_recalled, too_dull, trauma_without_drift, plain_keeper],
+        DriftState(),  # no drift magnitude ⇒ the trauma path closes
+        f_agent=0.5,
+        f_agent_reference=[0.0, 0.5, 1.0],  # relative band ⇒ `normal`
+        gate_report=census,
+    )
+
+    assert [c.record_id for c in selected] == ["m-standard"]
+    assert census[GATE_KEY_CANDIDATES] == 4
+    assert census[GATE_KEY_DROPPED_RECALL] == 1
+    assert census[GATE_KEY_DROPPED_SALIENCE] == 1
+    assert census[GATE_KEY_DROPPED_DRIFT] == 1
+    assert census[GATE_KEY_STANDARD] == 1
+    # The trauma tally counts the CLASS, not a fate: it is the quantity
+    # D-155 §2 could not cross-check against the PE-delta channel (§2.11).
+    assert census[GATE_KEY_TRAUMA] == 1
+
+
+def test_gate_census_names_which_band_issued_the_warning() -> None:
+    """⭐ D-158. The two inherited-warning paths are NOT interchangeable: the
+    low band skips the salience bar, the high band does not (D-152 §L20). If
+    the census merged them, a run where only the high path fires would look
+    like the low path works — which is the exact confusion D-155 §2 was left
+    with.
+
+    ⚠ K2: two calls with two different bands, same candidate.
+    """
+
+    from dau.foundation.generation import (
+        GATE_KEY_WARNING_HIGH,
+        GATE_KEY_WARNING_LOW,
+        new_transfer_gate_report,
+    )
+
+    cell = [0.1, 0.5, 0.9]  # spread ⇒ relative bands are reachable
+
+    low_census = new_transfer_gate_report()
+    select_for_transfer(
+        [_candidate(0.9, memory_score=0.1, recall_count=1, record_id="t")],
+        DriftState(),
+        f_agent=0.1,  # bottom of the cell ⇒ low band
+        f_agent_reference=cell,
+        gate_report=low_census,
+    )
+    high_census = new_transfer_gate_report()
+    select_for_transfer(
+        [_candidate(0.9, memory_score=0.9, recall_count=1, record_id="t")],
+        DriftState(),
+        f_agent=0.9,  # top of the cell ⇒ high band
+        f_agent_reference=cell,
+        gate_report=high_census,
+    )
+
+    assert low_census[GATE_KEY_WARNING_LOW] == 1
+    assert low_census[GATE_KEY_WARNING_HIGH] == 0
+    assert high_census[GATE_KEY_WARNING_HIGH] == 1
+    assert high_census[GATE_KEY_WARNING_LOW] == 0
+
+
+def test_gate_census_reaches_the_consolidation_call_site(store) -> None:
+    """⚠ K3. The census is worthless if it only exists when a test passes a
+    dict in by hand — the experiment calls `consolidate_generation`, which
+    must open the census itself and hang it on the record it returns.
+    """
+
+    agent = _agent("census-life", generation=1)
+    deep = _delta(0.55, domain="resource", timestamp=5)
+    record_id = store.write_record(deep, agent.agent_id)
+    assert record_id
+    store.update_activation(record_id, now_counter=6)
+    agent.delta_log.append(_delta(0.55, timestamp=6))
+
+    package = consolidate_generation(agent, store, f_agent=0.5)
+
+    from dau.foundation.generation import (
+        GATE_KEY_CANDIDATES,
+        TRANSFER_GATE_KEYS,
+    )
+
+    assert set(package.transfer_gate_report) == set(TRANSFER_GATE_KEYS), (
+        "an absent key is indistinguishable from a zero in the results file"
+    )
+    assert package.transfer_gate_report[GATE_KEY_CANDIDATES] >= 1

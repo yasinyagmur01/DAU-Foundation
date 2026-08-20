@@ -12085,3 +12085,82 @@ tohuma bağlı olduğu sürece, kurucu nesli atmak tanımlılığı **kurtarmıy
 - §2 tablosu **eski fizik**; oran olarak taşınamaz, yalnız *"B yeterli mi"*
   sorusuna uyarı üretir.
 - Hiçbir sabit bu okumayla seçilmedi; B bir **kapsam** kararıdır.
+
+---
+
+## D-158 · 2026-08-20 · ✅ **Kuyruk 2.5 — aktarım kapısı sayaçlandı** (saf raporlama, GPU'suz)
+
+**Borç (D-155 §2, K6):** sonda-3 ölçtü ki **32 varisin 0'ı** somatik ölçek
+taşıyor, ama **hangi kapının** adayı yuttuğu sonuç dosyasından okunamıyordu ⇒
+teşhis **çıkarım** olarak kaldı. *"Biliniyordu"* ile *"bilinmiyordu"* arasında
+pratik fark yoktu.
+
+### 1. Ne yapıldı
+
+`select_for_transfer` artık geçtiği her adayı **kendi dallarında** sayıyor;
+sayaç `consolidate_generation` tarafından açılıyor, `GenerationRecord`'a
+takılıyor, koşucu **ajan satırına** `transfer_gates` olarak yazıyor.
+
+| sayaç | ne demek |
+|---|---|
+| `candidates` | kapıya giren aday sayısı |
+| `dropped_recall` | `recall_count < GENERATION_MIN_RECALL` ⇒ hiç hatırlanmamış |
+| `trauma` | recall'ı geçenler içinde **travma sınıfı** anı (bir kader değil, **sınıf** sayacı) |
+| `warning_low` | ⭐ **alt bant yolu** — uyarı doğdu, salience çıtası **atlandı** |
+| `dropped_salience` | `memory_score < GENERATION_TRANSFER_THRESHOLD` |
+| `warning_high` | ⭐ **üst bant yolu** — uyarı doğdu, ama çıtayı **geçtikten sonra** |
+| `dropped_drift` | travma ama `drift < DRIFT_TRANSFER_MIN` |
+| `standard` | normal aktarım |
+
+⭐ **Hesap değişmedi** — hiçbir dal, hiçbir eşik, hiçbir sıra. Sayaç
+eklenmeden önce ve sonra `select_for_transfer` **aynı listeyi** döndürüyor.
+
+### 2. §2.8 — rapor aleti **takip ediyor**, tekrar etmiyor
+
+⛔ **Reddedilen alternatif:** kapının yanında duran, koşulları **yeniden
+uygulayan** bir `transfer_gate_report(...)` fonksiyonu. Bu tam olarak §2.8'in
+hatası olurdu (U2/U3a deseni): rapor, artık var olmayan bir kapıyla
+**hemfikir** kalabilirdi. Sayaçlar **dalın içine** kondu.
+⚠ Ve sayaç **koşulsuz** yazılıyor — çağıran istemese bile yerel bir sink
+açılıyor — çünkü *"yalnız raporlama açıkken say"* ikinci bir kod yolu demek,
+ve gerçek deneyde koşan yol **test edilmemiş** olan olurdu (K3).
+
+### 3. Kontroller
+
+- **K2** ✅ — dört aday, **dört farklı kader**, tek çağrıda; ve iki farklı
+  **bantla** iki ayrı çağrı (alt/üst uyarı yolları ayrı sayılmalı, çünkü
+  ikisi salience çıtası karşısında **farklı davranıyor**). Koşucu testi
+  **iki ajanlı**.
+- **K3** ✅ — iki ayrı çağrı yeri testi: `consolidate_generation` sayacı
+  **kendisi açıyor mu**, ve sayaç **sonuç dosyasına** ulaşıyor mu.
+- **K5** ✅ — **8 mutasyon, 8 doğru test kırılması.** Her turda md5
+  doğrulandı (`generation.py` tabanı `1d9343d2`, geri yükleme birebir),
+  `-p no:cacheprovider`, `__pycache__` **silindi**, `PYTHONDONTWRITEBYTECODE=1`
+  (D-148'in üç şartı).
+
+| # | mutasyon | sonuç |
+|---|---|---|
+| Q1 | `dropped_recall` sayacı kaldırıldı | 1 failed ✅ |
+| Q2 | `dropped_salience` kaldırıldı | 1 failed ✅ |
+| Q3 | `dropped_drift` kaldırıldı | 1 failed ✅ |
+| Q4 | alt bant uyarısı **üst bant diye** sayıldı | 1 failed ✅ |
+| Q5 | sayaç `GenerationRecord`'a yazılmıyor | 1 failed ✅ |
+| Q6 | `standard` kaldırıldı | 1 failed ✅ |
+| Q7 | sayaç **sonuç dosyasına** yazılmıyor | 1 failed ✅ |
+| Q8 | girdi sayacı kaldırıldı | **2** failed ✅ |
+
+- **Suite:** `618 → 622 passed, 2 deselected`.
+
+### 4. Ne **ölçmedi** — ilan
+
+⛔ **Bu madde bir sayı üretmedi, bir soru üretilebilir hâle getirdi.** Sayaçlar
+ancak **gerçek bir koşumda** dolar; bugünkü değerleri stub kararlardan geliyor
+ve **hiçbir teşhis dayanağı değildir** (D-138'in PE_w doygunluğunda öğrenilen
+ders).
+⇒ **Bitti ölçütü karşılandı** (üç sayaçtan fazlası dosyada · K2 · K3 · K5),
+ama D-155 §2'nin sorusu (*"recall mi, `is_trauma` mı"*) **bir sonraki gerçek
+koşumda** cevaplanacak.
+
+⚠ **`trauma` sayacı §2.11'in iki okumasından `is_trauma(record)` olanıdır** —
+`n_at_or_above_trauma` (PE-delta kanalı) **başka bir niceliktir** ve sayaç
+onunla karıştırılmamalı. İkisinin örtüşmesi **hâlâ ölçülmedi**.

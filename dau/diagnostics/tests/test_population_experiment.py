@@ -2593,3 +2593,51 @@ def test_the_highest_of_a_cell_also_earns_a_warning() -> None:
         c.transfer_kind == TRANSFER_KIND_INHERITED_WARNING or c.inherited_warning
         for c in top
     ), "the high end of the cell earned nothing"
+
+
+def test_transfer_gate_census_reaches_the_results_file_per_agent(monkeypatch) -> None:
+    """⚠ K3 + K2 — D-158 / queue 2.5.
+
+    The census only pays for itself if it survives the trip to the results
+    file: D-155's whole problem was that the run reported `I5.4 never applied`
+    with no way to say which gate did the swallowing. A census that exists in
+    `generation.py` but not in the JSON leaves that question exactly where it
+    was.
+
+    K2 because the block is written per agent inside a comprehension over the
+    generation: with one agent, a version that reported the cell's totals under
+    every agent's name would pass.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    from dau.foundation.generation import (
+        GATE_KEY_CANDIDATES,
+        GATE_KEY_DROPPED_RECALL,
+        GATE_KEY_STANDARD,
+        TRANSFER_GATE_KEYS,
+    )
+
+    agents = results["arms"][0]["generations"][0]["agents"]
+    assert len(agents) == 2, "K2 needs two agents in the dimension being summed"
+    for agent in agents:
+        gates = agent["transfer_gates"]
+        assert set(gates) == set(TRANSFER_GATE_KEYS), (
+            "an absent key reads as zero — the two must stay distinguishable"
+        )
+        # The census is a partition of what entered the gate: every candidate
+        # is either dropped by one of the gates or kept by one of the outcomes.
+        accounted = sum(
+            v for k, v in gates.items()
+            if k not in (GATE_KEY_CANDIDATES,)
+        )
+        # `trauma` counts a class, not a fate, so it is not part of the split.
+        accounted -= gates["trauma"]
+        assert accounted == gates[GATE_KEY_CANDIDATES], (
+            f"census does not partition its own input: {gates}"
+        )
+        assert gates[GATE_KEY_DROPPED_RECALL] >= 0
+        assert gates[GATE_KEY_STANDARD] >= 0

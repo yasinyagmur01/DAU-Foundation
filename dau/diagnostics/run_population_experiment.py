@@ -1389,6 +1389,17 @@ def _run_arm_generations(
                         # (measured: the binding could be deleted and every
                         # test still passed).
                         "vault_bound": row.agent_id in vault.bound,
+                        # D-158 / queue 2.5. Where this parent's candidate
+                        # memories were lost on the way to the heir. D-155
+                        # could see that 0 of 32 heirs carried a somatic scale
+                        # but not WHICH gate swallowed them, so the diagnosis
+                        # stayed an inference. Written by the gate itself
+                        # (`select_for_transfer`), never re-derived here.
+                        "transfer_gates": dict(
+                            records[row.agent_id].transfer_gate_report
+                        )
+                        if row.agent_id in records
+                        else {},
                     }
                     for row in rows
                 ],
