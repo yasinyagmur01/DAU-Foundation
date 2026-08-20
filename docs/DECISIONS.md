@@ -12609,3 +12609,148 @@ gerçekte %40 ise 12 kullanılabilir tohum ~30 koşum tohumu ister.
 - ⚠️ **L11 (adapter sönümü)** dördüncü nesilde bir kat daha derin; Kural 2'nin
   sonucu bu etkiyi **içerir**, ondan ayrıştırılamaz.
 - **9917–9919 harcandı** ⇒ deneyin tohumları **9920+**.
+
+---
+
+## D-162 · 2026-08-20 · ✅ **KATMAN 1 KARARI: kademeli kıtlık** + 🔒 **K1 kontrolü ve ön-taahhüt — KODA DOKUNULMADAN ÖNCE yazıldı**
+
+**Yetki:** Yasin, 2026-08-20: *"onaylıyorum"* — `docs/PHYSICS_LAYER_PROPOSAL.md`
+§6'nın üç sorusu. Üçüncüsünde (pilot boyu) iki seçenek sunulmuştu; **önerilen
+olan alındı: 3 tohum, G = 4.**
+
+⚠️ **Bu kayıt kod değişmeden önce commit edilmiştir.** Sırası kasıtlıdır
+(D-154/D-156/D-160 deseni): sonra yazılsaydı kuralı çıktıya göre seçmiş
+olurdum (§2.7 / L9).
+
+---
+
+### 1. ⛔ Önce: bu kararın dayandığı teşhis **düzeltildi**
+
+Bu katmanı *"kıtlık ısırmıyor"* gerekçesiyle önermeye başlamıştım. **Kod ve
+veri ölçüldü, gerekçe yanlış çıktı** ve düzeltilmeden karara bağlanmadı.
+
+| iddia | durum |
+|---|---|
+| *"Havuz ısırmıyor"* | ❌ **YANLIŞ.** 34 nesil hücresinin **22'sinde** havuz tamamen çöküyor (`pool_ratio_end = 0.000`) |
+| *"P0-① çalışmıyor"* | ❌ **YANLIŞ.** Havuzun çöktüğü tohumda (s9917) kurucular **ayrışıyor**: 3 farklı `F_agent`, 3 farklı `Δhavuz`, 2 farklı ömür |
+| ⭐ **Doğrusu** | **Havuz iki kararlı durumda:** ya çöker (geç ve şiddetli) ya hiç ısırmaz. **Arada rejim yok.** 4 tohumun 3'ünde birinci nesilde hiç kıtlaşmıyor ⇒ kurucular bit düzeyinde özdeş |
+
+⚠️ **Hatanın kaynağı (K4):** sonda-3'ün **tek** sayısını (`0.757`, birinci
+nesil) genelledim. **Bir sayıdan zincir kurdum ve zincir çürüktü.**
+
+⇒ Bu, D-081'in *"kademeli kıtlık yok, kıtlık **anı** var"* tespitinin
+**doğrudan kanıtı**, ve değiştirilecek şey kıtlığın **varlığı değil biçimi**.
+
+---
+
+### 2. Karar — Katman 1
+
+**Stoka oranlı hasat tavanı.** Bir ajanın bir olayda alabileceği miktar,
+**sırası geldiğinde kalan** stokla orantılı bir tavana tabi olur:
+
+```
+cap_i    = EXTRACTION_LIMIT_RATIO × (kalan_stok / N)
+alınan_i = min(talep_i, cap_i, kalan_stok)
+```
+
+⭐ **Tavanın KALAN stoktan hesaplanması tasarımın çekirdeğidir** — ayrışmayı
+üreten şey budur. Rotasyon (D-104) farkın **kalıcı** olmasını engeller,
+**var olmasını** değil (D-079/D-083).
+
+⛔ **Talep (`EXTRACTION_DEFECT = 8.0`) DEĞİŞMİYOR.** Talep davranıştır; ona
+dokunmak **K7 ihlali** olurdu. Değişen şey **ortamın karnesi** — D-082 §P.5'in
+ölçütü budur ve aksiyomu ihlal etmez.
+
+### 3. ⭐ Sabit — yeni serbest parametre **yok**
+
+```
+EXTRACTION_LIMIT_RATIO = EXTRACTION_DEFECT / POOL_INIT = 8.0 / 80.0 = 0.10
+```
+
+**Türetme, sonuca bakmadan:** *"azami talebin, başlangıçtaki kişi başı stokta
+tam olarak bağlayıcı hâle geldiği oran."* Başlangıçta tavan **= talep** (eksik
+yok); stok bir adım düşer düşmez eksik alma **başlar** ve stokla birlikte
+**kademeli** büyür.
+
+⇒ Değer **iki mevcut sabitin oranı**; hiçbir koşum verisi girmiyor. §2.7
+karşılanıyor — `LANDMARK_EVENT`'in `METABOLIC_GRACE_EVENTS`'e bağlanmasıyla
+**aynı** türetme biçimi. Kodda **ifade olarak** yazılacak, sayı olarak değil,
+ki türetme kaybolmasın (§2.8).
+
+⚠️ **AMADS'ın `0.12`'si taşınmıyor.** Yasin'in önceki çalışmasından alınan şey
+**form** (stoka oranlı tavan, 45/45 koşumda çöküş üretti) ve **türetme
+disiplini**; **değer değil** — ölçek farklı.
+
+### 4. K1 — mekanizma kontrolü (pilot için, bağlayıcı)
+
+**(a) Ölçülen niceliği hangi mekanizma üretir**
+tavan bağlar → eksik alma doğar → sıralı servis sırayı gradyana çevirir →
+hasat farkı → `metabolic_gain` → enerji farkı → ömür/drift farkı → `Var(z) > 0`
+
+**(b) ⛔ Hangi bayrak bu mekanizmayı kapatır**
+
+| bayrak | etkisi | kararım |
+|---|---|---|
+| ⛔ `--mock-llm` | talepler kanned ⇒ tavanın bağlayıp bağlamadığı **stub'ın özelliği** olur | **KULLANILMIYOR** |
+| ⛔ `sequential=False` | tavan herkese **aynı** uygulanır ⇒ gradyan doğmaz | **`SEQUENTIAL_ACCESS` açık kalır** |
+| ⛔ `rotate=False` | fark **kalıcı** olur; ölçtüğümüz şey konum avantajı olurdu | **`ROTATE_ACT_ORDER` açık kalır** |
+| `--no-lora` | Kanal 2'yi kapatır | **KULLANILMIYOR** |
+| dış `timeout` | D-126 | **YOK** |
+
+**(c) Dejenere olmadığının **mevcut veriden** kanıtı**
+s9917'de havuz çöktüğünde kurucular **zaten ayrıştı** (3 farklı `F_agent`) ⇒
+mekanizma **var ve çalışıyor**; bu katman onu **her tohumda** çalışır hâle
+getiriyor. ⚠️ **Kanıt tek tohum.**
+
+### 5. 🔒 ÖN-TAAHHÜT — pilotun okuma kuralları
+
+**Pilot:** tohum **9920 · 9921 · 9922** (taze), N = 8, **G = 4**, 30 olay,
+kollar `lived shuffle`, `--lora --fresh-pasture`. ~6–9 sa.
+
+> **KURAL P1 — kıtlık kademeli mi oldu?**
+> 3 tohumun **en az 2'sinde**, birinci nesilde ilk eksik alma **olay ≤ 3**'te
+> gerçekleşti ⇒ ✅ tavan bağlıyor. Aksi hâlde ❌ **katman vaadini tutmadı.**
+
+> **KURAL P2 — kurucular ayrışıyor mu?**
+> **6 kurucu hücrenin en az 4'ünde** `Var(F_agent) > 0` ⇒ ✅.
+> ⚠️ **Bugünkü taban: 8 hücrenin 2'si** (yalnız s9917). Kural bunun **üstünü**
+> istiyor, eşitini değil.
+
+> **KURAL P3 — zincirin geri kalanı kendiliğinden oynadı mı?** *(betimleyici,
+> EŞİKSİZ)*
+> `k` dağılımı · `cooperate` sayısı · tanımlılık oranı · `null`'ın donmuşluğu
+> **okunur ve yazılır**. ⛔ **Eşik yok, bilerek:** *"bir kaldıraç üçünü birden
+> oynatır"* benim **iddiam**; ona kural koymak onu çürütülemez kılardı.
+> Tutmadıysa **tutmadı** diye yazılır.
+
+⛔ **OKUNMAYACAKLAR (L9):** kovaryans değeri · işareti · kol farkı · etki
+büyüklüğü · `ΔP_active`.
+
+### 6. Ne yapılacak, ne yapılmayacak
+
+**Değişecek:** `dau/society/environment.py` — `realized_extractions_sequential`,
+`realized_extractions`, sabit bloğu. **Yeni kapı `I5.6`** (FLAG): bir nesilde
+hiçbir olayda `talep > alınan` olmadıysa bayrak ⇒ tavan bağlamadıysa koşum
+bunu **kendi yüzünde** söyler (K6).
+
+**Değişmeyecek:** `EXTRACTION_DEFECT` ve karar→çıkarım eşlemesi · bütün
+`POOL_*` sabitlerinin **değerleri** · `metabolic_gain` · landmark · travma
+eşiği · fitness bantları · prompt · adapter yolu · Katman 2/3/4.
+
+### 7. İlan edilen bedeller
+
+| bedel | büyüklüğü |
+|---|---|
+| ❌ **Bütün sayılar sıfırlanır** | pilot · sonda-3 · C2 **karşılaştırılamaz** olur |
+| ⚠️ Enerji geliri düşer | hasat 8.0 → 3.7'de kazanç **0.400 → 0.325** (**−%19**; `metabolic_gain` içbükey olduğu için, doğrusal olsa −%54) |
+| ⚠️ Kriz kanalı ateşlenmeyebilir | havuz artık çökmüyorsa çöküş kaynaklı krizler kaybolur ⇒ **K6 (D-070) yeniden bakılmalı** |
+| ⚠️ Rotasyon gradyanı kısabilir | D-083 rotasyonun yayılımı **4.5 kat** kıstığını ölçtü |
+| ⚠️ Ön-kayıt taslağı yeniden yazılacak | `G = 4` kalır; alan kararı **yeniden sınanmalı** |
+
+### 8. Projeksiyon — ⚠️ **hesap, ölçüm değil**
+
+Gerçek sabitlerle, 8 ajan, hepsi DEFECT, 30 olay: eksik alma **olay 2**'de
+başlıyor (bugün: olay 17), tur içi yayılım **0.33–0.56** (D-083 bugünkü
+kuralla **0.071** ölçmüştü ⇒ ~5–8 kat), havuz **%36'da dengeleniyor** ⇒ çöküş
+**soğurucu olmaktan çıkıyor**.
+⚠️ **Bunlar tahmindir**; pilot ölçecek.
