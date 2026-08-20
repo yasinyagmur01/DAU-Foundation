@@ -158,29 +158,41 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# SIRADAKİ İŞ — **KARAR (senin)**
+# SIRADAKİ İŞ — **KARAR (senin): sadece BÜTÇE kaldı**
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
 *(bitti)* iş tamamlandı, sonucu iyi de olabilir kötü de.
 ⚠️ Aşağıdaki eski maddelerde eski işaretler (⛔ ⭐ 🔒) hâlâ duruyor.
 
-**Kuyrukta yapılabilecek iş kalmadı.** 2.4b · 2.5 · 2.6 bitti (D-156…D-159).
-Kalan iki madde (2.2 ve 2.3) **karara bağlı** ve karar senin (D-007).
+**Tanımlılık pilotu koştu (D-161) ve iki kararı ölçümle kapattı:**
 
-**İki karar var ve sırası önemli:**
+| karar | sonuç |
+|---|---|
+| **Alan** | ✅ **`energy` kalıyor** — 3 tohumun **2'si** kullanılabilir (kural: ≥2/3) |
+| **G** | ✅ **G = 4** — birinci geçiş 3/3 ölü, ikinci geçiş 2 tohumu kurtardı |
 
-1. **Alan kararı** — `Cov(w, z)` hangi alanda okunacak? (D-145 kusur #2)
-2. **Bütçe / G kararı** — kaç tohum, kaç nesil, test mi kestirim mi?
+❌ **Ve pilot tam da beklenen felaketi yakaladı:** `G = 3` ile — yani ön-kayıtın
+o güne kadar ilan ettiği değerle — bu üç tohumun **hiçbiri** kullanılabilir
+olmazdı (**0/3**). S=12 · G=3'lük ~24 saatlik koşum **sıfır kullanılabilir
+tohumla** bitebilirdi.
 
-⚠️ **Neden bu sıra:** D-157 §2 ölçtü ki alan kararı verilmeden bütçe kararı
-**anlamsız** — eski fizikte `energy` ile hesap **3 tohumun 0'ında** tanımlı
-olurdu. Bütçe, kaç tohumun **kullanılabilir** olacağına bağlı; o oran da
-alana bağlı.
+## Kalan tek karar: **bütçe**
 
-⚠️ **Ve I5.5 kapısının kalan işi bu karara bağlı:** kapı şu an *"herhangi bir
-alan ölçülebilir mi"* diye soruyor, ön-kayıt ise **tek bir alan** ilan ediyor.
-Alan kararı verilince kapı o alana daraltılmalı.
+Artık tahmin değil aritmetik (D-161 §6). Ölçülen: tohum kullanılabilirliği
+**2/3**, tohum başına **~1 sa 58 dk**.
+
+| hedef | koşulacak tohum | süre |
+|---|---|---|
+| 8 kullanılabilir | ~12 | ~24 sa |
+| 12 kullanılabilir | ~18 | ~36 sa |
+| 20 kullanılabilir | ~30 | ~59 sa |
+
+⚠️ **`2/3` üç tohumdan geliyor**, güven aralığı geniş (%9–%99). Gerçek oran
+%40 ise 12 kullanılabilir tohum ~30 koşum tohumu ister.
+
+**İkinci yarısı (D-145'ten devreden):** bu koşum **kestirim** mi olacak
+(P7-b/D-096 damgası, hipotez testi yok) yoksa **test** mi (S büyür)?
 
 ---
 

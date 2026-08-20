@@ -7,17 +7,16 @@
 kusurlu maddeler yerinde işaretlendi ve **karar verilmeden yeniden
 yazılmayacak**.
 
-| # | kusur | nerede |
+| # | kusur | durum (2026-08-20) |
 |---|---|---|
-| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi | §3.1 |
-| 2 | ⛔⛔ Hangi alanın yazıldığı **kola değil TOHUMA** bağlı (kriz → `resource`, kriz yok → `energy`) ⇒ sabit alan tohumların bir kısmını **tamamen** atar | §3.1, §3.2 |
-| 3 | ⛔⛔ `ΔP_active` üç değerli ve **sıfır-şişkin**; Wilcoxon sıfırları atar ⇒ **S=12'de reddedebilme ihtimali %6.6** | §4, §7 |
-| 4 | Bütün bir kol-tohumun **hiç** Price satırı olmayabilir — üçüncü kategori tanımsız | §3.1 |
+| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi | ✅ **KAPANDI (D-161).** Ölçüm **eski fizikten**mış: bugünkü fizikte tanımlılık pilotunda **2/3 tohum** kullanılabilir. ⚠ Kanıt **3 tohum** |
+| 2 | Hangi alanın yazıldığı **kola değil TOHUMA** bağlı ⇒ sabit alan tohumların bir kısmını **tamamen** atar | ✅ **KAPANDI (D-161).** `energy` **sabit kalıyor**; atılan tohum oranı artık **ölçülmüş** (~1/3) ve bütçeye giriyor |
+| 3 | `ΔP_active` üç değerli ve **sıfır-şişkin**; Wilcoxon sıfırları atar ⇒ **S=12'de reddedebilme ihtimali %6.6** | ⚠️ **KISMEN.** **Tavan** hâli gerçekleşmedi (12 hücrenin **5'i** aktif, D-161/Kural 3) ⇒ `P_active` **hareket edebilir**. ❌ **Taban tarafı hâlâ açık** ve bütçe hesabının konusu |
+| 4 | Bütün bir kol-tohumun **hiç** Price satırı olmayabilir — üçüncü kategori tanımsız | ✅ **KAPANDI (D-159).** **I5.5** kapısı bunu yakalıyor; pilotta **4 ölü hücre** işaretledi |
 
-⇒ ⛔ **Yasin'in kararı bekleniyor (D-145 §7):** **A** kestirim koşumu (S=12,
-24 sa, **hipotez testi yok**) · **B** test koşumu (S ≥ 30, **60 sa**) ·
-**C** uç noktayı düzelt (⛔ §2.7 yasaklıyor).
-**Öneri: A.**
+⇒ ⛔ **Kalan tek karar Yasin'in: BÜTÇE.** Alan (`energy`) ve `G` (**4**)
+**ölçümle kararlaştırıldı** (D-161). Geriye *kaç kullanılabilir tohum* ve
+*kestirim mi test mi* kalıyor — aritmetiği D-161 §6'da.
 
 ⚠ **§7'nin MDE tablosu yanıltıcıdır** — sürekli, bağlaşımsız bir değişken
 varsayıyor; gerçek uç nokta öyle değil. Karar verilene kadar **kullanılmaz**.
@@ -83,7 +82,7 @@ Sınanan parça (aksiyomun **tamamı değil**):
 | — | Mera | **her nesilde taze** | D-104 |
 | — | Kanal 2 | ebeveynin adapter'ı **varise kopyalanır** | D-102 |
 | — | Price | **bir nesil gecikmeli**: G nesil ⇒ **G−1** satır | D-101 |
-| — | N · G · olay | **N = 8** · **G = 3** · **30 olay** | D-107, C2 |
+| — | N · G · olay | **N = 8** · **G = 4** · **30 olay** | D-107, C2, **D-161** |
 | ⭐ **YENİ-1** | **Birincil karşıtlık** | **`lived` ↔ `shuffle`**; `null` **betimleyici** | **D-131** |
 | ⭐ **YENİ-2** | **Test birimi** | tohum başına **ortalanmış** değer; nesil satırları **raporlanır ama test edilmez** | **D-141** |
 | ⭐ **YENİ-3** | **Fitness bantları** | **göreli** (hücre içi min-max); eşik **değerleri değişmedi** | **D-152** |
@@ -96,8 +95,12 @@ mekanizma, veri değil: kurucular **özdeş doğar**, farklılaşmanın tek kayn
 sonra** doğar ⇒ birinci geçiş **hangi uç noktayla olursa olsun** `Var = 0`.
 **Ölçüldü: 4 tohum · 3 kol · 11 kurucu hücre, ölçülebilir olan 0** — ve iki
 ayrı fizikte (D-152 öncesi/sonrası) aynı (D-155 §1, D-157 §1).
-⚠ **Bedeli L21'de ilan edildi.** ⛔ **G'nin değeri bu kuralla birlikte
-değişebilir ve §7'nin (SLOT 3) konusudur** — burada seçilmiyor.
+⚠ **Bedeli L21'de ilan edildi.**
+✅ **G = 4 karara bağlandı (D-161, ölçümle).** Tanımlılık pilotunda birinci
+puanlanan geçiş (gen2→gen3) **üç tohumun üçünde de** kullanılamaz çıktı;
+ikinci geçiş (gen3→gen4) **iki tohumu kurtardı**. ⇒ `G = 3` ile bu üç tohumun
+**hiçbiri** kullanılabilir olmazdı (**0/3**), `G = 4` ile **2/3**.
+⚠ Bu **L10'un ilan ettiği `G = 3`'ten sapmadır** ve L10 buna göre güncellendi.
 
 ⚠ **Hiçbir sabit DEĞERİ değişmedi.** `constraints.py` C2'deki hâliyle; özellikle
 `DELTA_THRESHOLD_DEEP = 0.70` (D-143) ve `CROSS_AXIS_SPILLOVER = 0.20`
@@ -341,7 +344,7 @@ eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 | **L7** | ⭐ **Price + güç analizi birleşiminin literatürde yayımlanmış örneği yok** ⇒ taklit edilen bir çerçeve değil, **ilan edilmiş bir sentez** | D-140 (boşluk ilanı) |
 | **L8** | **Price kestirimi küçük N'de** klasik beklentiden sapabilir. ⚠ *"Eşleştirme iptal eder"* gerekçesi **düştü** (işaretli kestirimci null'da yansız ölçüldü, 0.89 SE), ama Rice'ın **en genel** koşulu kapsanmadı | D-140, D-142, Rice 2008 |
 | **L9** | ⛔ **Hiçbir uç nokta etkiye bakılarak seçilmez.** Betimleyici alanlardan sonradan uç nokta türetilemez | süregelen |
-| **L10** | **G = 3.** DR #11'in *"8 nesil"* normatifi **reddedildi**; birikimli kalıtım iddiası kurulamaz | D-132 §T.2 |
+| **L10** | **G = 4** (D-161 ile 3'ten yükseltildi — ölçüldü: `G = 3`'te kullanılabilir tohum **0/3**, `G = 4`'te **2/3**). DR #11'in *"8 nesil"* normatifi **hâlâ reddedildi**; birikimli kalıtım iddiası kurulamaz. ⚠ Ve YENİ-4 ile kullanılabilir geçiş **G − 2 = 2** | D-132 §T.2, **D-161** |
 | **L11** | **Adapter sönümü / LoP** — 6/6 dizide 1.8×–4.8× azalma ölçüldü; uzun soyda sinyali **seyreltebilir**. Nesil satırları bunu **raporlar ama test etmez** | D-132, D-141 |
 | **L12** | **`null` kolunda sürüklenme ile seçilim ayrılamaz** — bu nişte donmuş klon popülasyonu olabilir ⇒ **betimleyici** | D-129, D-131 |
 | **L13** | ⭐ **Aktif hücre oranı düşük** (C2'de ~%22) ⇒ `Cov_cond` az hücreye dayanır; ⚠ ve **aktif hücreye koşullamak survivorship bias taşır** — eşiği geçmek müdahaleden etkilenebilir | D-143, D-140/U10 |

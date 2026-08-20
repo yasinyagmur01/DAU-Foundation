@@ -39,62 +39,54 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Makine çalışıyor, ölçüm dürüst, **ama evren hâlâ ölçülebilir bir seçilim
-üretmiyor** — ve sıradaki adım kod değil, **iki karar**.
+Tanımlılık pilotu koştu ve **iki kararı ölçümle kapattı** (alan `energy`,
+`G = 4`); geriye **tek karar** kaldı: **bütçe**.
 
 ## Durum
 
-- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-159**
-  (sıradaki: D-160). **Suite:** 628 passed, 2 deselected.
-- **SIRADAKİ İŞ: KARAR (senin).** Kuyrukta yapılabilecek iş kalmadı.
-  İki karar var ve **sırası önemli**: önce **alan**, sonra **bütçe/G**.
-  Ayrıntı: `docs/EXECUTION_QUEUE.md` madde 2.2.
+- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-161**
+  (sıradaki: D-162). **Suite:** 628 passed, 2 deselected.
+- **SIRADAKİ İŞ: KARAR (senin) — yalnız bütçe.** Aritmetiği
+  `docs/EXECUTION_QUEUE.md` başında ve D-161 §6'da.
 
-## Son oturumda ne oldu
+## Son koşum: tanımlılık pilotu (D-161)
 
-### Sonda-3 koştu (D-155) — üç soru soruldu, ikisi kötü cevap verdi
+3 tohum (9917–9919), G=4, `lived`+`shuffle`, **6 sa 10 dk**.
+`complete` · I4.1 `identical` · dört ön-taahhüt kuralı da uygulandı.
 
-| soru | sonuç |
+| kural | sonuç |
 |---|---|
-| Sürekli uç nokta adayı taze veride tanımlı mı? | ❌ **hayır** — 4 hücrenin 2'sinde (kural: en az 3). Aday **girmedi**, soru **kapandı** |
-| Somatik miras varise ulaşıyor mu? | ❌ **hayır** — 32 varisin **0'ında**. D-152 vaadini tutmadı |
-| Kollar aynı RNG durumundan mı giriyor? | ✅ **tahmin tuttu** — bayrak bastı, öncül doğruymuş |
+| **Alan** | ✅ **2/3 ⇒ `energy` kalıyor.** D-145'in 1. ve 2. kusuru **kapandı** |
+| **G** | ✅ **2/3 kurtarma ⇒ G = 4.** ❌ Ve `G = 3` olsaydı **0/3** — koşum boşa giderdi |
+| **Tavan riski** | ✅ 12 hücrenin **5'i** aktif ⇒ `P_active` **tavanda donmadı**, hareket edebilir |
+| **Somatik zincir** | ✅ **I5.4 İLK KEZ GEÇTİ** — 144 varisin **34'ü** somatik ölçek taşıyor (sonda-3'te 0/32) |
 
-✅ Koşum temiz tamamlandı (`complete`, replay birebir, **2 sa 10 dk** — süre
-tahmini **ilk kez tuttu**).
+### Pilotun kazandırdığı üç şey
 
-❌ **Asıl kötü haber retin kendisi değil, deseni:** düşen iki hücrenin ikisi de
-**birinci nesil**, ve **iki kolda da**. Sebep: birinci neslin 8 ajanı **bit
-düzeyinde özdeş** doğuyor ve kıtlık o nesilde hiç ısırmıyor
-(`pool_ratio_end = 0.757`). ⚠️ Aynı desen **bugünkü uç noktada da** var ⇒
-**sorun uç noktada değil, evrenin fiziğinde.**
+1. ❌→✅ **En büyük kazanç bir felaketin önlenmesi:** ön-kayıtın ilan ettiği
+   `G = 3` ile ~24 saatlik koşum **sıfır kullanılabilir tohum** verebilirdi.
+   Pilotun 6 saati bunu ölçümle gösterdi.
+2. ✅ **GAP-3'ün somatik yarısı ilk kez canlı**, ve sonda-3'ün *"0/32"*'sinin
+   sebebi bulundu: **birinci varis kuşağı yapısal olarak sıfır** (0/48 — sonda-3'te
+   de 0/16), çünkü ebeveynleri kurucular ve **düz hücrede göreli bant kimseyi
+   `low`/`high` yapamıyor**. ⇒ Kurucu dejenerasyonu **iki ayrı arızayı** üretiyor.
+   ⚠️ Ayrıca tohuma çok bağlı: s9917 **0/48**, s9918 15/48, s9919 19/48.
+3. ✅ **Bütçe artık aritmetik:** kullanılabilirlik **2/3**, tohum başına
+   **~1 sa 58 dk**. ⚠️ 3 tohumdan geliyor, aralık geniş.
 
-### Buna karşı ne yapıldı
+⚠️ **Süre tahminim yine tutmadı** (8 sa 40 dk dedim, 6 sa 11 dk sürdü — ilan
+ettiğim aralığın **dışında**). Sebebi bulundu: kol-nesil başına maliyet tohuma
+göre **%47** oynuyor.
 
-- ✅ **KARAR verildi: B yolu (D-156, senin onayınla).** Birinci nesil artık
-  **ısınma nesli** — Price yalnız ebeveyni 2. nesil ve sonrası olan
-  geçişlerden okunuyor. Kullanılabilir geçiş sayısı `G − 2`.
-- ✅ **Gerekçesi ölçüldü (D-157):** **11 kurucu hücrenin 0'ı** ölçülebilir
-  (4 tohum, 3 kol, **iki ayrı fizikte**) ⇒ dejenerasyon **yapısal**, tohuma
-  bağlı bir kaza değil.
-- ❌ **Ama B tek başına yetmiyor:** birinci nesil atıldıktan **sonra bile**,
-  eski fizikte birincil alanla (`energy`) hesap **3 tohumun 0'ında** tanımlı
-  olurdu. ⇒ **Asıl darboğaz alan kararı**, ve o bütçe kararından **önce** gelir.
-- ✅ **Aktarım kapısı sayaçlandı (D-158):** somatik zincirin **hangi halkada**
-  koptuğu artık ölçülebilir (8 sayaç, ajan başına). ⚠️ Sayaçlar ancak **gerçek
-  koşumda** dolar — bugün elde bir sayı **yok**.
-- ✅ **Yeni kapı I5.5 bağlandı (D-159):** *"seçilim terimi, tasarımın okuduğu
-  yerde ölçülebilir mi"*. Kapı sayısı 9.
-  ❌ **Ve bağlanır bağlanmaz bir kusur buldu:** C2'nin puanlanan **6 geçişinin
-  5'i ölüymüş** — ve C2 bunu **temiz** diye raporlamıştı.
-  ⚠️ Maddenin kendi tarifini **ölçümle değiştirdim**: *"F_agent ve uç nokta
-  yayılımı ikisi birden sıfır"* koşulu 9 hücrenin **6'sını kaçırırdı**.
+✅ **Dün bağlanan I5.5 kapısı taze veride çalıştı** — 4 ölü hücre işaretledi;
+kapı olmasaydı bu koşum da `clean` görünürdü.
 
 ## Elimizdeki koşum dosyaları
 
 | dosya | ne |
 |---|---|
-| `dau_runs/probe3_endpoint_s9916.json` | **sonda-3**, bugünkü fizik, 1 tohum |
+| `dau_runs/pilot_definedness_g4_s9917_9919.json` | **tanımlılık pilotu**, bugünkü fizik, 3 tohum, G=4 — **en güncel** |
+| `dau_runs/probe3_endpoint_s9916.json` | **sonda-3**, bugünkü fizik, 1 tohum, G=3 |
 | `dau_runs/c2_population_n8_g3_s3.json` | **C2**, eski fizik, 3 tohum ⚠️ **D-152 öncesi** |
 
 ⚠️ **Evrenin fiziği ve alet defalarca değişti** — `dau_runs/` altındaki eski
@@ -103,13 +95,14 @@ hücreleri okunabilir (gerekçe D-156 §2).
 
 ## Arka planda duran, kapanmamış şeyler
 
-- ⚠️ **GAP-3 açık:** sembolik kanalın somatik yarısı varise ulaşmıyor
-  (D-149 · D-155). Zincirin ilk üç halkası **çalışıyor**, kırılma daha geride.
+- ✅ **GAP-3 büyük ölçüde kapandı (D-161):** somatik kanal varise **ulaşıyor**
+  (34/144). ⚠️ Kalan sınır: **birinci varis kuşağında yapısal olarak sıfır**,
+  ve tohuma çok bağlı.
 - ⚠️ **GAP-10 ertelendi** (D-137): spillover skaler kalıyor; `k` ajanlar
   arasında değişkenleşirse yeniden açılır.
 - ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
-- ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · **9916
-  (sonda-3)** · 9305–9310 (mock). Taze blok: **9917+**.
+- ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916
+  (sonda-3) · **9917–9919 (pilot)** · 9305–9310 (mock). Taze blok: **9920+**.
 - **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
