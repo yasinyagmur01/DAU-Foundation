@@ -11887,3 +11887,103 @@ sıfır yeni sabit istiyor. A ise §2.7'nin sınırında bir sabit kararı
 - §2'nin *"kırılma travma anısının geri çağrılmamasında"* cümlesi **çıkarımdır**;
   ölçüm 2.5'te yapılacak.
 - Tohum **9916 harcandı**, deneyde kullanılmaz.
+
+---
+
+## D-156 · 2026-08-20 · ✅ **KARAR: B yolu (kurucu nesil ölçümün dışında)** + 🔒 **ÖN-TAAHHÜT — öncül sınaması, OKUMADAN ÖNCE yazıldı**
+
+**Yetki:** Yasin, 2026-08-20: *"önerdiğin şekilde devam et"* ⇒ D-155 §5'in
+önerisi (**B önce ölçülsün, A onun yanında değerlendirilsin**) **karar oldu**.
+
+⚠ **Bu kayıt okuma YAPILMADAN önce commit edilmiştir.** Sırası kasıtlıdır:
+sonra yazılsaydı sayıyı görüp kriteri ona göre seçmiş olurdum (§2.7 / L9).
+**Commit sırası bunun kanıtıdır** (D-125/D-128/D-154 deseni).
+
+---
+
+### 1. Seçilen yol ve **ne olmadığı**
+
+**B:** Price yalnız **ebeveyni gen ≥ 2 olan** geçişlerden okunur; kurucu nesil
+ilan edilmiş bir **ısınma (burn-in)** nesli olur, ve G buna göre artar.
+⇒ Bir koşumun kullanılabilir geçiş sayısı **G − 2**.
+
+⛔ **B bir düzeltme değil, ilan edilmiş bir kısıttır.** Kurucu nesil ölçülemez
+olmaktan **çıkmıyor**; ölçüm onu **kapsam dışı ilan ediyor**. Bunun bedeli
+üçüncü ön-kayıta **sınır** olarak yazılacak: *"bu tasarım kurucu nesildeki
+seçilim hakkında hiçbir şey söylemez."*
+
+⛔ **A elenmedi, ertelendi.** A (kıtlık rejimi) dejenerasyonun **sebebine**
+dokunuyor; B yalnız **etkisinden kaçıyor**. A'nın önündeki engel ölçüm değil
+**bir sabit kararı** (`h` ya da kapasite, D-082/D-084, §2.7 sınırında) ve o
+karar hâlâ Yasin'in.
+
+### 2. Neden ölçmeden kabul edilmiyor
+
+B'nin dayandığı öncül şu: *"kurucu neslin dejenerasyonu **yapısaldır**, tohuma
+ya da nişe bağlı bir kaza değildir."* Sonda-3 bunu **tek tohumda** gösterdi
+(D-155 §1) — **n = 1**. Öncül yanlışsa B'nin gerekçesi *"yapısal kısıt"*tan
+*"maliyet tercihine"* düşer, ve o zaman A'nın ağırlığı artar.
+
+⇒ **Sınama GPU'suz, mevcut veriyle:** C2 (`dau_runs/c2_population_n8_g3_s3.json`,
+3 tohum × 3 kol) **9 adet** gen1→gen2 hücresi taşıyor.
+
+#### ⚠ Karşılaştırılabilirlik — neden C2'nin *yalnız gen1'i* okunabilir
+
+`CLAUDE.md` *"hiçbir eski koşum bugünün aletiyle karşılaştırılamaz"* diyor ve
+bu **genel olarak doğru**. Bu okuma bir istisna değil, **daraltma**:
+
+| | okunabilir mi | gerekçe (kodla doğrulandı) |
+|---|---|---|
+| **gen1→gen2 hücresi** (ebeveyn = gen1 ajanları) | ✅ **evet** | D-152'nin diff'i yalnız `consolidate_parents` (aktarım) + `fitness_class` **raporlaması**. Gen1 ajanının yaşamı aktarımdan **önce** gelir ⇒ z'si D-152'den etkilenmez |
+| **gen2→gen3 hücresi** (ebeveyn = gen2 ajanları) | ❌ **hayır** | Gen2 ajanı **miras aldığı anılarla** yaşıyor, ve D-152 tam da hangi anıların miras kalacağını değiştirdi ⇒ başka bir fizik |
+
+⇒ **Sınama yalnız öncülün BİRİNCİ yarısını** (*kurucu nesil dejenere*) test
+eder. İkinci yarı (*gen ≥ 2 geçişleri tanımlı*) bugün **yalnız n = 2**
+(sonda-3'ün iki hücresi) ve bu **ilan edilmiş bir zayıflıktır**.
+
+---
+
+### 3. 🔒 ÖN-TAAHHÜT — okuma kuralları
+
+**Okunacak nicelik:** C2'nin `price_for_previous_transition` bloklarındaki
+**`z_variance`** ve **`selection_estimable`**, yalnız **gen1→gen2** geçişinde.
+⛔ **Okunmayacaklar (L9):** `selection` · `transmission` · `delta_zbar` ·
+kol farkı · işaret · etki büyüklüğü.
+⛔ **`to_landmark.max` yeniden okunmayacak** — S1'de reddedildi, **kapalı soru**
+(D-155 §1). Yeniden açmak ön-taahhüt ihlali olur.
+
+> **KURAL B1:** 9 hücrenin **9'unda da** `Var(z) = 0` ⇒ kurucu neslin
+> dejenerasyonu **yapısaldır**; B'nin gerekçesi mekanizmadır, ve B uygulanır.
+> **≥ 1 hücrede `Var(z) > 0`** ⇒ dejenerasyon **tohuma/nişe bağlıdır**;
+> B'nin *"yapısal kısıt"* gerekçesi **düşer**, B yalnız bir **maliyet
+> tercihi** olarak kalır ve bu **açıkça öyle** yazılır ⇒ A yeniden Yasin'e
+> gider.
+
+⛔ **8/9 yeterli değildir.** *"Dokuzun sekizi de yapısal sayılır"* denmeyecek —
+D-129'da denmedi, D-155'te denmedi, burada da denmeyecek. Tek bir tanımlı
+kurucu hücre, *"yapısal"* iddiasını **çürütmeye yeter**, çünkü iddia
+*"olamaz"* biçimindedir.
+
+> **KURAL B2 (bağlam, gerekçe DEĞİL):** aynı dosyanın gen2→gen3 hücreleri de
+> sayılır, **ama B'yi haklı çıkarmak için kullanılamaz** (§2'nin tablosu).
+> Yalnız şu soruyu cevaplar: *desen gen1'e mi özgü, yoksa eski fizikte gen2 de
+> mi ölüydü?* İkincisi çıkarsa **B tek başına yetmeyebilir** ve bu bir
+> **uyarı** olarak yazılır.
+
+### 4. Sonrasında ne yapılacak — üç yol, önceden yazılı
+
+| B1 | ne yapılır |
+|---|---|
+| **9/9 `Var = 0`** | B uygulanır: ön-kayıt taslağına *"ebeveyni gen ≥ 2 olan geçişler"* kuralı + kurucu nesil sınırı yazılır, G ve tohum bütçesi **G − 2** üzerinden yeniden hesaplanır (kuyruk 2.2) |
+| **≥ 1 hücre tanımlı** | ⛔ B'nin gerekçesi düşer ⇒ kayda **öyle** yazılır, kuyruk 2.4b **yeniden açılır**, karar Yasin'e döner |
+
+⚠ **Her iki yolda da kuyruk 2.6 (kurucu nesil kapısı) gerekli kalır** —
+bayrak, hangi tasarım seçilirse seçilsin durumu **görünür** kılıyor.
+
+### 5. Sınırlar (ilan)
+
+- Sınama öncülün **yalnız birinci yarısını** test ediyor (§2).
+- C2 **3 tohum**; 9 hücre bağımsız değil (tohum başına 3 kol aynı çevreyi
+  paylaşıyor) ⇒ etkin n **3'e yakın**, 9'a değil.
+- Hiçbir sabit bu okumaya bakılarak seçilmiyor; B bir **kapsam** kararıdır,
+  bir eşik kararı değil (§2.7 kapsam dışı).
