@@ -1713,6 +1713,7 @@ def test_pool_event_rows_carry_the_crisis_magnitude(monkeypatch) -> None:
     """The wiring: the graph's commons recorder writes it, not just the flag."""
 
     import dau.foundation.graph as g
+    from dau.foundation.social import OUTCOME_DEFECT
     from dau.society.environment import POOL_CRISIS_THRESHOLD, crisis_trauma_magnitude
 
     g.reset_pool_event_log()
@@ -1722,6 +1723,10 @@ def test_pool_event_rows_carry_the_crisis_magnitude(monkeypatch) -> None:
         event_counter=1,
         extraction=0.0,
         requested=8.0,
+        # D-166 added `outcome` with no default on purpose (§2.9): a caller
+        # that forgets it must fail loudly rather than record a decision class
+        # nobody chose.
+        outcome=OUTCOME_DEFECT,
         pool_ratio=ratio,
         crisis=True,
         crisis_magnitude=crisis_trauma_magnitude(ratio),
@@ -2985,3 +2990,150 @@ def test_i56_and_its_summary_reach_the_results_file(monkeypatch) -> None:
         for generation in arm["generations"]:
             summary = generation["harvest_shortfall"]
             assert summary[SHORTFALL_KEY_ROWS] > 0, "no pool rows reached the summary"
+
+
+def _state_with_decision(decision: str) -> DAUAgentState:
+    """A live state whose last event carries `decision`, with a commons to act on."""
+
+    from dau.foundation.constraints import build_default_constraints
+    from dau.foundation.state import InternalState
+    from dau.society.environment import EnvironmentState
+
+    event = graph_mod.build_event(
+        graph_mod.EventClock(counter=0),
+        "agent_decision",
+        {"decision": decision, "energy": 1.0, "expected_outcome": {}},
+    )
+    return DAUAgentState(
+        agent_id="demand-probe-0",
+        environment=build_default_constraints(),
+        internal_state=InternalState(),
+        env_state=EnvironmentState(),
+        event_log=[event],
+    )
+
+
+def test_demand_summary_aggregates_over_rows_and_keeps_the_outcome_label() -> None:
+    """⚠ K2 + §2.8. D-166.
+
+    The rows carry TWO distinct requested amounts and THREE distinct outcome
+    labels, because a summary that collapsed either dimension is precisely the
+    failure this function exists to prevent: D-165 needed "how much was asked,
+    and by which decision" and the ledger could answer neither.
+
+    The decisive pair is the two rows asking 2.0 — one a genuine COOPERATE, one
+    a defect that announced a small quantity. `requested` cannot tell them
+    apart, so a summary that recomputed the label from the amount would fold
+    them together and report a cooperate count that never happened.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        DEMAND_KEY_MAX,
+        DEMAND_KEY_MEAN,
+        DEMAND_KEY_MEDIAN,
+        DEMAND_KEY_OUTCOMES,
+        DEMAND_KEY_ROWS,
+        demand_summary,
+    )
+    from dau.foundation.social import OUTCOME_COOPERATE, OUTCOME_DEFECT
+
+    rows = [
+        {"requested": 8.0, "outcome": OUTCOME_DEFECT},
+        {"requested": 2.0, "outcome": OUTCOME_COOPERATE},
+        {"requested": 2.0, "outcome": OUTCOME_DEFECT},
+        {"requested": 20.0, "outcome": OUTCOME_DEFECT},
+        {"requested": 0.0, "outcome": "no_decision"},
+    ]
+    summary = demand_summary(rows)
+
+    assert summary[DEMAND_KEY_ROWS] == 5
+    assert summary[DEMAND_KEY_MEAN] == pytest.approx(32.0 / 5)
+    assert summary[DEMAND_KEY_MEDIAN] == pytest.approx(2.0)
+    assert summary[DEMAND_KEY_MAX] == pytest.approx(20.0)
+
+    outcomes = summary[DEMAND_KEY_OUTCOMES]
+    assert outcomes[OUTCOME_DEFECT] == 3
+    assert outcomes[OUTCOME_COOPERATE] == 1, (
+        "the cooperate count came from the amount, not from the recorded label"
+    )
+    assert outcomes["no_decision"] == 1, "an event with no policy run was folded in"
+
+    empty = demand_summary([])
+    assert empty[DEMAND_KEY_ROWS] == 0
+    assert empty[DEMAND_KEY_MEAN] is None, "an empty generation reported a demand of 0"
+
+
+def test_pool_row_outcome_comes_from_the_physics_mapping() -> None:
+    """⚠ §2.8 + §2.9. D-166.
+
+    The label on the ledger must be the one `decision_to_outcome` produced for
+    the decision TEXT. A quantity-carrying defect ("extract 2 units") maps to
+    the same `requested` as a genuine cooperate, so this is the one place the
+    two can still be told apart.
+    """
+
+    from dau.foundation.graph import POOL_STEP_EMPTY_OUTCOME, commons_request_from_state
+    from dau.society.extraction import decision_to_extraction, decision_to_outcome
+    from dau.foundation.social import OUTCOME_COOPERATE, OUTCOME_DEFECT
+
+    quantified_defect = "I will extract 2 units from the pool"
+    assert decision_to_extraction(quantified_defect) == pytest.approx(2.0)
+    assert decision_to_outcome(quantified_defect) == OUTCOME_DEFECT
+    assert decision_to_outcome("cooperate") == OUTCOME_COOPERATE
+
+    state = _state_with_decision(quantified_defect)
+    request = commons_request_from_state(state)
+    assert request is not None
+    assert request.requested == pytest.approx(2.0)
+    assert request.outcome == OUTCOME_DEFECT, (
+        "the label was derived from the amount instead of the decision"
+    )
+
+    # No decision ever ran: its own label, not a restraint (§2.9).
+    # ⚠ Asserted against the OUTCOME_* set, not against the constant itself —
+    # `outcome == POOL_STEP_EMPTY_OUTCOME` is a tautology and survived the
+    # mutation that redefined the constant as "coordinate", which is exactly
+    # the silent fallback this line exists to forbid.
+    from dau.foundation.social import (
+        OUTCOME_COORDINATE,
+        OUTCOME_DEADLOCK,
+    )
+
+    blank = _state_with_decision("")
+    blank_request = commons_request_from_state(blank)
+    assert blank_request is not None
+    assert blank_request.outcome == POOL_STEP_EMPTY_OUTCOME
+    assert blank_request.outcome not in {
+        OUTCOME_COOPERATE,
+        OUTCOME_DEFECT,
+        OUTCOME_COORDINATE,
+        OUTCOME_DEADLOCK,
+    }, "an event where no policy ran was labelled as a real decision"
+
+
+def test_demand_summary_reaches_the_results_file(monkeypatch) -> None:
+    """⚠ K3 — wired, not merely written. D-149 found a gate defined-but-unbound
+    after it had been silent through a six-hour run; D-164 found a
+    pre-committed reading the instrument never produced at all.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    from dau.diagnostics.run_population_experiment import (
+        DEMAND_KEY_MEAN,
+        DEMAND_KEY_OUTCOMES,
+        DEMAND_KEY_ROWS,
+    )
+
+    seen_rows = 0
+    for arm in results["arms"]:
+        for generation in arm["generations"]:
+            demand = generation["demand"]
+            assert demand[DEMAND_KEY_ROWS] > 0, "no pool rows reached the summary"
+            assert demand[DEMAND_KEY_MEAN] is not None
+            assert demand[DEMAND_KEY_OUTCOMES], "the outcome histogram is empty"
+            seen_rows += demand[DEMAND_KEY_ROWS]
+    assert seen_rows > 0

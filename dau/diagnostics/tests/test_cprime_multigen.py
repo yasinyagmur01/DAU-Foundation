@@ -2419,6 +2419,8 @@ def test_s5_behaviour_describes_one_heir_not_the_commons() -> None:
 def test_graph_writes_the_owner_onto_every_event_row() -> None:
     """Filtering is only as good as the column it filters on."""
 
+    from dau.foundation.social import OUTCOME_COORDINATE
+
     graph_mod.reset_body_event_log()
     graph_mod.reset_pool_event_log()
     graph_mod.reset_pe_event_log()
@@ -2435,6 +2437,8 @@ def test_graph_writes_the_owner_onto_every_event_row() -> None:
         event_counter=1,
         extraction=1.0,
         requested=1.0,
+        # D-166: required, no default (§2.9).
+        outcome=OUTCOME_COORDINATE,
         pool_ratio=0.5,
         crisis=False,
         crisis_magnitude=None,

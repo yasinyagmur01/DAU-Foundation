@@ -31,7 +31,11 @@ from dau.society.environment import (
     crisis_trauma_magnitude,
     step_pool_with_crisis,
 )
-from dau.society.extraction import decision_to_extraction, metabolic_gain
+from dau.society.extraction import (
+    decision_to_extraction,
+    decision_to_outcome,
+    metabolic_gain,
+)
 
 from .constraints import (
     CROSS_AXIS_SPILLOVER,
@@ -320,6 +324,7 @@ def _record_pool_event(
     event_counter: int,
     extraction: float,
     requested: float,
+    outcome: str,
     pool_ratio: float,
     crisis: bool,
     crisis_magnitude: float | None,
@@ -350,6 +355,7 @@ def _record_pool_event(
             "event_counter": int(event_counter),
             "extraction": float(extraction),
             "requested": float(requested),
+            "outcome": str(outcome),
             "pool_ratio": float(pool_ratio),
             "crisis": bool(crisis),
             "crisis_magnitude": (
@@ -442,6 +448,11 @@ NODE_META_OBSERVER: str = "meta_observer_node"
 NODE_POOL_STEP: str = "pool_step_node"
 NODE_SOCIAL_PRE: str = "social_pre_node"
 POOL_STEP_EMPTY_EXTRACTION: float = 0.0
+# D-166. Its own label, not an OUTCOME_* value: "the agent announced nothing"
+# is a different state from "the agent announced a restrained harvest", and
+# folding it into COORDINATE would inflate the restraint count with events
+# where no policy ever ran (§2.9 — the undeterminable state makes noise).
+POOL_STEP_EMPTY_OUTCOME: str = "no_decision"
 
 # Layer 4 — strategic expectation injection + LOD domain bridge
 STRATEGIC_EXPECTATION_TEMPLATE: str = (
@@ -1325,6 +1336,14 @@ class CommonsRequest:
     event_counter: int
     drift_state: DriftState
     internal_state: InternalState
+    # D-166. The OUTCOME_* class behind `requested`, carried rather than
+    # re-derived downstream. `requested` alone cannot say which decision
+    # produced it: `decision_to_extraction` parses a quantity out of the text
+    # when there is one (up to EXTRACTION_PARSE_MAX), so 2.0 may be a
+    # COOPERATE or a defect that announced "2 units". D-165 needed exactly
+    # this distinction and could not get it, and the run had to be read as an
+    # interval instead of a number.
+    outcome: str
 
 
 @dataclass(frozen=True)
@@ -1391,6 +1410,7 @@ def advance_commons(
             event_counter=int(request.event_counter),
             extraction=granted,
             requested=float(request.requested),
+            outcome=str(request.outcome),
             pool_ratio=pool_ratio,
             crisis=pool_ratio < POOL_CRISIS_THRESHOLD,
             crisis_magnitude=crisis_trauma_magnitude(pool_ratio),
@@ -1452,6 +1472,10 @@ def commons_request_from_state(state: DAUAgentState) -> CommonsRequest | None:
         if decision
         else POOL_STEP_EMPTY_EXTRACTION
     )
+    # Read from the same function the physics maps with, at the same place, so
+    # the ledger cannot end up describing a classification the universe did not
+    # use (§2.8 — the reporting/measuring pair that drifted apart four times).
+    outcome = decision_to_outcome(decision) if decision else POOL_STEP_EMPTY_OUTCOME
     drift = state.drift_state
     if not isinstance(drift, DriftState):
         drift = DriftState()
@@ -1461,6 +1485,7 @@ def commons_request_from_state(state: DAUAgentState) -> CommonsRequest | None:
         event_counter=int(state.event_log[-1].timestamp),
         drift_state=drift,
         internal_state=state.internal_state,
+        outcome=outcome,
     )
 
 

@@ -37,6 +37,7 @@ from dau.society.extraction import (
     decision_to_extraction,
     metabolic_gain,
 )
+from dau.foundation.social import OUTCOME_DEFECT
 
 AGENT_ID: str = "crisis-wire-0"
 POOL_ABOVE_CRISIS: float = 80.0
@@ -495,7 +496,13 @@ FIRST_AGENT_EVENT: int = 3
 SECOND_AGENT_EVENT: int = 11
 
 
-def _request(agent_id: str, requested: float, event_counter: int, energy: float):
+def _request(
+    agent_id: str,
+    requested: float,
+    event_counter: int,
+    energy: float,
+    outcome: str = OUTCOME_DEFECT,
+):
     """One CommonsRequest with a fresh body and an unscarred drift map."""
 
     return CommonsRequest(
@@ -504,6 +511,7 @@ def _request(agent_id: str, requested: float, event_counter: int, energy: float)
         event_counter=event_counter,
         drift_state=DriftState(),
         internal_state=InternalState(energy=energy),
+        outcome=outcome,
     )
 
 

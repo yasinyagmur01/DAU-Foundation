@@ -74,6 +74,7 @@ import os
 import random
 import re
 import shutil
+import statistics
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -403,6 +404,63 @@ def harvest_shortfall_summary(pool_rows: list[dict[str, Any]]) -> dict[str, Any]
         SHORTFALL_KEY_SHORT: n_short,
         SHORTFALL_KEY_FIRST_EVENT: first_event,
         SHORTFALL_KEY_MAX: largest,
+    }
+
+
+DEMAND_KEY_ROWS: str = "n_rows"
+DEMAND_KEY_MEAN: str = "requested_mean"
+DEMAND_KEY_MEDIAN: str = "requested_median"
+DEMAND_KEY_P90: str = "requested_p90"
+DEMAND_KEY_MAX: str = "requested_max"
+DEMAND_KEY_OUTCOMES: str = "outcomes"
+DEMAND_P90_QUANTILE: float = 0.90
+
+
+def demand_summary(pool_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """What the agents ASKED for this generation, and which decision asked it.
+
+    D-166, and it exists because D-165 could not be decided without it. The
+    harvest ceiling is proportional to per-capita stock while demand is not, so
+    whether the ceiling can ever bind before the landmark is a question about
+    the DEMAND level — and the run could only bound it as an interval
+    ([4.438, 6.578] against a threshold of 6.078 that sits inside it), because
+    the ledger kept only realized harvest.
+
+    Reads `requested` and `outcome` off the rows the physics already wrote
+    rather than re-deriving either from the decision text (§2.8): a second
+    mapping here is exactly how the reporting/measuring pairs drifted apart.
+
+    The mean is the number the ceiling arithmetic needs; the median and p90 are
+    kept because `decision_to_extraction` parses quantities out of free text up
+    to EXTRACTION_PARSE_MAX, so the distribution is wide and a mean alone
+    cannot say whether a shortfall came from a thinning pasture or from one
+    agent announcing twenty units.
+    """
+
+    requested = [float(row.get("requested", 0.0)) for row in pool_rows]
+    outcomes: dict[str, int] = {}
+    for row in pool_rows:
+        label = str(row.get("outcome", ""))
+        outcomes[label] = outcomes.get(label, 0) + 1
+    if not requested:
+        return {
+            DEMAND_KEY_ROWS: 0,
+            DEMAND_KEY_MEAN: None,
+            DEMAND_KEY_MEDIAN: None,
+            DEMAND_KEY_P90: None,
+            DEMAND_KEY_MAX: None,
+            DEMAND_KEY_OUTCOMES: outcomes,
+        }
+    ordered = sorted(requested)
+    return {
+        DEMAND_KEY_ROWS: len(requested),
+        DEMAND_KEY_MEAN: statistics.fmean(requested),
+        DEMAND_KEY_MEDIAN: statistics.median(requested),
+        DEMAND_KEY_P90: ordered[
+            min(len(ordered) - 1, int(DEMAND_P90_QUANTILE * len(ordered)))
+        ],
+        DEMAND_KEY_MAX: max(requested),
+        DEMAND_KEY_OUTCOMES: outcomes,
     }
 
 
@@ -1547,6 +1605,12 @@ def _run_arm_generations(
                 "harvest_shortfall": harvest_shortfall_summary(
                     graph_mod.get_pool_event_log()
                 ),
+                # D-166 / D-165. The other half of the same ledger: the
+                # short-fall says what the pasture withheld, this says what was
+                # asked and by which decision. Without it the ceiling
+                # arithmetic has no demand term and the constant cannot be
+                # chosen — which is where D-165 stopped.
+                "demand": demand_summary(graph_mod.get_pool_event_log()),
                 "agents": [
                     {
                         "agent_id": row.agent_id,
