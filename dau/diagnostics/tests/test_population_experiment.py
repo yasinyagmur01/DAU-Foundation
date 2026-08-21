@@ -3063,6 +3063,41 @@ def test_demand_summary_aggregates_over_rows_and_keeps_the_outcome_label() -> No
     assert empty[DEMAND_KEY_MEAN] is None, "an empty generation reported a demand of 0"
 
 
+def test_demand_summary_window_excludes_events_after_the_bound() -> None:
+    """⚠ K2. D-166. The ceiling question lives before the landmark, so the
+    window must actually drop later rows — and the rows on both sides carry
+    DIFFERENT amounts and DIFFERENT labels, or a window that returned
+    everything would pass unnoticed.
+    """
+
+    from dau.diagnostics.run_population_experiment import (
+        DEMAND_KEY_MEAN,
+        DEMAND_KEY_OUTCOMES,
+        DEMAND_KEY_ROWS,
+        demand_summary,
+    )
+    from dau.foundation.social import OUTCOME_COOPERATE, OUTCOME_DEFECT
+
+    rows = [
+        {"event_counter": 3, "requested": 2.0, "outcome": OUTCOME_COOPERATE},
+        {"event_counter": 10, "requested": 4.0, "outcome": OUTCOME_COOPERATE},
+        {"event_counter": 11, "requested": 20.0, "outcome": OUTCOME_DEFECT},
+        {"event_counter": 25, "requested": 20.0, "outcome": OUTCOME_DEFECT},
+    ]
+
+    windowed = demand_summary(rows, max_event=10)
+    assert windowed[DEMAND_KEY_ROWS] == 2, "rows past the bound survived the window"
+    assert windowed[DEMAND_KEY_MEAN] == pytest.approx(3.0)
+    assert OUTCOME_DEFECT not in windowed[DEMAND_KEY_OUTCOMES], (
+        "a decision taken after the bound was counted inside the window"
+    )
+
+    whole = demand_summary(rows)
+    assert whole[DEMAND_KEY_ROWS] == 4
+    assert whole[DEMAND_KEY_MEAN] == pytest.approx(11.5)
+    assert whole[DEMAND_KEY_MEAN] != windowed[DEMAND_KEY_MEAN]
+
+
 def test_pool_row_outcome_comes_from_the_physics_mapping() -> None:
     """⚠ §2.8 + §2.9. D-166.
 

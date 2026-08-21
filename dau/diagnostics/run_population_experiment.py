@@ -416,7 +416,9 @@ DEMAND_KEY_OUTCOMES: str = "outcomes"
 DEMAND_P90_QUANTILE: float = 0.90
 
 
-def demand_summary(pool_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def demand_summary(
+    pool_rows: list[dict[str, Any]], max_event: int | None = None
+) -> dict[str, Any]:
     """What the agents ASKED for this generation, and which decision asked it.
 
     D-166, and it exists because D-165 could not be decided without it. The
@@ -435,8 +437,19 @@ def demand_summary(pool_rows: list[dict[str, Any]]) -> dict[str, Any]:
     to EXTRACTION_PARSE_MAX, so the distribution is wide and a mean alone
     cannot say whether a shortfall came from a thinning pasture or from one
     agent announcing twenty units.
+
+    ``max_event`` narrows the rows to an agent-clock window. The whole-life
+    mean is not the number the ceiling question needs: whether the ceiling can
+    bind BEFORE the landmark depends on the demand during those events, and a
+    life whose demand drifts as its energy falls would be read wrong by a
+    30-event average. Same reason `delta_profile` keeps a `to_landmark` window
+    beside the full one (D-124).
     """
 
+    if max_event is not None:
+        pool_rows = [
+            row for row in pool_rows if int(row.get("event_counter", 0)) <= max_event
+        ]
     requested = [float(row.get("requested", 0.0)) for row in pool_rows]
     outcomes: dict[str, int] = {}
     for row in pool_rows:
@@ -1611,6 +1624,12 @@ def _run_arm_generations(
                 # arithmetic has no demand term and the constant cannot be
                 # chosen — which is where D-165 stopped.
                 "demand": demand_summary(graph_mod.get_pool_event_log()),
+                # The window the ceiling question actually lives in: the
+                # endpoint is read at LANDMARK_EVENT, so demand after it cannot
+                # affect whether the founders had separated by then.
+                "demand_to_landmark": demand_summary(
+                    graph_mod.get_pool_event_log(), max_event=LANDMARK_EVENT
+                ),
                 "agents": [
                     {
                         "agent_id": row.agent_id,
