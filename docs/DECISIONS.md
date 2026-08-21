@@ -12862,3 +12862,260 @@ yazılmıştı; `r = 0.1425` ile projeksiyon **olay 6** diyor ⇒ **P1'in eşiğ
 olmayı sınamalı, keyfi bir erkenliği değil.
 ⛔ **Bu bir gevşetme değil, ölçütün asıl amacına döndürülmesidir** — ve
 **pilottan önce** yazılıyor.
+
+---
+
+## D-164 · 2026-08-21 · ⚠️ **KATMAN 1 PİLOTU KOŞTU — P2 tuttu, P1 TUTMADI, ve kriz kanalı sabitin seçilme gerekçesine rağmen öldü**
+
+**Yetki:** Yasin, 2026-08-20: *"devam et run'ı başlat"* — koşum; 2026-08-21:
+*"mevcut veriden önce çözümleme yapalım sonra yazmasını yaparız"* — teşhis
+önce, kayıt sonra.
+
+⚠️ **Bu kayıt bir sonuç kaydıdır.** Ön-taahhüt **D-162 §5**'te, P1'in
+güncellenmiş eşiği **D-163 §7**'de, ikisi de **koşumdan önce** commit'liydi.
+Aşağıda hiçbir kural gevşetilmedi, hiçbir eşik sonradan değiştirilmedi.
+
+---
+
+### 0. Koşumun kimliği — tek süreç, kesintisiz
+
+| | |
+|---|---|
+| Dosya | `dau_runs/layer1_pilot_g4_s9920_9922.json` (+ `.log`) |
+| **Süre (ölçüldü, K4)** | 01:38:21 → 09:41:29 = **8 sa 3 dk 8 sn** · tohum başına **2 sa 41 dk** |
+| `complete` | **True** · 3 tohum × 2 kol = 6 kol · Traceback/ABORT **0** |
+| Yeniden başlatma izi | **yok** — logda tek allocator satırı, tek model yükleme bloğu |
+| argv | talimattaki komutla **birebir** · dış `timeout` yok · allocator'ı runner koydu (D-116) |
+| Koşum sırasında `.py` değişikliği | **yok** (01:30–09:45 penceresi tarandı); ağaç temiz, HEAD `df46b6a` |
+
+**K1 (b) doğrulandı — mekanizmayı kapatan hiçbir bayrak açık değil:**
+`mock=False` · `sequential_access=true` · `rotate_act_order=true` ·
+`lora=explicit_on`.
+
+**Kapılar: 7/10 geçti, 3 bayrak** (`run_quality=flagged`, üçü de `mode=flag`):
+
+| kapı | detay |
+|---|---|
+| `I4.2` | kollar gen3/gen4'e farklı RNG durumundan girmiş — 6 tohum-nesil hücresi |
+| `I5.5` | s9922 lived gen2→gen3'te tanımlı alan yok (`max_z_variance=0`) |
+| **`I5.6`** | **tavan hiç bağlamadı:** s9922 lived gen1 · gen4 · shuffle gen1 · gen3 · gen4 |
+
+---
+
+### 1. KURAL P1 — kıtlık kademeli mi oldu? ❌ **TUTMADI**
+
+Ölçüt (D-163 §7): *3 tohumun **≥2'sinde**, birinci nesilde ilk eksik alma
+**olay ≤ 8***
+
+| tohum | gen1'de ilk eksik alma | ölçüt |
+|---|---|---|
+| **9920** | olay **9** | ❌ |
+| **9921** | olay **2** | ✅ |
+| **9922** | **hiç olmadı** (0/88 satır) | ❌ |
+
+⇒ **1/3.** Kural 2/3 istiyordu. **P1 tutmadı.** `I5.6` kapısı aynı şeyi
+bağımsız olarak raporladı.
+
+⛔ **Gevşetme yok.** s9920 eşiği bir olay kaçırdı (9 vs 8) ve landmark'tan
+(10) hâlâ önceydi; bu **kaydedildi, kural değiştirilmedi** — D-129'da,
+D-155'te, D-161'de de değiştirilmemişti.
+
+⚠️ **Ve §5'in teşhizi bu okumayı daha da sertleştirdi:** P1'in tek geçen
+tohumu **kanıtlanabilir biçimde tasarlanan mekanizmadan gelmiyor** ⇒
+mekanizma için gerçek sayı **0/3**.
+
+### 2. KURAL P2 — kurucular ayrışıyor mu? ✅ **TUTTU**
+
+Ölçüt: *6 kurucu hücrenin **≥4'ünde** `Var(F_agent) > 0`* (bugünkü taban: 8'de 2)
+
+| tohum | lived | shuffle |
+|---|---|---|
+| 9920 | ✅ 8 benzersiz `F_agent` | ✅ 8 |
+| 9921 | ✅ 8 | ✅ 8 |
+| 9922 | ❌ 1 (Var = 0) | ❌ 1 |
+
+⇒ **4/6 ⇒ kural yazıldığı gibi tuttu.**
+
+⛔ **İlan edilen sınır:** gen1'de iki kol **birebir aynıdır** (adapter henüz
+yok) ⇒ 6 hücre yapısal olarak **3 bağımsız tohum**, okuması fiilen **2/3**.
+Ve **aynı tohum (9922) hem P1'i hem P2'yi düşürüyor** ⇒ iki başarısızlık
+**bağımsız değil**. Kural 6 üzerinden yazılmıştı; verdict değişmiyor, **sınır
+ilan ediliyor** (D-161'in dürüstlük notu deseni).
+
+### 3. KURAL P3 — zincirin geri kalanı oynadı mı? *(eşiksiz, betimleyici)*
+
+| okunacak | sonuç |
+|---|---|
+| **`k` dağılımı** | ⚠️ **192/192 ajan `resource_load`** (4483 ajan-olayın tamamı). **Hiç oynamadı.** ⇒ D-137'nin GAP-10'u yeniden açma tetiği **ateşlenmedi** |
+| **`cooperate` sayısı** | ⛔ **OKUNAMADI** — popülasyon koşumu karar→sonuç dağılımını ne JSON'a ne loga yazıyor. Ön-taahhüt, **aletin üretmediği** bir sayıyı istemiş |
+| **Tanımlılık oranı** | **11/17 = %64.7** (alan `energy`). Desen keskin: **bütün gen1→gen2 geçişleri tanımsız** (`z_variance = 0`); gen2→gen3 ve gen3→gen4'ün **12'de 11'i** tanımlı |
+| **`null`'ın donmuşluğu** | ⛔ **OKUNAMADI** — `null` kolu bu pilotta koşulmadı (`--arms lived shuffle`, tasarım gereği) |
+| *(ek)* `Var(w) > 0` | **18/18 hücrede** ⇒ seviye-0 ön-koşulu her yerde sağlanıyor |
+| *(ek)* pozitif kontrol | **16/18 hücrede tanımlı** |
+| *(ek)* drift ekseni kazananları | `energy` 4049 · `resource` 351 · `social` 80 · `uncertainty` 3 |
+
+⛔ **L9 uygulandı:** kovaryansın **değeri, işareti, kol farkı, etki büyüklüğü
+ve `ΔP_active`** okunmadı.
+
+⭐ **P3'ün iki maddesi okunamadı ve bu bir bulgudur (K6):** ön-taahhüt,
+ölçülemeyecek iki nicelik istemişti. Bir kural yazarken *"bu sayıyı hangi kod
+satırı üretiyor"* sorusu K1'in (a) şıkkının **raporlama tarafında** da
+sorulmalıymış.
+
+---
+
+### 4. TEŞHİS — beş bulgu, hepsi mevcut veriden ve koddan
+
+#### Bulgu 1 — ⛔ Kriz kanalı öldü: **0 / 192 yaşam**
+
+D-163'ün `r = 0.10`'u reddedip `r = 0.1425`'i seçmesinin **tek gerekçesi**
+kriz kanalını yaşatmaktı (§2: kanal 192 yaşamın **127**'sinde ateşleniyordu).
+
+| | |
+|---|---|
+| Kriz olayı (24 hücre, 192 yaşam) | **0** |
+| Kriz gören yaşam | **0 / 192** |
+| Gözlenen en düşük havuz oranı | **0.375** (kriz eşiği **0.30**) |
+
+⇒ **Sabit kanalı kurtarmak için değiştirildi, kanal yine öldü.** Bu ön-kayıtlı
+bir bağdır: **D-070 / kilit K6** *"S5'in ilk travması = commons krizi"* diyor;
+o uç nokta bugünkü fizikte **ölçülemez**.
+
+#### Bulgu 2 — Tavan, kanonik talebin belirgin üstünde duruyor
+
+8 ajanla `cap = EXTRACTION_LIMIT_RATIO × (kalan/N) = 14.25 × havuz_oranı`:
+
+| talep | tavanın bağladığı havuz oranı |
+|---|---|
+| `EXTRACTION_DEFECT` **8.0** | oran < **0.561** |
+| `EXTRACTION_COOPERATE` 2.0 | oran < 0.140 |
+| başlangıç tavanı (olay 1) | **11.74** |
+
+Havuz koşum boyunca **0.60–0.86** arasında oturuyor ⇒ kanonik DEFECT talebi
+için tavan **neredeyse hiçbir zaman bağlayıcı değil**.
+
+#### Bulgu 3 — Eksik almaların çoğu havuzdan değil, **ilan edilen miktardan**
+
+24 hücre `max_shortfall` üzerinden sınıflandırıldı:
+
+| rejim | ölçüt | hücre |
+|---|---|---|
+| **A — tasarlanan** | küçük gap (≤3) + düşük oran (<0.45) | **2** |
+| **B — ilan artefaktı** | gap ≥ 14 ⇒ talep `EXTRACTION_PARSE_MAX = 25`'e yakın | **15** |
+| **C — hiç bağlamadı** | — | **5** |
+| ? — marjinal | küçük gap, yüksek havuz | 2 |
+
+`decision_to_extraction` metinden miktar ayrıştırıyor (tavan 25.0). Bir ajan
+büyük miktar ilan ettiğinde tavan **her havuz oranında** bağlar — ama bu
+**kıtlık değil, ilan büyüklüğü**.
+
+⭐ **P1'in tek geçen tohumu için kesin sınır** (`METABOLIC_GRACE_EVENTS = 10`
+olduğu için olay 2'de ölüm yok ⇒ N = 8 kesin):
+
+```
+olay 1: yenilenmiş stok 659.20 (oran 0.824) → tavan/ajan 11.742
+olay 2: yenilenmiş stok ≥ 590.14 (oran 0.738) → tavan/ajan ≥ 10.512   [en kötü durum]
+```
+
+⇒ **s9921'in olay 2'deki eksik alması ancak ilan > 10.51 ise mümkündür ve
+`EXTRACTION_DEFECT = 8.0`'dan GELEMEZ.** ⇒ P1'in 1/3'ü, tasarlanan mekanizma
+için **0/3**.
+
+#### Bulgu 4 — D-163'ün denge hesabı **hiç kurulmadı**
+
+Denge türetmesi (`1 − r/REGEN = COLLAPSE_EPSILON = 0.05`) şunu varsayıyordu:
+*her ajan her olayda tavanı alır* ⇒ toplam hasat `= 0.1425 × havuz`.
+
+| | ölçülen |
+|---|---|
+| Oran 0.65'te tavanların toplamı | **74.1** birim/olay |
+| Gerçekleşen toplam hasat | **~36** birim/olay (hücre aralığı 23.6–39.8) |
+| Azami yenilenme (oran 0.50) | **30.0** birim/olay |
+
+Toplam talep havuzla **orantılı değil** — ajan sayısına bağlı, kabaca sabit.
+⇒ `0.1425 p` terimi hiç oluşmadı ⇒ **0.05 dengesi de hiç oluşmadı.**
+
+Havuzu asıl sınırlayan şey tavan değil **ölüm**: hasat (23–40) yenilenmeyi
+(25–30) aşıyor → havuz yavaş düşüyor → ajanlar ölüyor → talep düşüyor → havuz
+toparlıyor. Sistem **0.6–0.7'de** dengeleniyor. ⚠️ Ölen ajan tavanı da
+**gevşetiyor** (`kalan/N`'de N küçülüyor) ⇒ kıtlığa karşı **yapısal negatif
+geri besleme**.
+
+#### Bulgu 5 — s9922 gen1: zincir **ilk halkada** koptu
+
+```
+pop-lived-s9922-a0 … a7:  F = 0.420587919  ömür = 11  Δhavuz = 50.000000
+                          E_lived = 0.452606   landmark_drift = {}
+```
+Sekiz kurucu **bit düzeyinde özdeş**. D-162 §4(a)'nın zinciri *"tavan bağlar →
+eksik alma → sıralı servis gradyana çevirir → …"* diye başlıyordu; tavan hiç
+bağlamadığı için sıralı erişimin ayıracağı bir şey olmadı. **Katman 1'in
+ortadan kaldırmak için kurulduğu kusurun ta kendisi.**
+
+---
+
+### 5. Kuyruk 2.2'nin beklediği iki sayı — **yeniden ölçüldü**
+
+D-161'in bütçe aritmetiğini besleyen iki sayı Katman 1 öncesi fizikten
+geliyordu ve geçersizdi. Bu pilot ikisini de yeniden ölçtü. **Ölçüt D-161 §1
+ile aynı:** puanlanan hücre = ebeveyni gen ≥ 2, alan `energy`.
+
+| tohum | gen2→gen3 | gen3→gen4 | kullanılabilir |
+|---|---|---|---|
+| 9920 | lived ✓ · shuffle ✓ | lived ✓ · shuffle ✓ | ✅ |
+| 9921 | lived ✓ · shuffle ✓ | lived ✓ · shuffle ✓ | ✅ |
+| 9922 | lived ✗ · shuffle ✓ | lived ✓ · shuffle ✓ | ✅ |
+
+| sayı | Katman 1 öncesi (D-161) | **bugün** |
+|---|---|---|
+| Tohum kullanılabilirliği | 2/3 | ✅ **3/3** |
+| Puanlanan hücre tanımlılığı | (seyrek) | ✅ **11/12** |
+| Tohum başına süre | ~1 sa 58 dk | ⚠️ **2 sa 41 dk** (**+%36**) |
+
+⇒ **Katman 1'in tuttuğu asıl vaat burada:** P1 tutmasa da **ölçüm zinciri
+belirgin biçimde daha sık tanımlı**. Bütçe kararı (kuyruk 2.2) artık bu üç
+sayıyla yapılabilir.
+
+⚠️ **Karşılaştırma sınırı:** D-161 başka fizikten; iki sütun **aynı ölçütün**
+iki evrende okunuşudur, kontrollü karşılaştırma değildir.
+
+---
+
+### 6. İlan edilen sınırlar
+
+1. ⛔ **Kriz kanalı bu fizikte ölçülemez** (0/192) ⇒ D-070/K6'nın S5 uç
+   noktası askıda.
+2. ⛔ **P3'ün iki maddesi (`cooperate` sayısı · `null` donmuşluğu) bu koşumdan
+   okunamaz** — biri aletlenmemiş, diğeri kol olarak koşulmamış.
+3. ⚠️ **P2'nin 6 hücresi 3 bağımsız tohumdur**; gen1'de kollar özdeştir.
+4. ⚠️ **`I4.2` bayrağı açık:** kollar gen3/gen4'e farklı RNG durumundan
+   giriyor ⇒ kol karşıtlığı okunacaksa bu **önce** açıklanmalı.
+5. ⚠️ **Teşhisin sınıflandırması `max_shortfall` üzerinden yapıldı**; gap
+   **dağılımı** JSON'a yazılmıyor ⇒ A/B/C oranları **hücre düzeyinde**
+   geçerli, satır düzeyinde değil.
+6. ⚠️ **Bulgu 4'ün "~36 birim/olay"ı** `Σ Δhavuz / en uzun ömür` ile türetildi;
+   olay-bazlı seri değil, **hücre ortalaması**.
+
+---
+
+### 7. Ders — D-163'ün dersi bir kat derinleşti
+
+D-163 şunu yazmıştı: *"bir hasat/havuz sabiti önerilirken denge noktası da
+kayda yazılır."* Bu koşum o kuralın **yetmediğini** ölçtü: denge noktası
+yazıldı, **doğru hesaplandı**, ama **evrenin üretmediği bir talep varsayımı
+altında**.
+
+> ⭐ **Ek şart:** bir havuz/hasat sabitinin denge noktası, sabitlerin
+> **izin verdiği** talebe göre değil, evrenin **fiilen ürettiği** talebe göre
+> hesaplanır; ve o talep **ölçülmüş bir sayı** olarak kayda girer.
+
+⚠️ Aynı sınıf hata ikinci kez: türetme temiz, **varsayımı ölçülmemiş**. K4'ün
+(*"okunmamış sayı yazılmaz"*) türetmelere uzanan hâli.
+
+---
+
+### 8. Açık kalan karar — **Yasin'in** (D-007), D-165'e
+
+Sabitin ne olacağı bu kayda yazılmıyor, bilerek: teşhis **kaydedilmeden**
+sabit önerilirse öneri, çürüttüğü ölçümün içinden seçilmiş olur (§2.7).
+Kararın önündeki üç seçenek §1'de (`CLAUDE.md`) listelendi.
