@@ -158,10 +158,11 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# SIRADAKİ İŞ — ⛔ **3.0b · KARAR: `EXTRACTION_LIMIT_RATIO`** (GPU yok, karar)
+# SIRADAKİ İŞ — ⏳ **3.0c · talep ölçümü koşuyor**, sonra ⛔ **KARAR**
 
-⚠️ **3.0 pilotu koştu ve bitti (D-164).** Aşağıda önce onun kaydı, sonra
-açtığı karar (**3.0b**) duruyor.
+⚠️ **3.0 pilotu bitti (D-164). 3.0b (sabit kararı) DENENDİ ve verilemedi
+(D-165) — seçilecek bir değer olmadığı türetildi.** Sıra, kararı mümkün kılan
+tek sayıyı ölçmekte: **3.0c**.
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
@@ -218,7 +219,53 @@ gerekçesiydi) · tavan kanonik DEFECT'i ancak oran < 0.561'de bağlıyor, havuz
 
 ---
 
-## ⛔ 3.0b · **KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak** *(senin, D-007)*
+## ❌ 3.0b · ~~KARAR: `EXTRACTION_LIMIT_RATIO`~~ — **VERİLEMEDİ (D-165)**
+
+⛔ **Bant BOŞ ÇIKTI.** Bandın sınanmamış ikinci şartı (*tavan landmark'tan önce
+bağlamalı*, D-084/D-163 §4) uygulanınca:
+
+```
+landmark'tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
+kriz rejimi erişilebilir olsun ⇒  r >  0.10500
+```
+**Arada 1.67 kat, örtüşme yok ⇒ seçilecek `r` yok.**
+
+⭐ **Asıl değişken `r` değil TALEP:** kritik talep **`D* = 6.078`**.
+`D > D*` ise bant dolu, `D < D*` ise hiçbir `r` çalışmaz. Pilot talebi
+**aralık** olarak bıraktı (`[4.438, 6.578]`) ve **`D*` aralığın içinde** ⇒
+karar **verilebilir değil**, sabit **değiştirilmedi**.
+
+⇒ **Açtığı iş: 3.0c.** Karar, ölçümden sonra **kaldıraç seçimi** olarak geri
+gelecek (talep · `POOL_INIT` · Katman 2) — üçü de **senin** (D-007).
+
+---
+
+## ⏳ 3.0c · Talep ölçüm koşumu — **ön-taahhüt D-167'de, koşumdan önce commit'li**
+
+**Alet:** D-166 — pool satırı artık karar sınıfını (`outcome`) da taşıyor;
+nesil kaydında `demand` ve `demand_to_landmark` (mean · median · p90 · max +
+`outcomes` histogramı).
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9923 9924 9925 --n-agents 8 --n-generations 2 --events 30 \
+  --lora --fresh-pasture --arms lived \
+  --results dau_runs/demand_probe_g2_s9923_9925.json
+```
+
+| kural | ne sorar |
+|---|---|
+| **M1** *(bağlayıcı)* | gen1'de `demand_to_landmark.requested_mean`, 3 tohumun **≥2'sinde > 6.078** mü? |
+| **M2** *(eşiksiz)* | `outcomes` histogramı — D-164'ün P3'ünde **okunamayan** `cooperate` sayısı |
+| **M3** *(eşiksiz)* | `median` · `p90` · `max` — talebin ne kadarı ayrıştırılmış büyük ilanlardan |
+
+⛔ **`D* = 6.078` D-165'te sabitlendi, koşuma bakılarak değişmez.**
+⛔ **Koşumdan sonra hiçbir sabit değişmeyecek** — sonraki adım bir karardır.
+
+**Bitti sayılır:** koşum `complete`, M1/M2/M3 **yazıldığı gibi** okundu ve
+**D-168** yazıldı.
+
+## ⛔ 3.0d · **KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak** *(senin, D-007)*
 
 ⚠️ **Tam gerekçe ve üç seçenek `CLAUDE.md` §1'de** (*"devam et" = KARAR*).
 Özet: yapısal bant **0.1050 < r < 0.1425** (yalnız `POOL_REGEN_RATE`,

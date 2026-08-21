@@ -39,16 +39,18 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Katman 1 pilotu koştu: **ölçüm zinciri kazandı** (tanımlılık 3/3 tohum),
-**kıtlık mekanizması kazanmadı** (tavan neredeyse hiç bağlamadı) ⇒ sıradaki
-iş **bir sabit kararı, ve o senin**.
+Katman 1 pilotu koştu, sabit kararı **denendi ve verilemedi** — çünkü `r`'nin
+bandı ölçülmemiş bir **talep eşiğine** bağlı çıktı; alet o eşiği ölçecek hâle
+getirildi ve **ölçüm koşumu şu anda dönüyor**.
 
 ## Durum
 
-- **Branch:** `main`. **Son D-kaydı: D-164** (sıradaki: **D-165**).
-  **Suite:** 636 passed, 2 deselected. **Kapı: 10.**
-- **SIRADAKİ İŞ: ⛔ KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak.** Tam
-  gerekçe hemen aşağıda; kod işi **karardan sonra**.
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-167** (sıradaki: **D-168**).
+  **Suite:** **640 passed**, 2 deselected. **Kapı: 10.**
+- ⏳ **KOŞUM DÖNÜYOR:** talep ölçümü (D-167) — `demand_probe_g2_s9923_9925`.
+  Başlangıç **2026-08-21 ~12:0x**, tahmin **~2–2.5 sa** ⚠️ (tahmin; benim süre
+  tahminlerim üçte ikisinde tutmadı).
+- **KOŞUM BİTİNCE: D-168** yazılır (M1/M2/M3 okuması), sonra ⛔ **KARAR senin**.
 
 ---
 
@@ -83,36 +85,63 @@ kapı **7/10**, bayrak `I4.2` `I5.5` `I5.6`.
 **≥ 10.51** (grace=10 ⇒ ölüm yok ⇒ N=8 kesin) ⇒ o eksik alma 8.0'lık DEFECT
 talebinden **gelemez** ⇒ mekanizma için gerçek sayı **0/3**.
 
-### 3. ⛔ KARAR — üç seçenek, **senin** (D-007)
+### 3. ⛔ A seçeneği DENENDİ ve **ÇÖKTÜ** (D-165) — geri çekiliyor
 
-⚠️ **Sayı sonuca bakılarak seçilmez (§2.7).** Aşağıdaki bant yalnız mevcut
-**eşiklerden** türetildi; hiçbir koşum verisi girmiyor.
+Bir önceki sürüm burada *"Claude Code'un önerisi: **A** — `r`'yi bandın içinde
+aşağı al"* diyordu. **A uygulanmadan önce türetildi ve türetme A'yı çürüttü.**
+
+Bandın **ikinci** bir şartı sınanmamıştı: **tavan landmark'tan (olay 10) önce
+bağlamalı** (D-084'ün ve D-163 §4'ün zaten kullandığı ölçüt). Gerçek
+`step_pool` cebiriyle, ölçülen talebe göre:
 
 ```
-denge = 1 − r / POOL_REGEN_RATE          (tavan bağladığında)
-denge < POOL_CRISIS_THRESHOLD (0.30)  ⇒  r > 0.1050
-denge > COLLAPSE_EPSILON      (0.05)  ⇒  r < 0.1425
-⇒ yapısal bant:  0.1050 < r < 0.1425
+landmark'tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
+kriz rejimi erişilebilir olsun ⇒  r >  0.10500
 ```
 
-⭐ **D-163 bandın tam ÜST ucunu seçti** (`0.1425`, denge = tam 0.05) — yani
-tavanın **en gevşek** hâlini. Bant içinde aşağı inmek tavanı sıkar:
-`cap` DEFECT'i **oran < 0.08/r** iken bağlar ⇒ `r = 0.11`'de oran < **0.727**
-(havuz 0.80'den başlıyor, birkaç olayda oraya iniyor), denge **0.267** ⇒ kriz
-rejimi **erişilebilir kalır**.
+⛔ **BOŞ KÜME — arada 1.67 kat, örtüşme yok. Seçilecek bir `r` YOK.**
 
-| # | seçenek | ne kazanır / ne bedeli var |
-|---|---|---|
-| **A** ⭐ | **`r`'yi bandın içinde aşağı al** | Bulgu 1 ve 2'yi birlikte hedefler: tavan daha erken bağlar **ve** kriz rejimi erişilebilir olur. ⚠️ Değer **bantla** gerekçelenmeli, etkiyle değil; ve D-163'ün şartı gereği **denge noktası kayda yazılmalı** |
-| **B** | **`EXTRACTION_PARSE_MAX = 25`'e bak** | Eksik almaların **%63'ünün** kaynağı. ⚠️ Ama bu **talep tarafı** — K7'nin sınırında; *"ortamın ayrıştırma kuralı mı, davranışsal önsel mi"* sorusu **sessizce cevaplanamaz** (§2.11) |
-| **C** | **Katman 1'i olduğu gibi bırak, Katman 2'ye geç** | Savunulabilir: **asıl darboğaz olan tanımlılık zaten açıldı** (aşağıda). ⚠️ Bedeli: kriz kanalı ölü kalır ⇒ ön-kayıtın D-070/K6 uç noktası askıda kalır |
+⭐ **Asıl değişken `r` değil, TALEP.** Aynı hesap talep için çözülünce:
 
-**Claude Code'un önerisi: A** — çünkü tek hamlede iki ölçülmüş kusuru
-(kriz kanalı + tavanın gevşekliği) hedefliyor, yeni serbest parametre
-getirmiyor ve bandı zaten kodun kendi eşikleri belirliyor. ⚠️ **A tek başına
-Bulgu 3'ü kapatmaz** — büyük ilanlar sürer; B ayrı bir karardır.
+| talep `D` | bantta uygun `r` var mı |
+|---|---|
+| **4.438** *(pilotun ölçtüğü alt sınır)* | ⛔ **BOŞ** |
+| **6.078** | ⭐ **tam sınır — `D*`** |
+| 8.000 *(kanonik `EXTRACTION_DEFECT`)* | ✅ bandın tamamı |
 
-### 4. ✅ Pilotun kazandırdığı şey — bütçe kararı artık yapılabilir
+⇒ **Katman 1, talebin `8.0` olduğu bir evren için tasarlandı.** D-163 §5'in
+tablosu *"hepsi DEFECT"* varsayımıyla hesaplanmıştı.
+
+⛔ **Ve sonuç kesinleştirilemedi:** `4.438` **gerçekleşen** hasat, yani talebin
+**alt sınırı**; kaba üst sınır **6.578** ve **`D*` bu aralığın içinde**.
+⇒ **Sabit değişmedi** — değerini belirleyen nicelik ölçülmemişken sabit
+seçmek §2.7'nin yasağının ta kendisi.
+
+### 4. ⏳ Bu yüzden ölçüm koşumu dönüyor (D-167)
+
+Alet yazıldı (**D-166**: `demand` + `demand_to_landmark`, karar sınıfı
+histogramıyla), ön-taahhüt **koşumdan önce** commit edildi (**D-167**):
+
+> **M1 (bağlayıcı):** gen1'de `demand_to_landmark.requested_mean`, 3 tohumun
+> **≥2'sinde `> 6.078`** ⇒ ✅ bant boş değil, karar *"bantta hangi değer"*e
+> döner. Aksi hâlde ⇒ ❌ **D-165'in imkânsızlığı doğrulanır.**
+> **M2/M3:** `outcomes` histogramı (P3'ün okunamayan `cooperate`'i) ve
+> `median`/`p90`/`max` — **eşiksiz, betimleyici**.
+
+⛔ **`D* = 6.078` koşumdan önce sabitlendi, koşuma bakılarak değişmeyecek.**
+
+### 5. ⛔ KARAR — üç kaldıraç, **senin** (D-007), büyüklükleriyle
+
+| # | kaldıraç | gereken büyüklük | engel |
+|---|---|---|---|
+| **I** | **Talep** (`EXTRACTION_PARSE_MAX`, karar→miktar eşlemesi) | ortalama talep **> 6.078**; ölçülen alt sınır 4.438 ⇒ açık **×1.37** | ⛔ **K7 sınırı** — *"ortamın ayrıştırma kuralı mı, davranışsal önsel mi"* |
+| **II** | **`POOL_INIT`** (havuz aşağıdan başlasın) | `r = 0.1425`'te başlangıç oranı **≤ 0.311** ⇒ `POOL_INIT ≤ 31` (bugün **80**) | ⛔ **D-081 kilitli kararı** (senin: *"kişi başı 100/80 sabit"*) |
+| **III** | Katman 1'i bırak, **Katman 2**'ye geç | — | ⚠️ kriz kanalı ölü kalır ⇒ D-070/kilit K6'nın S5 uç noktası askıda |
+
+⛔ **Claude Code hiçbirini tek başına seçmez** — biri K7'ye, biri kilitli bir
+karara dokunuyor, üçüncüsü bir ön-kayıt uç noktasını feda ediyor.
+
+### 6. ✅ Pilotun kazandırdığı şey — bütçe kararı artık yapılabilir
 
 Kuyruk **2.2**'nin beklediği iki sayı yeniden ölçüldü (ölçüt D-161 §1 ile aynı):
 
@@ -124,19 +153,21 @@ Kuyruk **2.2**'nin beklediği iki sayı yeniden ölçüldü (ölçüt D-161 §1 
 
 ⇒ **Katman 1 kıtlığı kademelendirmedi ama ölçüm zincirini belirgin biçimde
 daha sık tanımlı kıldı.** Bütçe kararı (kaç tohum · kestirim mi test mi) bu üç
-sayıyla verilebilir — **A/B/C kararından sonra**, çünkü fizik yine değişirse
-süre de değişir.
+sayıyla verilebilir — **fizik kararından sonra**, çünkü fizik yine değişirse
+süre de tanımlılık da değişir.
 
-### 5. Karar verilince sırayla
+### 7. Karar verilince sırayla
 
-1. **D-165** yazılır: seçilen değer + **türetmesi** + **denge noktası** + hangi
-   eşiklerin altında/üstünde kaldığı (D-163'ün şartı) + reddedilen adaylar.
-2. Kod değişir (`dau/society/environment.py` sabit bloğu), test + **mutasyon
-   kontrolü** (§2.4, K5: md5 + `no:cacheprovider` + `__pycache__` silme).
+1. **D-kaydı** yazılır: seçilen kaldıraç + değer + **türetmesi** + **denge
+   noktası** + hangi eşiklerin altında/üstünde kaldığı (D-163'ün şartı) +
+   reddedilen adaylar. ⭐ **Ve bandın BOŞ OLMADIĞI aynı turda gösterilir** —
+   D-165'in dersi budur.
+2. Kod değişir, test + **mutasyon kontrolü** (§2.4, K5: md5 +
+   `no:cacheprovider` + `__pycache__` silme).
 3. Yeni pilot **ön-taahhüdüyle birlikte** yazılır (P1'in eşiği yeniden
-   türetilir), sonra koşulur. Tohumlar **9923+** (9920–9922 kullanıldı).
+   türetilir), sonra koşulur. Tohumlar **9926+** (…9925 kullanıldı).
 
-### 6. ⚠️ Koşum yaparken — değişmeyen kurallar
+### 8. ⚠️ Koşum yaparken — değişmeyen kurallar
 
 ❌ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
 (D-116) · koşum sürerken `.py` düzenleme / `git checkout` / branch değiştirme
@@ -197,6 +228,7 @@ sabitlendi — D-088 deseni).
 
 | dosya | ne |
 |---|---|
+| ⏳ `dau_runs/demand_probe_g2_s9923_9925.json` | **talep ölçümü (D-167)** — 3 tohum, G=2, tek kol. ⏳ **koşum sürüyor**; okuması D-168 olacak |
 | **`dau_runs/layer1_pilot_g4_s9920_9922.json`** | ⭐ **Katman 1 pilotu — bugünün TABAN ÇİZGİSİ.** 3 tohum, G=4, `lived shuffle`, 8 sa 3 dk. Okuması **D-164** |
 | `dau_runs/pilot_definedness_g4_s9917_9919.json` | tanımlılık pilotu, 3 tohum, G=4 ⚠️ **Katman 1 öncesi** |
 | `dau_runs/probe3_endpoint_s9916.json` | sonda-3, 1 tohum, G=3 ⚠️ **Katman 1 öncesi** |
@@ -228,8 +260,9 @@ hücreleri okunabilir (gerekçe D-156 §2).
   bunu aletlemek zorunda**.
 - ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
 - ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916
-  (sonda-3) · 9917–9919 (tanımlılık pilotu) · **9920–9922 (Katman 1 pilotu)** ·
-  9305–9310 (mock). Taze blok: **9923+**.
+  (sonda-3) · 9917–9919 (tanımlılık pilotu) · 9920–9922 (Katman 1 pilotu) ·
+  **9923–9925 (talep ölçümü, D-167)** · 9305–9310 · 9399 (mock).
+  Taze blok: **9926+**.
 - **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
