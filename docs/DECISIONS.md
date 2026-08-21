@@ -13119,3 +13119,209 @@ altında**.
 Sabitin ne olacağı bu kayda yazılmıyor, bilerek: teşhis **kaydedilmeden**
 sabit önerilirse öneri, çürüttüğü ölçümün içinden seçilmiş olur (§2.7).
 Kararın önündeki üç seçenek §1'de (`CLAUDE.md`) listelendi.
+
+---
+
+## D-165 · 2026-08-21 · ⛔ **SABİT DEĞİŞMİYOR — çünkü karar VERİLEBİLİR DEĞİL: `r` bir talep eşiğine bağlı ve o talep ölçülmemiş**
+
+**Yetki:** Yasin, 2026-08-21: *"önerdiğin sırada ard arda işleri yapmanı
+istiyorum … duraksamadan gidebildiğin kadar"* — A seçeneğinin uygulanması için
+verilmiş yetki.
+
+⚠️ **Yetki kullanılmadı, ve gerekçesi bu kayıttır.** A seçeneği (*"`r`'yi
+bandın içinde aşağı al"*) uygulanmadan önce türetildi ve **türetme A'yı
+çürüttü**. Değer seçilmedi; §2.3'ün *"adım içinde yeni karar noktası çıkarsa"*
+şartı burada **kendi önerimin aleyhine** işletildi.
+
+---
+
+### 1. A seçeneği neydi ve neden çöktü
+
+`CLAUDE.md` §1'de (D-164 ile birlikte) şu bant yazılmıştı — yalnız mevcut
+eşiklerden, sıfır koşum verisiyle:
+
+```
+denge = 1 − r / POOL_REGEN_RATE
+denge < POOL_CRISIS_THRESHOLD (0.30)  ⇒  r > 0.10500
+denge > COLLAPSE_EPSILON      (0.05)  ⇒  r < 0.14250
+```
+
+Bandın **ikinci** bir şartı sınanmamıştı: **tavan landmark'tan (olay 10) önce
+bağlamalı** — D-084'ün ve D-163 §4'ün zaten kullandığı ölçüt.
+
+**Sınandı.** Gerçek `step_pool` cebiri, N = 8, `METABOLIC_GRACE_EVENTS = 10`
+olduğu için olay 1–9'da ölüm yok ⇒ N sabit. Tavan bağlamazken havuzun
+yörüngesi ve her olayda bağlamak için gereken en büyük `r`:
+
+| olay | havuz oranı | bağlaması için `r ≤` |
+|---|---|---|
+| 1 | 0.8240 | 0.05386 |
+| 5 | 0.7578 | 0.05856 |
+| **9** | 0.7077 | **0.06271** |
+| 10 *(landmark)* | 0.6968 | 0.06369 |
+
+```
+landmark'tan ÖNCE bağlasın   ⇒  r ≤ 0.06271
+kriz rejimi erişilebilir olsun ⇒  r >  0.10500
+```
+
+⛔ **BOŞ KÜME. Arada 1.67 kat var, örtüşme yok.** ⇒ **`EXTRACTION_LIMIT_RATIO`
+için seçilecek bir değer YOK.** A seçeneği bir değer sorunu değilmiş.
+
+### 2. Asıl değişken `r` değil, **talep**
+
+Yukarıdaki hesap ölçülen talebe (`D = 4.438` birim/ajan/olay, D-164) bağlı.
+Aynı hesap `D` için çözülürse:
+
+| talep `D` | `r ≤` (olay 9) | bantta uygun `r` var mı |
+|---|---|---|
+| **4.438** *(ölçülen alt sınır)* | 0.06369 | ⛔ **BOŞ** |
+| 6.000 | 0.10259 | ⛔ **BOŞ** |
+| **6.078** | 0.10500 | ⭐ **tam sınır** |
+| 8.000 *(kanonik `EXTRACTION_DEFECT`)* | 0.19095 | ✅ bandın tamamı |
+
+⭐ **KRİTİK TALEP: `D* = 6.078` birim/ajan/olay.**
+`D > D*` ise Katman 1 çalışır ve bant içinde değer vardır;
+`D < D*` ise **hiçbir `r` çalışmaz.**
+
+⇒ **Katman 1, talebin `8.0` olduğu bir evren için tasarlandı** — D-163 §5'in
+tablosu tam olarak *"hepsi DEFECT"* varsayımıyla hesaplanmıştı. D-164 §4/Bulgu
+4 o varsayımın tutmadığını ölçmüştü; bu kayıt **aynı kusurun sabiti seçilemez
+kıldığını** gösteriyor.
+
+### 3. ⛔ Ve sonuç **kesinleştirilemedi** — ölçülen sayı bir aralık
+
+`D = 4.438` **gerçekleşen hasattır**, yani talebin **alt sınırı**: tavanın
+bağladığı satırlarda talep bundan büyüktü. Üst sınır, her kısa satırın o
+hücrenin **en büyük** gap'i kadar olduğu varsayılarak hesaplandı (kaba, bilerek
+cömert):
+
+```
+ortalama talep ∈ [4.438, 6.578]        D* = 6.078
+```
+
+⛔ **`D*` bu aralığın İÇİNDE.** ⇒ *"hiçbir `r` çalışmaz"* iddiası **ölçülen alt
+sınır için kurulmuştur, kanıtlanmamıştır.**
+
+⚠️ **Ve sebebi tam olarak D-164'ün P3'te çarptığı duvar:** talep dağılımı ne
+JSON'a ne loga yazılıyor. Elimizde **ortalama bile yok, aralık var**.
+
+⇒ **Bu yüzden sabit değişmiyor.** Bir sabiti, değerini belirleyen niceliğin
+**ölçülmediği** bir anda seçmek §2.7'nin yasakladığı şeyin ta kendisidir —
+ve bu kez yasağı çiğneyecek olan **benim önerimdi**.
+
+### 4. Kararın önündeki üç kaldıraç — büyüklükleriyle
+
+| # | kaldıraç | gereken büyüklük | engel |
+|---|---|---|---|
+| **I** | **Talep** (`EXTRACTION_PARSE_MAX`, karar→miktar eşlemesi) | ortalama talep **> 6.078** olmalı; ölçülen alt sınır 4.438 ⇒ açık **×1.37** | ⛔ **K7 sınırı** — *"ortamın ayrıştırma kuralı mı, davranışsal önsel mi"* sorusu **Yasin'in** (D-007) |
+| **II** | **`POOL_INIT`** (havuz daha aşağıdan başlasın) | tavanın olay 1'de bağlaması için başlangıç oranı `≤ D/(100·r)`: `r = 0.1425`'te **≤ 0.311** ⇒ `POOL_INIT ≤ 31` (bugün **80**) | ⛔ **D-081 kilitli kararı** (Yasin, *"kişi başı 100/80 sabit"*) |
+| **III** | Katman 1'i bırak, Katman 2'ye geç | — | ⚠️ kriz kanalı ölü kalır ⇒ D-070/kilit K6'nın S5 uç noktası askıda |
+
+⛔ **Üçü de Yasin'in** (D-007): biri K7'ye, biri kilitli bir karara dokunuyor,
+üçüncüsü bir ön-kayıt uç noktasını feda ediyor. Claude Code hiçbirini tek
+başına seçmez.
+
+### 5. ⇒ Karardan ÖNCE yapılması gereken tek iş
+
+**Talep dağılımını aletlemek.** Üç kaldıracın **üçünün de** büyüklüğü `D`'ye
+bağlı, ve `D` bugün bir aralık. Aletleme:
+
+- **saf raporlamadır** — hesabı değiştirmiyor ⇒ §2.10 altında meşru;
+- fiziğin kullandığı **aynı fonksiyondan** okunur (`decision_to_outcome`),
+  yeniden türetilmez ⇒ §2.8;
+- D-164'ün **P3'te okunamayan** iki maddesinden birini (`cooperate` sayısı)
+  aynı hamlede kapatır;
+- ve hangi kaldıraç seçilirse seçilsin **gerekli** ⇒ boşa gitmez.
+
+⇒ **D-166'da uygulanıyor.**
+
+### 6. Ders
+
+⚠️ **D-164 §7'nin şartı ilk kullanımında işe yaradı ve bir önerimi öldürdü.**
+Şart şuydu: *"denge, evrenin fiilen ürettiği talebe göre hesaplanır."*
+Uygulandığında ortaya çıkan şey bir düzeltme değil, **kararın kendisinin
+zamansız olduğu** oldu.
+
+> ⭐ **Ek:** bir sabit için bant türetildiğinde, bandın **boş olmadığı** aynı
+> turda gösterilir. D-164'ün bandı boş olmadığı **varsayılarak** yazılmıştı;
+> bir tur sonra boş çıktı.
+
+⚠️ Ve şu kaydedilsin: bu kayıt bir **geri çekmedir**. `CLAUDE.md` §1'de
+*"Claude Code'un önerisi: A"* yazıyordu. **A çürüdü, ve çürüten hesap A'yı
+uygulamak için yapılan hesabın kendisiydi.**
+
+---
+
+## D-166 · 2026-08-21 · ✅ **TALEP DAĞILIMI ALETLENDİ — D-165'in kararı bunun üstünde duruyor, D-164'ün P3'ü bunu okuyamamıştı**
+
+**Yetki:** Yasin, 2026-08-21: *"duraksamadan gidebildiğin kadar"*.
+D-165 §5 bu işi *"karardan önce yapılması gereken tek iş"* diye adlandırmıştı.
+
+### 1. Neden
+
+İki bağımsız yer aynı eksik sayıya çarptı:
+
+| | |
+|---|---|
+| **D-164 / P3** | ön-taahhüt `cooperate` sayısını istiyordu; ⛔ **alet onu üretmiyordu** |
+| **D-165 / §3** | tavan aritmetiğinin talep terimi lazımdı; elde **sayı değil aralık** vardı (`[4.438, 6.578]`, eşik `6.078` **aralığın içinde**) |
+
+⇒ Karar, ölçülmemiş bir niceliğe bağlıydı.
+
+### 2. Ne yapıldı — **saf raporlama** (§2.10 altında meşru)
+
+| yer | değişiklik |
+|---|---|
+| `graph.py` · `CommonsRequest` | yeni alan **`outcome: str`** — varsayılan **yok** (§2.9) |
+| `graph.py` · `commons_request_from_state` | `decision_to_outcome(decision)` ile dolduruluyor — **fiziğin kullandığı fonksiyonun aynısı, aynı yerde** (§2.8) |
+| `graph.py` · `_record_pool_event` | satıra `outcome` yazılıyor |
+| `graph.py` | yeni sabit **`POOL_STEP_EMPTY_OUTCOME = "no_decision"`** |
+| `run_population_experiment.py` | **`demand_summary(pool_rows)`** → `n_rows` · `requested_mean` · `median` · `p90` · `max` · **`outcomes` histogramı**; nesil kaydına `"demand"` olarak giriyor |
+
+⭐ **Alanın var olma sebebi tek bir ayrım:** `requested = 2.0` hem gerçek bir
+COOPERATE'ten hem *"extract 2 units"* diyen bir DEFECT'ten gelebilir
+(`decision_to_extraction` metinden miktar ayrıştırıyor, tavan
+`EXTRACTION_PARSE_MAX = 25`). **Miktar bu ikisini ayırt edemez; etiket eder.**
+
+⛔ **Hesap değişmedi:** tek satır fizik değişmedi, hiçbir sabitin **değeri**
+değişmedi, kapı eklenmedi. `outcome` yalnız yazılıyor, hiçbir yerde okunup
+karara girmiyor.
+
+### 3. Kasıtlı test kırılması (Faz kuralı A.3)
+
+`outcome`'a **varsayılan verilmedi** — verilseydi çağıranın unuttuğu yerde
+sessizce yanlış bir karar sınıfı kaydedilirdi (§2.9). Bedeli: `_record_pool_event`'i
+doğrudan çağıran **iki test** kırıldı ve aynı commit'te gerekçesiyle güncellendi.
+
+### 4. ⚠️ Mutasyon kontrolü — **dört mutasyon, biri kendi testimi çürüttü**
+
+| # | mutasyon | sonuç |
+|---|---|---|
+| 1 | etiketi karar metninden değil **miktardan** türet | ✅ yakalandı |
+| 2 | `POOL_STEP_EMPTY_OUTCOME`'u `"coordinate"` yap (sessiz fallback) | ❌ **YAKALANMADI** |
+| 3 | boş nesilde `None` yerine `0.0` döndür | ✅ yakalandı |
+| 4 | `cooperate` etiketini `defect`'e katla | ✅ yakalandı |
+
+⛔ **Mutasyon 2 testimin boş olduğunu gösterdi.** Test
+`outcome == POOL_STEP_EMPTY_OUTCOME` diyordu — **totoloji**: sabit
+değiştirildiğinde test de onunla birlikte değişiyor, yani her koşulda geçiyor.
+Bu, §2.4'ün U7/A2 örneğinin **birebir tekrarı**.
+
+⇒ Test, sabite değil **`OUTCOME_*` kümesine** karşı yazıldı
+(*"kararın çalışmadığı olay gerçek bir karar sınıfı olarak etiketlenemez"*),
+mutasyon tekrarlandı ve **yakalandı**.
+
+⚠️ **Kayda geçsin:** mutasyon kontrolü olmasaydı repoya **işe yaramaz bir
+bekçi** girecekti — ve tam da sessiz fallback yasağını koruyan yere.
+
+**Suite:** 636 → **639 passed**, 2 deselected. `no:cacheprovider` +
+`__pycache__` silme + md5 doğrulaması uygulandı (K5 / D-148).
+
+### 5. Ne açtı
+
+- D-164'ün P3'ünde **okunamayan** `cooperate` sayısı bundan sonra **okunabilir**.
+- D-165'in üç kaldıracının (**talep · `POOL_INIT` · Katman 2**) büyüklüğü
+  ölçülebilir hâle geldi.
+- ⚠️ **Hâlâ okunamayan:** `null`'ın donmuşluğu — o bir kol meselesi, aletleme
+  değil.
