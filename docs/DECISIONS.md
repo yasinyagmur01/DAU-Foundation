@@ -13325,3 +13325,87 @@ bekçi** girecekti — ve tam da sessiz fallback yasağını koruyan yere.
   ölçülebilir hâle geldi.
 - ⚠️ **Hâlâ okunamayan:** `null`'ın donmuşluğu — o bir kol meselesi, aletleme
   değil.
+
+---
+
+## D-167 · 2026-08-21 · 🔒 **TALEP ÖLÇÜM KOŞUMU — K1 kontrolü ve ön-taahhüt, KOŞUMDAN ÖNCE yazıldı**
+
+**Yetki:** Yasin, 2026-08-21: *"run da koşabilirsin"*.
+
+⚠️ **Bu kayıt koşum başlamadan önce commit edilmiştir** (D-160/D-162 deseni).
+Sonra yazılsaydı kuralı çıktıya göre seçmiş olurdum (§2.7 / L9).
+
+### 1. Neyi ölçüyor ve neden
+
+D-165 tek bir sayıya takıldı: **landmark'tan önceki ortalama talep**.
+`D > D* = 6.078` ise Katman 1'in bandında (`0.1050 < r < 0.1425`) çalışan bir
+değer **vardır**; `D < D*` ise **hiçbir `r` çalışmaz** ve kaldıraç başka yerde
+olmak zorunda. Pilot bu sayıyı **aralık** olarak bırakmıştı (`[4.438, 6.578]`)
+ve **`D*` aralığın içinde**. D-166 aleti yazdı; bu koşum sayıyı okuyor.
+
+⭐ **`D* = 6.078` bu kayıttan önce, D-165'te sabitlendi ve koşuma bakılarak
+değiştirilmeyecek.**
+
+### 2. Koşum yapılandırması
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9923 9924 9925 --n-agents 8 --n-generations 2 --events 30 \
+  --lora --fresh-pasture --arms lived \
+  --results dau_runs/demand_probe_g2_s9923_9925.json
+```
+
+⚠️ **Tek kol, bilerek:** pilotta birinci nesil `lived` ve `shuffle`'da
+**birebir aynı** çıktı (adapter henüz yok) ⇒ gen1 talebi kola bağlı değil.
+İkinci kol koşmak aynı sayıyı iki kez ölçerdi.
+⚠️ **G = 2, çünkü G = 1 reddediliyor** (*"Price tanımsız"*, D-101).
+⚠️ Süre **~2–2.5 sa** — ⚠️ **tahmin**, dayanağı pilotun birim maliyeti
+(~20 dk / tohum·kol·nesil). Benim süre tahminlerim üçte ikisinde tutmadı.
+
+### 3. K1 — mekanizma kontrolü (bağlayıcı)
+
+**(a) Ölçülen niceliği hangi mekanizma üretir:**
+politika (model + prompt + adapter) → karar metni → `decision_to_extraction`
+→ `requested` → satır. Etiketi `decision_to_outcome` veriyor (D-166).
+
+**(b) ⛔ Hangi bayrak bu mekanizmayı kapatır**
+
+| bayrak | etkisi | kararım |
+|---|---|---|
+| ⛔ `--mock-llm` | kararlar kanned ⇒ ölçülen dağılım **stub'ın** olur | **KULLANILMIYOR** |
+| ⛔ `--no-lora` | gen1'i etkilemez ama gen2 talebini üreten kanalı kapatır ⇒ pilotla karşılaştırılamaz | **KULLANILMIYOR** |
+| dış `timeout` | D-126 | **YOK** |
+
+**(c) Dejenere olmadığının mevcut veriden kanıtı:** pilot aynı niceliğin
+**gerçekleşen** hâlini hücre başına 3.41–5.23 aralığında ölçtü ⇒ nicelik
+tohuma göre **oynuyor**, sabit değil.
+
+### 4. 🔒 ÖN-TAAHHÜT — okuma kuralları
+
+> **KURAL M1 — bağlayıcı.** `demand_to_landmark.requested_mean`, **birinci
+> nesilde**, 3 tohumun **en az 2'sinde `> 6.078`** ⇒ ✅ Katman 1'in bandı
+> **boş değil**, karar *"bantta hangi değer"*e döner (**Yasin'in**).
+> Aksi hâlde ⇒ ❌ **D-165'in imkânsızlığı doğrulanır**; kaldıraç **talep** ya
+> da **`POOL_INIT`** olmak zorunda, ikisi de **Yasin'in**.
+
+> **KURAL M2 — betimleyici, EŞİKSİZ.** `outcomes` histogramı yazılır:
+> `cooperate` · `defect` · `coordinate` · `deadlock` · `no_decision`.
+> ⛔ **Eşik yok:** D-164'ün P3'ünde bu madde **okunamamıştı**; şimdi
+> okunabiliyor, ama *"karar kanalı canlandı"* benim iddiam olurdu.
+
+> **KURAL M3 — betimleyici.** `median` · `p90` · `max` yazılır ⇒ talebin ne
+> kadarı ayrıştırılmış büyük ilanlardan geliyor.
+
+⛔ **OKUNMAYACAKLAR (L9):** kovaryans değeri · işareti · kol farkı · etki
+büyüklüğü · `ΔP_active`. ⚠️ Bu koşumda **tek kol** var; kol karşıtlığı
+zaten kurulamaz ve **kurulmaya çalışılmayacak**.
+
+⛔ **Hiçbir kural gevşetilmez.** *"2/3 olmadı ama 6.0 da 6.078'e yakın"*
+denmez — eşik koşumdan önce yazıldı.
+
+### 5. Ne yapılmayacak
+
+❌ Bu koşumdan sonra **hiçbir sabit değiştirilmeyecek.** M1 hangi cevabı
+verirse versin, sıradaki adım bir **karardır** ve Yasin'indir (D-007):
+talep K7'nin sınırında, `POOL_INIT` D-081'in kilitli kararı.
+Claude Code sonucu okur, kaydeder, **seçmez**.
