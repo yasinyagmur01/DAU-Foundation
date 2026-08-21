@@ -158,14 +158,17 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# SIRADAKİ İŞ — **3.0 · Katman 1 pilotu** (GPU, ~6–9 sa)
+# SIRADAKİ İŞ — ⛔ **3.0b · KARAR: `EXTRACTION_LIMIT_RATIO`** (GPU yok, karar)
+
+⚠️ **3.0 pilotu koştu ve bitti (D-164).** Aşağıda önce onun kaydı, sonra
+açtığı karar (**3.0b**) duruyor.
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
 *(bitti)* iş tamamlandı, sonucu iyi de olabilir kötü de.
 ⚠️ Aşağıdaki eski maddelerde eski işaretler (⛔ ⭐ 🔒) hâlâ duruyor.
 
-## ⬜ 3.0 · Katman 1 pilotu — tavan işe yaradı mı
+## ✅ 3.0 · Katman 1 pilotu — tavan işe yaradı mı *(bitti — sonucu karışık)*
 
 ⚠️ **Tam talimat `CLAUDE.md` §1'de** (*"devam et" = KATMAN 1 PİLOTU*) — komut, üç kural, koşum sonrası adımlar ve tehlikeler orada tek blokta.
 Aşağısı özettir; **çelişki olursa `CLAUDE.md` geçerlidir** (D-001).
@@ -194,17 +197,62 @@ PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
 **Bitti sayılır:** koşum `complete`, üç kural da D-kaydında **yazıldığı gibi**
 okundu, ve `I5.6` verdict'i raporlandı.
 
+### ✅ *(bitti — 2026-08-21, D-164)* · sonucu: **P2 tuttu, P1 tutmadı**
+
+Bitti ölçütünün üçü de karşılandı: koşum `complete` (8 sa 3 dk, çökme yok),
+üç kural **gevşetilmeden** okundu, `I5.6` raporlandı (**bayrak**: s9922'nin
+5 nesil hücresinde tavan hiç bağlamadı).
+
+| kural | sonuç |
+|---|---|
+| **P1** | ❌ **1/3** (ölçüt ≥2/3) — s9921 olay 2 · s9920 olay 9 · s9922 hiç |
+| **P2** | ✅ **4/6** (ölçüt ≥4) ⚠️ gen1'de kollar özdeş ⇒ fiilen 2/3 tohum |
+| **P3** | `k` **192/192 sabit** · tanımlılık **11/17** · `cooperate` ve `null` ⛔ **okunamadı** |
+
+⛔ **Teşhis (D-164 §4):** kriz kanalı **0/192** öldü (sabitin seçilme
+gerekçesiydi) · tavan kanonik DEFECT'i ancak oran < 0.561'de bağlıyor, havuz
+0.60–0.86'da oturuyor · eksik almaların çoğu havuzdan değil **ilandan**
+(`EXTRACTION_PARSE_MAX = 25`) · D-163'ün **denge noktası hiç kurulmadı**.
+
+⇒ **Açtığı iş: 3.0b (aşağıda).**
+
+---
+
+## ⛔ 3.0b · **KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak** *(senin, D-007)*
+
+⚠️ **Tam gerekçe ve üç seçenek `CLAUDE.md` §1'de** (*"devam et" = KARAR*).
+Özet: yapısal bant **0.1050 < r < 0.1425** (yalnız `POOL_REGEN_RATE`,
+`POOL_CRISIS_THRESHOLD`, `COLLAPSE_EPSILON`'dan türetildi — hiçbir koşum
+verisi girmiyor). D-163 bandın **üst ucunu** seçmişti.
+
+| # | seçenek | özet |
+|---|---|---|
+| **A** ⭐ | `r`'yi bandın içinde aşağı al | tavan erken bağlar **ve** kriz rejimi erişilebilir kalır |
+| **B** | `EXTRACTION_PARSE_MAX`'e bak | eksik almaların %63'ünün kaynağı ⚠️ **talep tarafı, K7 sınırı** |
+| **C** | olduğu gibi bırak, Katman 2'ye geç | tanımlılık zaten açıldı ⚠️ kriz kanalı ölü kalır |
+
+**Bitti sayılır:** **D-165** yazıldı — seçilen değer, **türetmesi**, **denge
+noktası**, hangi eşiklerin altında/üstünde kaldığı (D-163'ün şartı) ve
+reddedilen adaylar kayıtta.
+
 ---
 
 ## ⚠️ 2.2 · Bütçe kararı — **ertelendi, iptal değil**
 
 Alan (`energy`) ve `G` (**4**) ölçümle kararlaştırıldı (D-161). Kalan bütçe
-kararı (**kaç tohum · kestirim mi test mi**) ❌ **Katman 1'den sonra yeniden
-hesaplanmalı**: aritmetiği besleyen iki sayı — tohum kullanılabilirliği
-(**2/3**) ve tohum başına süre (**~1 sa 58 dk**) — **Katman 1 öncesi fizikten**
-geliyor ve artık geçersiz.
+kararı (**kaç tohum · kestirim mi test mi**) için gereken iki sayı Katman 1
+öncesi fizikten geliyordu ve geçersizdi.
 
-⇒ **3.0 pilotu bu iki sayıyı yeniden ölçecek.** Bütçe kararı ondan sonra.
+✅ **3.0 pilotu ikisini de yeniden ölçtü (D-164 §5, ölçüt D-161 §1 ile aynı):**
+
+| sayı | Katman 1 öncesi | **bugün** |
+|---|---|---|
+| Tohum kullanılabilirliği | 2/3 | ✅ **3/3** |
+| Puanlanan hücre tanımlılığı | (seyrek) | ✅ **11/12** |
+| Tohum başına süre | ~1 sa 58 dk | ⚠️ **2 sa 41 dk** (+%36) |
+
+⇒ **Bütçe kararı artık yapılabilir** — ama **3.0b'den sonra**: fizik yine
+değişirse süre de tanımlılık da değişir.
 
 ---
 

@@ -39,92 +39,115 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Evrenin fiziği **ikinci kez değişti** (Katman 1: kademeli kıtlık); kod ve
-kapılar hazır, **sıradaki iş pilotu koşmak**.
+Katman 1 pilotu koştu: **ölçüm zinciri kazandı** (tanımlılık 3/3 tohum),
+**kıtlık mekanizması kazanmadı** (tavan neredeyse hiç bağlamadı) ⇒ sıradaki
+iş **bir sabit kararı, ve o senin**.
 
 ## Durum
 
-- **Branch:** `main`, `origin/main` ile senkron. **Son D-kaydı: D-163**
-  (sıradaki: D-164). **Suite:** 636 passed, 2 deselected. **Kapı: 9.**
-- **SIRADAKİ İŞ: Katman 1 pilotu** — tam talimat hemen aşağıda.
+- **Branch:** `main`. **Son D-kaydı: D-164** (sıradaki: **D-165**).
+  **Suite:** 636 passed, 2 deselected. **Kapı: 10.**
+- **SIRADAKİ İŞ: ⛔ KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak.** Tam
+  gerekçe hemen aşağıda; kod işi **karardan sonra**.
 
 ---
 
-## ▶▶ *"devam et"* = KATMAN 1 PİLOTU (soğuk başlangıç için tam talimat)
+## ▶▶ *"devam et"* = ⛔ **KARAR: `EXTRACTION_LIMIT_RATIO` ne olacak** (soğuk başlangıç için tam blok)
 
 ⚠️ **Bu blok bilerek kendi kendine yeterlidir.** Yeni bir oturum bunu okuyup
 başka hiçbir yeri yeniden türetmeden işe başlayabilmeli.
+🔒 Pilotun tam okuması **D-164**'te; aşağısı karar için gereken özettir.
 
-### 1. Koşumu başlat — komut tam olarak bu
+### 1. Pilot ne dedi — üç kural
 
-```
-PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
-  --seeds 9920 9921 9922 --n-agents 8 --n-generations 4 --events 30 \
-  --lora --fresh-pasture --arms lived shuffle \
-  --results dau_runs/layer1_pilot_g4_s9920_9922.json
-```
-
-⚠️ Dış `timeout` **YOK** (D-126 — replay'i keserse sonuç dosyası hiç
-yazılmaz) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez** (D-116) · tohumlar
-**taze** (kullanılmışlar …9919) · süre **~6–9 sa** (tahmin; benim süre
-tahminlerim üçte ikisinde tutmadı, birim maliyet tohuma göre **%47** oynuyor).
-
-❌ **Koşum sürerken DAU reposunda `.py` düzenleme, `git checkout`, branch
-değiştirme YAPILMAZ.** Kodda fonksiyon içi importlar var; koşum yarısı eski
-yarısı yeni kodla biter ve `tool_identity` bunu **göstermez**.
-
-### 2. Bitince — ön-taahhüt edilmiş üç kuralı **yazıldığı gibi** uygula
-
-🔒 Kurallar **D-162 §5**'te, koşumdan önce commit edildi. P1'in eşiği
-**D-163 §7**'de güncellendi — **geçerli olan aşağıdakidir**:
-
-| kural | ölçüt |
+| kural | sonuç |
 |---|---|
-| **P1** — kıtlık kademeli mi oldu? | 3 tohumun **≥ 2'sinde**, birinci nesilde ilk eksik alma **olay ≤ 8** |
-| **P2** — kurucular ayrışıyor mu? | **6 kurucu hücrenin ≥ 4'ünde** `Var(F_agent) > 0` ⚠️ bugünkü taban **8'de 2** |
-| **P3** — zincirin geri kalanı oynadı mı? | ⚠️ **EŞİKSİZ, betimleyici**: `k` dağılımı · `cooperate` sayısı · tanımlılık oranı · `null`'ın donmuşluğu |
+| **P1** — kıtlık kademeli mi oldu? | ❌ **TUTMADI** — 1/3 (ölçüt ≥2/3). s9921 olay 2 ✅ · s9920 olay 9 ❌ · s9922 **hiç** ❌ |
+| **P2** — kurucular ayrışıyor mu? | ✅ **TUTTU** — 4/6 (ölçüt ≥4). ⚠️ Ama gen1'de kollar özdeş ⇒ fiilen **2/3 tohum** |
+| **P3** — zincir oynadı mı? *(eşiksiz)* | `k` **192/192 `resource_load`, hiç oynamadı** · tanımlılık **11/17** · `cooperate` ve `null` ⛔ **okunamadı** |
 
-⛔ **P3'e eşik konmaz, bilerek.** *"Bir kaldıraç üçünü birden oynatır"* benim
-**iddiam**; kural koymak onu çürütülemez kılardı. Tutmadıysa **tutmadı** yazılır.
+**Koşum:** 8 sa 3 dk (tohum başına **2 sa 41 dk**) · `complete` · çökme yok ·
+kapı **7/10**, bayrak `I4.2` `I5.5` `I5.6`.
 
-⛔ **OKUNMAYACAKLAR (L9):** kovaryans **değeri** · **işareti** · `lived` ile
-`shuffle` **arasındaki fark** · etki büyüklüğü · `ΔP_active`.
+### 2. Neden tutmadı — teşhis (D-164 §4, mevcut veriden)
 
-⛔ **Hiçbir kural gevşetilmez.** *"2/3 olmadı ama 1/3 de fena değil"* denmez —
-D-129'da, D-155'te, D-161'de denmedi.
+| # | bulgu |
+|---|---|
+| **1** | ⛔ **Kriz kanalı öldü: 0/192 yaşam.** Sabitin `0.1425` seçilme gerekçesi **tam olarak bu kanalı yaşatmaktı** (D-163 §2). En düşük havuz oranı **0.375**, eşik 0.30 |
+| **2** | Tavan `= 14.25 × havuz_oranı` ⇒ kanonik DEFECT (8.0) ancak **oran < 0.561** iken bağlar; havuz koşum boyu **0.60–0.86**'da oturuyor |
+| **3** | Eksik almaların çoğu havuzdan değil **ilandan**: 24 hücrenin **15'i** `EXTRACTION_PARSE_MAX = 25`'e yakın ilanlardan (gap 16–19), **2'si** tasarlanan rejim, **5'i** hiç bağlamadı |
+| **4** | D-163'ün **denge hesabı hiç kurulmadı**: `0.1425 p` terimi *"herkes tavanı alır"* varsayıyordu; gerçek hasat **~36/olay ve havuzla orantısız** (tavanların toplamı 74.1) |
+| **5** | s9922 gen1'de **8 kurucu bit düzeyinde özdeş** (`F=0.420587919`, ömür 11, Δhavuz 50.000000) — zincir **ilk halkada** koptu |
 
-### 3. Sonra sırayla
+⭐ **P1'in tek geçen tohumu da mekanizmadan gelmiyor:** olay 2'de tavan
+**≥ 10.51** (grace=10 ⇒ ölüm yok ⇒ N=8 kesin) ⇒ o eksik alma 8.0'lık DEFECT
+talebinden **gelemez** ⇒ mekanizma için gerçek sayı **0/3**.
 
-1. **D-164** yazılır: üç kuralın okuması + `I5.6` verdict'i + süre (ölçülerek,
-   tahmin edilerek değil — K4) + ilan edilen sınırlar.
-2. Kuyrukta **3.0 ✅** işaretlenir, `CLAUDE.md` §1 güncellenir.
-3. Kod ve kayıt **ayrı commit** (§2.5), sonra **push**.
+### 3. ⛔ KARAR — üç seçenek, **senin** (D-007)
 
-### 4. P3 iki şeyi besliyor — koşumdan sonra gündeme gelir
+⚠️ **Sayı sonuca bakılarak seçilmez (§2.7).** Aşağıdaki bant yalnız mevcut
+**eşiklerden** türetildi; hiçbir koşum verisi girmiyor.
 
-- **Sonda bataryası (aday, tasarlanmadı):** held-out karar durumlarında
-  **yalnız çıkarım** — davranışsal, transfer edilebilir bir uç nokta. ⚠️ Ancak
-  karar kanalı oynuyorsa anlamlı; **`cooperate` sayısı bunun testidir**.
-  D-084 kanalın doygun olduğunu ölçmüştü, D-090 `cooperate` bölgesinin var
-  olduğunu ama ajanların oraya girmediğini.
-- **Katman 2/3 kararı:** `k` hâlâ sabitse Katman 2, `cooperate` hâlâ sıfırsa
-  Katman 3 gündeme gelir (§1'deki katman planı).
+```
+denge = 1 − r / POOL_REGEN_RATE          (tavan bağladığında)
+denge < POOL_CRISIS_THRESHOLD (0.30)  ⇒  r > 0.1050
+denge > COLLAPSE_EPSILON      (0.05)  ⇒  r < 0.1425
+⇒ yapısal bant:  0.1050 < r < 0.1425
+```
 
-### 5. ⚠️ Ertelenmiş, unutulmasın
+⭐ **D-163 bandın tam ÜST ucunu seçti** (`0.1425`, denge = tam 0.05) — yani
+tavanın **en gevşek** hâlini. Bant içinde aşağı inmek tavanı sıkar:
+`cap` DEFECT'i **oran < 0.08/r** iken bağlar ⇒ `r = 0.11`'de oran < **0.727**
+(havuz 0.80'den başlıyor, birkaç olayda oraya iniyor), denge **0.267** ⇒ kriz
+rejimi **erişilebilir kalır**.
 
-**Bütçe kararı (kuyruk 2.2) iptal değil, ertelendi.** Alan (`energy`) ve
-`G = 4` ölçümle kararlaştırıldı (D-161), ama aritmetiği besleyen iki sayı —
-tohum kullanılabilirliği (**2/3**) ve tohum başına süre (**~1 sa 58 dk**) —
-**Katman 1 öncesi fizikten** geliyor ve **artık geçersiz**. Bu pilot ikisini
-de yeniden ölçecek; bütçe kararı ondan sonra.
+| # | seçenek | ne kazanır / ne bedeli var |
+|---|---|---|
+| **A** ⭐ | **`r`'yi bandın içinde aşağı al** | Bulgu 1 ve 2'yi birlikte hedefler: tavan daha erken bağlar **ve** kriz rejimi erişilebilir olur. ⚠️ Değer **bantla** gerekçelenmeli, etkiyle değil; ve D-163'ün şartı gereği **denge noktası kayda yazılmalı** |
+| **B** | **`EXTRACTION_PARSE_MAX = 25`'e bak** | Eksik almaların **%63'ünün** kaynağı. ⚠️ Ama bu **talep tarafı** — K7'nin sınırında; *"ortamın ayrıştırma kuralı mı, davranışsal önsel mi"* sorusu **sessizce cevaplanamaz** (§2.11) |
+| **C** | **Katman 1'i olduğu gibi bırak, Katman 2'ye geç** | Savunulabilir: **asıl darboğaz olan tanımlılık zaten açıldı** (aşağıda). ⚠️ Bedeli: kriz kanalı ölü kalır ⇒ ön-kayıtın D-070/K6 uç noktası askıda kalır |
 
-### 6. İsteğe bağlı — GPU sıcaklığı
+**Claude Code'un önerisi: A** — çünkü tek hamlede iki ölçülmüş kusuru
+(kriz kanalı + tavanın gevşekliği) hedefliyor, yeni serbest parametre
+getirmiyor ve bandı zaten kodun kendi eşikleri belirliyor. ⚠️ **A tek başına
+Bulgu 3'ü kapatmaz** — büyük ilanlar sürer; B ayrı bir karardır.
 
-GPU hedefi **87 °C** ve uzun koşumda orada tutuyor (kısma %0.6, yani sağlıklı).
-Yaz koşullarında düşürmek istenirse **koşumdan önce**:
-`sudo nvidia-smi -lgc 300,2400` (geri alma: `-rgc`).
-✅ **Sonucu etkilemez** — I0.6 `use_deterministic_algorithms` + `cudnn.deterministic`
-zorunlu kılıyor, çekirdek seçimi zamanlamaya bakmıyor. ⚠️ Yalnız **süre** uzar.
+### 4. ✅ Pilotun kazandırdığı şey — bütçe kararı artık yapılabilir
+
+Kuyruk **2.2**'nin beklediği iki sayı yeniden ölçüldü (ölçüt D-161 §1 ile aynı):
+
+| sayı | Katman 1 öncesi | **bugün** |
+|---|---|---|
+| Tohum kullanılabilirliği | 2/3 | ✅ **3/3** |
+| Puanlanan hücre tanımlılığı | (seyrek) | ✅ **11/12** |
+| Tohum başına süre | ~1 sa 58 dk | ⚠️ **2 sa 41 dk** (+%36) |
+
+⇒ **Katman 1 kıtlığı kademelendirmedi ama ölçüm zincirini belirgin biçimde
+daha sık tanımlı kıldı.** Bütçe kararı (kaç tohum · kestirim mi test mi) bu üç
+sayıyla verilebilir — **A/B/C kararından sonra**, çünkü fizik yine değişirse
+süre de değişir.
+
+### 5. Karar verilince sırayla
+
+1. **D-165** yazılır: seçilen değer + **türetmesi** + **denge noktası** + hangi
+   eşiklerin altında/üstünde kaldığı (D-163'ün şartı) + reddedilen adaylar.
+2. Kod değişir (`dau/society/environment.py` sabit bloğu), test + **mutasyon
+   kontrolü** (§2.4, K5: md5 + `no:cacheprovider` + `__pycache__` silme).
+3. Yeni pilot **ön-taahhüdüyle birlikte** yazılır (P1'in eşiği yeniden
+   türetilir), sonra koşulur. Tohumlar **9923+** (9920–9922 kullanıldı).
+
+### 6. ⚠️ Koşum yaparken — değişmeyen kurallar
+
+❌ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
+(D-116) · koşum sürerken `.py` düzenleme / `git checkout` / branch değiştirme
+**YAPILMAZ** (fonksiyon içi importlar; `tool_identity` bunu göstermez).
+⛔ **OKUNMAYACAKLAR (L9):** kovaryans **değeri** · **işareti** · `lived`↔`shuffle`
+**farkı** · etki büyüklüğü · `ΔP_active`.
+
+**İsteğe bağlı — GPU sıcaklığı:** hedef **87 °C**, uzun koşumda orada tutuyor
+(kısma %0.6). Düşürmek istenirse **koşumdan önce**
+`sudo nvidia-smi -lgc 300,2400` (geri alma `-rgc`). ✅ Sonucu etkilemez (I0.6),
+⚠️ yalnız süre uzar.
 
 ---
 
@@ -139,12 +162,15 @@ cap_i = EXTRACTION_LIMIT_RATIO × (kalan_stok / N)      ← sırası gelenin gö
 EXTRACTION_LIMIT_RATIO = POOL_REGEN_RATE × (1 − COLLAPSE_EPSILON) = 0.1425
 ```
 
-| | eski (sabit kota) | yeni (tavan) |
-|---|---|---|
-| ilk eksik alma | olay **17** | olay **6** (landmark 10'dan önce) |
-| **landmark penceresinde yayılım** | ❌ **0.0000** | ✅ **0.3923** |
-| olay 30'da havuz | **0.000** (soğurucu) | 0.179, tabana yaklaşıyor |
-| kriz kanalı | aktif | ✅ aktif (15/30 olay) |
+| | eski (sabit kota) | **projeksiyon** (D-163 §5) | ❌ **ölçülen** (D-164) |
+|---|---|---|---|
+| ilk eksik alma | olay **17** | olay **6** | **9 · 2 · hiç** (tohuma göre) |
+| olay 30'da havuz | **0.000** (soğurucu) | 0.179 | **0.60–0.86** |
+| kriz kanalı | aktif | aktif (15/30 olay) | ❌ **0 / 192 yaşam** |
+
+⛔ **Sağdaki sütun soldakini çürüttü.** Projeksiyon *"hepsi DEFECT, herkes
+tavanı alır"* varsayımıyla yapılmıştı; gerçek talep hem karışık hem havuzla
+orantısız çıktı ⇒ **D-163'ün denge noktası hiç kurulmadı** (D-164 §4/Bulgu 4).
 
 ⚠️ **Teşhisim önce yanlıştı ve düzeltildi.** *"Kıtlık ısırmıyor"* demiştim —
 tek bir sayıdan (0.757) zincir kurmuştum. Ölçüm çürüttü: **34 hücrenin
@@ -171,12 +197,14 @@ sabitlendi — D-088 deseni).
 
 | dosya | ne |
 |---|---|
+| **`dau_runs/layer1_pilot_g4_s9920_9922.json`** | ⭐ **Katman 1 pilotu — bugünün TABAN ÇİZGİSİ.** 3 tohum, G=4, `lived shuffle`, 8 sa 3 dk. Okuması **D-164** |
 | `dau_runs/pilot_definedness_g4_s9917_9919.json` | tanımlılık pilotu, 3 tohum, G=4 ⚠️ **Katman 1 öncesi** |
 | `dau_runs/probe3_endpoint_s9916.json` | sonda-3, 1 tohum, G=3 ⚠️ **Katman 1 öncesi** |
 | `dau_runs/c2_population_n8_g3_s3.json` | C2, 3 tohum ⚠️ **D-152 ve Katman 1 öncesi** |
 
-❌ **Katman 1 (D-163) bir fizik değişikliğidir ⇒ yukarıdakilerin hiçbiri
-bugünün aletiyle karşılaştırılamaz.** Sıradaki pilot yeni taban çizgisidir.
+❌ **Katman 1 (D-163) bir fizik değişikliğidir ⇒ ilk satır dışındaki hiçbiri
+bugünün aletiyle karşılaştırılamaz.**
+⚠️ **Ve sabit yine değişirse (A/B seçeneği) ilk satır da taban olmaktan çıkar.**
 
 ⚠️ **Evrenin fiziği ve alet defalarca değişti** — `dau_runs/` altındaki eski
 koşumlar bugünün aletiyle **karşılaştırılamaz**. C2'nin yalnız **birinci nesil**
@@ -188,10 +216,20 @@ hücreleri okunabilir (gerekçe D-156 §2).
   (34/144). ⚠️ Kalan sınır: **birinci varis kuşağında yapısal olarak sıfır**,
   ve tohuma çok bağlı.
 - ⚠️ **GAP-10 ertelendi** (D-137): spillover skaler kalıyor; `k` ajanlar
-  arasında değişkenleşirse yeniden açılır.
+  arasında değişkenleşirse yeniden açılır. ⚠️ **Tetik D-164'te yeniden
+  ölçüldü ve ateşlenmedi:** `k` **192/192 `resource_load`** — Katman 1
+  bunu oynatmadı.
+- ⛔ **YENİ, D-164: kriz kanalı bugünkü fizikte ölçülemez (0/192)** ⇒ ön-kayıtın
+  **D-070/kilit K6** uç noktası (*"S5'in ilk travması = commons krizi"*)
+  **askıda**. Sabit kararı (A/B/C) bunu doğrudan etkiler.
+- ⛔ **YENİ, D-164: `cooperate` sayısı aletlenmemiş.** Popülasyon koşumu
+  karar→sonuç dağılımını ne JSON'a ne loga yazıyor ⇒ P3'ün bir maddesi
+  okunamadı. Karar kanalına bakan her iş (sonda bataryası, Katman 3) **önce
+  bunu aletlemek zorunda**.
 - ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
 - ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916
-  (sonda-3) · **9917–9919 (pilot)** · 9305–9310 (mock). Taze blok: **9920+**.
+  (sonda-3) · 9917–9919 (tanımlılık pilotu) · **9920–9922 (Katman 1 pilotu)** ·
+  9305–9310 (mock). Taze blok: **9923+**.
 - **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
