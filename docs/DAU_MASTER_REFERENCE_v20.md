@@ -1186,6 +1186,7 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.4.3** | **2026-08-12** | Faz C belge borcu: §23 baştan yazıldı · D-045…D-053 · consolidation anlatısı ilk ölçülen `deleted_count` ile · `.html`/`.pdf` yeniden üretildi (29 sayfa). B2 sonucu **alet null'ı** olarak sınıflandı. |
 | **2.4.4** | **2026-08-13** | **§26 — evrenin fiziği değişti** (D-054…D-068): metabolik döngü kapandı, ölüm eşiği bağlandı, kasa saati düzeldi. B2 öncesi empirik tablo **karşılaştırılamaz** ilan edildi. |
 | **2.5** | **2026-08-18** | **§27 — popülasyon makinesi ve ikinci ön-kayıt** (D-069…D-122). Tek soy → popülasyon, sabit `w` → değişken `w`. `PREREGISTRATION_2.md` kilitlendi (`72df476ebd54`). `.html`/`.pdf` yeniden üretildi (34 sayfa). |
+| **2.7** | **2026-08-21** | **§29 — Katman 1 ölçüldü, sabit kararı VERİLEMEDİ** (D-164…D-167). Pilot: **P2 tuttu (4/6), P1 tutmadı (1/3)**, kriz kanalı **0/192** öldü — hem de sabitin seçilme gerekçesiyken. D-163 §5'in projeksiyonu **çürüdü**. Sabit bandı **boş küme** çıktı (`r ≤ 0.06271` vs `r > 0.10500`); asıl değişken `r` değil **talep**, kritik eşik **`D* = 6.078`**. Talep dağılımı aletlendi (D-166), ölçüm koşumu ön-taahhütle (D-167) başlatıldı. Suite **636 → 640**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 | **2.6** | **2026-08-20** | **§28 — C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). C2 = **evren null'ı**; sebebi ölçüldü (kurucu nesil dejenere, farklılaşmanın tek kaynağı adapter). Üçüncü ön-kayıt taslağı **kilitlenemedi** (D-145). Sonda-3 ve tanımlılık pilotu koştu ⇒ alan `energy`, **G = 4**, kurucu nesil **ısınma**. ⭐ **Fizik yeniden değişti:** stoka oranlı hasat tavanı (D-162/D-163). Kapılar 6 → **9**; suite **636**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 ---
 
@@ -1845,3 +1846,123 @@ enerji + travma-bilgili durum), ajanlar oraya **girmiyor**.
 - **Tohum bağımlılığı ciddi:** 3 tohumun biri (s9917) hem kovaryansta hem
   somatik kanalda sıfır verdi.
 - **`.html` / `.pdf` v2.5'te kaldı** — v2.6 yalnız `.md`.
+
+---
+
+## 29. D-164…D-167: Katman 1 ölçüldü, ve sabit kararı **verilemez** çıktı (v2.7 — yeni)
+
+⚠ **Bu bölüm §28'in devamıdır ve onun bir iddiasını çürütür.** §28.10 Katman
+1'i *"fizik ikinci kez değişti"* diye anlatıyor ve D-163 §5'in projeksiyon
+tablosunu taşıyor. **Pilot koştu; tablo tutmadı.**
+
+### 29.1 Katman 1 pilotu — ön-taahhüt edilmiş üç kural (D-164)
+
+**Koşum:** tohum 9920–9922 · N = 8 · G = 4 · 30 olay · `lived shuffle` ·
+`--lora --fresh-pasture` · **8 sa 3 dk** (tohum başına 2 sa 41 dk) ·
+`complete` · çökme yok · kapı **7/10** (bayrak `I4.2` `I5.5` `I5.6`).
+
+| kural | ölçüt | sonuç |
+|---|---|---|
+| **P1** kıtlık kademeli mi | 3 tohumun ≥2'sinde ilk eksik alma olay ≤ 8 | ❌ **1/3** (9921 olay 2 · 9920 olay 9 · 9922 hiç) |
+| **P2** kurucular ayrışıyor mu | 6 kurucu hücrenin ≥4'ünde `Var(F_agent) > 0` | ✅ **4/6** ⚠ gen1'de kollar özdeş ⇒ fiilen 2/3 tohum |
+| **P3** zincir oynadı mı *(eşiksiz)* | `k` · `cooperate` · tanımlılık · `null` | `k` **192/192 sabit** · tanımlılık **11/17** · `cooperate` ve `null` ⛔ **okunamadı** |
+
+### 29.2 ⛔ Projeksiyon çürüdü — §28.10'un tablosu düzeltilir
+
+| | D-163 §5 projeksiyonu | **ölçülen (D-164)** |
+|---|---|---|
+| ilk eksik alma | olay **6** | **9 · 2 · hiç** (tohuma göre) |
+| olay 30'da havuz | **0.179** | **0.60–0.86** |
+| kriz kanalı | aktif, 15/30 olay | ❌ **0 / 192 yaşam** |
+
+⛔ **Kriz kanalının ölmesi tek başına belirleyicidir:** `r = 0.1425`'in
+`r = 0.10`'a tercih edilme gerekçesi (D-163 §2) **tam olarak o kanalı
+yaşatmaktı**. Sabit değişti, kanal yine öldü ⇒ **D-070 / kilit K6'nın S5 uç
+noktası askıda**.
+
+### 29.3 Neden — beş bulgu (D-164 §4)
+
+1. **Kriz kanalı 0/192.** En düşük havuz oranı 0.375, eşik 0.30.
+2. **Tavan `= 14.25 × havuz_oranı`** ⇒ kanonik DEFECT (8.0) ancak oran
+   **< 0.561** iken bağlar; havuz 0.60–0.86'da oturuyor.
+3. **Eksik almaların çoğu havuzdan değil ilandan.** 24 hücrenin 15'i
+   `EXTRACTION_PARSE_MAX = 25`'e yakın ilanlardan (gap 16–19); 2'si tasarlanan
+   rejim; 5'i hiç bağlamadı.
+4. **Denge hiç kurulmadı.** `0.1425 p` terimi *"herkes tavanı alır"*
+   varsayıyordu; gerçek hasat **~36/olay ve havuzla orantısız** (tavanların
+   toplamı 74.1).
+5. **s9922 gen1'de 8 kurucu bit düzeyinde özdeş** (`F = 0.420587919`, ömür 11,
+   Δhavuz 50.000000) — zincir **ilk halkada** koptu.
+
+### 29.4 ⭐⭐ Sabit kararı denendi ve **boş küme** çıktı (D-165)
+
+Bandın **sınanmamış** ikinci şartı (*tavan landmark'tan önce bağlamalı* —
+D-084/D-163 §4) uygulanınca:
+
+```
+landmark'tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
+kriz rejimi erişilebilir olsun ⇒  r >  0.10500
+```
+
+⛔ **Arada 1.67 kat, örtüşme yok ⇒ seçilecek `r` YOK.**
+
+⭐ **Asıl değişken `r` değil, TALEP.** Kritik talep:
+
+| talep `D` | bantta uygun `r` |
+|---|---|
+| 4.438 *(ölçülen alt sınır)* | ⛔ boş |
+| **6.078** | ⭐ **tam sınır — `D*`** |
+| 8.000 *(kanonik DEFECT)* | ✅ bandın tamamı |
+
+⇒ **Katman 1, talebin `8.0` olduğu bir evren için tasarlandı.**
+
+⛔ **Ve sonuç kesinleştirilemedi:** `4.438` **gerçekleşen** hasat = talebin alt
+sınırı; kaba üst sınır `6.578`; **`D*` bu aralığın içinde.** ⇒ Sabit
+**değiştirilmedi** — değerini belirleyen nicelik ölçülmemişken sabit seçmek
+§2.7'nin yasağının kendisidir.
+
+### 29.5 Alet: talep dağılımı (D-166)
+
+Saf raporlama; hesap değişmedi, hiçbir sabitin değeri değişmedi.
+
+| yer | ne |
+|---|---|
+| `CommonsRequest.outcome` | varsayılansız (§2.9) |
+| `commons_request_from_state` | `decision_to_outcome` ile — **fiziğin kullandığı fonksiyon, aynı yerde** (§2.8) |
+| `_record_pool_event` | satıra `outcome` yazıyor |
+| `POOL_STEP_EMPTY_OUTCOME` | `"no_decision"` — COORDINATE'e katlanmıyor |
+| `demand_summary()` | `mean` · `median` · `p90` · `max` + `outcomes` histogramı; **`demand`** ve **`demand_to_landmark`** |
+
+⭐ **Alanın var olma sebebi:** `requested = 2.0` hem gerçek COOPERATE'ten hem
+*"extract 2 units"* diyen DEFECT'ten gelebilir. **Miktar ayırt edemez, etiket
+eder.**
+
+⚠ **Mutasyon kontrolü kendi testimi çürüttü.** Dört mutasyondan biri
+(*boş etiketi `"coordinate"` yap*) **yakalanmadı**: test
+`outcome == POOL_STEP_EMPTY_OUTCOME` diyordu, yani **totolojiydi** — §2.4'ün
+U7/A2 örneğinin birebir tekrarı. Test `OUTCOME_*` kümesine karşı yeniden
+yazıldı ve mutasyon yakalandı. **Suite 636 → 640.**
+
+### 29.6 Bu bölümün ilan ettiği sınırlar
+
+- ⛔ **Kriz kanalı bugünkü fizikte ölçülemez (0/192)** ⇒ D-070/K6'nın S5 uç
+  noktası askıda.
+- ⛔ **`null`'ın donmuşluğu hâlâ okunamıyor** — kol meselesi, aletleme değil.
+- ⚠ **P2'nin 6 hücresi 3 bağımsız tohumdur**; gen1'de kollar özdeş.
+- ⚠ **`I4.2` bayrağı açık:** kollar gen3/gen4'e farklı RNG durumundan giriyor.
+- ⚠ **D-164'ün A/B/C sınıflandırması `max_shortfall` üzerindendir** ⇒ hücre
+  düzeyinde geçerli, satır düzeyinde değil.
+- ⭐ **Kazanılan:** tohum kullanılabilirliği **2/3 → 3/3**, puanlanan hücre
+  tanımlılığı **11/12**, tohum başına süre **1 sa 58 dk → 2 sa 41 dk**.
+  Katman 1 kıtlığı kademelendirmedi ama **ölçüm zincirini daha sık tanımlı
+  kıldı**.
+
+### 29.7 Ders — türetme disiplininin üçüncü katı
+
+| kayıt | ders |
+|---|---|
+| D-163 | *bir sabitin türetmesinin temiz olması onu doğru yapmıyor;* **denge noktası da yazılmalı** |
+| **D-164** | *denge, sabitlerin **izin verdiği** talebe göre değil, evrenin **fiilen ürettiği** talebe göre hesaplanır — ve o talep **ölçülmüş bir sayı** olarak kayda girer* |
+| **D-165** | *bir sabit için bant türetildiğinde, bandın **boş olmadığı** aynı turda gösterilir* |
+
+⚠ **Üçü de aynı kusurun katmanları:** türetme temiz, **varsayımı ölçülmemiş**.
