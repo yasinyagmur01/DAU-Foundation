@@ -13409,3 +13409,205 @@ denmez — eşik koşumdan önce yazıldı.
 verirse versin, sıradaki adım bir **karardır** ve Yasin'indir (D-007):
 talep K7'nin sınırında, `POOL_INIT` D-081'in kilitli kararı.
 Claude Code sonucu okur, kaydeder, **seçmez**.
+
+---
+
+## D-168 · 2026-08-22 · ⛔ **TALEP ÖLÇÜLDÜ — M1 yazıldığı gibi TUTMADI, ama M1'in EŞİĞİ GEÇERSİZ: D-165'in cebrinde hata bulundu**
+
+**Yetki:** Yasin, 2026-08-21: *"duraksamadan gidebildiğin kadar"*; koşum
+2026-08-22'de yeniden başlatıldı (*"koşum yarıda kaldı, tekrar başlat"*).
+
+⚠️ **Bu kayıt kendi önceki kaydımı (D-165) düzeltiyor.** D-165 append-only
+olduğu için orada düzenlenmedi; hata burada ilan ediliyor.
+
+---
+
+### 0. Koşumun kimliği
+
+| | |
+|---|---|
+| Dosya | `dau_runs/demand_probe_g2_s9923_9925.json` |
+| **Süre (ölçüldü)** | 11:55:45 → 14:05:19 = **2 sa 9 dk 34 sn** · tohum başına **43 dk** |
+| `complete` | **True** · 3 tohum × 1 kol × 2 nesil · Traceback/ABORT **0** |
+| Kapılar | **9/10** · tek bayrak **`I5.5`** — ⭐ ve *ters yönde*: *"FOUNDER transition is estimable — YENİ-4 discards usable data"* (s9925) |
+| ⭐ **`I5.6`** | **GEÇTİ** — tavan **altı nesil hücresinin altısında da** bağladı |
+
+⚠️ **İlk deneme yarıda kaldı** (makine kapandı, s9923 bitmiş, s9924'te kesilmiş).
+Yarım çıktı **silinmedi**: `demand_probe_g2_s9923_9925.ABORTED-1303.{json,log}`.
+s9923'ün adapter'ları I0.7'nin yolundan çekildi (silinmedi). Koşum **üç tohumla
+baştan**, aynı komutla, `.py` değişmeden tekrarlandı.
+
+---
+
+### 1. KURAL M1 — yazıldığı gibi ❌ **TUTMADI**
+
+Ölçüt (D-167 §4): *gen1'de `demand_to_landmark.requested_mean`, 3 tohumun
+≥2'sinde `> 6.078`*
+
+| tohum | ortalama talep (landmark penceresi) | ölçüt |
+|---|---|---|
+| **9923** | **7.325** | ✅ |
+| **9924** | **5.125** | ❌ |
+| **9925** | **5.450** | ❌ |
+
+⇒ **1/3.** ⛔ **Gevşetme yok** — üç ortalamanın ortalaması `5.967` ve eşiğe
+`0.111` uzakta, ama kural *"tohumların ≥2'si"* diyordu ve **öyle okundu**.
+
+**D-167'ye göre bunun anlamı:** *"D-165'in imkânsızlığı doğrulanır."*
+
+---
+
+### 2. ⛔ AMA EŞİK GEÇERSİZ — D-165'in cebrinde hata var
+
+`D* = 6.078` D-165'te şu varsayımla türetilmişti: **havuz `POOL_INIT`'ten,
+yani oran `0.80`'den başlar.** Kod okundu (§2.2 — *belgeye değil dosyaya
+güven*), **varsayım yanlış**:
+
+```
+run_population_experiment.py · shared_pasture():
+    pool = per_capita_stock × n_agents        ← kurucunun NİŞİNDEN
+run_protocol_c_prime.py · _seed_niche():
+    pool = POOL_MAX × rng.uniform(*NICHE_POOL_FRACTION_RANGE)
+    NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)
+```
+
+⇒ **Başlangıç oranı sabit değil, tohuma göre 0.40–1.00 arasında çekiliyor.**
+
+| tohum | 9917 | 9918 | 9919 | 9920 | 9921 | 9922 | 9923 | 9924 | 9925 |
+|---|---|---|---|---|---|---|---|---|---|
+| başlangıç oranı | 0.474 | 0.848 | 0.966 | **0.877** | **0.577** | **0.825** | 0.794 | 0.620 | 0.605 |
+
+⛔ **İki hata birlikte ve aynı yönde çalıştı:**
+
+| # | hata | etkisi |
+|---|---|---|
+| 1 | başlangıç oranı **0.80 sabit** varsayıldı | yörünge yanlış |
+| 2 | talep olarak **ömür-boyu gerçekleşen hasat** (4.438) kullanıldı | landmark penceresindeki gerçek talep **5.1–7.3** |
+
+İkisi de tavanın bağlamasını **olduğundan zor** gösterdi.
+
+### 3. ⭐ Düzeltilmiş hesap — bant **BOŞ DEĞİL**, ama **tohuma bağlı**
+
+Aynı `step_pool` cebiri, gerçek başlangıç havuzu ve **ölçülen** landmark
+talebiyle, *"tavan olay ≤ 9'da bağlasın"* için gereken en büyük `r`:
+
+| tohum | başlangıç oranı | ölçülen `D` | `r_max` | bantta uygun `r` |
+|---|---|---|---|---|
+| **9923** | 0.7936 | 7.325 | 0.14366 | ✅ **(0.1050, 0.1425)** — bandın tamamı |
+| **9924** | 0.6202 | 5.125 | 0.09476 | ⛔ boş |
+| **9925** | 0.6050 | 5.450 | 0.10852 | ✅ **(0.1050, 0.1085)** — ince şerit |
+
+⇒ **2/3 tohumda bant dolu.** Ortak şerit: **`r ∈ (0.1050, 0.1085)`**,
+genişliği `0.0035`. ⚠️ **Kırılgan** — üç tohumun üçünde birden çalışan `r`
+**yok** (9924 için gereken `r < 0.09476` bandın altında).
+
+⛔ **D-165'in *"BOŞ KÜME"* sonucu yanlıştır ve geri çekilmiştir.**
+
+### 4. ⭐⭐ Ve mekanizma bu koşumda **çalıştı**
+
+`I5.6` geçti; tavan **altı hücrenin altısında** ve **landmark'tan önce** bağladı:
+
+| hücre | ilk eksik alma | kısa satır | havuz sonu |
+|---|---|---|---|
+| s9923 gen1 · gen2 | **5** · **6** | 60/192 · 49/155 | 0.458 · 0.745 |
+| s9924 gen1 · gen2 | **3** · **2** | 43/224 · 39/181 | 0.485 · 0.543 |
+| s9925 gen1 · gen2 | **3** · **2** | 57/224 · 75/214 | 0.512 · 0.560 |
+
+⚠️ Landmark penceresinde azami talep **8.0** (6 hücrenin 5'inde) ⇒ bu erken
+eksik almalar **ayrıştırılmış büyük ilandan gelemez**, **havuzun çekilmesinden**
+geliyor. **Tasarlanan rejim.**
+
+⭐ **Başlangıç oranı ile ilk bağlama arasındaki sıralama temiz:**
+
+| başlangıç oranı | 0.577 | 0.605 | 0.620 | 0.794 | 0.825 | 0.877 |
+|---|---|---|---|---|---|---|
+| ilk eksik alma | **2** | 3 | 3 | 5 | **hiç** | 9 *(ilandan)* |
+
+⇒ **Katman 1'in çalışıp çalışmadığını belirleyen baskın değişken, `r` de
+talep de değil — tohumun çektiği BAŞLANGIÇ NİŞİ.** D-164'ün P1 başarısızlığı
+(1/3) bu sıralamayla **birebir uyumlu**: pilotun üç tohumundan yalnız en
+düşük başlangıçlı olan (9921, 0.577) erken bağladı.
+⚠️ **Bu bir gözlem, kontrollü karşılaştırma değil** — iki farklı koşum, ve
+pilotun landmark talebi ölçülmemişti (alet yoktu).
+
+### 5. KURAL M2 — karar sınıfı histogramı *(eşiksiz)*
+
+⭐⭐ **`cooperate` ölü değil, ve azınlık bile değil.**
+
+| | defect | cooperate | deadlock |
+|---|---|---|---|
+| **bütün koşum** (1190 satır) | **626** | **523 (%43.9)** | 41 |
+
+Landmark penceresinde tohuma göre: s9923 **9/80** · s9924 **29/80** ·
+s9925 **34/80**.
+
+⚠️ **D-068'in *"olayların %94–100'ünde DEFECT"* tablosu bugünkü fizik için
+geçerli değil.** ⛔ Ama *"davranış canlandı"* demiyorum: D-068 başka fizikte
+ve başka bir okuma yoluyla ölçülmüştü; bu iki sayı **karşılaştırılabilir
+değil**. Söylenebilecek olan tek şey: **bugün, bu koşumda, karar kanalı
+işliyor.**
+
+⚠️ **Sınır:** etiket `decision_to_outcome`'un anahtar-kelime eşlemesinden
+geliyor (`cooperate`/`share`/`talk`/`social`). Bu **fiziğin kendi
+sınıflandırması** olduğu için hasat miktarını gerçekten belirliyor; ama
+metnin gerçekten kısıtlama niyeti taşıyıp taşımadığı **ayrı bir sorudur ve
+ölçülmedi**.
+
+### 6. KURAL M3 — dağılımın şekli *(eşiksiz)*
+
+| pencere | median | p90 | max |
+|---|---|---|---|
+| **landmark** (6 hücre) | 8.00 | 8.00 | **8.00** *(5 hücrede)* · 25.00 *(1)* |
+| tam yaşam | 2.00–8.00 | 8.00 | **25.00** *(6 hücrede)* |
+
+⇒ **Talep landmark penceresinde iki değerli:** DEFECT `8.0` ya da COOPERATE
+`2.0`. **Ayrıştırılmış büyük ilanlar (`EXTRACTION_PARSE_MAX = 25`) geç yaşam
+olgusu.**
+
+⇒ Ortalama talebin aritmetiği kapalı formda: `mean = 8p + 2(1−p)`, `p` =
+defect payı. `mean > 6.078` için **`p > 0.680`** gerekiyor; ölçülen paylar
+**%88.8 · %55.0 · %57.5**.
+
+⇒ ⭐ **D-164'ün Bulgu 3'ü (*"eksik almaların %63'ü ilandan"*) landmark
+penceresi için GEÇERSİZ** — orada ilan enflasyonu yok. Bulgu tam yaşam
+penceresi için geçerliliğini koruyor.
+
+### 7. Kriz kanalı — hâlâ **0**
+
+`0 / 48` yaşam, `0` kriz olayı. En düşük nesil-sonu havuz oranı **0.458**,
+eşik **0.30**. ⇒ **D-070 / kilit K6'nın S5 uç noktası askıda kalmaya devam
+ediyor.**
+
+### 8. İlan edilen sınırlar
+
+1. ⛔ **M1'in eşiği hatalı bir cebirden geldi** ⇒ M1'in *"tutmadı"* verdict'i
+   **kayda geçer** ama D-167'nin ona yüklediği anlamı (*"imkânsızlık
+   doğrulandı"*) **taşıyamaz**.
+2. ⛔ **Düzeltilmiş hesap ÖN-TAAHHÜTLÜ DEĞİL** — koşum görüldükten sonra
+   yapıldı. Bir karara temel olacaksa **yeni bir ön-taahhütle** yeniden
+   sınanmalı.
+3. ⚠️ Düzeltilmiş hesap **tekdüze talep** varsayıyor; gerçek talep iki
+   değerli ve ajanlar arasında değişiyor ⇒ `r_max` bir **kestirim**.
+4. ⚠️ **Tek kol** koşuldu ⇒ kol karşıtlığı yok, `null`'ın donmuşluğu yine
+   okunamadı.
+5. ⚠️ Başlangıç oranı ↔ ilk bağlama sıralaması **iki ayrı koşumdan** derlendi.
+6. ⚠️ `cooperate` etiketi anahtar-kelime eşlemesidir (§5).
+
+### 9. ⇒ Kararın yeri değişti — ve hâlâ **Yasin'in** (D-007)
+
+D-165 üç kaldıraç saymıştı (talep · `POOL_INIT` · Katman 2). Düzeltilmiş
+hesap **dördüncüsünü** ortaya çıkardı ve baskın olan o:
+
+| # | kaldıraç | ölçülen büyüklük |
+|---|---|---|
+| **0** ⭐ **YENİ** | **`NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)`** | Başlangıç oranı ≤ ~0.62 olan tohumlarda tavan olay 2–3'te bağlıyor; ≥ 0.82 olanlarda hiç bağlamıyor. **Aralığın üst ucu mekanizmayı öldüren tohumlar üretiyor.** |
+| I | Talep | `mean > 6.078` için defect payı **> %68**; ölçülen %55–89 |
+| II | `POOL_INIT` | ⚠️ **Bu kaldıraç zaten çalışmıyor** — havuz `POOL_INIT`'ten değil nişten başlıyor (§2). D-165'in II'si **geçersiz** |
+| III | Katman 2'ye geç | — |
+
+⛔ **Claude Code hiçbirini seçmiyor.** Kaldıraç 0 bir **ön-kayıt aralığına**
+dokunuyor, I **K7'nin sınırında**, III bir uç noktayı feda ediyor.
+
+⚠️ **Ve bir sonraki adım ne olursa olsun, ön-taahhüdü yeniden yazılmalı:**
+bu turda hem P1'in hem M1'in eşiği **yanlış bir cebirden** türetilmişti.
+İki tur üst üste aynı kusur: **türetme temiz, girdisi doğrulanmamış** (§2.2).
