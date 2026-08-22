@@ -158,11 +158,13 @@ Değişkenleşmedi ⇒ **D-131 kalıcılaşır** (null betimleyici), Yön 2'ye d
 
 ---
 
-# SIRADAKİ İŞ — ⏳ **3.0c · talep ölçümü koşuyor**, sonra ⛔ **KARAR**
+# SIRADAKİ İŞ — ⛔ **3.0d · KARAR: hangi kaldıraç** (GPU yok, karar)
 
-⚠️ **3.0 pilotu bitti (D-164). 3.0b (sabit kararı) DENENDİ ve verilemedi
-(D-165) — seçilecek bir değer olmadığı türetildi.** Sıra, kararı mümkün kılan
-tek sayıyı ölçmekte: **3.0c**.
+⚠️ **3.0 bitti (D-164) · 3.0b verilemedi (D-165) · 3.0c koştu (D-168) — ve
+3.0c, 3.0b'nin gerekçesini ÇÜRÜTTÜ.** D-165'in *"boş küme"*si hatalı bir
+başlangıç varsayımından geliyormuş; havuz `POOL_INIT`'ten değil **tohumun
+nişinden** başlıyor (0.40–1.00). ⇒ Mekanizma **çalışıyor**, ama **tohuma
+bağlı**.
 
 ## İşaretler
 ✅ iyi haber · ❌ kötü haber · ⚠️ uyarı/sınır · **KARAR** senin ·
@@ -240,7 +242,7 @@ gelecek (talep · `POOL_INIT` · Katman 2) — üçü de **senin** (D-007).
 
 ---
 
-## ⏳ 3.0c · Talep ölçüm koşumu — **ön-taahhüt D-167'de, koşumdan önce commit'li**
+## ✅ 3.0c · Talep ölçüm koşumu *(bitti — D-168, ve D-165'i çürüttü)*
 
 **Alet:** D-166 — pool satırı artık karar sınıfını (`outcome`) da taşıyor;
 nesil kaydında `demand` ve `demand_to_landmark` (mean · median · p90 · max +
@@ -265,7 +267,34 @@ PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
 **Bitti sayılır:** koşum `complete`, M1/M2/M3 **yazıldığı gibi** okundu ve
 **D-168** yazıldı.
 
-## ⛔ 3.0d · **KARAR — `EXTRACTION_LIMIT_RATIO` ne olacak** *(senin, D-007)*
+### ✅ *(bitti — 2026-08-22, D-168)*
+
+Koşum `complete`, **2 sa 9 dk**, kapı **9/10**, ⭐ **`I5.6` GEÇTİ**.
+
+| kural | sonuç |
+|---|---|
+| **M1** | ❌ **1/3** (7.325 · 5.125 · 5.450 vs eşik 6.078) — ⛔ **ama eşik geçersiz**, hatalı cebirden geldi |
+| **M2** | ⭐ `cooperate` **523/1190 = %43.9** — karar kanalı işliyor |
+| **M3** | landmark'ta talep iki değerli (8.0 / 2.0), `25.0` ilanlar **geç yaşam** olgusu |
+
+⛔ **D-165'in *"BOŞ KÜME"*si geri çekildi.** Düzeltilmiş bant: 9923 bandın
+tamamı · 9924 boş · 9925 ince şerit ⇒ ortak şerit `r ∈ (0.1050, 0.1085)`,
+⚠️ genişlik 0.0035, **kırılgan**.
+
+⭐⭐ **Baskın değişken bulundu:** başlangıç nişi.
+`0.577 → olay 2` · `0.605 → 3` · `0.620 → 3` · `0.794 → 5` · `0.825 → hiç` ·
+`0.877 → 9`. ⚠️ Kriz kanalı hâlâ **0/48**.
+
+## ⛔ 3.0d · **KARAR — hangi kaldıraç** *(senin, D-007)*
+
+⚠️ **Kaldıraç listesi D-168 §9'da güncellendi:** **0 —
+`NICHE_POOL_FRACTION_RANGE (0.40, 1.00)`** (yeni, baskın) · **I — talep**
+(K7 sınırı) · ~~II — `POOL_INIT`~~ (**geçersiz**, havuz oradan başlamıyor) ·
+**III — Katman 2**.
+⛔ **Hangisi seçilirse seçilsin ön-taahhüt YENİDEN yazılır** — bu turda hem
+P1'in hem M1'in eşiği yanlış bir cebirden türetilmişti.
+
+<details><summary>eski başlık (sabit kararı olarak yazılmıştı)</summary>
 
 ⚠️ **Tam gerekçe ve üç seçenek `CLAUDE.md` §1'de** (*"devam et" = KARAR*).
 Özet: yapısal bant **0.1050 < r < 0.1425** (yalnız `POOL_REGEN_RATE`,
@@ -557,3 +586,5 @@ tanımlı (alet null'ı / evren null'ı / etki null'ı / pozitif).
    **sonda-3'te cevaplandı: düzelmedi** (D-155). Sürekli uç nokta adayı
    **girmedi** (2/4), ve sebep uç noktada değil **kurucu neslin
    dejenerasyonunda** ⇒ kilit **2.4b kararına** bağlı.
+
+</details>

@@ -1186,6 +1186,7 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.4.3** | **2026-08-12** | Faz C belge borcu: §23 baştan yazıldı · D-045…D-053 · consolidation anlatısı ilk ölçülen `deleted_count` ile · `.html`/`.pdf` yeniden üretildi (29 sayfa). B2 sonucu **alet null'ı** olarak sınıflandı. |
 | **2.4.4** | **2026-08-13** | **§26 — evrenin fiziği değişti** (D-054…D-068): metabolik döngü kapandı, ölüm eşiği bağlandı, kasa saati düzeldi. B2 öncesi empirik tablo **karşılaştırılamaz** ilan edildi. |
 | **2.5** | **2026-08-18** | **§27 — popülasyon makinesi ve ikinci ön-kayıt** (D-069…D-122). Tek soy → popülasyon, sabit `w` → değişken `w`. `PREREGISTRATION_2.md` kilitlendi (`72df476ebd54`). `.html`/`.pdf` yeniden üretildi (34 sayfa). |
+| **2.8** | **2026-08-22** | **§29.4 düzeltildi — D-165'in *boş küme*si ÇÜRÜDÜ** (D-168). Başlangıç havuzu `POOL_INIT` değil, **tohumun nişinden** (`U(0.40, 1.00)`) geliyor ⇒ bant **boş değil, tohuma bağlı**; baskın değişken **başlangıç nişi**. Talep ölçüldü: landmark'ta iki değerli (8.0/2.0), `cooperate` **%43.9** ⇒ karar kanalı işliyor. `I5.6` **geçti**. ⚠ Kriz kanalı hâlâ **0**. |
 | **2.7** | **2026-08-21** | **§29 — Katman 1 ölçüldü, sabit kararı VERİLEMEDİ** (D-164…D-167). Pilot: **P2 tuttu (4/6), P1 tutmadı (1/3)**, kriz kanalı **0/192** öldü — hem de sabitin seçilme gerekçesiyken. D-163 §5'in projeksiyonu **çürüdü**. Sabit bandı **boş küme** çıktı (`r ≤ 0.06271` vs `r > 0.10500`); asıl değişken `r` değil **talep**, kritik eşik **`D* = 6.078`**. Talep dağılımı aletlendi (D-166), ölçüm koşumu ön-taahhütle (D-167) başlatıldı. Suite **636 → 640**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 | **2.6** | **2026-08-20** | **§28 — C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). C2 = **evren null'ı**; sebebi ölçüldü (kurucu nesil dejenere, farklılaşmanın tek kaynağı adapter). Üçüncü ön-kayıt taslağı **kilitlenemedi** (D-145). Sonda-3 ve tanımlılık pilotu koştu ⇒ alan `energy`, **G = 4**, kurucu nesil **ısınma**. ⭐ **Fizik yeniden değişti:** stoka oranlı hasat tavanı (D-162/D-163). Kapılar 6 → **9**; suite **636**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 ---
@@ -1894,32 +1895,60 @@ noktası askıda**.
 5. **s9922 gen1'de 8 kurucu bit düzeyinde özdeş** (`F = 0.420587919`, ömür 11,
    Δhavuz 50.000000) — zincir **ilk halkada** koptu.
 
-### 29.4 ⭐⭐ Sabit kararı denendi ve **boş küme** çıktı (D-165)
+### 29.4 ⛔ Sabit kararı denendi, **boş küme** sanıldı — ve o sonuç **çürüdü** (D-165 → D-168)
 
-Bandın **sınanmamış** ikinci şartı (*tavan landmark'tan önce bağlamalı* —
-D-084/D-163 §4) uygulanınca:
+D-165 bandın sınanmamış ikinci şartını (*tavan landmark'tan önce bağlamalı*)
+uygulayıp **boş küme** ilan etmişti:
 
 ```
 landmark'tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
 kriz rejimi erişilebilir olsun ⇒  r >  0.10500
 ```
 
-⛔ **Arada 1.67 kat, örtüşme yok ⇒ seçilecek `r` YOK.**
+⛔ **Bu hesap yanlıştır ve D-168'de geri çekilmiştir.** İki varsayımı da kod
+doğrulamadı (§2.2):
 
-⭐ **Asıl değişken `r` değil, TALEP.** Kritik talep:
+| # | varsayım | gerçek |
+|---|---|---|
+| 1 | havuz `POOL_INIT`'ten, oran **0.80**'den başlar | `shared_pasture()` stoğu **kurucunun nişinden** alıyor; `_seed_niche()` onu `POOL_MAX × U(0.40, 1.00)` ile çekiyor ⇒ **tohuma göre 0.40–1.00** |
+| 2 | talep = ömür-boyu gerçekleşen hasat **4.438** | landmark penceresindeki gerçek talep **5.1–7.3** (D-168) |
 
-| talep `D` | bantta uygun `r` |
+İkisi de tavanın bağlamasını **olduğundan zor** gösterdi.
+
+⭐ **Düzeltilmiş hesap (D-168):** bant **boş değil, tohuma bağlı**.
+
+| tohum | başlangıç oranı | ölçülen `D` | bantta uygun `r` |
+|---|---|---|---|
+| 9923 | 0.794 | 7.325 | ✅ bandın tamamı |
+| 9924 | 0.620 | 5.125 | ⛔ boş |
+| 9925 | 0.605 | 5.450 | ✅ ince şerit (0.1050, 0.1085) |
+
+⭐⭐ **Ve baskın değişken bulundu — `r` de talep de değil, BAŞLANGIÇ NİŞİ:**
+
+| başlangıç oranı | 0.577 | 0.605 | 0.620 | 0.794 | 0.825 | 0.877 |
+|---|---|---|---|---|---|---|
+| ilk eksik alma | **2** | 3 | 3 | 5 | **hiç** | 9 |
+
+`NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)` ⇒ **aralığın üst ucu mekanizmayı
+öldüren tohumlar üretiyor.** D-164'ün P1 başarısızlığı (1/3) bu sıralamayla
+uyumlu: pilotun üç tohumundan yalnız en düşük başlangıçlı olan (9921) erken
+bağladı. ⚠ **Gözlem, kontrollü karşılaştırma değil.**
+
+### 29.4-b Talep ölçüldü (D-167 ön-taahhüt · D-168 okuma)
+
+**Koşum:** 9923–9925 · N = 8 · G = 2 · tek kol · **2 sa 9 dk** · `complete` ·
+kapı **9/10** · ⭐ **`I5.6` GEÇTİ** (tavan 6 hücrenin 6'sında, landmark'tan önce).
+
+| kural | sonuç |
 |---|---|
-| 4.438 *(ölçülen alt sınır)* | ⛔ boş |
-| **6.078** | ⭐ **tam sınır — `D*`** |
-| 8.000 *(kanonik DEFECT)* | ✅ bandın tamamı |
+| **M1** *(bağlayıcı)* | ❌ **1/3** — 7.325 · 5.125 · 5.450 vs eşik 6.078. ⛔ **Eşik geçersiz** (yukarıdaki cebir hatası) ⇒ verdict kayda geçer, anlamını taşımaz |
+| **M2** *(eşiksiz)* | ⭐ `cooperate` **523/1190 = %43.9** · defect 626 · deadlock 41 ⇒ **karar kanalı işliyor**. ⚠ D-068'in *"%94–100 DEFECT"*u başka fizikten, **karşılaştırılamaz** |
+| **M3** *(eşiksiz)* | landmark penceresinde talep **iki değerli** (8.0 / 2.0), azami **8.0** (6 hücrenin 5'inde) ⇒ **ilan enflasyonu geç yaşam olgusu**. `mean > 6.078` için defect payı **> %68** gerekiyor |
 
-⇒ **Katman 1, talebin `8.0` olduğu bir evren için tasarlandı.**
+⚠ **Kriz kanalı hâlâ 0** (0/48 yaşam) ⇒ D-070/K6 askıda.
 
-⛔ **Ve sonuç kesinleştirilemedi:** `4.438` **gerçekleşen** hasat = talebin alt
-sınırı; kaba üst sınır `6.578`; **`D*` bu aralığın içinde.** ⇒ Sabit
-**değiştirilmedi** — değerini belirleyen nicelik ölçülmemişken sabit seçmek
-§2.7'nin yasağının kendisidir.
+⚠ **Düzeltilmiş hesap ön-taahhütlü DEĞİL** — koşum görüldükten sonra yapıldı.
+Karara temel olacaksa **yeni bir ön-taahhütle** sınanmalı.
 
 ### 29.5 Alet: talep dağılımı (D-166)
 
@@ -1964,5 +1993,6 @@ yazıldı ve mutasyon yakalandı. **Suite 636 → 640.**
 | D-163 | *bir sabitin türetmesinin temiz olması onu doğru yapmıyor;* **denge noktası da yazılmalı** |
 | **D-164** | *denge, sabitlerin **izin verdiği** talebe göre değil, evrenin **fiilen ürettiği** talebe göre hesaplanır — ve o talep **ölçülmüş bir sayı** olarak kayda girer* |
 | **D-165** | *bir sabit için bant türetildiğinde, bandın **boş olmadığı** aynı turda gösterilir* |
+| **D-168** | ⛔ *türetmenin **girdileri** koddan doğrulanır — D-165 iki tur boyunca `POOL_INIT` sanılan bir başlangıçla hesapladı ve **yanlış bir imkânsızlık** ilan etti* |
 
 ⚠ **Üçü de aynı kusurun katmanları:** türetme temiz, **varsayımı ölçülmemiş**.

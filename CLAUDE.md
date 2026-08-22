@@ -39,22 +39,23 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Katman 1 pilotu koştu, sabit kararı **denendi ve verilemedi** — çünkü `r`'nin
-bandı ölçülmemiş bir **talep eşiğine** bağlı çıktı; alet o eşiği ölçecek hâle
-getirildi ve **ölçüm koşumu şu anda dönüyor**.
+Talep ölçüldü ve **iki tur boyunca yanlış bir cebir üzerinde durduğumuz ortaya
+çıktı**: başlangıç havuzu sabit değil **tohumdan çekiliyor** ⇒ Katman 1'in
+mekanizması aslında **çalışıyor** (tavan 6 hücrenin 6'sında landmark'tan önce
+bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-167** (sıradaki: **D-168**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-168** (sıradaki: **D-169**).
   **Suite:** **640 passed**, 2 deselected. **Kapı: 10.**
-- ⏳ **KOŞUM DÖNÜYOR:** talep ölçümü (D-167) — `demand_probe_g2_s9923_9925`.
-  Başlangıç **2026-08-21 ~12:0x**, tahmin **~2–2.5 sa** ⚠️ (tahmin; benim süre
-  tahminlerim üçte ikisinde tutmadı).
-- **KOŞUM BİTİNCE: D-168** yazılır (M1/M2/M3 okuması), sonra ⛔ **KARAR senin**.
+- ✅ **Talep ölçüm koşumu bitti** (D-168) — `demand_probe_g2_s9923_9925`,
+  **2 sa 9 dk**, `complete`, kapı **9/10**, `I5.6` **geçti**.
+- ⛔ **SIRADAKİ İŞ: KARAR — hangi kaldıraç**, ve o **senin** (D-007).
+  ⚠️ **Ama önce bir ön-taahhüt yeniden yazılmalı** (aşağıda, §3).
 
 ---
 
-## ▶▶ *"devam et"* = ⛔ **KARAR: `EXTRACTION_LIMIT_RATIO` ne olacak** (soğuk başlangıç için tam blok)
+## ▶▶ *"devam et"* = ⛔ **KARAR: hangi kaldıraç** (soğuk başlangıç için tam blok)
 
 ⚠️ **Bu blok bilerek kendi kendine yeterlidir.** Yeni bir oturum bunu okuyup
 başka hiçbir yeri yeniden türetmeden işe başlayabilmeli.
@@ -85,61 +86,72 @@ kapı **7/10**, bayrak `I4.2` `I5.5` `I5.6`.
 **≥ 10.51** (grace=10 ⇒ ölüm yok ⇒ N=8 kesin) ⇒ o eksik alma 8.0'lık DEFECT
 talebinden **gelemez** ⇒ mekanizma için gerçek sayı **0/3**.
 
-### 3. ⛔ A seçeneği DENENDİ ve **ÇÖKTÜ** (D-165) — geri çekiliyor
+### 3. ⛔ İKİ TUR BOYUNCA YANLIŞ CEBİR — D-165 geri çekildi (D-168)
 
-Bir önceki sürüm burada *"Claude Code'un önerisi: **A** — `r`'yi bandın içinde
-aşağı al"* diyordu. **A uygulanmadan önce türetildi ve türetme A'yı çürüttü.**
+Bu blok sırayla şunları söylemişti ve **ikisi de çürüdü**:
 
-Bandın **ikinci** bir şartı sınanmamıştı: **tavan landmark'tan (olay 10) önce
-bağlamalı** (D-084'ün ve D-163 §4'ün zaten kullandığı ölçüt). Gerçek
-`step_pool` cebiriyle, ölçülen talebe göre:
+| tur | iddia | akıbeti |
+|---|---|---|
+| D-164 | *"öneri **A**: `r`'yi bandın içinde aşağı al"* | ❌ D-165'te çürütüldü |
+| D-165 | *"**BOŞ KÜME** — seçilecek `r` yok"* | ❌ **D-168'de çürütüldü** |
+
+⛔ **Hata:** D-165 havuzun `POOL_INIT`'ten, yani oran **0.80**'den başladığını
+varsaymıştı. Kod okundu (§2.2), **öyle değil**:
 
 ```
-landmark'tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
-kriz rejimi erişilebilir olsun ⇒  r >  0.10500
+shared_pasture():  pool = per_capita_stock × N      ← kurucunun NİŞİNDEN
+_seed_niche():     pool = POOL_MAX × rng.uniform(0.40, 1.00)
 ```
 
-⛔ **BOŞ KÜME — arada 1.67 kat, örtüşme yok. Seçilecek bir `r` YOK.**
+⇒ **Başlangıç oranı tohuma göre 0.40–1.00 arasında çekiliyor.**
 
-⭐ **Asıl değişken `r` değil, TALEP.** Aynı hesap talep için çözülünce:
+| tohum | 9920 | 9921 | 9922 | 9923 | 9924 | 9925 |
+|---|---|---|---|---|---|---|
+| başlangıç oranı | 0.877 | **0.577** | 0.825 | 0.794 | 0.620 | 0.605 |
 
-| talep `D` | bantta uygun `r` var mı |
-|---|---|
-| **4.438** *(pilotun ölçtüğü alt sınır)* | ⛔ **BOŞ** |
-| **6.078** | ⭐ **tam sınır — `D*`** |
-| 8.000 *(kanonik `EXTRACTION_DEFECT`)* | ✅ bandın tamamı |
+⚠️ İkinci hata: talep olarak **ömür-boyu gerçekleşen hasat** (4.438)
+kullanılmıştı; landmark penceresindeki gerçek talep **5.1–7.3**. İkisi de
+tavanın bağlamasını **olduğundan zor** gösterdi.
 
-⇒ **Katman 1, talebin `8.0` olduğu bir evren için tasarlandı.** D-163 §5'in
-tablosu *"hepsi DEFECT"* varsayımıyla hesaplanmıştı.
+### 4. ✅ Ölçüm ne dedi (D-168)
 
-⛔ **Ve sonuç kesinleştirilemedi:** `4.438` **gerçekleşen** hasat, yani talebin
-**alt sınırı**; kaba üst sınır **6.578** ve **`D*` bu aralığın içinde**.
-⇒ **Sabit değişmedi** — değerini belirleyen nicelik ölçülmemişken sabit
-seçmek §2.7'nin yasağının ta kendisi.
+**M1 yazıldığı gibi ❌ TUTMADI (1/3):** ortalama talep 7.325 · 5.125 · 5.450,
+eşik 6.078. ⛔ **Ama eşiğin kendisi yukarıdaki hatalı cebirden geldi** ⇒
+verdict kayda geçer, D-167'nin ona yüklediği anlamı **taşıyamaz**.
 
-### 4. ⏳ Bu yüzden ölçüm koşumu dönüyor (D-167)
+⭐⭐ **Ve mekanizma bu koşumda ÇALIŞTI.** `I5.6` geçti — tavan **6 nesil
+hücresinin 6'sında** ve landmark'tan **önce** bağladı:
 
-Alet yazıldı (**D-166**: `demand` + `demand_to_landmark`, karar sınıfı
-histogramıyla), ön-taahhüt **koşumdan önce** commit edildi (**D-167**):
+| başlangıç oranı | 0.577 | 0.605 | 0.620 | 0.794 | 0.825 | 0.877 |
+|---|---|---|---|---|---|---|
+| ilk eksik alma | **2** | 3 | 3 | 5 | **hiç** | 9 *(ilandan)* |
 
-> **M1 (bağlayıcı):** gen1'de `demand_to_landmark.requested_mean`, 3 tohumun
-> **≥2'sinde `> 6.078`** ⇒ ✅ bant boş değil, karar *"bantta hangi değer"*e
-> döner. Aksi hâlde ⇒ ❌ **D-165'in imkânsızlığı doğrulanır.**
-> **M2/M3:** `outcomes` histogramı (P3'ün okunamayan `cooperate`'i) ve
-> `median`/`p90`/`max` — **eşiksiz, betimleyici**.
+⇒ **Baskın değişken `r` de talep de değil — tohumun çektiği BAŞLANGIÇ NİŞİ.**
+Landmark penceresinde azami talep **8.0** (6 hücrenin 5'inde) ⇒ bu erken
+eksik almalar **ilan enflasyonundan değil, havuzun çekilmesinden** geliyor.
 
-⛔ **`D* = 6.078` koşumdan önce sabitlendi, koşuma bakılarak değişmeyecek.**
+**Düzeltilmiş bant** (gerçek başlangıç + ölçülen talep): 9923 → bandın tamamı ·
+9924 → boş · 9925 → ince şerit. **Ortak şerit `r ∈ (0.1050, 0.1085)`**,
+genişliği 0.0035 ⚠️ **kırılgan**.
 
-### 5. ⛔ KARAR — üç kaldıraç, **senin** (D-007), büyüklükleriyle
+⭐ **M2:** `cooperate` **523/1190 = %43.9** — karar kanalı işliyor.
+⚠️ D-068'in *"%94–100 DEFECT"*u başka fizikten, **karşılaştırılamaz**.
+**M3:** talep landmark'ta iki değerli (8.0 / 2.0); `25.0`'lik ilanlar **geç
+yaşam** olgusu. `mean > 6.078` için defect payı **> %68** gerekiyor.
+⚠️ **Kriz kanalı hâlâ 0/48.**
 
-| # | kaldıraç | gereken büyüklük | engel |
+### 5. ⛔ KARAR — dört kaldıraç, **senin** (D-007)
+
+| # | kaldıraç | ölçülen büyüklük | engel |
 |---|---|---|---|
-| **I** | **Talep** (`EXTRACTION_PARSE_MAX`, karar→miktar eşlemesi) | ortalama talep **> 6.078**; ölçülen alt sınır 4.438 ⇒ açık **×1.37** | ⛔ **K7 sınırı** — *"ortamın ayrıştırma kuralı mı, davranışsal önsel mi"* |
-| **II** | **`POOL_INIT`** (havuz aşağıdan başlasın) | `r = 0.1425`'te başlangıç oranı **≤ 0.311** ⇒ `POOL_INIT ≤ 31` (bugün **80**) | ⛔ **D-081 kilitli kararı** (senin: *"kişi başı 100/80 sabit"*) |
-| **III** | Katman 1'i bırak, **Katman 2**'ye geç | — | ⚠️ kriz kanalı ölü kalır ⇒ D-070/kilit K6'nın S5 uç noktası askıda |
+| **0** ⭐ **YENİ** | **`NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)`** | başlangıç ≤ ~0.62 ⇒ tavan olay 2–3'te bağlıyor; ≥ 0.82 ⇒ hiç bağlamıyor | ⛔ **ön-kayıt aralığı** |
+| **I** | Talep | `mean > 6.078` için defect payı **> %68**; ölçülen %55–89 | ⛔ **K7 sınırı** |
+| **II** | ~~`POOL_INIT`~~ | ⛔ **GEÇERSİZ** — havuz `POOL_INIT`'ten başlamıyor | — |
+| **III** | Katman 2'ye geç | — | ⚠️ kriz kanalı ölü kalır (D-070/K6) |
 
-⛔ **Claude Code hiçbirini tek başına seçmez** — biri K7'ye, biri kilitli bir
-karara dokunuyor, üçüncüsü bir ön-kayıt uç noktasını feda ediyor.
+⛔ **Ve hangisi seçilirse seçilsin ön-taahhüt YENİDEN YAZILMALI.** Bu turda
+hem P1'in hem M1'in eşiği yanlış bir cebirden türetilmişti — **iki tur üst
+üste aynı kusur: türetme temiz, girdisi doğrulanmamış** (§2.2).
 
 ### 6. ✅ Pilotun kazandırdığı şey — bütçe kararı artık yapılabilir
 
@@ -160,8 +172,9 @@ süre de tanımlılık da değişir.
 
 1. **D-kaydı** yazılır: seçilen kaldıraç + değer + **türetmesi** + **denge
    noktası** + hangi eşiklerin altında/üstünde kaldığı (D-163'ün şartı) +
-   reddedilen adaylar. ⭐ **Ve bandın BOŞ OLMADIĞI aynı turda gösterilir** —
-   D-165'in dersi budur.
+   reddedilen adaylar. ⭐ **Bandın boş olmadığı aynı turda gösterilir**
+   (D-165'in dersi) ⭐ **ve türetmenin GİRDİLERİ koddan doğrulanır**
+   (D-168'in dersi — iki tur `POOL_INIT` sanılan bir başlangıçla hesaplandı).
 2. Kod değişir, test + **mutasyon kontrolü** (§2.4, K5: md5 +
    `no:cacheprovider` + `__pycache__` silme).
 3. Yeni pilot **ön-taahhüdüyle birlikte** yazılır (P1'in eşiği yeniden
@@ -228,7 +241,8 @@ sabitlendi — D-088 deseni).
 
 | dosya | ne |
 |---|---|
-| ⏳ `dau_runs/demand_probe_g2_s9923_9925.json` | **talep ölçümü (D-167)** — 3 tohum, G=2, tek kol. ⏳ **koşum sürüyor**; okuması D-168 olacak |
+| ⭐ `dau_runs/demand_probe_g2_s9923_9925.json` | **talep ölçümü (D-167/D-168)** — 3 tohum, G=2, tek kol, 2 sa 9 dk. `I5.6` **geçti**. Okuması **D-168** |
+| ⚠️ `…ABORTED-1303.json` | ilk denemenin yarım çıktısı (makine kapandı). **Silinmedi**, provenans için duruyor |
 | **`dau_runs/layer1_pilot_g4_s9920_9922.json`** | ⭐ **Katman 1 pilotu — bugünün TABAN ÇİZGİSİ.** 3 tohum, G=4, `lived shuffle`, 8 sa 3 dk. Okuması **D-164** |
 | `dau_runs/pilot_definedness_g4_s9917_9919.json` | tanımlılık pilotu, 3 tohum, G=4 ⚠️ **Katman 1 öncesi** |
 | `dau_runs/probe3_endpoint_s9916.json` | sonda-3, 1 tohum, G=3 ⚠️ **Katman 1 öncesi** |
