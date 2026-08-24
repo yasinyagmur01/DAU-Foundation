@@ -1796,3 +1796,127 @@ için *evet*, ama D-132'nin sönüm ölçümü için nesil satırları **kalmal�
 sorusu cevaplanmadan `ΔCov`'un yanlılığı iptal ettiği **iddia edilemez**.
 ⇒ Ya kaynaktan çözülür, ya **simülasyonla** ölçülür (GPU'suz: `w` ve `z`'yi
 bilinen bir üretici modelden örnekleyip N=8'de kestirimin yanlılığını ölçmek).
+
+---
+
+# §V — **DR #13 mutabakatı: DAU v3.0 mimari incelemesi** (2026-08-22, D-169) · ⛔ **taşıyıcı iddia cebirsel olarak ters**
+
+**Brief:** Yasin'in yazdığı *"[DEEP RESEARCH & ARCHITECTURAL REVIEW REQUEST]"*
+prompt'u — dört sütun: (1) ardışık ince ayara alternatifler, (2) grafik tabanlı
+kümülatif bilgi aktarımı, (3) hibrit mimari ayrımı, (4) v3.0 yol haritası.
+**Kanal:** dosya olarak girmedi, sohbete yapıştırıldı ⚠️ (§9'un usulünden sapma,
+D-006). **İkinci bir değerlendirme** de eklendi — ⚠️ **kodu görmeyen** bir ajandan.
+
+⚠️ **Bu tur, şart listesinin ilk kez tamamen boş döndüğü turdur** (§V.5).
+
+---
+
+## §V.1 ⛔ Taşıyıcı iddia: *"DPO kaybı `ln 2`'ye DOYUYOR"* — **brief yanılmış**
+
+| | |
+|---|---|
+| **Rapor ne diyor** | Ajan öğrendikçe `σ(r̂_l − r̂_w) → 0` ⇒ gradyan sönüyor ⇒ *"loss saturates near `ln 2 ≈ 0.693`"* ⇒ **structural null**: yeni krizde bile parametre güncellenmiyor |
+| **Cebir ne diyor** | `L = −log σ(βΔ)`. Raporun tarif ettiği hâlde (`σ(r̂_l − r̂_w) → 0`) marj `Δ` **büyük ve pozitiftir** ⇒ `σ(βΔ) → 1` ⇒ **`L → 0`**, `ln 2`'ye değil. `L = ln 2` **tam olarak `Δ = 0`** iken, yani **hiç marj öğrenilmemişken** olur — bu başlangıç durumudur |
+| **Ölçüm** | Bu koşumun **64 eğitim çağrısı**: ortalama **0.69201** · `ln2 = 0.69315` · ortalama `\|L − ln2\| = 0.00343` · **36/64 altında, 28/64 ÜSTÜNDE** |
+| **Verdict** | **Semptomda uyumlu, mekanizmada brief yanılmış** |
+
+⛔ **Belirleyici sayı `28/64`.** `L > ln 2` ⟺ `σ(βΔ) < ½` ⟺ **`Δ < 0`** — yani o partide politika **reddedilen tarafa** kaymış. *"Çok iyi öğrendiği için donmuş"* bir model negatif marj **üretemez**. Doygunluk hipotezi bu dağılımı açıklayamaz.
+
+⚠️ **Ve asıl sınır:** `epochs = 1`, `batch = 1`, `grad_accum = 4`, çift sayısı
+6–28 ⇒ eğitim başına **1–7 optimizer adımı**, `lr = 1e-6`. **Beş adımda kayıp
+`ln 2` civarında olur.** ⇒ Bu veriden ne doygunluk ne dejenerasyon teşhis
+edilebilir; **rapor da biz de o sayıdan fazlasını okuduk.**
+
+⇒ **Reçete düşüyor:** raporun *"saf DPO yığınını kaldır"* tavsiyesi bu iddiaya
+dayanıyordu. Bizim `ln 2`'mizin **zaten ölçülmüş** açıklamaları var:
+**GAP-18** (`uniq_rejected` 100/94 vs `uniq_chosen` 1025/971) · **D-062**
+(dizilerin %85.5'i 512'de kesiliyor; `chosen` 57.2 vs `rejected` 38.7 token ⇒
+uzunluk doğrudan marja giriyor) · **D-029** (kaldıraç `lr`).
+
+## §V.2 Brief'in kendi tarifi — üç iddia koda soruldu
+
+⚠️ **DR #1 ve #2'nin dersi:** *"brief kalitesi girdi kalitesiyle sınırlı, ve
+girdiyi biz yazıyoruz."* Bu yüzden önce prompt'un mimari iddiaları doğrulandı.
+
+| prompt ne dedi | kod ne yapıyor | verdict |
+|---|---|---|
+| *"HippoRAG 2 (PageRank over NetworkX knowledge graphs)"* | `dau/memory/ppr_retrieval.py` — kendi docstring'i *"HippoRAG 2 **inspired** PPR over **SQLite domain co-occurrence graph**"*. NetworkX gerçek, PPR **canlı skorlama yolunda** (`PPR_WEIGHT_IN_SCORE = 0.30`, `retrieval.py:84`). ⛔ **OpenIE yok · üçlü yok · varlık grafiği yok** | **brief eksik tarif edildi** |
+| *"prohibitive memory/VRAM overhead"* | ❌ **VRAM'de yanlış:** koşum 6.1 GB / 8.2 GB, adapter **14 MB**. ⭐ **Diskte doğru ve prompt'un söylediğinden büyük:** `dau_runs/adapters` **16 GB, 1194 dizin** | **brief yanılmış (VRAM) · yetersiz (disk)** |
+| *"Ebbinghaus forgetting curves"* | `dau/memory/decay.py`, deney yoluna bağlı (D-031, ölçülen `deleted_count` ort. 24.90) | **uyumlu** |
+
+⇒ **Raporun 2. sütununun tamamı** (*"HippoRAG 2'yi nesiller arası kalıtım için
+optimize et"*, OpenIE üçlüleri, PHR kodlayıcı, üç katmanlı konsolidasyon)
+**bizde olmayan bir makineyi** optimize ediyor.
+
+⛔ **Ve bir kör nokta ölçüldü:** `I5.1` (*PPR gerçekten aktif mi*) `preflight.py:1020`'de
+**tanımlı**, `run_protocol_c_prime` yolunda **bağlı**, ama **popülasyon koşumunun
+kapı listesinde YOK** (son iki koşumun kapıları: I0.3 · I0.4 · I0.6 · I0.7 ·
+I1.1 · I4.1 · I4.2 · I5.4 · I5.5 · I5.6). ⇒ PPR'ın boş grafikte
+`{seed: 1.0}` döndürüp döndürmediğini **bilmiyoruz**. **D-149'un birebir
+deseni** (kapı tanımlı, bağlı değil) ⇒ **K6.**
+
+## §V.3 ⛔ Üç desenin ikisi değiştirilemez kurallara çarpıyor
+
+| desen | çarptığı kural | verdict |
+|---|---|---|
+| **EGI** — `v_pheno ∈ [0,1]^p` (*risk aversion, altruism, stress response*) yapılandırılmış sistem direktifine derlenip prompt'a giriyor | **Yasak #1 — No trait injection.** ⚠️ Vektör yaşanmışlıktan türetilse de **etiket olarak geri verilmesi** aksiyomun tam sınırı | ⛔ **aksiyom kararı, Yasin'in** (D-007) |
+| **SVC** — çıkarım anında aktivasyona yönlendirici vektör | **Kilit K7 (D-070)** bunu zaten reddetti: *"Davranış müdahalesi: Hayır — aksiyom"* | ⛔ **kilitli kararla çelişiyor** |
+| **CHRE-FA** — LoRA-FA (`A` donuk) + TIES-Merging | Aksiyoma dokunmuyor: *"ajana ne verelim"* değil **"nasıl eğitelim"** | ⏸ **meşru aday, üçüncü ön-kayıta** |
+
+⚠️ **İkinci ajanın değerlendirmesi EGI'yi *"EN TAVSİYE EDİLEN & RİSKSİZ"* diye
+işaretlemiş.** Kodu ve `CLAUDE.md` §3'ü görmediği için iki çarpışmayı da
+göremiyor. **Aksiyom açısından EGI en riskli olanıdır.** ⇒ Mutabakat adımının
+neden zorunlu olduğunun bu turdaki kanıtı.
+
+⚠️ Ayrıca *"DPO'yu kaldır"* **Kanal 2'yi** boşaltır — o **kilitli mimari karar**
+(§4, *"Dual-channel mimari"*) ve aksiyomun iki kanalından biri.
+
+## §V.4 ⭐ Alınan tek şey: **RCI** — ve gerçek bir kör noktaya denk geliyor
+
+`RCI(g) = 1 − H(σ(H^(g))) / H(σ(H^(0)))`, ara katman aktivasyonlarının
+**spektral entropisi**.
+
+⭐ **Neden gerçek:** `run_population_experiment.py:1338` → `inherit_adapter(parent_id, heir_id)`
+— **varis ebeveyninin adapter'ını miras alıyor** (D-102, Yasin 2026-08-17) ⇒
+adapter'lar nesiller boyunca **fiilen üst üste biniyor**, ve taban temsilin
+bozulup bozulmadığını **hiç ölçmedik, bir kapıya da bağlamadık**.
+
+✅ Deterministik · GPU'da ucuz · **hiçbir fiziği değiştirmiyor** ⇒ §2.10 altında
+meşru (saf ölçüm).
+
+⛔ **CKE ALINMADI:** içinde `D_KL(π_g ‖ π_0)` var — kol farkına yakın bir nicelik,
+**L9'un okunmayacaklar listesiyle çakışıyor**; ayrıca `S_task` bizde tanımsız.
+
+## §V.5 ⚠️ Süreç bulgusu — **şart listesi ilk kez tamamen boş döndü**
+
+Prompt açıkça *"Cite key research papers, arXiv IDs, and established
+methodologies from 2023–2026"* istedi. **Rapor tek bir tanımlayıcı vermedi.**
+TIES-Merging · LoRA-FA · RegMean · HippoRAG 2 · RepE · MSRS **adları** geçiyor,
+hiçbirine **yazar-yıl-DOI yok**, kaynakça yok, boşluk ilanı yok.
+
+| şart | nereden geldi | bu turda |
+|---|---|---|
+| **DOI / kimlik** | D-080 | ❌ |
+| **birebir alıntı** | D-080 | ❌ |
+| **kaynakça + boşluk ilanı** | D-082 | ❌ |
+
+⚠️ Önceki turlarda **12 kimlik hatası** çıkmıştı ve hepsi bu şartlarla
+yakalanmıştı. ⇒ **`CLAUDE.md`'nin kuralı gereği bu rapordan kilitli karar
+yazılamaz:** *"Kanıtı olmayan hiçbir madde kilitli karar olarak yazılmaz."*
+
+⚠️ **Usul sapması da kayda geçsin:** brief **dosya olarak** girmedi, sohbete
+yapıştırıldı (D-006 dosya istiyor). Bu turda zarar vermedi ama izlenebilirliği
+düşürdü — ham metin `docs/research/` altında **yok**.
+
+## §V.6 Sonuç
+
+**Bu rapor kodu değiştirmemeli.** Değeri teşhiste değil — teşhisi ters —
+**bir ölçüm fikrinde** (`RCI`), ve o da gerçek bir kör noktamıza denk geliyor.
+
+| ne | ne zaman |
+|---|---|
+| ❌ EGI · SVC | **şimdi değil** — aksiyom/K7 kararı, Yasin'in |
+| ❌ DPO'yu kaldırmak | **hayır** — gerekçesi çürük (§V.1), Kanal 2 kilitli |
+| ⏸ LoRA-FA · TIES-Merging | üçüncü ön-kayıt **aday listesi** |
+| ⏸ **RCI** | **fizik kararından sonra** — fizik değişirse tabanı kayar |
+| ⭐ **`I5.1`'i popülasyon kapılarına bağla** | **şimdi** — fizikten bağımsız, saf aletleme, K6 borcu |

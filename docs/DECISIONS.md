@@ -13611,3 +13611,97 @@ dokunuyor, I **K7'nin sınırında**, III bir uç noktayı feda ediyor.
 ⚠️ **Ve bir sonraki adım ne olursa olsun, ön-taahhüdü yeniden yazılmalı:**
 bu turda hem P1'in hem M1'in eşiği **yanlış bir cebirden** türetilmişti.
 İki tur üst üste aynı kusur: **türetme temiz, girdisi doğrulanmamış** (§2.2).
+
+---
+
+## D-169 · 2026-08-22 · ⛔ **DR #13 (DAU v3.0 mimari incelemesi) MUTABAKATI — taşıyıcı iddia cebirsel olarak ters, rapordan kod değişikliği ÇIKMIYOR**
+
+**Yetki:** Yasin, 2026-08-22: *"bu iddialar hakkında karşılaştırma yaparak ne
+olmalı ne olmamalı … inceleme"* ve *"kayıt olarak yaz"*.
+
+**Tam mutabakat tablosu:** `docs/research/RECONCILIATION.md` **§V**.
+Bu kayıt kararı ve **ölçümü** tutuyor.
+
+---
+
+### 1. Ölçüm — raporun taşıyıcı iddiası sınandı
+
+**İddia:** *"DPO kaybı `ln 2`'ye **doyuyor**, gradyan sönüyor, ajan yeni krizde
+bile güncellenemiyor (structural null)."*
+
+**Cebir:** `L = −log σ(βΔ)`. Raporun tarif ettiği hâlde marj `Δ` büyük ve
+pozitiftir ⇒ `L → 0`. **`L = ln 2` tam olarak `Δ = 0` iken**, yani hiç marj
+öğrenilmemişken olur.
+
+**Ölçüldü** (`demand_probe_g2_s9923_9925.log`, 64 eğitim çağrısı):
+
+| | |
+|---|---|
+| ortalama kayıp | **0.69201** (`ln 2 = 0.69315`) |
+| ortalama `\|L − ln2\|` | **0.00343** |
+| `ln 2`'nin **altında** | 36/64 |
+| ⭐ `ln 2`'nin **üstünde** | **28/64** |
+
+⛔ **`L > ln 2` ⟺ `Δ < 0`** — politika o partide **reddedilen tarafa** kaymış.
+*"Çok iyi öğrendiği için donmuş"* bir model bunu üretemez ⇒ **doygunluk
+hipotezi ölçümle çelişiyor.**
+
+⚠️ **Ve bu veriden zaten teşhis konulamaz:** `epochs = 1`, `batch = 1`,
+`grad_accum = 4`, çift 6–28 ⇒ **eğitim başına 1–7 optimizer adımı**,
+`lr = 1e-6`. Beş adımda kayıp `ln 2` civarında olur. **Sınır ilan ediliyor:
+`ln 2` gözlemi ne doygunluğun ne dejenerasyonun kanıtıdır.**
+
+⚠️ **Kendi geçmiş metnimiz de düzeltiliyor:** `CLAUDE.md` ve `B2_RESULTS.md`
+*"`dpo_loss` 0.6919/0.6940 — `ln 2` = 0.6931, tercih marjı ≈ 0"* diyor. Bu
+**doğru** ama eksik: yanına *"ve bu, 1–7 adımlık bir eğitimde beklenen
+değerdir"* yazılmalıydı. Rapor o boşluğa **yanlış bir mekanizma** yerleştirdi.
+
+### 2. Kararlar
+
+| # | ne | karar | gerekçe |
+|---|---|---|---|
+| 1 | **EGI** (epigenetik trait vektörü → sistem direktifi) | ⛔ **ALINMADI** | **Yasak #1 — No trait injection.** Vektör yaşanmışlıktan türetilse de etiket olarak geri verilmesi aksiyomun sınırı ⇒ **aksiyom kararı, Yasin'in** (D-007) |
+| 2 | **SVC** (aktivasyon yönlendirme) | ⛔ **ALINMADI** | **Kilit K7 (D-070)** bunu zaten reddetti: *"davranış müdahalesi: hayır — aksiyom"* |
+| 3 | **"Saf DPO yığınını kaldır"** | ⛔ **ALINMADI** | Gerekçesi §1'de çürüdü; ayrıca **Kanal 2 kilitli mimari karar** (§4) ve aksiyomun iki kanalından biri |
+| 4 | **LoRA-FA · TIES-Merging · RegMean** | ⏸ **ERTELENDİ, elenmedi** | Aksiyoma dokunmuyor (*nasıl eğitelim*, *ne verelim* değil) ⇒ **üçüncü ön-kayıt aday listesine**. ⚠️ Şu an bir sorunu çözmüyor: 1–7 adımda çakışacak gradyan yok |
+| 5 | **CKE metriği** | ⛔ **ALINMADI** | İçinde `D_KL(π_g ‖ π_0)` var — **L9'un okunmayacaklar listesiyle çakışıyor**; `S_task` bizde tanımsız |
+| 6 | ⭐ **RCI metriği** | ✅ **ALINDI, fizik kararından sonra** | Gerçek bir kör noktaya denk geliyor (§3) |
+| 7 | ⭐ **`I5.1`'i popülasyon kapılarına bağla** | ✅ **ALINDI, ŞİMDİ** | Fizikten bağımsız, saf aletleme, **K6 borcu** |
+
+### 3. ⭐ Neden RCI gerçek bir boşluk
+
+`run_population_experiment.py:1338` → `inherit_adapter(parent_id, heir_id)`:
+**varis ebeveyninin adapter dizinini miras alıyor** (D-102, Yasin 2026-08-17).
+⇒ Adapter'lar nesiller boyunca **fiilen üst üste biniyor**, ve taban temsilin
+bozulup bozulmadığı **hiç ölçülmedi, bir kapıya da bağlanmadı**.
+
+`RCI(g) = 1 − H(σ(H^(g))) / H(σ(H^(0)))` — deterministik, GPU'da ucuz, **hiçbir
+fiziği değiştirmiyor** ⇒ §2.10 altında meşru.
+
+⚠️ **Neden şimdi değil:** fizik kararı (kaldıraç) beklemede; fizik değişirse
+`H^(0)` tabanı da kayar ve ölçüm baştan yapılır.
+
+### 4. ⛔ Brief'in kendi tarifindeki iki hata (bizden çıktı)
+
+| iddia | gerçek |
+|---|---|
+| *"HippoRAG 2, OpenIE, knowledge graphs"* | **HippoRAG 2 *inspired* PPR**, SQLite domain co-occurrence grafiği üzerinde. **OpenIE yok, üçlü yok, varlık grafiği yok.** PPR canlı skorlama yolunda (`PPR_WEIGHT_IN_SCORE = 0.30`) |
+| *"prohibitive VRAM overhead"* | ❌ VRAM 6.1 GB / 8.2 GB, adapter **14 MB**. ⭐ **Ama disk gerçek: `dau_runs/adapters` 16 GB, 1194 dizin** ⇒ ev işleri listesine |
+
+⇒ Raporun **2. sütununun tamamı** bizde olmayan bir makineyi optimize ediyor.
+⚠️ **DR #1 ve #2'nin dersi üçüncü kez:** *brief kalitesi girdi kalitesiyle
+sınırlı, ve girdiyi biz yazıyoruz.*
+
+### 5. ⚠️ Süreç: şart listesi **ilk kez tamamen boş döndü**
+
+Prompt arXiv ID/DOI istedi; rapor **tek tanımlayıcı vermedi** — yöntem adları
+var, kaynak yok, kaynakça yok, boşluk ilanı yok. D-080/D-082'nin üç şartı
+**0/3**. Önceki turlarda 12 kimlik hatası bu şartlarla yakalanmıştı ⇒
+**bu rapordan kilitli karar yazılamaz** (`CLAUDE.md` girişi).
+
+⚠️ Usul: brief **dosya olarak girmedi**, sohbete yapıştırıldı (D-006 dosya
+istiyor) ⇒ ham metin `docs/research/` altında **yok**, izlenebilirlik düşük.
+
+⚠️ **Ve kodu görmeyen ikinci değerlendirme EGI'yi *"EN TAVSİYE EDİLEN &
+RİSKSİZ"* diye işaretledi** — Yasak #1 ile K7'nin ikisini de kaçırarak.
+Mutabakat adımının neden zorunlu olduğunun bu turdaki kanıtı.
