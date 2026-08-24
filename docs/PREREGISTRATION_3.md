@@ -1,25 +1,23 @@
 # Popülasyon C‴ — Üçüncü Ön-Kayıt
 
-**Durum: 📝 TASLAK · 2026-08-19 · kuyruk 2.2 · ⛔⛔ KİLİTLENEMEZ — D-145**
+**Durum: 📝 TASLAK · 2026-08-24 · ✅ **ALTI SLOTUN ALTISI DA KAPALI** ·
+⏳ KİLİDE HAZIR — kilit Yasin'in**
 
-⛔⛔ **KİLİT DURDURULDU (D-145).** Kilit öncesi denetim, bu belgedeki §3, §4 ve
-§7'de **dört kusur** buldu. Aşağıdaki metin **tarihçe olarak duruyor**;
-kusurlu maddeler yerinde işaretlendi ve **karar verilmeden yeniden
-yazılmayacak**.
+✅ **D-145'in dört kusuru kapandı** (D-161 · D-179) ve **SLOT 3 (bütçe)
+D-176'da kapandı.** Geriye yalnız kilit anının kendisi kalıyor: §12'nin alet
+kimliği donduruluyor ve durum satırına **🔒 + commit hash** yazılıyor.
 
-| # | kusur | durum (2026-08-20) |
+| # | kusur (D-145) | durum (2026-08-24) |
 |---|---|---|
-| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi | ✅ **KAPANDI (D-161).** Ölçüm **eski fizikten**mış: bugünkü fizikte tanımlılık pilotunda **2/3 tohum** kullanılabilir. ⚠ Kanıt **3 tohum** |
-| 2 | Hangi alanın yazıldığı **kola değil TOHUMA** bağlı ⇒ sabit alan tohumların bir kısmını **tamamen** atar | ✅ **KAPANDI (D-161).** `energy` **sabit kalıyor**; atılan tohum oranı artık **ölçülmüş** (~1/3) ve bütçeye giriyor |
-| 3 | `ΔP_active` üç değerli ve **sıfır-şişkin**; Wilcoxon sıfırları atar ⇒ **S=12'de reddedebilme ihtimali %6.6** | ⚠️ **KISMEN.** **Tavan** hâli gerçekleşmedi (12 hücrenin **5'i** aktif, D-161/Kural 3) ⇒ `P_active` **hareket edebilir**. ❌ **Taban tarafı hâlâ açık** ve bütçe hesabının konusu |
-| 4 | Bütün bir kol-tohumun **hiç** Price satırı olmayabilir — üçüncü kategori tanımsız | ✅ **KAPANDI (D-159).** **I5.5** kapısı bunu yakalıyor; pilotta **4 ölü hücre** işaretledi |
+| 1 | Birincil alan `energy` C2'de **15 hücrenin 1'inde** ölçülebilirdi | ✅ **KAPANDI ve TERSİNE DÖNDÜ (D-179).** Katman 1b pilotunda `energy` **16/16 satırda**, **10'u tanımlı**. Eski ölçüm eski fizikten |
+| 2 | Hangi alanın yazıldığı **TOHUMA** bağlı ⇒ sabit alan tohumların bir kısmını atar | ✅ **KAPANDI (D-179).** Kriz D-173'te geri döndü ve alan tablosunu **bozmadı**: `resource` `energy`'nin **yerine değil yanına** yazılıyor ⇒ **her hücrede `energy` satırı var**, hiçbir tohum düşmüyor |
+| 3 | `ΔP_active` sıfır-şişkin; Wilcoxon sıfırları atar ⇒ reddedebilme ihtimali düşük | ✅ **ÇÖZÜLDÜ, ama gizlenerek değil (§4.1).** Test çerçevesi karara bağlandı: Wilcoxon + **ilan edilmiş MDE** + `p` **her zaman CI ve etki büyüklüğüyle birlikte**. ⛔ Yapısal itiraz **ayakta ve bir SONUÇ olarak raporlanacak**. ⚠️ Ve bu değerlendirme sırasında **L9 ihlal edildi** — D-179, sınır **L25** |
+| 4 | Bütün bir kol-tohumun **hiç** Price satırı olmayabilir — üçüncü kategori tanımsız | ✅ **KAPANDI (D-159 kapı, D-179 kural).** `I5.5` yakalıyor; ve §3.1 artık *"inaktif"* ile *"hiç oluşmadı"*yı **ayrı** raporluyor. Ölçüldü: D-173'te 18 değil **16 hücre** |
 
-⇒ ⛔ **Kalan tek karar Yasin'in: BÜTÇE.** Alan (`energy`) ve `G` (**4**)
-**ölçümle kararlaştırıldı** (D-161). Geriye *kaç kullanılabilir tohum* ve
-*kestirim mi test mi* kalıyor — aritmetiği D-161 §6'da.
-
-⚠ **§7'nin MDE tablosu yanıltıcıdır** — sürekli, bağlaşımsız bir değişken
-varsayıyor; gerçek uç nokta öyle değil. Karar verilene kadar **kullanılmaz**.
+⚠️ **Kilitten önce yakalanan iki eskime** (ikisi de burada düzeltildi):
+**§3.1'in `P_active` beklentisi** ters yöndeydi · **L20'nin sonuç cümlesi**
+(*"somatik yarı akmıyor"*) bugünkü fizikte **yanlış** — `I5.4` pilotta
+**`applied 463x`**.
 
 ⚠ **Önceki iki ön-kayıt yürürlükte kalır.** `PREREGISTRATION.md` B2'yi,
 `PREREGISTRATION_2.md` C2'yi bağlar; ikisi de **kapanmış bölümlerdir**. Bu
@@ -134,9 +132,31 @@ söylenmek zorunda. Gerekçe **mekaniktir, sonuca bakmaz** (D-130 §9):
   **sıfır kez** yazıldılar (D-136 bunun sebebini ölçtü: skaler spillover).
 - ⇒ **`energy`, bireysel kanalın tek yazdığı alandır.**
 
-⚠ **Bedeli açıkça:** C2'de `energy` 216 okumanın **11'inde** doluydu ⇒
-`P_active` **düşük** beklenmelidir. Bu tasarımın zayıflığı değil, ölçtüğü
-şeyin ta kendisidir (§0).
+⚠️ **BU BEKLENTİ D-179'DA GÜNCELLENDİ.** Eski metin *"C2'de `energy` 216
+okumanın 11'inde doluydu ⇒ `P_active` düşük beklenmelidir"* diyordu. **Katman
+1/1b'den sonra ölçüm ters yönde** (`layer1b_pilot_g4_s9926_9928.json`,
+16 Price hücresi / 25 satır):
+
+| alan | satır | `selection_estimable` |
+|---|---|---|
+| **`energy`** | **16/16** | **10** |
+| `resource` | 9/16 | **0** — 9 satırın 9'unda `z_variance = 0.0` |
+
+⇒ `P_active` **yüksek** beklenmelidir. ⭐ Ve `resource`'un dışlanma gerekçesi
+artık **türetilmiş değil ölçülmüş**: L14'ün confound'u (kriz alanı sabit,
+herkese aynı skar) kendini **sıfır varyans** olarak gösteriyor.
+
+⛔ **Ve bu bir uç nokta değişikliği DEĞİLDİR** — alan `energy` olarak
+D-143/D-144'te, bu ölçümden **önce** ilan edilmişti; değişen yalnız
+**beklenti**. Uç noktanın kendisi D-179'dan sonra da **değişmedi** (karar:
+Yasin, 2026-08-24).
+
+⛔⛔ **ÜÇÜNCÜ KATEGORİ — hücre hiç oluşmadı** (D-145/kusur 4, ölçüldü D-179).
+*"Alan yoksa hücre inaktiftir"* kuralı, **Price satırının kendisi yoksa** ne
+olacağını söylemiyordu. Ölçüldü: D-173 pilotunda **s9927'nin gen2 hücresi
+iki kolda da yok** ⇒ 18 değil **16 hücre**. ⇒ **Kural:** oluşmamış hücre
+`P_active`'in **paydasına girmez** ve sayısı **raporlanır**; *"inaktif"*
+(alan var, `Var(z) = 0`) ile *"hiç oluşmadı"* (satır yok) **ayrı** raporlanır.
 
 **Betimleyici olarak dört alanın hepsi ayrı ayrı raporlanır** (§3.3) — ama
 birincil **yalnız `energy`**, ve sonradan alan değiştirilemez (L9).
@@ -188,6 +208,25 @@ ve bedeli §7'nin MDE sütununda **görünüyor**.
 
 ⚠ **Neden Wilcoxon:** `ΔCov`'un dağılımı bilinmiyor ve `ΔP_active` üç
 değerli. D-052'nin seçimiyle aynı; MDE'ye ARE = 3/π bedeli **dahil**.
+
+### ⭐ 4.1 D-145 §6 ile çelişki — **çözüldü (Yasin, 2026-08-24)**
+
+D-145 §6 *"bu bütçede hipotez testi yapılamaz; yapılabilecek şey kestirimdir —
+p yok, α yok, Holm yok"* demişti (P7-b/D-096 damgası). §4 ise α ve Holm
+diyordu. ⚠ **İki kapalı kayıt birbiriyle çelişiyordu ve §2.11 sessizce
+seçilmesini yasaklıyor.**
+
+**Karar: ikisi birden, ve rapor dili bunu zorunlu kılıyor.**
+
+| | |
+|---|---|
+| test | **Wilcoxon**, çift yönlü, α = 0.05, **Holm** ⇒ ilk test 0.025 (§4 aynen) |
+| ⭐ **duyarlılık** | **MDE koşumdan önce İLAN EDİLİR** (`d_z` = **0.676**, D-176) — ve **bir kapı değil bir ilandır** (D-174) |
+| ⛔ **rapor kuralı** | `p` **tek başına yazılamaz**: her `p` yanında **etki büyüklüğü ve güven aralığı** gelmek zorunda. *"Anlamlı"* kelimesi CI olmadan kullanılamaz |
+| ⛔ | D-145'in yapısal itirazı **ayakta**: `ΔP_active` sıfır-şişkin, dolayısıyla A'nın reddedebilme ihtimali düşük. **Bu bir sonuç olarak raporlanır**, tasarım değiştirilerek gizlenmez |
+
+⇒ Böylece D-145'in kaygısı (*"tek bir p-değeriyle sonuç iddia etmek"*)
+karşılanıyor, §4'ün kapalı slotu **yeniden açılmıyor**.
 
 ---
 
@@ -289,7 +328,28 @@ riski birlikte raporlanır (Gelman & Carlin 2014, `10.1177/1745691614551642`).
 
 ---
 
-## 7. Bütçe ve tohum sayısı — ⛔ **SLOT 3 AÇIK**
+## 7. Bütçe ve tohum sayısı — ✅ **SLOT 3 KAPALI (D-176, Yasin)**
+
+⭐ **İlan edilen bütçe:**
+
+| | |
+|---|---|
+| **`T_max`** | **70 GPU saat** |
+| **`G`** | **4** ⇒ kullanılabilir geçiş **G − 2 = 2** (D-156/B yolu) |
+| **kol** | **ÜÇ** — `lived` `shuffle` `null`. ⛔ Seviye 3 tanımı gereği üç kol ister; D-173 pilotu **iki kolla** koşmuştu ve yol haritasının maliyet tablosu bu yüzden geçersizdi (D-176/Bulgu 1) |
+| **`t`** (tohum başına) | ölçülen taban **2 sa 20 dk** (2 kol, G=4) ⇒ üç kolla **tahmin 3 sa 09 dk – 3 sa 30 dk** |
+| **`N_eff` = ⌊q·T_max/t⌋** | **20** (muhafazakâr uçtan) |
+| ⭐ **MDE `d_z`** | **0.676** — ve bu bir **ilandır, kapı değil** (D-174) |
+| **tohum bloğu** | **9929+**, ardışık, taze (denetlendi: 9929–9969 arasında **0 adapter**) |
+| **koşum şekli** | **parçalı**, saate dokunulmadan; gece başına tohum mümkün olduğunca çok (I4.1 replay sabit maliyeti ~35 dk/çağrı). Devam **`--resume`** ile (D-177/B2), birleştirme **`--results` N dosya** ile (D-177/B3) |
+
+⛔ **Kaldıraç hakkı: 2**, ve yalnız **tabanı geçersiz kılan** değişiklikler
+sayılır; alet onarımı harcamaz (D-176/karar 4). Sıfırlandığında yalnız **GEÇ**
+ya da **DUR ve RAPORLA** kalır (D-174).
+
+<details><summary>SLOT 3 açıkken yazılmış eski bölüm (tarihçe)</summary>
+
+### 7-eski. Bütçe ve tohum sayısı — ⛔ SLOT 3 AÇIK
 
 **Maliyet (ölçüldü, C2):** tohum başına **~2 saat**. ⚠ **Nişler arası yayılım
 2.3 kat** (toplam olay 104 ↔ 240) ⇒ tek sayı değil **aralık** verilir (K4).
@@ -328,6 +388,8 @@ Bu tasarım mütevazı etkileri **göremez** ve sonuç raporunda o **ilan edilir
 **Durma kuralı:** koşum **tek atıştır**. Kilitten sonra tohum **eklenemez**;
 eklenirse analiz **post-hoc** olur. Çökme hâlinde checkpoint'ten (D-111)
 **aynı tohumlarla** devam edilir, tohum değiştirilmez.
+
+</details>
 
 ---
 
@@ -375,8 +437,25 @@ göreli bantlarla koşulan taze veride **32 varisin 0'ında** somatik ölçek,
 ajanı **üreyebiliyor** da (w = 3/1/1). ⇒ Kırılma **bandın arkasında** ve
 kalan şüpheli `select_for_transfer`'ın recall/`is_trauma` şartı — ⚠ **çıkarım,
 ölçüm değil** (kuyruk 2.5).
-⇒ 🔒 **Bu koşum için sınır: sembolik kanalın somatik yarısı AKMIYOR ve bu
-biliniyor.** Aksiyomun *"iki kanal"* iddiasının bu yarısı **test edilmiyor** | **D-149**, **D-155** |
+⛔⛔ **L20'NİN SONUÇ CÜMLESİ ARTIK YANLIŞ — D-179'da yakalandı, kilitten
+önce.** Yukarıdaki *"somatik yarı AKMIYOR"* okuması **eski fizikten**. Bugünkü
+fizikte ölçüldü:
+
+| koşum | `I5.4` |
+|---|---|
+| C2 (eski fizik) | 144 varişte **0** |
+| sonda-3 (eski fizik) | 32 varişte **0** |
+| ⭐ **D-161** | **34/144** — kanal varise **ulaşıyor** |
+| ⭐⭐ **D-173 pilotu (bugünkü fizik)** | ✅ **geçti — `applied 463x`** |
+
+⇒ 🔒 **Bu koşum için GEÇERLİ sınır:** somatik kanal **akıyor**, ama ⚠️
+**birinci varis kuşağında yapısal olarak sıfır** ve **tohuma çok bağlı**
+(D-161). ⇒ Aksiyomun *"iki kanal"* iddiasının bu yarısı **test ediliyor, ama
+kapsamı sınırlı**. | **D-149**, **D-155**, ⭐ **D-161**, **D-173**, **D-179** |
+| **L22** ⭐ | ⛔ **BÜTÇE SANSÜRÜ.** Yaşamlar `--events 30` tavanına dayanıyor ve dayanma oranı nesille **artıyor**: tavandaki ajan gen1'de **2.0/8**, gen3–4'te **5.2/8** (D-176/Bulgu 6). ⇒ Geç nesillerde yaşamların çoğu **ölümle değil bütçeyle** bitiyor. ⚠️ **Ölçüldü ve `F_agent` yayılımını ÇÖKERTMİYOR** — korelasyon **+0.283**, yayılım 0.114 → 0.190 **büyüyor**, `w_variance` hep > 0. ⇒ Sınır **ilan ediliyor**, sabit **değiştirilmiyor** (§2.7) | **D-176** |
+| **L23** ⭐ | ⛔ **UYKU KONSOLİDASYONU YOK.** `run_consolidation`'ın popülasyon yolunda çağrısı yok ⇒ ilişki grafiği boş, **Ebbinghaus budaması ve güçlendirme çalışmıyor**. ⚠️ **Kanal 1'in kendisi ölü DEĞİL** — `consolidate_generation` çağrılıyor ve `I5.4` geçiyor; eksik olan **yaşam içi** bir bellek dinamiği. ⇒ Eksiklik **her kolda simetrik**, dolayısıyla seviye 3 karşıtlığını oynatamaz. `I5.1` bu yüzden **`None`** raporluyor (*"değerlendirilmedi"*), `False` değil | **D-172**, **D-178** |
+| **L24** ⭐ | ⛔ **`resource` alanı hiçbir hücrede tanımlı değil** — D-173 pilotunda **9 satırın 9'unda `z_variance = 0.0`**. L14'ün confound'unun ölçülmüş hâli. ⇒ Birincil alanın `energy` olması artık **türetilmiş değil ölçülmüş**, ama bedeli de açık: **kriz kanalı `z`'ye bilgi taşımıyor** | **D-179** |
+| **L25** ⛔⛔ | **L9 BİR KEZ İHLAL EDİLDİ VE İLAN EDİLİYOR.** 2026-08-24'te `ΔP_active` D-173 pilotunda hesaplandı (3/3 tohumda **0**, tavan etkisi). ⇒ Bu ön-kayıt *"birincil A kör seçildi"* **diyemez**; diyebileceği şey: **tanımı bu okumadan ÖNCE (D-143/D-144) kilitlenmişti ve okumadan SONRA değiştirilmedi** (karar: Yasin). ⭐ Yasak artık bir **kapıya** bağlı: `analyze_population_run` kilit alınmadan seviye 1–3'ü **raporlamayı reddediyor**, ve izni **bu belgeden** okuyor. ⚠️ **Kapının sınırı da ilan ediliyor:** ad-hoc betiklerde geçerli değil — ihlal zaten öyle olmuştu | **D-179** |
 | **L21** ⭐ | ⛔ **Kurucu nesil hakkında hiçbir iddia yok** (YENİ-4). Price yalnız ebeveyni gen ≥ 2 olan geçişlerden okunuyor ⇒ tasarım **birinci nesildeki seçilim hakkında sessizdir**, ve bu bir bulgu değil **kapsam kısıtıdır**. ⚠ **Ve B tek başına tanımlılığı kurtarmıyor:** eski fizikte kurucu nesil atıldıktan sonra bile birincil alanda (`energy`) `ΔCov` **0/3 tohumda** tanımlı olurdu (D-157 §2). Bugünkü fizikte karşı-veri var ama **n = 1** | **D-156**, **D-157** |
 
 ---
@@ -387,7 +466,7 @@ biliniyor.** Aksiyomun *"iki kanal"* iddiasının bu yarısı **test edilmiyor**
 |---|---|---|
 | **1** | Uç noktalar (`ΔP_active` + `ΔCov_cond`) | ✅ **KAPALI** — D-143, D-140 |
 | **2** | Test, α, düzeltme, etki ölçüsü | ✅ **KAPALI** — D-140, D-141 |
-| **3** | **Tohum sayısı `S` ve bütçe** | ⛔ **AÇIK — Yasin** |
+| **3** | **Tohum sayısı `S` ve bütçe** | ✅ **KAPALI** — D-176 (`T_max`=70 sa · `G`=4 · 3 kol · `N_eff`=20 · MDE 0.676) |
 | **4** | Geçerlilik kapıları (V1–V6) | ✅ **KAPALI** |
 | **5** | Sonuç sınıfları ve rapor dili | ✅ **KAPALI** |
 | **6** | Alet kimliği | ⏳ **kilitte donacak** (§12) |
@@ -426,12 +505,29 @@ Kilit anında (kuyruk 2.3) buraya yazılacaklar: commit hash · `tool_identity`
 
 ## 13. Koşum komutu — kilitte tam olarak yazılacak
 
+⚠️ **D-176/D-177'ye göre güncellendi** (eski hâli `G=3`, iki kol ve tohum
+bloğu 9916 diyordu — üçü de geçersiz).
+
+**Gece başına bir çağrı**, tohum bloğu ardışık bölünür:
+
 ```
 PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
-  --seeds 9916..<9916+S-1> --n-agents 8 --n-generations 3 --events 30 \
-  --lora --fresh-pasture \
-  --results dau_runs/c3_population_n8_g3_s<S>.json
+  --seeds 9929 9930 9931 9932 9933 --n-agents 8 --n-generations 4 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle null \
+  --results dau_runs/c3_population_n8_g4_night1.json
 ```
+
+Kesilirse **aynı komut + `--resume`** (D-177/B2). Bütün geceler bitince:
+
+```
+python -m dau.diagnostics.analyze_population_run \
+  --results dau_runs/c3_population_n8_g4_night*.json \
+  --out docs/C3_RESULTS_report.md
+```
+
+⛔ Birleştirici **çakışan tohumu**, **uyuşmayan aleti** ve **checkpoint**'i
+reddeder (D-177/B3). ⛔ Ve kilit alınmadan **seviye 1–3'ü raporlamaz**
+(D-179/L25).
 
 ⚠ **Dış `timeout` YOK** (D-126: I4.1 replay sırasında kesilirse sonuç dosyası
 hiç yazılmaz). ⚠ `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez** (D-116).

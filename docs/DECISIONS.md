@@ -15076,3 +15076,104 @@ değil.
 | **1** | Birincil A (`ΔP_active`) **olduğu gibi mi kalsın** (öneri: evet), yoksa betimleyiciye mi düşsün — ikincisi **post-hoc olarak ilan edilmek** zorunda |
 | **2** | §4'ün testi ile D-145 §6'nın *"kestirim, hipotez testi değil"* sonucu **çelişiyor** (§4 hâlâ α + Holm diyor). Hangisi geçerli? ⚠️ §2.11: sessizce seçilmez |
 | **3** | L9 bir **kapıya** bağlansın mı — yani analiz aracı bu nicelikleri pilot dosyalarında hesaplamayı **reddetsin** mi |
+
+---
+
+## D-180 · 2026-08-24 · ✅ **ADIM C KAPANDI — dört kusur, üç karar, ve kilitten önce yakalanan iki eskime** · ⭐ L9 artık bir KAPIYA bağlı
+
+**Bağlam:** D-179 üç soruyu Yasin'e bıraktı. **Üçünde de öneri kabul edildi:**
+
+| # | soru | karar |
+|---|---|---|
+| 1 | Birincil A (`ΔP_active`) | ⭐ **olduğu gibi kalıyor** — bulaşma ileriye taşınmıyor, iddia zayıflatılmıyor |
+| 2 | §4 ↔ D-145 §6 çelişkisi | ⭐ **Wilcoxon + ilan edilmiş MDE**, ve `p` **her zaman CI + etki büyüklüğüyle birlikte** |
+| 3 | L9 kapıya bağlansın mı | ⭐ **evet — analiz aracı kilit alınmadan reddediyor** |
+
+---
+
+### 1. ⭐ L9 KAPISI — izin belgeden okunuyor, bayraktan değil
+
+`analyze_population_run.py`: kilit alınmadan **seviye 1, 2 ve 3** raporlanmıyor
+(üçü de yasak niceliği basıyor: kovaryans değeri/işareti · terimin hareketi ·
+`lived ↔ shuffle` mesafesi). **Seviye 0, sağlık ve travma başlığı açık
+kalıyor** — onlar **tanımlılık**, ve `CLAUDE.md` onları aynı cümlede
+serbest bırakıyor (*"kol farkına değil, dağılımın var olup olmadığına"*).
+
+⭐ **İzin elle çevrilen bir bayrak değil:** `preregistration_locked()`
+**`PREREGISTRATION_3.md`'nin kendi durum satırını** okuyor ve **🔒 + commit
+hash**'in ikisini birden arıyor. ⇒ Belge ile kod **ayrışamaz**: yazılmamış bir
+kilit raporu açmıyor, açılan bir rapor kilidin yazıldığının kanıtı.
+⚠️ **Hash şartı gevşek değil:** işaret var hash yoksa **kilitli sayılmıyor** —
+§12'nin bütün amacı dondurulan hâlin **bulunabilir** olması.
+⚠️ **Eksik belge = kilitsiz.** Yanlış tahminin iki yönünden yalnız biri geri
+alınabilir.
+
+⛔⛔ **VE KAPININ SINIRI İLAN EDİLİYOR — kapı, D-179'un ihlalini
+YAKALAYAMAZDI.** İhlal ad-hoc bir betikti; bu kapı yalnız **aletin kendisini**
+kapatıyor. Kazanılan şey: yasak bir sayıyı okumak artık **kolay yol** değil,
+**kasıtlı bir eylem**. Kendini olduğundan güçlü gösteren bir kapı, hiç
+olmayandan kötüdür.
+
+**K5:** 4 mutasyon, dördü de yakalandı (varsayılan izinli olsun · hash şartı
+kalksın · eksik belge kilitli sayılsın · seviye 3 geri çekilmesin).
+md5 `c25ce958…` birebir.
+
+⚠️ **Testler bir boşluk gösterdi:** kapı eklendiğinde **hiçbir mevcut test
+kırılmadı** ⇒ mevcut suite seviye 1–3'ün rapora **girdiğini** hiç iddia
+etmiyormuş. Dört yeni test o boşluğu da kapatıyor.
+
+---
+
+### 2. Taslakta kapanan dört kusur
+
+| kusur | nasıl kapandı |
+|---|---|
+| **1** | ✅ **tersine döndü.** `energy` **16/16 Price satırında**, **10'u tanımlı** (C2: 4/15, 1 tanımlı). §3.1'in *"`P_active` düşük beklenmelidir"* cümlesi **ters yöndeydi**, düzeltildi |
+| **2** | ✅ Kriz D-173'te geri döndü ama alan tablosunu **bozmadı**: `resource`, `energy`'nin **yerine değil yanına** yazılıyor ⇒ hiçbir tohum düşmüyor |
+| **3** | ✅ Test çerçevesiyle çözüldü (**§4.1**), ⛔ **yapısal itiraz gizlenmedi**: `ΔP_active`'in sıfır-şişkinliği bir **sonuç olarak** raporlanacak |
+| **4** | ✅ Üçüncü kategori **tanımlandı**: *"inaktif"* (alan var, `Var(z)=0`) ile *"hiç oluşmadı"* (satır yok) **ayrı** raporlanıyor; oluşmamış hücre `P_active`'in **paydasına girmiyor** |
+
+⭐ **Ve yeni bir ölçülmüş sınır (L24):** `resource` **9 satırın 9'unda
+`z_variance = 0.0`** ⇒ hiçbir hücrede tanımlı değil. L14'ün confound'unun
+sayısal hâli — birincil alanın `energy` olması artık **türetilmiş değil
+ölçülmüş**, ama bedeli de açık: **kriz kanalı `z`'ye bilgi taşımıyor**.
+
+---
+
+### 3. ⛔ Kilitten önce yakalanan İKİ ESKİME — kilidin asıl kazancı
+
+| ne | eski metin | ölçülen |
+|---|---|---|
+| **§3.1 beklentisi** | *"`energy` 216 okumanın 11'inde ⇒ `P_active` **düşük**"* | **16/16 satır, 10 tanımlı** ⇒ **yüksek** |
+| ⭐⭐ **L20'nin sonucu** | *"sembolik kanalın somatik yarısı varise **HİÇ ULAŞMIYOR**"* | ⛔ **YANLIŞ.** D-161: **34/144** · D-173 pilotu: `I5.4` ✅ **`applied 463x`** |
+
+⚠️ **L20 kilitlenseydi**, aksiyomun *"iki kanal"* iddiasının **yarısını
+gereksiz yere feda etmiş** olurduk — ve sonuç raporunda *"bu yarı test
+edilmedi"* yazacaktı, oysa ediliyor.
+
+⇒ **Bugünün üçüncü belge-ölçüm çelişkisi** (D-176/*"iki kol"* · D-178/ROADMAP
+§3 · bu). **Desen artık tek cümlede:** bu projede bir belgenin en riskli hâli
+*yanlış* olması değil, **eskimiş** olması — ikisi aynı görünüyor.
+
+---
+
+### 4. Taslağın bugünkü durumu
+
+**Altı slotun altısı da kapalı.** §7 D-176'nın sayılarıyla yeniden yazıldı
+(eski hâli `<details>` içinde tarihçe olarak duruyor), §13'ün koşum komutu
+`G=4` · **üç kol** · tohum **9929+** · `--resume` · çok-dosya birleştirme ile
+güncellendi. Yeni sınırlar: **L22** (bütçe sansürü) · **L23** (uyku
+konsolidasyonu yok) · **L24** (`resource` hiç tanımlı değil) · **L25** (L9
+ihlali + kapı ve kapının sınırı).
+
+**Suite: 666 passed.**
+
+⏳ **Kalan tek şey KİLİT (adım D)** — §12'nin alet kimliği dondurulur ve durum
+satırına 🔒 + commit hash yazılır. ⛔ **Bu Yasin'in kararı**, ve tek atıştır.
+
+### 5. ⚠️ Bu kaydın sınırları
+
+- Kusur 1/2/4'ün kapanışı **tek bir pilota** dayanıyor (3 tohum, 16 hücre).
+- §4.1 bir **çerçeve** kararıdır; `ΔP_active`'in gerçekten reddedip
+  reddedemeyeceği **koşum sonrası** belli olur.
+- L9 kapısı **yalnız `analyze_population_run`'ı** kapatıyor.

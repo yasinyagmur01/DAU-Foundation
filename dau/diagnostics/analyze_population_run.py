@@ -75,6 +75,55 @@ RUN_KEY_COMPLETE: str = "complete"
 # D-176/B3. Present only on a merged run; its presence is what tells the
 # report to stop speaking as if there were one file behind it.
 MERGE_KEY_SOURCES: str = "merged_from"
+# ── D-179/L9. The forbidden readings, and where the permission comes from ────
+#
+# ⛔ CLAUDE.md §5 lists what may NOT be read from a run before the third
+# pre-registration is locked: the covariance VALUE, its SIGN, the
+# lived↔shuffle DIFFERENCE, the effect size, and ΔP_active. The rule existed;
+# nothing enforced it, and on 2026-08-24 it was broken (D-179) — P_active was
+# computed per arm and differenced, straight off the pilot.
+#
+# ⚠ AND THE LIMIT IS DECLARED HERE, because a gate that oversells itself is
+# worse than none: the D-179 violation was an ad-hoc script, which this cannot
+# see. What this removes is the CONVENIENT path — reading a forbidden number
+# now takes a deliberate act instead of running the obvious tool.
+#
+# The permission is NOT a hand-flipped flag. It is read from the
+# pre-registration itself, so it cannot drift from the document it describes:
+# the status line carries 🔒 and a commit hash once the lock is taken.
+PREREGISTRATION_PATH: Path = Path("docs/PREREGISTRATION_3.md")
+LOCK_MARK: str = "🔒"
+LOCK_COMMIT_PATTERN: str = r"commit\s+`([0-9a-f]{6,40})`"
+L9_REFUSAL: str = (
+    "⛔ WITHHELD (L9, D-179) — the third pre-registration is not locked, and "
+    "this section reports a quantity CLAUDE.md §5 forbids reading before the "
+    "lock: the covariance value or sign, the lived↔shuffle difference, the "
+    "effect size, ΔP_active. Reading it now would make the endpoint choice "
+    "post-hoc. Lock the pre-registration and this section returns by itself."
+)
+
+
+def preregistration_locked(path: Path | None = None) -> bool:
+    """True once the pre-registration's status line declares a lock.
+
+    Read from the document rather than from a constant in this file, so the
+    two cannot disagree: a lock that was never written down does not open the
+    report, and a report that opens is evidence the lock was written.
+    """
+
+    import re
+
+    target = PREREGISTRATION_PATH if path is None else path
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError:
+        # ⚠ Missing document means NOT locked. The direction matters: the
+        # failure mode of a wrong guess here is either "refused a legitimate
+        # reading" or "published a forbidden one", and only one of those is
+        # recoverable.
+        return False
+    head = text.split("\n---", 1)[0]
+    return LOCK_MARK in head and re.search(LOCK_COMMIT_PATTERN, head) is not None
 GEN_KEY_PRICE: str = "price_for_previous_transition"
 GEN_KEY_REPRODUCTION: str = "reproduction_report"
 GEN_KEY_AGENTS: str = "agents"
@@ -913,8 +962,19 @@ def refuse_if_incomplete(run: dict[str, Any], path: Path) -> None:
         )
 
 
-def format_report(run: dict[str, Any], path: Path) -> str:
+def format_report(
+    run: dict[str, Any], path: Path, *, unlocked: bool | None = None
+) -> str:
+    """The report. ``unlocked`` defaults to asking the pre-registration itself.
+
+    ⚠ The parameter exists so tests can drive both states, NOT so a caller can
+    grant itself permission: nothing in the codebase passes it, and a caller
+    that did would be writing the violation down in its own source.
+    """
+
     refuse_if_incomplete(run, path)
+    if unlocked is None:
+        unlocked = preregistration_locked()
     views = arm_views(run)
     sources = run.get(MERGE_KEY_SOURCES)
     title = (
@@ -929,6 +989,12 @@ def format_report(run: dict[str, Any], path: Path) -> str:
         f"seeds={run.get(RUN_KEY_SEEDS)} N={run.get('n_agents')} "
         f"G={run.get('n_generations')} events={run.get('events_budget')}",
         "",
+        (
+            "pre-registration: 🔒 LOCKED — levels 1-3 readable"
+            if unlocked
+            else "pre-registration: 📝 NOT LOCKED — levels 1-3 WITHHELD (L9)"
+        ),
+        "",
         "## Level 0 — gate (claims NOTHING; this is a precondition)",
         *level0_gate(run, views),
         "",
@@ -936,13 +1002,18 @@ def format_report(run: dict[str, Any], path: Path) -> str:
         *trauma_headroom(run),
         "",
         "## Level 1 — selection: Cov(w, z)",
-        *level1_selection(run, views),
+        # D-179/L9. Levels 1-3 are exactly the forbidden readings: 1 prints the
+        # covariance and its sign, 2 prints how that term moves, 3 prints the
+        # lived↔shuffle distance. Level 0, health and headroom stay open —
+        # those are DEFINEDNESS, which CLAUDE.md permits in the same breath as
+        # it forbids these ("kol farkına değil, dağılımın var olup olmadığına").
+        *(level1_selection(run, views) if unlocked else [f"  {L9_REFUSAL}"]),
         "",
         "## Level 2 — accumulation across generations",
-        *level2_persistence(views),
+        *(level2_persistence(views) if unlocked else [f"  {L9_REFUSAL}"]),
         "",
         "## Level 3 — arm contrast (the INHERITANCE question)",
-        *level3_arm_contrast(views),
+        *(level3_arm_contrast(views) if unlocked else [f"  {L9_REFUSAL}"]),
         "",
         "## Health (descriptive)",
         *health(views),

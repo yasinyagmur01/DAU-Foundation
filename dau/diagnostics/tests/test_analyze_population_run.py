@@ -1103,3 +1103,91 @@ def test_cli_reports_several_files_at_once(tmp_path) -> None:
     assert "merged from 2 files" in report
     for seed in (9901, 9902, 9903, 9904):
         assert f"s{seed}" in report
+
+
+# ── D-179/L9: the forbidden readings, and the permission that opens them ─────
+
+
+def test_lock_state_is_read_from_the_document_not_from_a_flag(tmp_path) -> None:
+    """A hand-flipped bool can disagree with the document; this cannot."""
+
+    from dau.diagnostics.analyze_population_run import preregistration_locked
+
+    draft = tmp_path / "draft.md"
+    draft.write_text("# X\n\n**Durum: 📝 TASLAK · 2026-08-19**\n", encoding="utf-8")
+    locked = tmp_path / "locked.md"
+    locked.write_text(
+        "# X\n\n**Durum: 🔒 KİLİTLİ · commit `befd72b4ee57`**\n", encoding="utf-8"
+    )
+    half = tmp_path / "half.md"
+    half.write_text("# X\n\n**Durum: 🔒 KİLİTLİ**\n", encoding="utf-8")
+
+    assert preregistration_locked(draft) is False
+    assert preregistration_locked(locked) is True
+    # ⚠ A lock mark with no commit hash is NOT a lock: the hash is what makes
+    # the frozen state findable, and §12's whole point is that it is.
+    assert preregistration_locked(half) is False
+    # Missing document means NOT locked — the recoverable direction.
+    assert preregistration_locked(tmp_path / "nope.md") is False
+
+
+def test_before_the_lock_levels_one_to_three_are_withheld() -> None:
+    """⛔ D-179. The rule existed and nothing enforced it; now something does."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import L9_REFUSAL
+
+    report = format_report(_run(_multi_seed(PRICE)), Path("r.json"), unlocked=False)
+
+    assert report.count(L9_REFUSAL) == 3, "levels 1, 2 and 3 must all be withheld"
+    assert "NOT LOCKED" in report
+    # Definedness stays open — CLAUDE.md permits it in the same breath: the
+    # question is whether the distribution EXISTS, not what the arms did.
+    assert "Var(w)" in report
+    assert "Level 0" in report
+    # And the forbidden numbers must not leak through some other section.
+    assert "‖lived − shuffle‖" not in report
+
+
+def test_after_the_lock_the_same_report_is_complete() -> None:
+    """The refusal is a CONDITION, not a deletion (the D-178 pattern)."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import L9_REFUSAL
+
+    report = format_report(_run(_multi_seed(PRICE)), Path("r.json"), unlocked=True)
+
+    assert L9_REFUSAL not in report
+    assert "LOCKED — levels 1-3 readable" in report
+    assert "‖lived − shuffle‖" in report
+
+
+def test_the_default_asks_the_real_pre_registration(tmp_path) -> None:
+    """K3 — the wiring, not the predicate.
+
+    `unlocked` defaults to None and the report has to go and ASK. A version
+    that defaulted to True would pass every test above and still publish the
+    forbidden sections on every real call.
+    """
+
+    from pathlib import Path
+
+    import dau.diagnostics.analyze_population_run as mod
+
+    calls: list[Any] = []
+
+    def _asked(path=None):
+        calls.append(path)
+        return False
+
+    original = mod.preregistration_locked
+    mod.preregistration_locked = _asked
+    try:
+        report = format_report(_run(_multi_seed(PRICE)), Path("r.json"))
+    finally:
+        mod.preregistration_locked = original
+
+    assert calls, "format_report never asked whether the pre-registration is locked"
+    assert mod.L9_REFUSAL in report
