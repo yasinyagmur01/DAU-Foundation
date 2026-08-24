@@ -39,15 +39,16 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-Talep ölçüldü ve **iki tur boyunca yanlış bir cebir üzerinde durduğumuz ortaya
-çıktı**: başlangıç havuzu sabit değil **tohumdan çekiliyor** ⇒ Katman 1'in
-mekanizması aslında **çalışıyor** (tavan 6 hücrenin 6'sında landmark'tan önce
-bağladı), ama **hangi tohumu çektiğine bağlı**.
+**Ön-koşul zinciri ilk kez kuruldu** (Katman 1b: tavan 24/24 hücrede bağlıyor,
+kurucular her tohumda ayrışıyor, kriz kanalı canlı) ⇒ sıradaki iş artık bir
+kod işi değil, **hedefin ne kadar yükseğe konacağı kararı** — ve o senin.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-173** (sıradaki: **D-174**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-175** (sıradaki: **D-176**).
   **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
+- 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
+  08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
   `dau_runs/layer1b_pilot_g4_s9926_9928.json` · **6 sa 59 dk 11 sn**
   (tohum başına **2 sa 20 dk**) · `complete` · çökme yok · kapı **8/11**.
@@ -80,145 +81,103 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ---
 
-## ▶▶ *"devam et"* = ⛔ **KARAR: hangi kaldıraç** (soğuk başlangıç için tam blok)
+## ▶▶ *"devam et"* = **YOL HARİTASINI OKU, SONRA SIRADAKİ ADIMI SUN** (soğuk başlangıç)
 
 ⚠️ **Bu blok bilerek kendi kendine yeterlidir.** Yeni bir oturum bunu okuyup
 başka hiçbir yeri yeniden türetmeden işe başlayabilmeli.
-🔒 Pilotun tam okuması **D-164**'te; aşağısı karar için gereken özettir.
 
-### 1. Pilot ne dedi — üç kural
+### ⛔ ÇALIŞMA KURALI (Yasin, 2026-08-24) — her adım sonunda DUR
 
-| kural | sonuç |
-|---|---|
-| **P1** — kıtlık kademeli mi oldu? | ❌ **TUTMADI** — 1/3 (ölçüt ≥2/3). s9921 olay 2 ✅ · s9920 olay 9 ❌ · s9922 **hiç** ❌ |
-| **P2** — kurucular ayrışıyor mu? | ✅ **TUTTU** — 4/6 (ölçüt ≥4). ⚠️ Ama gen1'de kollar özdeş ⇒ fiilen **2/3 tohum** |
-| **P3** — zincir oynadı mı? *(eşiksiz)* | `k` **192/192 `resource_load`, hiç oynamadı** · tanımlılık **11/17** · `cooperate` ve `null` ⛔ **okunamadı** |
+> **Her adımın sonunda Yasin'in onayı beklenir.** Adım biter → ne yapıldığı
+> ve ne bulunduğu **kısaca** raporlanır → **onay gelmeden sıradaki adıma
+> geçilmez.** *"Devam et"* tek bir adımı açar, sırayı değil.
 
-**Koşum:** 8 sa 3 dk (tohum başına **2 sa 41 dk**) · `complete` · çökme yok ·
-kapı **7/10**, bayrak `I4.2` `I5.5` `I5.6`.
-
-### 2. Neden tutmadı — teşhis (D-164 §4, mevcut veriden)
-
-| # | bulgu |
-|---|---|
-| **1** | ⛔ **Kriz kanalı öldü: 0/192 yaşam.** Sabitin `0.1425` seçilme gerekçesi **tam olarak bu kanalı yaşatmaktı** (D-163 §2). En düşük havuz oranı **0.375**, eşik 0.30 |
-| **2** | Tavan `= 14.25 × havuz_oranı` ⇒ kanonik DEFECT (8.0) ancak **oran < 0.561** iken bağlar; havuz koşum boyu **0.60–0.86**'da oturuyor |
-| **3** | Eksik almaların çoğu havuzdan değil **ilandan**: 24 hücrenin **15'i** `EXTRACTION_PARSE_MAX = 25`'e yakın ilanlardan (gap 16–19), **2'si** tasarlanan rejim, **5'i** hiç bağlamadı |
-| **4** | D-163'ün **denge hesabı hiç kurulmadı**: `0.1425 p` terimi *"herkes tavanı alır"* varsayıyordu; gerçek hasat **~36/olay ve havuzla orantısız** (tavanların toplamı 74.1) |
-| **5** | s9922 gen1'de **8 kurucu bit düzeyinde özdeş** (`F=0.420587919`, ömür 11, Δhavuz 50.000000) — zincir **ilk halkada** koptu |
-
-⭐ **P1'in tek geçen tohumu da mekanizmadan gelmiyor:** olay 2'de tavan
-**≥ 10.51** (grace=10 ⇒ ölüm yok ⇒ N=8 kesin) ⇒ o eksik alma 8.0'lık DEFECT
-talebinden **gelemez** ⇒ mekanizma için gerçek sayı **0/3**.
-
-### 3. ⛔ İKİ TUR BOYUNCA YANLIŞ CEBİR — D-165 geri çekildi (D-168)
-
-Bu blok sırayla şunları söylemişti ve **ikisi de çürüdü**:
-
-| tur | iddia | akıbeti |
-|---|---|---|
-| D-164 | *"öneri **A**: `r`'yi bandın içinde aşağı al"* | ❌ D-165'te çürütüldü |
-| D-165 | *"**BOŞ KÜME** — seçilecek `r` yok"* | ❌ **D-168'de çürütüldü** |
-
-⛔ **Hata:** D-165 havuzun `POOL_INIT`'ten, yani oran **0.80**'den başladığını
-varsaymıştı. Kod okundu (§2.2), **öyle değil**:
-
-```
-shared_pasture():  pool = per_capita_stock × N      ← kurucunun NİŞİNDEN
-_seed_niche():     pool = POOL_MAX × rng.uniform(0.40, 1.00)
-```
-
-⇒ **Başlangıç oranı tohuma göre 0.40–1.00 arasında çekiliyor.**
-
-| tohum | 9920 | 9921 | 9922 | 9923 | 9924 | 9925 |
-|---|---|---|---|---|---|---|
-| başlangıç oranı | 0.877 | **0.577** | 0.825 | 0.794 | 0.620 | 0.605 |
-
-⚠️ İkinci hata: talep olarak **ömür-boyu gerçekleşen hasat** (4.438)
-kullanılmıştı; landmark penceresindeki gerçek talep **5.1–7.3**. İkisi de
-tavanın bağlamasını **olduğundan zor** gösterdi.
-
-### 4. ✅ Ölçüm ne dedi (D-168)
-
-**M1 yazıldığı gibi ❌ TUTMADI (1/3):** ortalama talep 7.325 · 5.125 · 5.450,
-eşik 6.078. ⛔ **Ama eşiğin kendisi yukarıdaki hatalı cebirden geldi** ⇒
-verdict kayda geçer, D-167'nin ona yüklediği anlamı **taşıyamaz**.
-
-⭐⭐ **Ve mekanizma bu koşumda ÇALIŞTI.** `I5.6` geçti — tavan **6 nesil
-hücresinin 6'sında** ve landmark'tan **önce** bağladı:
-
-| başlangıç oranı | 0.577 | 0.605 | 0.620 | 0.794 | 0.825 | 0.877 |
-|---|---|---|---|---|---|---|
-| ilk eksik alma | **2** | 3 | 3 | 5 | **hiç** | 9 *(ilandan)* |
-
-⇒ **Baskın değişken `r` de talep de değil — tohumun çektiği BAŞLANGIÇ NİŞİ.**
-Landmark penceresinde azami talep **8.0** (6 hücrenin 5'inde) ⇒ bu erken
-eksik almalar **ilan enflasyonundan değil, havuzun çekilmesinden** geliyor.
-
-**Düzeltilmiş bant** (gerçek başlangıç + ölçülen talep): 9923 → bandın tamamı ·
-9924 → boş · 9925 → ince şerit. **Ortak şerit `r ∈ (0.1050, 0.1085)`**,
-genişliği 0.0035 ⚠️ **kırılgan**.
-
-⭐ **M2:** `cooperate` **523/1190 = %43.9** — karar kanalı işliyor.
-⚠️ D-068'in *"%94–100 DEFECT"*u başka fizikten, **karşılaştırılamaz**.
-**M3:** talep landmark'ta iki değerli (8.0 / 2.0); `25.0`'lik ilanlar **geç
-yaşam** olgusu. `mean > 6.078` için defect payı **> %68** gerekiyor.
-⚠️ **Kriz kanalı hâlâ 0/48.**
-
-### 5. ⛔ KARAR — dört kaldıraç, **senin** (D-007)
-
-| # | kaldıraç | ölçülen büyüklük | engel |
-|---|---|---|---|
-| **0** ⭐ **YENİ** | **`NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)`** | başlangıç ≤ ~0.62 ⇒ tavan olay 2–3'te bağlıyor; ≥ 0.82 ⇒ hiç bağlamıyor | ⛔ **ön-kayıt aralığı** |
-| **I** | Talep | `mean > 6.078` için defect payı **> %68**; ölçülen %55–89 | ⛔ **K7 sınırı** |
-| **II** | ~~`POOL_INIT`~~ | ⛔ **GEÇERSİZ** — havuz `POOL_INIT`'ten başlamıyor | — |
-| **III** | Katman 2'ye geç | — | ⚠️ kriz kanalı ölü kalır (D-070/K6) |
-
-⛔ **Ve hangisi seçilirse seçilsin ön-taahhüt YENİDEN YAZILMALI.** Bu turda
-hem P1'in hem M1'in eşiği yanlış bir cebirden türetilmişti — **iki tur üst
-üste aynı kusur: türetme temiz, girdisi doğrulanmamış** (§2.2).
-
-### 6. ✅ Pilotun kazandırdığı şey — bütçe kararı artık yapılabilir
-
-Kuyruk **2.2**'nin beklediği iki sayı yeniden ölçüldü (ölçüt D-161 §1 ile aynı):
-
-| sayı | Katman 1 öncesi | **bugün** |
-|---|---|---|
-| Tohum kullanılabilirliği | 2/3 | ✅ **3/3** |
-| Puanlanan hücre tanımlılığı | (seyrek) | ✅ **11/12** |
-| Tohum başına süre | ~1 sa 58 dk | ⚠️ **2 sa 41 dk** (+%36) |
-
-⇒ **Katman 1 kıtlığı kademelendirmedi ama ölçüm zincirini belirgin biçimde
-daha sık tanımlı kıldı.** Bütçe kararı (kaç tohum · kestirim mi test mi) bu üç
-sayıyla verilebilir — **fizik kararından sonra**, çünkü fizik yine değişirse
-süre de tanımlılık da değişir.
-
-### 7. Karar verilince sırayla
-
-1. **D-kaydı** yazılır: seçilen kaldıraç + değer + **türetmesi** + **denge
-   noktası** + hangi eşiklerin altında/üstünde kaldığı (D-163'ün şartı) +
-   reddedilen adaylar. ⭐ **Bandın boş olmadığı aynı turda gösterilir**
-   (D-165'in dersi) ⭐ **ve türetmenin GİRDİLERİ koddan doğrulanır**
-   (D-168'in dersi — iki tur `POOL_INIT` sanılan bir başlangıçla hesaplandı).
-2. Kod değişir, test + **mutasyon kontrolü** (§2.4, K5: md5 +
-   `no:cacheprovider` + `__pycache__` silme).
-3. Yeni pilot **ön-taahhüdüyle birlikte** yazılır (P1'in eşiği yeniden
-   türetilir), sonra koşulur. Tohumlar **9926+** (…9925 kullanıldı).
-
-### 8. ⚠️ Koşum yaparken — değişmeyen kurallar
-
-❌ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
-(D-116) · koşum sürerken `.py` düzenleme / `git checkout` / branch değiştirme
-**YAPILMAZ** (fonksiyon içi importlar; `tool_identity` bunu göstermez).
-⛔ **OKUNMAYACAKLAR (L9):** kovaryans **değeri** · **işareti** · `lived`↔`shuffle`
-**farkı** · etki büyüklüğü · `ΔP_active`.
-
-**İsteğe bağlı — GPU sıcaklığı:** hedef **87 °C**, uzun koşumda orada tutuyor
-(kısma %0.6). Düşürmek istenirse **koşumdan önce**
-`sudo nvidia-smi -lgc 300,2400` (geri alma `-rgc`). ✅ Sonucu etkilemez (I0.6),
-⚠️ yalnız süre uzar.
+⚠️ Bu, §2.3'ün (gate-and-confirm) sıkılaştırılmış hâlidir ve **onun yerine
+geçer**. Sebebi: bu proje bir oturumda beş adım ilerleyip sonunda bir
+varsayımın yanlış olduğunu bulmayı **iki kez** yaşadı (D-165, D-168).
 
 ---
+
+### 1. NEREYE GİDİYORUZ — 📄 `docs/ROADMAP.md` (2026-08-24, D-175)
+
+> **Aksiyom:** *"Bir agent'a trait veremezsin, sadece yaşam verebilirsin,
+> trait oradan çıkar."*
+
+Ölçülebilir hâli **dört seviye** (aletin kendi tanımı):
+
+| seviye | iddia | durum |
+|---|---|---|
+| **0** `Var(w) > 0` | ⛔ hiçbir şey, ön-koşul | ✅ 18/18 |
+| **1** `Cov(w,z) ≠ 0` | *"seçilim yaşanmış drift'e etki etti"* | ← doğrulayıcı koşum burayı sınar |
+| **2** terim sönmüyor | *"etki birikimli"* | `G−2` geçiş |
+| **3** `lived ≠ shuffle ≠ null` | ⭐ **AKSİYOM** | ⛔ B2 null verdi · **bugün sınanamaz** (aşağıda) |
+
+⛔ **Seviye 1 bitiş çizgisi DEĞİL:** *"Price SEÇİLİMİ verir, kol karşılaştırması
+KALITIMI."*
+
+**Üç kat, ve maliyeti:** Kat 1 (seviye 1) **47 sa · G=4** · ⭐ **Kat 2**
+(aksiyom, seviye 3) **70 sa · G=6** · Kat 3 (kümülatif) 93 sa · G=8 ⚠️
+*"ölçülmeden hayır"*.
+
+### 2. ⛔ ŞU AN BEKLEYEN — beş karar, hepsi **senin** (D-007)
+
+| # | karar | Claude Code'un önerisi |
+|---|---|---|
+| **1** | **Hedef katı** | **Kat 2** (+ Kat 3 kancası) |
+| **2** | `T_max` · `G` | Kat 2 ⇒ **70 sa · G = 6** ⚠️ (Kat 1 için 47 sa · G=4 onaylanmıştı; hedef değişirse bu da değişir) |
+| **3** | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
+| **4** | Kalan kaldıraç hakkı (**1**) nereye | **Kanal 1'in onarımı** |
+| **5** | DR brief'i | evet — **tek soru**: ratcheting'in yayımlanmış ampirik standardı |
+
+### 3. SIRADAKİ ADIMLAR — sırayla, **her birinin sonunda onay beklenir**
+
+| # | adım | GPU | bitti sayılır |
+|---|---|---|---|
+| **A** | ⛔ **Beş kararı al** (§2) | yok | Kararlar **D-176**'da ilan edilmiş |
+| **B** | **Kanal 1'in onarımı** — `run_consolidation` popülasyon yolunda çağrılmıyor (D-172 §4) | yok | Kod + test + **mutasyon kontrolü** · kısa doğrulama koşumu |
+| **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü** | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
+| **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, slotlar + alet kimliği dondurulur | yok | Commit hash + §12 deseni |
+| **E** | **Doğrulayıcı koşum** — parçalı, gecede 5 tohum | ✅ | `complete`, kapılar okundu |
+| **F** | **Analiz + sonuç sınıfı** | yok | Dört seviye raporlandı; sınıf **koşumdan önce** tanımlıydı |
+
+⛔ **A'dan önce hiçbir şey başlatılmaz.** ⚠️ **C, D'den önce gelmek
+zorunda** — kilit, kusurlar kapanmadan atılamaz.
+
+### 4. Son koşum ve bugün elimizdeki taban
+
+⭐ **Katman 1b pilotu (D-173)** — `dau_runs/layer1b_pilot_g4_s9926_9928.json` ·
+**6 sa 59 dk** · `complete` · kapı **8/11**:
+
+| | |
+|---|---|
+| **Q1** kıtlık her tohumda | ✅ **3/3** (olay 2 · 2 · 1) |
+| **Q2** kurucular ayrışıyor | ✅ **3/3**, sekizinin sekizi de ayrı |
+| `I5.6` | ✅ tavan **24/24 hücrede** bağladı, 20'sinde **olay 1'de** |
+| ⭐ kriz kanalı | **1068 olay / 79 yaşam** (önce 0/192 ve 0/48) ⇒ **D-070/K6 askıdan çıktı** |
+| bayraklar | `I4.2` · `I5.1` *(yapısal, D-172)* · `I5.5` |
+| durma kuralı girdileri | **`q` = 3/3 = 1.00** · **`t` = 2 sa 20 dk** |
+
+**Bütçe → duyarlılık** (eşleştirilmiş Wilcoxon, α=0.05, güç 0.80; alet D-052'nin
+sayılarına karşı doğrulandı):
+
+| `T_max` | `N_eff` | MDE `d_z` |
+|---|---|---|
+| 47 sa | 20 | **0.676** |
+| 70 sa | 30 | 0.542 |
+| 93 sa | 39 | 0.471 |
+
+⚠️ **Saati düşürmek bilim kaybettirir** (bütçe saat cinsinden): %20 yavaşlama
+⇒ 20 → 16 tohum, MDE 0.676 → 0.767. **GPU 7 saatlik tam yükte termal kısma
+YAPMADI** (HW/SW thermal slowdown **0 µs**) ⇒ çözüm saat düşürmek değil
+**parçalı koşum** (B2 deseni).
+
+### 5. ⚠️ Koşum yaparken — değişmeyen kurallar
+
+❌ Dış `timeout` **YOK** (D-126) · `PYTORCH_CUDA_ALLOC_CONF` **elle verilmez**
+(D-116) · koşum sürerken `.py` düzenleme / `git checkout` **YAPILMAZ** ·
+tohumlar **taze** (kullanılmışlar …9928 ⇒ taze blok **9929+**).
+⛔ **OKUNMAYACAKLAR (L9):** kovaryans **değeri** · **işareti** ·
+`lived`↔`shuffle` **farkı** · etki büyüklüğü · `ΔP_active`.
 
 ## Son iş: KATMAN 1 — fizik değişti (D-162 · D-163)
 
@@ -1236,6 +1195,12 @@ GAP-14 ("hiç kimse çağırmıyor" — çağırıyordu), U5 (`SNR_FLOOR=0.40` t
 Analiz → öneri → **Yasin'in onayı** → uygulama. Analiz şunları içerir:
 ne bulundu (**kanıtla**), ne değişecek, hangi test gelecek, ne riskli.
 
+⛔ **2026-08-24'ten beri sıkılaştırıldı (Yasin):** *"her adımın sonunda
+sadece onayımı bekle"*. **Adım biter → kısa rapor → onay gelmeden sıradaki
+adıma geçilmez.** *"Devam et"* **tek bir adımı** açar, sırayı değil.
+Sebebi ölçülü: bu proje bir oturumda beş adım ilerleyip sonunda bir
+varsayımın yanlış olduğunu bulmayı **iki kez** yaşadı (D-165, D-168).
+
 Yasin "devam et" / "önerini uygula" dediğinde bu **o adım için** onaydır;
 adım içinde yeni bir karar noktası çıkarsa (yeni sabit değeri, iki tasarım
 arasında seçim) **tekrar sor**. Bugün bu beş kez oldu ve beşinde de doğru
@@ -1403,6 +1368,7 @@ kaymış.)
 | Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
 | Gönderilemeyen DR brief'i (#5) | `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` · yerine yapılan yerel tarama: `RECONCILIATION.md` **§K** |
+| ⭐ **Nereye gidiyoruz — varış noktası, üç kat, maliyetleri** | **`docs/ROADMAP.md`** (2026-08-24, D-175) |
 | Sıradaki iş · GAP tetikleri · DR sırası | **bu dosya §1** |
 
 ---
