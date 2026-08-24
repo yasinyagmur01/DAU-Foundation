@@ -73,10 +73,13 @@ from dau.foundation.polarity_filter import describe_polarity_filter
 from dau.foundation.state import DAUAgentState, InternalState
 from dau.memory.store import MemoryStore
 from dau.society.environment import (
+    EXTRACTION_LIMIT_RATIO,
     POOL_CRISIS_THRESHOLD,
     POOL_MAX,
+    POOL_REGEN_RATE,
     EnvironmentState,
 )
+from dau.society.extraction import EXTRACTION_DEFECT
 
 # ---------------------------------------------------------------------------
 # Protocol C′ constants (no magic numbers in logic)
@@ -213,8 +216,48 @@ NICHE_UNCERTAINTY_RANGE: tuple[float, float] = (0.20, 0.80)
 NICHE_SOCIAL_PRESSURE_RANGE: tuple[float, float] = (0.00, 0.60)
 NICHE_TIME_PRESSURE_RANGE: tuple[float, float] = (0.00, 0.60)
 # Birth pool stays clear of the crisis threshold so ADIM 1 crisis trauma is not
-# a per-seed confound at event 1.
-NICHE_POOL_FRACTION_RANGE: tuple[float, float] = (0.40, 1.00)
+# a per-seed confound at event 1. That is what the FLOOR is for, and it does
+# not move.
+NICHE_POOL_FRACTION_FLOOR: float = 0.40
+# D-171. The CEILING is derived, not chosen: the largest birth fraction at
+# which the harvest ceiling still binds a canonical EXTRACTION_DEFECT on the
+# very first event.
+#
+# Why it exists: D-168 measured that whether Layer 1's mechanism runs at all is
+# decided by the seed's draw, not by EXTRACTION_LIMIT_RATIO and not by demand —
+# a niche at 0.577 had the ceiling bite at event 2, one at 0.825 never did. A
+# range whose upper half silently disables the layer is not a niche, it is a
+# coin flip about whether the experiment measures anything.
+#
+#   ceiling_i = EXTRACTION_LIMIT_RATIO * POOL_MAX * ratio_after_regen
+#   ratio_after_regen = p * (1 + POOL_REGEN_RATE * (1 - p))   [step_pool
+#                                                              regenerates
+#                                                              BEFORE it serves]
+#   binds  <=>  ratio_after_regen < EXTRACTION_DEFECT / (EXTRACTION_LIMIT_RATIO
+#                                                        * POOL_MAX)
+#
+# Solving the quadratic for p gives the fraction below. Written as the
+# expression rather than as 0.523990 so the derivation cannot drift away from
+# the constants it is made of (§2.8, D-162 §3): change any of the four and this
+# moves with them.
+#
+# ⚠ It is a GUARANTEE, not a preference: every draw in the range binds, and the
+# upper end is the worst case rather than a tuned value. Nothing from any run
+# enters it (§2.7).
+_NICHE_POOL_BINDING_RATIO: float = EXTRACTION_DEFECT / (
+    EXTRACTION_LIMIT_RATIO * POOL_MAX
+)
+NICHE_POOL_FRACTION_CEILING: float = (
+    (1.0 + POOL_REGEN_RATE)
+    - math.sqrt(
+        (1.0 + POOL_REGEN_RATE) ** 2
+        - 4.0 * POOL_REGEN_RATE * _NICHE_POOL_BINDING_RATIO
+    )
+) / (2.0 * POOL_REGEN_RATE)
+NICHE_POOL_FRACTION_RANGE: tuple[float, float] = (
+    NICHE_POOL_FRACTION_FLOOR,
+    NICHE_POOL_FRACTION_CEILING,
+)
 
 OPPONENT_ID: str = "cprime-npc-opponent"
 # Protocol C′ ids end in the seed (``cprime-{arm}-{seed}``); multigen appends a
@@ -247,6 +290,12 @@ assert AB_ENERGY_FLOOR > graph_mod.TERMINATION_ENERGY, (
 assert NICHE_POOL_FRACTION_RANGE[0] > POOL_CRISIS_THRESHOLD, (
     f"birth pool fraction floor ({NICHE_POOL_FRACTION_RANGE[0]}) must exceed "
     f"POOL_CRISIS_THRESHOLD ({POOL_CRISIS_THRESHOLD})"
+)
+# D-171. The range must not invert, and it must not be empty: an empty band is
+# exactly the failure D-165 shipped a decision on before measuring it.
+assert NICHE_POOL_FRACTION_RANGE[0] < NICHE_POOL_FRACTION_RANGE[1], (
+    f"birth pool fraction floor ({NICHE_POOL_FRACTION_RANGE[0]}) must be below "
+    f"the derived ceiling ({NICHE_POOL_FRACTION_RANGE[1]})"
 )
 
 # Constraint snapshot — documents ADIM wiring without silent magic.

@@ -2508,7 +2508,7 @@ def test_the_results_name_the_fitness_band_not_only_the_number() -> None:
 def test_the_fitness_band_reaches_the_results_file(monkeypatch) -> None:
     """K3 — the band is worthless if the artefact never carries it."""
 
-    from dau.generation.fitness import classify_fitness
+    from dau.generation.fitness import classify_fitness_relative
 
     monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
     results = run_population_experiment(
@@ -2517,9 +2517,18 @@ def test_the_fitness_band_reaches_the_results_file(monkeypatch) -> None:
 
     agents = results["arms"][0]["generations"][0]["agents"]
     assert agents
+    reference = [float(a["f_agent"]) for a in agents]
     for agent in agents:
         assert "fitness_class" in agent
-        assert agent["fitness_class"] == classify_fitness(agent["f_agent"])
+        # ⚠ RELATIVE, not absolute — D-171 exposed this. The assertion read
+        # `classify_fitness`; the runner has used `classify_fitness_relative`
+        # since D-152, and the two agreed only by coincidence under the old
+        # birth-pool range. Narrowing that range moved F_agent and the
+        # coincidence ended. The test was checking a rule the run does not use,
+        # which is §2.8's error inside the test written to prevent it.
+        assert agent["fitness_class"] == classify_fitness_relative(
+            agent["f_agent"], reference
+        )
 
 
 def _trauma_candidate(record_id: str):

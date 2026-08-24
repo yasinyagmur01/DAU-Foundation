@@ -560,3 +560,62 @@ def test_the_shortfall_opens_before_the_landmark() -> None:
         "no spread inside the landmark window — the endpoint still cannot see "
         "the commons, which is the state this layer was built to end"
     )
+
+
+def test_every_birth_niche_makes_the_ceiling_bind_on_the_first_event() -> None:
+    """⚠ D-171. The GUARANTEE, not the algebra.
+
+    D-168 measured that whether Layer 1 runs at all was decided by the seed's
+    draw: a niche at 0.577 had the ceiling bite at event 2, one at 0.825 never
+    did. The range now exists to remove that coin flip, so what is asserted is
+    the property the range was narrowed FOR — every fraction inside it, floor
+    and ceiling included, leaves a canonical EXTRACTION_DEFECT short on event 1.
+
+    ⚠ Deliberately re-derived here from the physics constants instead of
+    importing the module's own expression: a test that reused
+    NICHE_POOL_FRACTION_CEILING would agree with any value that expression
+    produced, including a wrong one. This is the §2.8 pair — the report must
+    follow the tool, not repeat it.
+    """
+
+    from dau.diagnostics.run_protocol_c_prime import NICHE_POOL_FRACTION_RANGE
+    from dau.society.environment import (
+        EXTRACTION_LIMIT_RATIO,
+        POOL_CRISIS_THRESHOLD,
+        POOL_MAX,
+        POOL_REGEN_RATE,
+        harvest_ceiling,
+    )
+    from dau.society.extraction import EXTRACTION_DEFECT
+
+    floor, ceiling = NICHE_POOL_FRACTION_RANGE
+    assert floor < ceiling, "the birth range is empty or inverted"
+    assert floor > POOL_CRISIS_THRESHOLD, "a newborn could start inside a crisis"
+
+    n_agents = 8
+    samples = [floor + (ceiling - floor) * i / 20.0 for i in range(21)]
+    for fraction in samples:
+        pool = POOL_MAX * fraction * n_agents
+        capacity = POOL_MAX * n_agents
+        regenerated = pool + POOL_REGEN_RATE * pool * (1.0 - pool / capacity)
+        # The same function the physics serves with, not a second copy of it.
+        cap = harvest_ceiling(regenerated, n_agents)
+        assert cap <= EXTRACTION_DEFECT + 1e-9, (
+            f"birth fraction {fraction:.4f} lets a canonical defect through "
+            f"untouched on event 1 (ceiling {cap:.4f} >= demand "
+            f"{EXTRACTION_DEFECT})"
+        )
+
+    # And the ceiling is TIGHT: one step above it, the guarantee is gone. A
+    # range that was merely "safe" could be 0.01 and would pass the loop above
+    # while destroying the niche diversity the experiment needs.
+    above = ceiling + 0.01
+    pool_above = POOL_MAX * above * n_agents
+    capacity = POOL_MAX * n_agents
+    regen_above = pool_above + POOL_REGEN_RATE * pool_above * (
+        1.0 - pool_above / capacity
+    )
+    assert harvest_ceiling(regen_above, n_agents) > EXTRACTION_DEFECT, (
+        "the ceiling is lower than it needs to be — niche diversity was spent "
+        "for nothing"
+    )
