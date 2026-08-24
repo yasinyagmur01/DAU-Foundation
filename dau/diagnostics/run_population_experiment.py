@@ -286,6 +286,7 @@ def planned_founder_ids(
     seeds: list[int],
     n_agents: int,
     arms: tuple[str, ...],
+    skip_cells: frozenset[tuple[str, int]] = frozenset(),
 ) -> list[str]:
     """Every agent id that exists before the first tournament — I0.7's input.
 
@@ -297,12 +298,21 @@ def planned_founder_ids(
     a leftover ``pop-replay-…`` adapter would make the second pass start adapted
     where the first started bare, and I4.1 would report DIVERGED for a reason
     that has nothing to do with determinism.
+
+    ⚠ ``skip_cells`` is the ONE exemption, and it exists for resume (D-176/B2):
+    an (arm, seed) that a previous invocation finished has adapters on disk on
+    purpose, and I0.7 would read its own work as contamination. Nothing else is
+    exempt — in particular the replay arm never is, because a run interrupted
+    DURING the replay leaves ``pop-replay-…`` adapters that would make the
+    second pass start adapted. That case must abort loudly and be cleaned by
+    hand rather than be deleted by a runner that decided it knew better.
     """
 
     return [
         founder_id(arm, seed, index)
         for seed in seeds
         for arm in tuple(arms) + (REPLAY_ARM_LABEL,)
+        if (arm, int(seed)) not in skip_cells
         for index in range(FIRST_FOUNDER_INDEX, FIRST_FOUNDER_INDEX + n_agents)
     ]
 
@@ -803,6 +813,87 @@ def checkpoint_path_for(results: Path) -> Path:
     """Where the partial file for a given results path lives."""
 
     return results.with_name(results.name + CHECKPOINT_SUFFIX)
+
+
+def _resume_fingerprint(header: dict[str, Any]) -> dict[str, Any]:
+    """The part of a header that decides whether two runs are the same run.
+
+    Two fields are removed, and NOT because they are inconvenient:
+
+    * ``tool_identity.lora.adapter`` is a census of the adapter directory, and
+      the run itself writes into that directory — so it differs from its own
+      checkpoint by construction. Comparing it would refuse every resume.
+    * ``tool_identity.argv`` differs by exactly the ``--resume`` token that
+      asked for the resume.
+
+    Everything else is compared verbatim: model, quantization, DPO settings,
+    metabolism, fitness, endpoints, sampling, reproduction rule, versions,
+    seeds, generations, events. A checkpoint may only be resumed by a run that
+    would have produced it.
+    """
+
+    fingerprint = json.loads(json.dumps(header))
+    identity = fingerprint.get("tool_identity")
+    if isinstance(identity, dict):
+        identity.pop("argv", None)
+        lora = identity.get("lora")
+        if isinstance(lora, dict):
+            lora.pop("adapter", None)
+    return fingerprint
+
+
+def completed_arms_from_checkpoint(
+    path: Path | None,
+    header: dict[str, Any],
+    n_generations: int,
+) -> list[dict[str, Any]]:
+    """Arms a previous invocation FINISHED, ready to be skipped (D-176/B2).
+
+    D-111 gave this runner a checkpoint and it has been write-only ever since:
+    every generation was saved and nothing could ever read one back, so an
+    interrupted run started over. At the planned 70 hours that is the
+    difference between losing a night and losing the budget.
+
+    ⛔ Nothing here is best-effort. A checkpoint that does not match the run
+    asking for it raises instead of being ignored (§2.9): silently starting
+    from zero would turn "resume" into a word that sometimes means nothing,
+    and the operator would find out after the second night, not the first.
+
+    ⚠ Only FINISHED arms come back. The file also holds the arm that was
+    mid-flight when the crash happened, and that one is re-run from its first
+    generation — it is identified structurally, by not having the generation
+    count and the RNG ledger a finished arm has, rather than by its position
+    in the list.
+    """
+
+    if path is None or not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get(RESULTS_COMPLETE_KEY) is not False:
+        raise ValueError(
+            f"{path} is not a checkpoint: {RESULTS_COMPLETE_KEY} is "
+            f"{payload.get(RESULTS_COMPLETE_KEY)!r}, not False. A finished "
+            "result must not be resumed into — rename it or point --results "
+            "somewhere else."
+        )
+    theirs = _resume_fingerprint(
+        {key: payload.get(key) for key in header}
+    )
+    ours = _resume_fingerprint(header)
+    if theirs != ours:
+        differing = sorted(k for k in ours if theirs.get(k) != ours.get(k))
+        raise ValueError(
+            f"{path} was written by a different run and cannot be resumed: "
+            f"{differing} differ. Nothing was deleted — move the checkpoint "
+            "aside if the old measurements are wanted."
+        )
+    finished = [
+        arm
+        for arm in payload.get("arms", [])
+        if len(arm.get("generations", [])) == n_generations
+        and arm.get("generation_rng_digests")
+    ]
+    return finished
 
 
 @dataclass(frozen=True)
@@ -1876,11 +1967,17 @@ def run_population_experiment(
     arms: tuple[str, ...] = ARM_ORDER,
     preflight: Preflight | None = None,
     checkpoint_path: Path | None = None,
+    resume: bool = False,
 ) -> dict[str, Any]:
     """Every arm × every seed. Each arm keeps its own population and pasture.
 
     ``preflight`` collects the invariant verdicts; phase 0 runs here and aborts
     before any GPU work, and the block it renders is written into the results.
+
+    ⚠ ``resume`` defaults to False on purpose (D-176/B2). A stale checkpoint
+    sitting beside a new run is a trap the Checkpoint docstring already names,
+    and picking it up automatically would mean a typo in ``--results`` silently
+    inherits somebody else's arms. Resuming is something an operator asks for.
     """
 
     if n_generations < MINIMUM_GENERATIONS_DEFINED:
@@ -1912,13 +2009,14 @@ def run_population_experiment(
     # will have, it does not create it. run_arm locks again per arm; this first
     # lock exists so phase 0 is not judging the state some earlier import left.
     _lock_seeds(seeds[0])
-    run_population_phase0(
-        gate,
-        agent_ids=planned_founder_ids(list(seeds), n_agents, tuple(arms)),
-        seeds=list(seeds),
-    )
-    gate.enforce()
-
+    # ⚠ D-176/B2 moved this ABOVE phase 0, and the reason is the resume: I0.7's
+    # exemption list is derived from the checkpoint, and the checkpoint cannot
+    # be read until there is a header to check it against. Safe to move because
+    # phase 0 creates nothing this reads — it checks env, determinism and the
+    # adapter directory, and `_adapter_state()` sees the same census either
+    # side of it. It stays BELOW `_lock_seeds`, which is load-bearing:
+    # `_sampling()` reports the seed that lock just pinned.
+    #
     # D-094's debt paid here: a run that SELECTS must say which selection rule
     # ran, read from the constants rather than restated (§2.8).
     identity = build_tool_identity(
@@ -1947,14 +2045,48 @@ def run_population_experiment(
         "seeds": list(seeds),
         "tool_identity": identity,
     }
+    # D-176/B2. Read before phase 0 so I0.7 can be told which adapters are this
+    # run's own earlier work rather than contamination. Refuses loudly on a
+    # mismatch; returns [] when resume was not asked for.
+    completed = (
+        completed_arms_from_checkpoint(checkpoint_path, header, n_generations)
+        if resume
+        else []
+    )
+    done: dict[tuple[str, int], dict[str, Any]] = {
+        (str(arm_result["arm"]), int(arm_result["seed"])): arm_result
+        for arm_result in completed
+    }
+    if done:
+        print(
+            f"[POPULATION] resuming {checkpoint_path}: "
+            f"{sorted(done)} already finished, re-running the rest.",
+            flush=True,
+        )
+    run_population_phase0(
+        gate,
+        agent_ids=planned_founder_ids(
+            list(seeds), n_agents, tuple(arms), skip_cells=frozenset(done)
+        ),
+        seeds=list(seeds),
+    )
+    gate.enforce()
+
     checkpoint = (
         None
         if checkpoint_path is None
-        else Checkpoint(path=checkpoint_path, header=header)
+        else Checkpoint(path=checkpoint_path, header=header, completed=list(completed))
     )
     arm_results: list[dict[str, Any]] = []
     for seed in seeds:
         for arm in arms:
+            # Rebuilt in the canonical loop order, never in checkpoint order:
+            # a resumed run and an uninterrupted one must produce the same
+            # file, and `arms` is read positionally downstream.
+            cached = done.get((arm, int(seed)))
+            if cached is not None:
+                arm_results.append(cached)
+                continue
             result = run_arm(
                 arm, seed, n_agents, n_generations, events_budget,
                 pasture_carryover=pasture_carryover,
@@ -2154,6 +2286,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
     lora = parser.add_mutually_exclusive_group(required=True)
     lora.add_argument("--lora", dest="lora", action="store_true", default=None)
     lora.add_argument("--no-lora", dest="lora", action="store_false", default=None)
+    # D-176/B2. Opt-in, never automatic: see run_population_experiment's
+    # docstring for why a checkpoint is not picked up on its own.
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "continue the checkpoint beside --results: arms that already "
+            "finished are kept, everything else re-runs. Refuses if the "
+            "checkpoint was written by a different run."
+        ),
+    )
     return parser
 
 
@@ -2179,6 +2322,7 @@ def main(argv: list[str] | None = None) -> None:
             pasture_carryover=bool(args.carryover),
             arms=tuple(args.arms),
             checkpoint_path=partial,
+            resume=bool(args.resume),
         )
     except PreflightAbort as abort:
         # An expected refusal, not a crash: print the named invariants rather

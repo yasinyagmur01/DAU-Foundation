@@ -1821,7 +1821,12 @@ def test_i04_aborts_the_run_when_an_id_carries_the_wrong_seed(monkeypatch) -> No
     monkeypatch.setattr(
         pop_mod,
         "planned_founder_ids",
-        lambda seeds, n_agents, arms: [pop_mod.founder_id(arms[0], 1234, 0)],
+        # ⚠ `**_` deliberately: D-176/B2 added `skip_cells` and this double
+        # went stale the moment the signature grew. Swallowing the extra
+        # keyword keeps the stub honest about what it is testing (I0.4's
+        # wiring) instead of tying it to an argument list it does not care
+        # about — and the real function's exemption has its own test.
+        lambda seeds, n_agents, arms, **_: [pop_mod.founder_id(arms[0], 1234, 0)],
     )
 
     with pytest.raises(PreflightAbort, match="I0.4"):
@@ -3403,3 +3408,188 @@ def test_every_arm_enters_every_generation_from_the_same_rng_state(
     assert len(results["arms"]) > 1
     for cell, digests in by_cell.items():
         assert len(digests) == 1, f"{cell} entered from {len(digests)} states"
+
+
+def _run_with_checkpoint(tmp_path, monkeypatch, *, resume: bool = False):
+    """One two-seed run whose checkpoint lands in `tmp_path`."""
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    return pop_mod.run_population_experiment(
+        seeds=[SEED, SEED + 1],
+        n_agents=N_AGENTS,
+        n_generations=N_GENERATIONS,
+        events_budget=EVENTS,
+        checkpoint_path=tmp_path / "run.json.partial",
+        resume=resume,
+    )
+
+
+def _drop_last_arm(path) -> list[tuple[str, int]]:
+    """Rewrite a checkpoint as if the crash happened before its last arm."""
+
+    import json
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["arms"] = payload["arms"][:-1]
+    path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    return [(arm["arm"], int(arm["seed"])) for arm in payload["arms"]]
+
+
+def test_resume_reproduces_the_uninterrupted_run_exactly(
+    tmp_path, monkeypatch
+) -> None:
+    """D-176/B2 — the checkpoint had been write-only since D-111.
+
+    ⚠ K2: TWO seeds, because the thing being resumed is a list keyed by
+    (arm, seed) and a one-seed fixture cannot tell "kept the right arm" from
+    "kept the only arm".
+
+    The assertion is equality with the uninterrupted run, not merely that the
+    run finished: a resume that quietly re-ran everything would also finish,
+    and a resume that dropped an arm would too.
+    """
+
+    import json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    whole = _run_with_checkpoint(tmp_path, monkeypatch)
+    kept = _drop_last_arm(tmp_path / "run.json.partial")
+    assert len(kept) == len(whole["arms"]) - 1
+
+    # ⛔ Equality alone is NOT enough and the gap is worth naming: a resume
+    # that silently re-ran everything would produce exactly the same file and
+    # pass. The whole point is the GPU time not spent, so the saving is what
+    # gets asserted — one unfinished cell, plus the replay arm, and nothing
+    # else may run.
+    ran: list[str] = []
+    real_run_arm = pop_mod.run_arm
+
+    def _counting(arm, seed, *args, **kwargs):
+        ran.append(f"{arm}-{seed}")
+        return real_run_arm(arm, seed, *args, **kwargs)
+
+    monkeypatch.setattr(pop_mod, "run_arm", _counting)
+    resumed = _run_with_checkpoint(tmp_path, monkeypatch, resume=True)
+
+    assert len(ran) == 2, f"resume re-ran the wrong set of arms: {ran}"
+
+    # ⚠ Compared as the FILE, not as the objects, and the difference is real:
+    # a resumed arm comes back through json.loads, so its tuples are lists
+    # while a freshly-run arm's are still tuples. The claim this run has to
+    # support is about the results file — measured, both sides round-trip to
+    # the same bytes — so asserting object identity would be asserting
+    # something stronger than the run promises and failing on a non-difference.
+    assert json.dumps(resumed["arms"]) == json.dumps(whole["arms"])
+
+
+def test_resume_exempts_only_the_finished_cells_from_i0_7(
+    tmp_path, monkeypatch
+) -> None:
+    """The wiring, not the predicate (K3).
+
+    A finished arm's adapters are on disk BY DESIGN, and I0.7 reads leftover
+    adapters as contamination — so without this exemption every resume would
+    abort in phase 0. The stub writes no adapters, so the exemption cannot be
+    observed through the gate here; what is asserted is the argument that
+    reaches the real function.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    _run_with_checkpoint(tmp_path, monkeypatch)
+    kept = _drop_last_arm(tmp_path / "run.json.partial")
+
+    seen: list[frozenset] = []
+    real = pop_mod.planned_founder_ids
+
+    def _recording(*args, **kwargs):
+        seen.append(kwargs.get("skip_cells", frozenset()))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(pop_mod, "planned_founder_ids", _recording)
+    _run_with_checkpoint(tmp_path, monkeypatch, resume=True)
+
+    assert seen, "planned_founder_ids was not called"
+    assert seen[0] == frozenset(kept)
+    # The replay arm is never exempt: a run interrupted DURING the replay must
+    # abort rather than start its second pass already adapted.
+    assert all(
+        arm != pop_mod.REPLAY_ARM_LABEL for arm, _ in seen[0]
+    )
+
+
+def test_a_checkpoint_from_a_different_run_is_refused_not_ignored(
+    tmp_path, monkeypatch
+) -> None:
+    """§2.9 — the undeterminable state makes noise instead of defaulting.
+
+    Silently starting from zero would make `--resume` a word that sometimes
+    means nothing, and the operator would find out a night later.
+    """
+
+    import json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    _run_with_checkpoint(tmp_path, monkeypatch)
+    path = tmp_path / "run.json.partial"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["events_budget"] = int(payload["events_budget"]) + 1
+    path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="different run"):
+        _run_with_checkpoint(tmp_path, monkeypatch, resume=True)
+
+    assert path.exists(), "a refused resume must not delete the measurements"
+
+
+def test_a_finished_result_is_refused_as_a_checkpoint(tmp_path) -> None:
+    """`complete: true` means gates ran on it — resuming into it would lie."""
+
+    import json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    path = tmp_path / "result.json.partial"
+    path.write_text(json.dumps({"complete": True, "arms": []}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not a checkpoint"):
+        pop_mod.completed_arms_from_checkpoint(path, {}, N_GENERATIONS)
+
+
+def test_the_arm_that_was_mid_flight_is_re_run_not_kept(
+    tmp_path, monkeypatch
+) -> None:
+    """The checkpoint holds finished arms AND the one that was interrupted.
+
+    Identified structurally — short generation list, no RNG ledger — rather
+    than by position, so a future writer that appends elsewhere cannot turn a
+    half-lived arm into a result.
+    """
+
+    import json
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    _run_with_checkpoint(tmp_path, monkeypatch)
+    path = tmp_path / "run.json.partial"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    half = dict(payload["arms"][-1])
+    half["generations"] = half["generations"][:1]
+    half.pop("generation_rng_digests", None)
+    payload["arms"] = payload["arms"][:-1] + [half]
+    path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+
+    finished = pop_mod.completed_arms_from_checkpoint(
+        path, {k: payload[k] for k in ("protocol", "n_agents", "n_generations",
+                                       "events_budget", "seeds", "tool_identity")},
+        N_GENERATIONS,
+    )
+
+    assert (half["arm"], half["seed"]) not in {
+        (arm["arm"], arm["seed"]) for arm in finished
+    }
+    assert len(finished) == len(payload["arms"]) - 1
