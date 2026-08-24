@@ -1,6 +1,8 @@
 # DAU — Master Reference
 
-**Versiyon 2.6** · 2026-08-20
+**Versiyon 2.9** · 2026-08-24
+⚠ *(Başlık **2.6**'da kalmıştı, §22 ise 2.7 ve 2.8'i çoktan yazmıştı —
+belgenin kendi sürüm alanı iki tur geriydi. D-172 turunda düzeltildi.)*
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
 *(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.5'te kaldı** — v2.6 yalnız `.md`.
 (2026-08-18, pandoc 3.7 + xelatex, 34 sayfa). PDF'te emoji'ler metin
@@ -1188,6 +1190,7 @@ ADIM 1–6 kodlandı. ADIM 6 sampling+B N=15 empirik sonuç:
 | **2.5** | **2026-08-18** | **§27 — popülasyon makinesi ve ikinci ön-kayıt** (D-069…D-122). Tek soy → popülasyon, sabit `w` → değişken `w`. `PREREGISTRATION_2.md` kilitlendi (`72df476ebd54`). `.html`/`.pdf` yeniden üretildi (34 sayfa). |
 | **2.8** | **2026-08-22** | **§29.4 düzeltildi — D-165'in *boş küme*si ÇÜRÜDÜ** (D-168). Başlangıç havuzu `POOL_INIT` değil, **tohumun nişinden** (`U(0.40, 1.00)`) geliyor ⇒ bant **boş değil, tohuma bağlı**; baskın değişken **başlangıç nişi**. Talep ölçüldü: landmark'ta iki değerli (8.0/2.0), `cooperate` **%43.9** ⇒ karar kanalı işliyor. `I5.6` **geçti**. ⚠ Kriz kanalı hâlâ **0**. |
 | **2.7** | **2026-08-21** | **§29 — Katman 1 ölçüldü, sabit kararı VERİLEMEDİ** (D-164…D-167). Pilot: **P2 tuttu (4/6), P1 tutmadı (1/3)**, kriz kanalı **0/192** öldü — hem de sabitin seçilme gerekçesiyken. D-163 §5'in projeksiyonu **çürüdü**. Sabit bandı **boş küme** çıktı (`r ≤ 0.06271` vs `r > 0.10500`); asıl değişken `r` değil **talep**, kritik eşik **`D* = 6.078`**. Talep dağılımı aletlendi (D-166), ölçüm koşumu ön-taahhütle (D-167) başlatıldı. Suite **636 → 640**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
+| **2.9** | **2026-08-24** | **§30 — fizik ÜÇÜNCÜ kez değişti, ve Kanal 1'in yarısı hiç çalışmıyormuş** (D-169…D-172). DR #13 mutabakatı: taşıyıcı iddia **cebirsel olarak ters**, koddan değişiklik çıkmadı. `I5.1` popülasyon kapılarına bağlandı (kapı **11**). ⭐ **Kaldıraç 0:** `NICHE_POOL_FRACTION_RANGE` `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ tavan her çekilişte olay 1'de bağlıyor; bant boş olmadığı **aynı turda** gösterildi. ⛔⛔ **D-172:** popülasyon yolunda `run_consolidation` **hiç çağrılmıyor** ⇒ ilişki grafiği yapı gereği boş, **Ebbinghaus budaması çalışmıyor**; düzeltmesi fiziği **dördüncü kez** değiştirir ⇒ karar bekliyor. ⚠ Başlık sürümü 2.6'da takılıydı, düzeltildi. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 | **2.6** | **2026-08-20** | **§28 — C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). C2 = **evren null'ı**; sebebi ölçüldü (kurucu nesil dejenere, farklılaşmanın tek kaynağı adapter). Üçüncü ön-kayıt taslağı **kilitlenemedi** (D-145). Sonda-3 ve tanımlılık pilotu koştu ⇒ alan `energy`, **G = 4**, kurucu nesil **ısınma**. ⭐ **Fizik yeniden değişti:** stoka oranlı hasat tavanı (D-162/D-163). Kapılar 6 → **9**; suite **636**. ⚠ `.html`/`.pdf` **v2.5'te kaldı**. |
 ---
 
@@ -1996,3 +1999,163 @@ yazıldı ve mutasyon yakalandı. **Suite 636 → 640.**
 | **D-168** | ⛔ *türetmenin **girdileri** koddan doğrulanır — D-165 iki tur boyunca `POOL_INIT` sanılan bir başlangıçla hesapladı ve **yanlış bir imkânsızlık** ilan etti* |
 
 ⚠ **Üçü de aynı kusurun katmanları:** türetme temiz, **varsayımı ölçülmemiş**.
+
+---
+
+## 30. D-169…D-172: fizik **üçüncü kez** değişti, ve Kanal 1'in yarısı hiç çalışmıyormuş (v2.9 — yeni)
+
+⚠ **Bu bölüm §29'un devamıdır.** §29 sabit kararının *"verilemez"* çıktığı
+noktada bitiyordu; D-168 o imkânsızlığı çürüttü, D-171 kararı verdi.
+
+### 30.1 DR #13 mutabakatı — rapordan **kod değişmedi** (D-169)
+
+v3.0 mimari raporu dört öneri getirdi; **hiçbiri alınmadı**, ve taşıyıcı iddia
+**cebirsel olarak ters** çıktı:
+
+> *"DPO kaybı `ln 2`'ye doyuyor"* — `L = ln 2` ⟺ tercih marjı **sıfır**
+> demektir; doygunlukta `L → 0`'a gider, `ln 2`'ye değil.
+
+**Ölçüldü:** 64 eğitim çağrısı, **28/64 `ln 2`'nin ÜSTÜNDE** (= negatif marj).
+⚠ Ve bu veriden teşhis zaten konulamaz: eğitim başına **1–7 optimizer adımı**.
+
+| öneri | akıbeti |
+|---|---|
+| **EGI** | ⛔ Yasak #1 (trait injection) |
+| **SVC** | ⛔ kilit K7 (davranışsal önsel) |
+| **CKE** | ⛔ L9 (etkiye bakarak uç nokta seçme) |
+| **LoRA-FA / TIES** | ⏸ üçüncü ön-kayıt aday listesine |
+| **RCI** | ✅ alındı — ⏸ **fizik kararından sonra** |
+
+Tam tablo: `docs/research/RECONCILIATION.md` **§V**.
+
+### 30.2 `I5.1` popülasyon kapılarına bağlandı (D-170)
+
+`I5.1` (*PPR grafiğinde hiç kenar var mı*) `preflight.py`'de **tanımlıydı** ve
+tek-soy yolunda **bağlıydı**, ama popülasyon koşumunun kapı listesinde **yoktu**
+⇒ *"PPR sabit katkı verdi"* ile *"PPR skor verdi"* bugüne kadarki her
+popülasyon koşumunda **ayırt edilemezdi**. **D-149'un birebir tekrarı.**
+Kapı **10 → 11**.
+
+⚠ **Kapıyı kaydederken yazılan yorum aynı turda çürüdü:** *"kenarlar bellek
+hattının özelliği, modelin değil"* denmişti; ölçüldü, **yanlış** — kenarlar
+yalnız **DEEP/TRAUMA** düğümlerinden doğuyor, stub onları üretmiyor.
+⚠ **`I5.6`'nın ilk sürümü tam aynı hatayı yapmıştı** (D-163) ⇒ aynı sınıf hata,
+aynı yerde, **ikinci kez**.
+
+### 30.3 ⭐⭐ Katman 1b — **fizik üçüncü kez değişti** (D-171)
+
+**Kaldıraç 0 seçildi:** baskın değişken `r` de talep de değil, **tohumun
+çektiği başlangıç nişi** (D-168, §29.4).
+
+**Türetme — sıfır yeni serbest parametre, sıfır koşum verisi:**
+
+```
+tavan/ajan = EXTRACTION_LIMIT_RATIO × POOL_MAX × oran₁ = 14.25 × oran₁
+oran₁      = p·(1 + POOL_REGEN_RATE·(1 − p))        ← step_pool: ÖNCE yenilenir
+DEFECT bağlar ⟺ 14.25·oran₁ < 8.0 ⟺ oran₁ < T = 0.561404
+REGEN·p² − (1+REGEN)·p + T = 0  ⇒  p_max = 0.523990
+```
+
+⇒ **`NICHE_POOL_FRACTION_RANGE`: `(0.40, 1.00)` → `(0.40, 0.523990)`**,
+üst uç **sayı olarak değil İFADE olarak** koda yazıldı (§2.8).
+Taban `0.40` **değişmedi** (kodun kendi assert'i krizin üstünde kalmayı
+zaten dayatıyor).
+
+⭐ **Bant boş olmadığı AYNI turda gösterildi** (D-165'in dersi): aralığın her
+noktasında tavan bağlıyor — `p₀ = 0.40` → tavan 6.213 · `0.5240` → **8.000**
+(tam sınır). ⇒ Üst uç bir seçim değil, **en kötü çekilişin garantisi**.
+
+**Denge noktası** (D-163'ün şartı): `r` değişmedi ⇒ denge de değişmedi
+(`1 − r/POOL_REGEN_RATE = 0.0500`). Yeni başlangıç aralığı krizin (0.30)
+**üstünde**, denge **altında** ⇒ **kriz eşiği yol üzerinde**.
+
+⭐ **Ve buradan eşiksiz bir TAHMİN yazıldı:** *kriz kanalı ateşlenmeli.*
+D-164'te 0/192, D-168'de 0/48 idi. ⛔ **Ateşlenmezse bulgu olarak yazılır** —
+kendi tahminine kural koymak onu çürütülemez kılardı.
+
+**Ön-taahhüt (koda dokunulmadan önce yazıldı):**
+
+| kural | ölçüt |
+|---|---|
+| **Q1** | 3 tohumun **3'ünde de** gen1'de ilk eksik alma **olay ≤ 2**. Türetme: tavan olay 1'de yapı gereği bağlıyor; geriye o olayda bir DEFECT çıkması kalıyor. Defect payı ≥ %55, N = 8 ⇒ iki olay boyunca hiç DEFECT çıkmama olasılığı `(0.45⁸)² ≈ 3×10⁻⁶` ⇒ **3/3 meşru** |
+| **Q2** | 3 tohumun **3'ünde de** gen1'de `Var(F_agent) > 0`. ⚠ Kasıtlı olarak **tohum başına** — gen1'de iki kol birebir aynı ⇒ 6 hücre yapısal olarak 3 tohum |
+| **Q3** *(eşiksiz)* | `k` · `cooperate` histogramı · tanımlılık · `I5.1` · kriz olayı sayısı |
+
+**İlan edilen bedeller:** ❌ sayılar **üçüncü kez** sıfırlandı (Katman 1
+pilotu ve talep ölçümü taban olmaktan çıktı) · ⚠ ön-kayıtlı bir aralık
+değişti (taslak kilitli değil, pencere açık) · ⚠ niş çeşitliliği
+**0.60 → 0.124** genişliğe indi · ⚠ enerji geliri düşüyor.
+
+### 30.4 ⛔⛔ Okunabilirlik denetimi — ve Kanal 1'in yarısı (D-172)
+
+**D-164'ün 8 saatlik dersi:** ön-taahhüdün P3'ünün iki maddesi koşum bittikten
+**sonra** *"okunamadı"* çıkmıştı. ⇒ Sorulmamış soru: **ön-taahhüde yazdığım
+niceliğin, koşumun ürettiği artefaktta bir karşılığı var mı?**
+
+Bu tur sorulabildi, çünkü koşum `.partial.json` yazıyor (D-111). Denetim
+**salt-okunur** yapıldı — koşum sürerken tek satır `.py` değişmedi, test suite
+koşulmadı (VRAM boşluğu **~900 MiB** ölçüldü).
+
+**Sonuç: beş kalemin dördü okunuyor.** Beşincisi (`I5.1`) okunacak ama
+**bilgisiz** — ve sebebi telemetriden büyük çıktı:
+
+```
+store.write_edge  ← TEK çağıran: consolidation.py:106  (run_consolidation içinde)
+run_consolidation ← memory_bridge.consolidate_run
+consolidate_run   ← run_cprime_multigen.py:1091   ← TEK SOY yolu
+                  ← graph.py:2033  ⛔ `if __name__ == "__main__":` İÇİNDE
+run_population_experiment.py: ikisini de import ETMİYOR
+```
+
+⇒ ⛔ **Popülasyon koşumlarında `run_consolidation` HİÇ çağrılmıyor.**
+⇒ ilişki grafiği **yapı gereği boş** ⇒ `I5.1` *"PPR is inert"* der, **sistem
+hakkında değil koşucunun kablolaması hakkında**.
+
+⚠ **Ve kenar yalnız yarısı:** `run_consolidation` **budama (`deleted_count`)**
+ve **güçlendirme**yi de yapıyor ⇒ **Ebbinghaus unutması popülasyon
+ajanlarında çalışmıyor** ⇒ §9'un ve D-022/D-031'in konsolidasyon anlatısı
+**tek-soy yoluna aittir**, popülasyona değil.
+
+⛔ **Ad, boşluğu gizlemiş:** `run_population_experiment.py:1590` yorumu
+*"Channel 1: end-of-life consolidation for every parent"* diyor; çağrılan
+`consolidate_generation` **yalnız aktarım paketini** kuruyor.
+⇒ **§2.8'in deseni en saf hâlinde: rapor aleti tekrar ediyor, takip etmiyor.**
+
+⭐ **Tahmin sayı yazılmadan önce kayda geçti:** bu koşumun her kolunda
+`memory_edges = 0` ve `I5.1 = false`. **Sıfır çıkmazsa zincir yanlıştır.**
+
+⚠ **Koşumu geçersiz kılmıyor** — aynı kablolama C2'de, Katman 1 pilotunda ve
+talep ölçümünde de vardı ⇒ **sabit**, kollar arası bir terim değil.
+
+**Aynı denetim üç eskimiş belge maddesi buldu:**
+
+| madde | düzeltme |
+|---|---|
+| *"D-164: `cooperate` aletlenmemiş"* | ❌ **eskimiş** — D-166 aletledi (`demand.outcomes`) |
+| karar sonuçları ikili sanılıyordu | ⛔ **üç kategori var:** `cooperate` · `defect` · **`deadlock`** (bu koşum gen1 **9**, D-168 gen1 **4** / gen2 **11**) ⇒ yüzde cümleleri **paydayı söylemek zorunda** |
+| §1'in koşum başlangıcı | 08-22 yazıyordu; ilk deneme makine kapanınca **hiçbir çıktı bırakmadan** öldü, gerçek başlangıç **08-24 ~12:57** |
+
+### 30.5 Bu bölümün ilan ettiği sınırlar
+
+- ⛔ **Popülasyon evreninde uyku konsolidasyonu yok** (D-172) ⇒ `I5.1`
+  bilgisiz, budama çalışmıyor. **Karar bekliyor** (kuyruk 3.0f) ve düzeltmesi
+  **fiziği dördüncü kez değiştirir**.
+- ⛔ **Kriz kanalı D-171 öncesinde ölçülemezdi (0/192, 0/48)** ⇒ D-070/kilit K6
+  askıda. D-171 canlanmasını **tahmin ediyor**, ⚠ **doğrulanmadı**.
+- ⚠ **GAP-10'un tetiği üçüncü kez ateşlenmedi:** `k` **172/172 `resource_load`**
+  (D-164'te 192/192) ⇒ Katman 1b de oynatmadı.
+- ⚠ **Katman 1b öncesi hiçbir sayı taşınmıyor** — üçüncü sıfırlama.
+- ⚠ **`.html` / `.pdf` hâlâ v2.5'te** — `.md` tek güncel kaynak.
+
+### 30.6 Ders — §29.7'nin dördüncü katı
+
+| kayıt | ders |
+|---|---|
+| D-163 | *türetmenin temizliği doğruluk değildir;* **denge noktası da yazılır** |
+| D-164 | *denge, evrenin **fiilen ürettiği** talebe göre hesaplanır* |
+| D-165 | *bant türetilince **boş olmadığı** aynı turda gösterilir* |
+| D-168 | *türetmenin **girdileri koddan** doğrulanır* |
+| **D-172** | ⛔ *ön-taahhüde yazılan niceliğin **artefaktta karşılığı olduğu**, koşum bitmeden gösterilir — ve bir fonksiyonun **adı**, çağrıldığının kanıtı değildir* |
+
+⚠ **Beşi de aynı kusurun katmanları:** yazdığımı doğruluyorum, **sistemin
+yaptığını değil** (K1'in doğuş gerekçesi).
