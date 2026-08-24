@@ -14383,3 +14383,146 @@ taslakta önerilmişti (kaldıraç hakkı **1**, `G` = **4**) ve §5 ikincisini
 
 ⇒ `T_max` söylendiği an `N_eff` ve MDE **aritmetikle** çıkıyor, kayıt
 yazılıyor, kuyruk **3.1 doğrulayıcı koşum**a geçiyor.
+
+---
+
+## D-175 · 2026-08-24 · 🧭 **STRATEJİK DENETİM — projenin ilan edilmiş varış noktası 5 gündür YOK, ve üç katlı hedef önerildi**
+
+**Yetki:** Yasin, 2026-08-24: *"nereye gidiyoruz gözümüzü kapattık gidiyoruz
+gibi geliyor"* ve *"sence nereye gitmeliyiz … çıtayı ne kadar yukarı
+koyabileceğimizi hayal edelim"*.
+
+⛔ **Bu kayıt karar VERMİYOR.** Üç ölçüm + bir teşhis + bir öneri taşıyor;
+hedef kararı Yasin'in (D-007).
+
+---
+
+### 1. ⛔ TEŞHİS — yol haritası iptal edilmiş bir hedefi gösteriyor
+
+`docs/ROADMAP.md`'nin başlığı bugün hâlâ *"Yön 3'e (ajan-ajan etkileşimi)
+hızlandırılmış geçiş"* ve bütün faz yapısı oraya gitmek için kurulmuş. İçinde
+şu bağlayıcı cümle var: *"Yön 3'e gideceksek, bugünkü fizikle 30–80 saatlik
+doğrulayıcı koşum **boşa gider**."*
+
+⛔ **Yön 3, D-135'te iptal edildi.**
+
+⇒ **2026-08-19'dan beri projenin yazılı bir varış noktası yok.** O tarihten
+sonra ~40 karar kaydı yazıldı, fizik **üç kez** değişti, ama *"bunların
+sonunda hangi cümleyi kuracağız"* sorusu hiçbir belgede güncellenmedi.
+⇒ Yasin'in *"gözümüzü kapattık gidiyoruz"* hissinin **belgesel karşılığı budur**.
+
+### 2. Merdiven — projenin kendi tanımı (uydurulmadı)
+
+`analyze_population_run.py`'nin başlığı dört seviye tanımlıyor:
+
+| seviye | ne gösterir | iddia | durum |
+|---|---|---|---|
+| **0** | `Var(w) > 0` | ⛔ **hiçbir şey**, ön-koşul | ✅ 18/18 (D-173) |
+| **1** | `Cov(w, z) ≠ 0` | *"seçilim landmark drift'ine etki etti"* | ← 3.1'in sınayacağı |
+| **2** | terim sönmüyor | *"etki birikimli"* | `G−2` geçiş; `G=4` yalnız **2** |
+| **3** | `lived ≠ shuffle ≠ null` | ⭐ **Lamarckçı kanal = AKSİYOM** | ⛔ B2 sınadı, **üç kol eşit uzaklıkta** |
+
+⭐ Aletin kendi uyarısı: *"Price **SEÇİLİMİ** verir, kol karşılaştırması
+**KALITIMI**. Seviye 1 dolu, seviye 3 boş olabilir."*
+⇒ **Doğrulayıcı koşum bitiş çizgisi değil.**
+
+### 3. ⛔ Ve seviye 3 bugün **sınanamaz** — aksiyomun yarısı fişi çekik
+
+D-172 §4: popülasyon yolunda **`run_consolidation` hiç çağrılmıyor**.
+Aksiyom (§3) *"iki kanal, biri diğerinin yerine geçmez"* diyor.
+⇒ Bugün `lived`/`shuffle` karşıtlığı **yalnız Kanal 2'nin (LoRA) testi**.
+⇒ **Seviye 3'e giden yol kapalı** ve bu hiçbir plana yazılmamıştı.
+
+### 4. ÖLÇÜM A — artabilen bir uç nokta **var** (⚠️ ama seçilimle çakışık)
+
+Kümülatif iddianın **artabilen** bir niceliğe ihtiyacı var. Ölçüldü
+(`layer1b_pilot_g4_s9926_9928.json`, **kollar birlikte havuzlandı — L9,
+kol farkı okunmadı**), 48 ajan/nesil:
+
+| | gen1 | gen2 | gen3 | gen4 |
+|---|---|---|---|---|
+| ömür (olay) | 22.29 | 25.50 | 26.08 | **26.94** |
+| enerji (ömür boyu ort.) | 0.4970 | 0.5693 | 0.6469 | **0.6664** |
+| `F_agent` | 0.5643 | 0.6318 | 0.6676 | **0.6871** |
+
+⛔ **BU KÜMÜLATİF BİLGİ BİRİKİMİ DEĞİL.** Varisler turnuva kazananlarından
+geliyor ve turnuva **`F_agent` üzerinden** seçiyor ⇒ `F_agent`'ın artması
+**tanım gereği**. Ömür ve enerji onun girdileri (ağırlık 0.3 / 0.4) ⇒ aynı
+sebeple yükseliyorlar. **Döngüsel, ve öyle raporlanmalı.**
+
+⭐ **Değerli olan:** artabilen, nesiller boyu **tanımlı** bir nicelik var.
+Eksik olan nicelik değil, **karşılaştırma modeli** — *"seçilim tek başına ne
+kadar artış öngörür, gerçekleşen ondan fazla mı"*. ⇒ Kat 3'ün kancası budur
+ve **koşumdan önce ilan edilmesi gerekir**.
+
+### 5. ÖLÇÜM B — makine termal olarak zorlanmadı
+
+Yasin *"97 CPU, 87 GPU gördüm, çok yük gibi"* dedi. Sürücünün ihlal sayaçları
+(8 sa 33 dk uptime, içinde **7 saatlik tam yük koşumu**):
+
+| sayaç | değer |
+|---|---|
+| **HW Thermal Slowdown** | **0 µs** |
+| **SW Thermal Slowdown** | **0 µs** |
+| SW Power Capping | 38 ms (≈ %0.0002) |
+
+⇒ **GPU hiç termal kısma yapmadı.** 87 °C tasarım çalışma noktası, sınır değil.
+⚠️ **Ama endişe yersiz değil:** 7 saat ile 47 saat **kesintisiz** aynı şey
+değil (aşınma ve oda ısısı açısından).
+
+⭐ **Ve saati düşürmek bilim kaybettirir**, çünkü bütçe **saat** cinsinden:
+`N_eff = T_max / t`. %20 yavaşlama ⇒ 20 → **16 tohum**, MDE 0.676 → **0.767**.
+
+⇒ **Öneri: parçalı koşum (B2 deseni — N=40 iki batch'te koşuldu).**
+**5 tohum/gece × 4 gece**: gecede 11.7 sa · N=20 **korunur** · MDE **0.676**
+· kayıp **yok** · ve çökmeye dayanıklı (08-22'de bir koşum makine kapanınca
+**hiçbir çıktı bırakmadan** ölmüştü).
+
+### 6. ÖNERİ — üç kat, ve **Kat 2 hedeflensin**
+
+| kat | iddia | `G` | N=20 için |
+|---|---|---|---|
+| **1** | *"seçilim ölçülebilir"* (seviye 1) | 4 | **47 sa** |
+| **2** ⭐ | *"yaşanmış iz aktarılıyor, karıştırılmış aktarılmıyor"* — **AKSİYOM** (seviye 3) | 6 | **70 sa** |
+| **3** | *"kümülatif birikim"* (başarım artıyor **ve** kontrolde artmıyor) | 8 | 93 sa ⚠️ |
+
+⚠️ `G = 8` şu an `ROADMAP.md`'de *"ölçülmeden **hayır**"* — gerekçe adapter
+sönümünün uzun soyda sinyali seyreltebilmesi (D-130 §12).
+
+**Claude Code'un önerisi: Kat 2'yi hedefle, Kat 3'ün kancasını aynı koşuma
+göm.** Üç gerekçe:
+
+1. **Kat 3, Kat 2 olmadan çürütülemez** — iz aktarılmıyorsa *"birikiyor"*
+   denemez. Sıra zorunlu.
+2. **Kalan tek kaldıraç hakkı Kanal 1'in onarımına harcansın** (§3). Aksiyomun
+   yarısı fişi çekikken 47 saat harcamak, sonunda aynı soruya çıkar.
+3. **Kat 3'ün kancası ucuz:** artabilen uç nokta + **seçilim-tek-başına null
+   modeli**, ikisi de koşumdan önce ilan edilir. Ek GPU ≈ 0; maliyet
+   `G`'yi 4 → 6 yapmakta (47 → 70 sa).
+
+### 7. DR brief'i — **tek ve dar** bir soru
+
+⚠️ Sicil: DR #13 taşıyıcı iddiasında **cebirsel olarak tersti** ve üç kaynak
+şartının **0/3**'ünü karşıladı; önceki turlarda **12 kimlik hatası**.
+⇒ DR'ye *"hedefimiz ne olsun"* **sorulmaz**.
+
+**Sorulacak tek soru:**
+
+> *Kümülatif kültürel aktarımın (ratcheting) yayımlanmış ampirik standardı
+> nedir? Bir gösterimin kabul görmesi için asgari tasarım ne olmalı — kaç
+> nesil, hangi kontrol kolu, hangi null model? LLM ajanlarında bunu iddia eden
+> çalışmalar bu standardı karşılıyor mu?*
+
+⇒ Cevabı doğrudan `G`'yi, kontrol kolunu ve null modeli belirler.
+⛔ **Kendi sayılarımız verilmez** (tasarımı bize geri okumasın) · şartlar
+aynen bağlayıcı (DOI · birebir alıntı · kaynakça + boşluk ilanı).
+
+### 8. ⛔ Yasin'in vermesi gereken kararlar
+
+| # | karar | öneri |
+|---|---|---|
+| 1 | **Hedef katı** | **Kat 2** (+ Kat 3 kancası) |
+| 2 | `T_max` · `G` | Kat 2 ⇒ **70 sa · G = 6** ⚠️ (47 sa · G = 4 onaylanmıştı, hedef değişirse bu da değişir) |
+| 3 | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
+| 4 | Kalan kaldıraç hakkı (1) nereye | **Kanal 1'in onarımı** |
+| 5 | DR brief'i gönderilsin mi | evet, §7'nin tek sorusuyla |
