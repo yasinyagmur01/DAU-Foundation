@@ -285,6 +285,33 @@ tamamı · 9924 boş · 9925 ince şerit ⇒ ortak şerit `r ∈ (0.1050, 0.1085
 `0.577 → olay 2` · `0.605 → 3` · `0.620 → 3` · `0.794 → 5` · `0.825 → hiç` ·
 `0.877 → 9`. ⚠️ Kriz kanalı hâlâ **0/48**.
 
+## ✅ 3.0e · DR #13 mutabakatı + `I5.1` bağlandı — **D-169 · D-170**
+
+✅ **D-169:** v3.0 mimari raporu mutabakata bağlandı, **koddan hiçbir değişiklik
+çıkmadı.** Taşıyıcı iddia cebirsel olarak ters (`L = ln 2` ⟺ marj **sıfır**;
+doygunlukta `L → 0`). Ölçüldü: 64 eğitim çağrısı, **28/64 `ln 2`'nin üstünde**
+(= negatif marj) · eğitim başına **1–7 optimizer adımı** ⇒ bu veriden teşhis
+konulamaz. **EGI** ⛔ Yasak #1 · **SVC** ⛔ kilit K7 · **CKE** ⛔ L9 ·
+**LoRA-FA/TIES** ⏸ üçüncü ön-kayıt · **RCI** ✅ alındı, **fizik kararından sonra**.
+Tam tablo: `docs/research/RECONCILIATION.md` **§V**.
+
+✅ **D-170:** `I5.1` popülasyon kapılarına bağlandı — **tanımlıydı, bağlı
+değildi** (D-149'un tekrarı). Kapı **11**, suite **644**. Mutasyon 4/4.
+
+⛔ **Verdict YOK:** mock'un sıfır kenarı gerçek koşum hakkında kanıt değil
+(kenarlar yalnız DEEP/TRAUMA düğümlerinden doğuyor, stub onları üretmiyor),
+ve gerçek sayı diskte de yok. **Bir sonraki gerçek koşumda okunacak.**
+
+⏸ **Açılan borç:** konsolidasyon telemetrisi (`edges_created` · `deleted_count`)
+popülasyon çıktısına yazılmıyor ⇒ `I5.1` sıfır dediğinde *"konsolidasyon
+çalışmadı"* ile *"çalıştı, eşleşecek DEEP düğüm yoktu"* **ayırt edilemez**.
+
+⏸ **Bekleyen, fizik kararına bağlı: RCI.** `inherit_adapter` nesiller boyunca
+adapter yığıyor (D-102) ve taban temsilin bozulup bozulmadığı **hiç ölçülmedi**.
+Fizik değişirse `H^(0)` tabanı kayar ⇒ karardan sonra.
+
+---
+
 ## ⛔ 3.0d · **KARAR — hangi kaldıraç** *(senin, D-007)*
 
 ⚠️ **Kaldıraç listesi D-168 §9'da güncellendi:** **0 —
