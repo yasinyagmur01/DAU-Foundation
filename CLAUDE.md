@@ -305,8 +305,10 @@ hücreleri okunabilir (gerekçe D-156 §2).
   `demand.outcomes` alanında. D-172 iki koşumda da dolu okudu. ⚠️ Bu satır
   bugüne kadar **yanlış duruyordu**.
 - ⚠️ **YENİ, D-172: karar sonuçları İKİ değil ÜÇ** — `cooperate` · `defect` ·
-  **`deadlock`**. Üçüncüsü hiçbir belgede geçmiyordu (bu koşum gen1 **9**,
-  D-168 gen1 **4** / gen2 **11**) ⇒ *"%X cooperate"* cümleleri **hangi paydaya
+  **`deadlock`**. Üçüncüsü hiçbir belgede geçmiyordu. ⚠️ **D-172 sayıyı tek
+  hücreden alıntıladı; tam sayı:** D-168'in altı hücresinde `defect` 626 ·
+  `cooperate` 523 · **`deadlock` 41** / 1190 (**%3.4**); bu koşumun ilk
+  hücresinde 9/172 (**%5.2**). ⇒ *"%X cooperate"* cümleleri **hangi paydaya
   göre** olduğunu söylemek zorunda.
 - ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
 - ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916

@@ -2132,7 +2132,7 @@ talep ölçümünde de vardı ⇒ **sabit**, kollar arası bir terim değil.
 | madde | düzeltme |
 |---|---|
 | *"D-164: `cooperate` aletlenmemiş"* | ❌ **eskimiş** — D-166 aletledi (`demand.outcomes`) |
-| karar sonuçları ikili sanılıyordu | ⛔ **üç kategori var:** `cooperate` · `defect` · **`deadlock`** (bu koşum gen1 **9**, D-168 gen1 **4** / gen2 **11**) ⇒ yüzde cümleleri **paydayı söylemek zorunda** |
+| karar sonuçları ikili sanılıyordu | ⛔ **üç kategori var:** `cooperate` · `defect` · **`deadlock`**. ⚠ D-172 bunu tek hücreden alıntılamıştı; **tam sayı:** D-168'in altı hücresinde `defect` **626** · `cooperate` **523** · `deadlock` **41**, toplam **1190** ⇒ `deadlock` payı **%3.4**. Bu koşumun ilk hücresinde 9/172 (**%5.2**) ⇒ yüzde cümleleri **paydayı söylemek zorunda** |
 | §1'in koşum başlangıcı | 08-22 yazıyordu; ilk deneme makine kapanınca **hiçbir çıktı bırakmadan** öldü, gerçek başlangıç **08-24 ~12:57** |
 
 ### 30.5 Bu bölümün ilan ettiği sınırlar
