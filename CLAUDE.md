@@ -39,15 +39,16 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-**Hedef ilan edildi, alet onarıldı, son karar da verildi** (D-176: **Kat 2 ·
+⏳ **KİLİDE HAZIR — altı slotun altısı kapalı.** Hedef ilan edildi, alet
+onarıldı, taslağın dört kusuru kapandı (D-176: **Kat 2 ·
 70 sa · G=4 · üç kol · MDE 0.676** · D-177: I4.2 kilidi · resume ·
-birleştirici · D-178: Kanal 1 **bağlanmıyor**, sınır ilan edildi) ⇒ sıradaki
-iş **C: ön-kayıt taslağının dört kusuru**, sonra 🔒 **KİLİT**.
+birleştirici · D-178: Kanal 1 **bağlanmıyor** · D-179/D-180: dört kusur +
+**L9 artık bir kapıya bağlı**) ⇒ sıradaki iş 🔒 **KİLİT**, ve o **senin**.
 
 ## Durum
 
 - **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
-  **Suite:** **662 passed**, 2 deselected. **Kapı: 11.**
+  **Suite:** **666 passed**, 2 deselected. **Kapı: 11.**
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
@@ -85,6 +86,20 @@ iş **C: ön-kayıt taslağının dört kusuru**, sonra 🔒 **KİLİT**.
 - ⏸ **DR #14 ertelendi (D-178)** — D-176 *"evet"* demişti; sorusu
   **ratcheting = Kat 3**, ve Kat 3 aynı denetimde kapsam dışına çıktı.
   **Karar değişikliği olarak ilan edildi**, sessizce düşürülmedi.
+- ⛔⛔ **YENİ, D-179: L9 BİR KEZ İHLAL EDİLDİ.** `ΔP_active` D-173 pilotunda
+  hesaplandı (**3/3 tohumda 0**, tavan etkisi). ⇒ Ön-kayıt *"birincil A kör
+  seçildi"* **diyemez**; diyebileceği: tanımı okumadan **önce** kilitlenmişti
+  ve **sonra değiştirilmedi** (kararın). ⭐ **Yasak artık bir kapıya bağlı
+  (D-180):** analiz aracı kilit alınmadan seviye 1–3'ü **reddediyor**, izni
+  belgenin **durum satırından** okuyor. ⚠️ **Kapının sınırı da ilan edildi:**
+  ad-hoc betikleri yakalayamaz — ihlal zaten öyle olmuştu.
+- ⛔ **YENİ, D-180: kilitten önce İKİ ESKİME yakalandı.** §3.1'in `P_active`
+  beklentisi **ters yöndeydi**, ve **L20'nin sonuç cümlesi yanlıştı**
+  (*"somatik yarı varise hiç ulaşmıyor"* — oysa `I5.4` pilotta **`applied
+  463x`**). ⚠️ L20 kilitlenseydi aksiyomun **iki-kanal iddiasının yarısını
+  gereksiz yere feda** etmiş olurduk. ⇒ **Bugünün üçüncü belge-ölçüm
+  çelişkisi**; desen: bu projede bir belgenin en riskli hâli *yanlış* olması
+  değil **eskimiş** olması — ikisi aynı görünüyor.
 - ⚠️ **D-177'nin açık bıraktığı tek şey:** resume'un eşdeğerliği **stub
   altında** ölçüldü; `--lora` açıkken **denenmedi** ⇒ doğrulayıcı koşumun
   **ilk gecesinde bir kez fiilen sınanmalı**.
@@ -174,8 +189,8 @@ G=6'yı Kat 2 değil **Kat 3'ün kancası** istiyor ⇒ aynı parayla duyarlıl�
 | ~~**B3**~~ | ✅ **Birleştirici** — `--results` N dosya (**D-177**, `00f1252`) | yok | ✅ 7 mutasyon yakalandı |
 | ~~**B4**~~ | ✅ **Kanal 1: bağlanmıyor, sınır ilan edildi** (**D-178**) — ölçüm kararı tersine çevirdi: Kanal 1 **ölü değil**, ölü olan uyku konsolidasyonu ve o **her kolda simetrik**. Kaldıraç **harcanmadı** | yok | ✅ 2 mutasyon yakalandı |
 | ~~**B5**~~ | ✅ **İkisi de gerekmedi (D-178):** temizlik — 41 GB boş, koşum ~17 GB ⇒ **kanıt silmeye gerek yok** · DR #14 **ertelendi**, sorusu Kat 3'e ait | yok | ✅ |
-| **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü**. ⚠️ **Yeni sınır:** bütçe sansürü (gen3-4'te **5.2/8** ajan 30 olay tavanında) | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
-| **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, slotlar + alet kimliği dondurulur | yok | Commit hash + §12 deseni |
+| ~~**C**~~ | ✅ **Dört kusur kapandı** (**D-179** · **D-180**) — kusur 2 **yeniden açılmadı**: kriz geri döndü ama `resource`, `energy`'nin **yanına** yazılıyor ⇒ hiçbir tohum düşmüyor. Yeni sınırlar **L22–L25** | yok | ✅ **altı slotun altısı kapalı** |
+| **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, §12 alet kimliği dondurulur, durum satırına **🔒 + commit hash** | yok | ⛔ **SENİN KARARIN** · tek atış |
 | **E** | **Doğrulayıcı koşum** — parçalı, 3 kol, G=4 | ✅ | `complete`, kapılar okundu |
 | **F** | **Analiz + sonuç sınıfı** | yok | Dört seviye raporlandı; sınıf **koşumdan önce** tanımlıydı |
 
