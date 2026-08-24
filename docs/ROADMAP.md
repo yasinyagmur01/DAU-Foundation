@@ -57,7 +57,38 @@ bugün ödenirse boşa gider.
 
 ---
 
-## 3. ⛔ Kat 2'nin önündeki tek yapısal engel
+## 3. ⚠️ Kat 2'nin önündeki engel — **bu bölüm D-178'de DÜZELTİLDİ**
+
+⛔ **Aşağıdaki ilk sürüm doğru olguyu yanlış sonuca bağlamıştı.** Olgu duruyor,
+çıkarım düştü.
+
+**Ölçülen (D-178/B4):**
+
+| | |
+|---|---|
+| `consolidate_generation` popülasyon yolunda | ✅ **çağrılıyor** (`run_population_experiment.py:1692`) |
+| **I5.4** — sembolik kayıt varise ulaşıyor mu | ✅ **True**, pilotta *"applied 463x"* |
+| **I5.1** — ilişki grafiği | ❌ boş (`run_consolidation` çağrılmıyor) |
+
+⇒ **Kanal 1 ölü değil.** Ölü olan **uyku konsolidasyonu**: ilişki grafiği,
+Ebbinghaus budaması, güçlendirme — yani **yaşam içi** bir bellek dinamiği,
+kalıtım kanalı değil.
+
+⭐ **Ve asıl düzeltme:** `lived ↔ shuffle` karşıtlığının Kanal 2'yi izole
+etmesinin sebebi konsolidasyonun bağlı olmaması **değil** — **müdahalenin
+kendisi** Kanal 2'ye yapılıyor (tercih çiftleri karıştırılıyor). ⇒
+`run_consolidation`'ı bağlamak `lived ≠ shuffle`'ı bir **Kanal 1 testi
+yapmaz**. Kanal 1'i sınamak ayrı bir **üçüncü müdahale** ister (örn. kasası
+karıştırılmış bir kol) — bu bir kablolama düzeltmesi değil, bir **tasarım
+değişikliği**.
+
+⇒ **Karar (D-178/B4): bağlanmıyor, sınır ilan ediliyor.** Eksik dinamik **her
+kolda simetrik** olarak yok ⇒ seviye 3 karşıtlığını oynatamaz. `I5.1` artık
+`None` (**değerlendirilmedi**) diyor ve sebebini adlandırıyor; sabit
+(`SLEEP_CONSOLIDATION_WIRED`) bağlandığı gün kapı kendiliğinden geri geliyor.
+**Kaldıraç hakkı harcanmadı: 2/2 duruyor.**
+
+<details><summary>ilk sürüm (D-175, çıkarımı düşen)</summary>
 
 **D-172 §4:** popülasyon yolunda **`run_consolidation` hiç çağrılmıyor.**
 
@@ -67,6 +98,7 @@ Aksiyom **iki kanal** diyor (§3, `CLAUDE.md`): sembolik kasa (Kanal 1) ve LoRA
 ⇒ Bugün `lived`/`shuffle` karşıtlığı **yalnız Kanal 2'nin testi**.
 ⇒ **Seviye 3 — yani aksiyomun kendisi — bugünkü kablolamayla sınanamaz.**
 ⚠️ Ebbinghaus unutması da popülasyon ajanlarında çalışmıyor (aynı sebep).
+</details>
 
 ---
 
@@ -98,7 +130,7 @@ kadar artış öngörür, gerçekleşen ondan fazla mı?"*
 | Ön-koşul zinciri | ✅ **kurulu** — `q` = 3/3, seviye 0 = 18/18 |
 | Alet | 11 kapı · checkpoint · replay · pozitif kontrol · K1–K6 |
 | Kapanmış sonuçlar | **B2 = alet null'ı** · **C2 = evren null'ı** — ikisi de raporlandı |
-| Harcanan kaldıraç | **2** (Katman 1, Katman 1b) · **kalan hak: 1** |
+| Harcanan kaldıraç | **2** (Katman 1, Katman 1b) · ⭐ **kalan hak: 2** (D-176 tanımı: yalnız **tabanı geçersiz kılan** değişiklikler sayılır) |
 | Yapılmamış | ⛔ **hipotez testinin kendisi — bir kez bile koşulmadı** |
 
 ---
@@ -138,8 +170,12 @@ durmaktan ucuz göründüğü için, sayı olmadan bu döngünün çıkışı yo
 | 2 | `T_max` · `G` · kol | **70 sa · G = 4 · üç kol** ⇒ `N_eff` = 20, **MDE 0.676** |
 | 3 | Koşum şekli | **parçalı**, saate dokunulmadan, gece başına tohum mümkün olduğunca çok (I4.1 replay sabit maliyeti ~35 dk/çağrı) |
 | 4 | Kaldıraç hakkı | **2** — yalnız **tabanı geçersiz kılan** değişiklikler sayılır; **alet onarımı bedava** |
-| 5 | DR brief #14 | ✅ **evet** — tek soru: ratcheting'in yayımlanmış ampirik standardı |
+| 5 | DR brief #14 | ⏸ **ERTELENDİ, D-178** — sorusu *ratcheting* = **Kat 3**, ve Kat 3 bu koşumun kapsamından çıktı (karar 2). Kat 3 masaya gelince gönderilir |
 
-⛔ **Ve koşumdan önce üç alet onarımı** (D-176 §6): **I4.2 kilidi** ·
-**resume** · **çok-dosya birleştirici**. Üçü de GPU'suz, üçü de koşum yolunu
-değiştirdiği için 🔒 **kilitten sonra yapılamaz**.
+✅ **Üç alet onarımı bitti (D-177):** **I4.2 kilidi** (`250f7e5`) · **resume**
+(`07d0cae`) · **çok-dosya birleştirici** (`00f1252`). Üçü de GPU'suz, üçü de
+koşum yolunu değiştirdiği için 🔒 kilitten önce yapıldı.
+✅ **B4 — Kanal 1 kararı: bağlanmıyor, sınır ilan edildi** (D-178, §3).
+
+⇒ **Sıradaki: C** — ön-kayıt taslağının dört kusuru (D-145) + yeni sınırlar
+(bütçe sansürü · uyku konsolidasyonu), sonra 🔒 **D: KİLİT**.

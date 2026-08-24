@@ -14851,3 +14851,141 @@ kadarki bütün örnekler *"test boştu"* idi.
 | **B5** | adapter temizliği (~9.3 GB) · **DR #14 brief'i** |
 | **C** | ön-kayıt taslağının dört kusuru (D-145) + **yeni sınır: bütçe sansürü** |
 | **D** | 🔒 **KİLİT** |
+
+---
+
+## D-178 · 2026-08-24 · ✅ **B4 — KANAL 1: BAĞLANMIYOR, SINIR İLAN EDİLİYOR** (devredilmiş yetki) · ⛔ ve `ROADMAP.md` §3'ün çıkarımı düştü · ⏸ **DR #14 ertelendi**
+
+**Bağlam:** Yasin *"önerdiğin şekilde yapalım"* dedi ⇒ B4 devredilmiş yetkiyle
+karara bağlandı (D-143 deseni). Ve *"brief gerekiyor mu"* diye sordu ⇒ D-176'nın
+**beşinci kararı yeniden değerlendirildi**.
+
+---
+
+### 1. ⛔ Kararı tersine çeviren ölçüm — Kanal 1 ölü değil
+
+Kuyruk 3.0f ve `ROADMAP.md` §3, D-172'nin bulgusundan *"aksiyomun kendisi
+bugünkü kablolamayla sınanamaz"* sonucunu çıkarmıştı. **Karar vermeden önce
+kod okundu** (§2.2) ve sonuç bu çıkarımı çürüttü:
+
+| ölçüm | sonuç |
+|---|---|
+| `consolidate_generation` popülasyon yolunda çağrılıyor mu | ✅ **evet** — `run_population_experiment.py:1692` → `consolidate_parents:1422` |
+| **I5.4** (sembolik kayıt varise ulaşıyor mu), D-173 pilotu | ✅ **True** — *"applied 463x"* |
+| **I5.1** (ilişki grafiği) | ❌ boş — `run_consolidation`'ın çağrısı yok (D-172) |
+
+⇒ **Ölü olan Kanal 1 değil, UYKU KONSOLİDASYONU:** ilişki grafiği, Ebbinghaus
+budaması, güçlendirme. Bu bir **yaşam içi bellek dinamiği**, bir kalıtım
+kanalı değil. Kalıtım (D-161'in somatik kanalı, 34/144; D-173'ün 463 uygulama)
+**çalışıyor**.
+
+### 2. ⭐ Ve asıl düzeltme: bağlamak zaten işe yaramazdı
+
+`lived ↔ shuffle` karşıtlığının **Kanal 2'yi izole etmesinin sebebi
+konsolidasyonun bağlı olmaması değil** — **müdahalenin kendisi** Kanal 2'ye
+yapılıyor (DPO tercih çiftleri karıştırılıyor). ⇒ `run_consolidation`'ı
+bağlamak `lived ≠ shuffle`'ı bir **Kanal 1 testi yapmaz**.
+
+Kanal 1'i sınamak **üçüncü bir müdahale** ister (örn. kasası karıştırılmış bir
+kol) ⇒ bir kablolama düzeltmesi değil, bir **tasarım değişikliği**, ve bu
+koşumun kapsamı dışında.
+
+### 3. Karar — **seçenek B** (kuyruk 3.0f)
+
+| şık | değerlendirme |
+|---|---|
+| **A** — bağla | ⛔ **reddedildi.** Fizik **dördüncü kez** değişir, D-173'ün tabanı (`q`=1.00, `t`=2 sa 20 dk) geçersizleşir, GAP-4 riski canlanır — ve §2'ye göre **karşılaştırmayı oynatmaz** |
+| ⭐ **B** — bağlama, sınır ilan et | ✅ **seçildi.** Eksik dinamik **her kolda simetrik** yok ⇒ seviye 3 karşıtlığını yapı gereği etkileyemez |
+| **C** — yalnız telemetri | ⛔ kuyruğun kendi değerlendirmesi: *"yetersiz — sıfırın sebebini yazmak sıfırı açıklamıyor"* |
+
+⭐ **Kaldıraç hakkı harcanmadı: 2/2 duruyor.**
+
+**Uygulama:** `SLEEP_CONSOLIDATION_WIRED: bool = False` +
+`SLEEP_CONSOLIDATION_BOUNDARY`. `I5.1` artık **`None`** (*"değerlendirilmedi"*)
+diyor ve sebebini adlandırıyor. ⭐ **`False` demek yanlış olurdu** — kablolama
+hakkında bir cümleyi sistem hakkındaymış gibi sunardı; D-121'in ayrımı, ve
+B3'ün mutasyon koşumunda yeni kazanılmış.
+
+⛔ **Bu bir susturma DEĞİL, bir KOŞUL** — ve ikisi ayrı testle bağlandı:
+
+| test | neyi imkânsız kılıyor |
+|---|---|
+| `test_wiring_consolidation_brings_the_gate_back` | sabit `True` olduğu an **gerçek yüklem geri geliyor** ⇒ sınır kendi sebebi bitince ayakta kalamaz |
+| `test_the_declared_boundary_matches_the_code` | **K6.** Modülün kaynağı taranıyor (yerel import da yakalansın diye **metin** olarak): biri konsolidasyonu bağlayıp sabiti unutursa test kırılıyor |
+
+⚠️ **K6'nın bedeli neden ödendi:** D-151 ölçtü — D-086 bir kusuru **düzyazıyla**
+yazdı, sekiz oturum geçti, koşum üstüne `clean` raporladı.
+
+**Kasıtlı test kırılması aynı commit'te:** `test_i51_and_arm_edge_count_…`
+`check_ppr_active`'in çıktısını bekliyordu; artık o yüklem koşmuyor.
+**K5:** 2 mutasyon, ikisi de yakalandı. md5 `5c8f1c42…` birebir.
+
+---
+
+### 4. ⛔ `ROADMAP.md` §3'ün çıkarımı düştü — belge düzeltildi
+
+§3 *"Seviye 3 — yani aksiyomun kendisi — bugünkü kablolamayla sınanamaz"*
+diyordu. **Olgu doğru, çıkarım yanlıştı** (§1–§2). Belge düzeltildi, ilk sürüm
+`<details>` içinde bırakıldı. ⚠️ **Bu, bir günde ikinci kez** bir yol haritası
+maddesinin ölçümle çürütülmesi (birincisi D-176/Bulgu 1, *"iki kol"*).
+
+⇒ **Ders, ve D-175'in kendi dersinin tekrarı:** bir belge güncel olduğu için
+doğru olmuyor. §2.2 *"belgeye değil dosyaya güven"* diyor, ve bu turda **karar
+verilmeden önce** uygulandığı için karar tersine döndü.
+
+---
+
+### 5. ⏸ DR #14 ertelendi — **D-176'nın 5. kararının değiştirilmesi**
+
+⚠️ **Bu bir karar değişikliğidir ve öyle ilan ediliyor**, sessizce düşürülmüyor.
+
+D-176 *"evet"* demişti. Sorusu: **ratcheting'in (kümülatif kültürel aktarım)
+yayımlanmış ampirik standardı**. Ama **aynı denetim** hedefi `G=6`'dan
+`G=4`'e çekerken **Kat 3'ü bu koşumun kapsamından çıkardı** (D-176/karar 2)
+⇒ brief, **sormadığımız** bir sorunun cevabını getirir.
+
+| | |
+|---|---|
+| bloke ediyor mu | ❌ hayır — Kat 2'nin hiçbir adımı ona bağlı değil |
+| maliyeti | bir **mutabakat turu** (§9/D-006 zorunlu) |
+| sicil | 13 turda **12 kimlik hatası**; DR #13 taşıyıcı iddiasında **cebirsel olarak tersti** ve üç kaynak şartının **0/3**'ünü karşıladı |
+
+⇒ **Kat 3 masaya geldiğinde gönderilir.** Brief'in kendisi hazır (D-175 §7),
+silinmiyor.
+
+---
+
+### 6. B5 — adapter temizliği: ⛔ **YAPILMADI, ve bu bir öneri değişikliği**
+
+D-176 *"~9.3 GB temizlenebilir"* demişti ve Yasin izin verdi (*"disk temizlemek
+sorun değil"*). **İzin, gereklilik değil** — ve ölçünce gerekmediği çıktı:
+
+| | |
+|---|---|
+| boş alan | **41 GB** |
+| seçilen şeklin ihtiyacı (20 tohum · G=4 · 3 kol; yalnız `lived`+`shuffle` adapter yazıyor) | **~17 GB** |
+| **pay** | **~24 GB** |
+
+⛔ **Ve silinecek olanların hepsi bir D-kaydını destekliyor:** s9911–9913 = C2
+(**D-123, raporlanmış sonuç**) · s9920–9922 = Katman 1 pilotu (**D-164**) ·
+s9917–9919 = tanımlılık pilotu · s9915/9916 = sonda-2/3. `CLAUDE.md` §EV
+İŞLERİ zaten *"2001–2043 kanıttır, silinmemeli"* kuralını koymuş; aynı gerekçe
+`pop-*` blokları için de geçerli.
+
+⇒ **İhtiyaç duyulmayan alanı açmak için kanıt silmek kötü bir takas.**
+⏸ Tetik: doğrulayıcı koşumdan **önce** boş alan **25 GB'ın altına düşerse**
+yeniden değerlendirilir.
+
+---
+
+### 7. ⚠️ Bu kaydın sınırları
+
+- §1'in *"Kanal 1 çalışıyor"* iddiası **iki kapıya** dayanıyor (I5.4 = 463
+  uygulama, ve `consolidate_generation`'ın çağrı yeri). **Kasanın içeriğinin
+  varise ne kadar bilgi taşıdığı ölçülmedi** — yalnız *aktığı* ölçüldü.
+- §2'nin *"bağlamak Kanal 1 testi yapmaz"* çıkarımı **tasarım okumasıdır**,
+  ölçüm değil. Çürütülmesi için `shuffle`'ın kasayı da karıştırdığının
+  gösterilmesi gerekir; kod okundu, karıştırmıyor.
+- Uyku konsolidasyonunun **yokluğunun** yaşam içi dinamiğe etkisi
+  **ölçülmedi** — sınır bu yüzden *"etkisi yok"* değil, ***"her kolda
+  simetrik"*** diye ilan edildi.

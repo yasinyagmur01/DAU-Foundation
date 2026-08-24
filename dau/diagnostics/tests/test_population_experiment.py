@@ -3262,30 +3262,22 @@ def test_i51_and_arm_edge_count_reach_the_results_file(monkeypatch) -> None:
         seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
     )
 
-    from dau.diagnostics.preflight import check_ppr_active
+    import dau.diagnostics.run_population_experiment as pop_mod
 
     assert "I5.1" in results["invariants"], "the gate never ran"
     recorded = results["invariant_details"]["I5.1"]
     assert recorded["mode"] == "flag"
-    # ⚠ The VERDICT is deliberately not asserted to mean anything: a stubbed
-    # agent writes no DEEP/TRAUMA nodes, so consolidation writes no edges and
-    # "inert" describes the stub. What is asserted is that the registered
-    # predicate is the one under test — D-149's failure was a gate that was
-    # defined and never bound, and this is the check for that.
-    _, expected_detail = check_ppr_active(
-        [
-            {
-                "agent_id": f"{arm['arm']}-s{arm['seed']}",
-                "memory_edges": int(arm["memory_edges"]),
-            }
-            for arm in results["arms"]
-        ],
-        unit="arm vaults",
-    )
-    assert recorded["detail"] == expected_detail, (
-        "the registered predicate is not the one under test"
-    )
-    assert "arm vaults" in recorded["detail"]
+    # ⚠ CHANGED BY D-178/B4, and deliberately: the GAP-14 decision this gate
+    # was waiting for got taken. Sleep consolidation stays unwired, so the
+    # graph is empty BY CONSTRUCTION and a False here would describe the
+    # wiring, not the system. The gate now records None — not evaluated — and
+    # names the boundary. The old assertion (detail == check_ppr_active's) is
+    # gone because the predicate is no longer the thing being run; what
+    # replaces it is stronger, because it also pins the CONDITION:
+    # `test_wiring_consolidation_brings_the_gate_back` shows the predicate
+    # returns the moment the boundary is lifted.
+    assert results["invariants"]["I5.1"] is None
+    assert recorded["detail"] == pop_mod.SLEEP_CONSOLIDATION_BOUNDARY
 
     for arm in results["arms"]:
         assert "memory_edges" in arm, "the arm vault count never reached the record"
@@ -3593,3 +3585,58 @@ def test_the_arm_that_was_mid_flight_is_re_run_not_kept(
         (arm["arm"], arm["seed"]) for arm in finished
     }
     assert len(finished) == len(payload["arms"]) - 1
+
+
+# ── D-178/B4: the declared boundary, and the two ways it could go stale ──────
+
+
+def test_wiring_consolidation_brings_the_gate_back(monkeypatch) -> None:
+    """The boundary is a CONDITION, not a silencing.
+
+    A gate turned off by editing a line stays off when the reason expires.
+    This one reads a constant, so the moment sleep consolidation is wired the
+    real predicate runs again — and that is asserted rather than promised.
+    """
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(pop_mod, "SLEEP_CONSOLIDATION_WIRED", True)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    recorded = results["invariant_details"]["I5.1"]
+    assert recorded["detail"] != pop_mod.SLEEP_CONSOLIDATION_BOUNDARY
+    assert "arm vaults" in recorded["detail"], "the real predicate did not run"
+
+
+def test_the_declared_boundary_matches_the_code() -> None:
+    """K6 — a boundary that is not bound to a check is a comment.
+
+    D-151 measured what that costs: D-086 wrote a defect down in prose, eight
+    sessions passed, and a run reported `clean` over it. So the claim "sleep
+    consolidation is not on this path" is checked against the module itself,
+    both ways round — if someone wires it and forgets the constant, this fails
+    and the boundary cannot quietly outlive its reason.
+    """
+
+    import inspect
+
+    import dau.diagnostics.run_population_experiment as pop_mod
+
+    source = inspect.getsource(pop_mod)
+    # Scanned as text, not as attributes: a local import inside a function
+    # would wire the path while leaving the module namespace clean.
+    calls = [
+        name
+        for name in ("run_consolidation", "consolidate_run")
+        if f"{name}(" in source
+    ]
+    if pop_mod.SLEEP_CONSOLIDATION_WIRED:
+        assert calls, "the constant claims consolidation is wired; nothing calls it"
+    else:
+        assert not calls, (
+            f"{calls} is reachable, but SLEEP_CONSOLIDATION_WIRED is still "
+            "False — the declared boundary no longer describes the code"
+        )

@@ -429,6 +429,34 @@ DEMAND_P90_QUANTILE: float = 0.90
 # D-170. Missing rather than zero: an arm whose vault could not be read is not
 # an arm with an empty graph, and I5.1 exists precisely to tell those apart.
 UNREADABLE_EDGES: int = -1
+# ⛔ D-178/B4 — a DECLARED BOUNDARY of this universe, not an oversight.
+#
+# `run_consolidation` (sleep consolidation: the association graph, Ebbinghaus
+# pruning, strengthening) has no caller on the population path — measured in
+# D-172, chain read to the end. It is left that way deliberately:
+#
+#   * Channel 1 is NOT dead. `consolidate_generation` IS called here, and the
+#     pilot measured I5.4 "applied 463x" — the symbolic record reaches the
+#     heir. What is missing is a WITHIN-LIFE memory dynamic.
+#   * That dynamic is absent SYMMETRICALLY in every arm, so it cannot move the
+#     lived/shuffle/null contrast, which is the endpoint this run exists for.
+#   * Wiring it would change the physics a fourth time and cost a re-measured
+#     baseline, for something the comparison does not read.
+#
+# ⚠ Kept as a constant rather than a comment so the boundary is READ by the
+# gate (§2.8) instead of restated next to it, and so wiring consolidation
+# forces this line to be revisited. `test_the_declared_boundary_matches_the
+# _code` fails if the module ever reaches run_consolidation while this is False.
+SLEEP_CONSOLIDATION_WIRED: bool = False
+# What I5.1 says instead of "PPR is inert" while the boundary stands. The
+# distinction is D-121's and B3 just re-earned it: None means NOT EVALUATED.
+# Reporting False would be a statement about the wiring dressed as a statement
+# about the system — the exact confusion D-170 wired this gate to end.
+SLEEP_CONSOLIDATION_BOUNDARY: str = (
+    "not evaluated: sleep consolidation is not wired on the population path "
+    "(D-178/B4, declared boundary) — the association graph is empty BY "
+    "CONSTRUCTION, so this gate would describe the wiring, not the system"
+)
 
 
 def demand_summary(
@@ -2179,10 +2207,18 @@ def run_population_experiment(
     # accumulates no emotional weight, so it produces none of those, and the
     # gate would report "PPR is inert" about the stub rather than about the
     # system. Records None — not evaluated — like I4.1, I5.4 and I5.6.
+    #
+    # ⭐ D-178/B4. The GAP-14 decision named above was taken: sleep
+    # consolidation stays unwired and the boundary is declared, so this gate
+    # now records None rather than a False that describes the wiring. The
+    # condition reads the constant, so wiring consolidation brings the gate
+    # back on its own.
     gate.check(
         "I5.1",
         (lambda: (None, "not evaluated under a canned LLM"))
         if use_mock
+        else (lambda: (None, SLEEP_CONSOLIDATION_BOUNDARY))
+        if not SLEEP_CONSOLIDATION_WIRED
         else (
             lambda: check_ppr_active(
                 [

@@ -39,14 +39,15 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-**Hedef ilan edildi ve alet onarıldı** (D-176: **Kat 2 · 70 sa · G=4 · üç kol
-· MDE 0.676**; D-177: I4.2 kilidi · resume · birleştirici) ⇒ sıradaki iş
-**Kanal 1 kararı** (kuyruk 3.0f) — ve o **senin** (D-007).
+**Hedef ilan edildi, alet onarıldı, son karar da verildi** (D-176: **Kat 2 ·
+70 sa · G=4 · üç kol · MDE 0.676** · D-177: I4.2 kilidi · resume ·
+birleştirici · D-178: Kanal 1 **bağlanmıyor**, sınır ilan edildi) ⇒ sıradaki
+iş **C: ön-kayıt taslağının dört kusuru**, sonra 🔒 **KİLİT**.
 
 ## Durum
 
 - **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
-  **Suite:** **660 passed**, 2 deselected. **Kapı: 11.**
+  **Suite:** **662 passed**, 2 deselected. **Kapı: 11.**
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
@@ -73,6 +74,17 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
   çevrilmiş). ⛔ **Senin bilmen gereken tek karar: `I4.2` FLAG'de bırakıldı** —
   ABORT, son hücrede ayrışan 70 saatlik koşumu **çıktısız** öldürürdü
   (`main()` `PreflightAbort`'ta sonuç yazmıyor). Değiştirmek istersen söyle.
+- ⭐⭐ **YENİ, D-178: `ROADMAP.md` §3'ün çıkarımı ÇÜRÜTÜLDÜ.** *"Aksiyomun
+  kendisi bugünkü kablolamayla sınanamaz"* diyordu; ölçüm bunu düşürdü:
+  `consolidate_generation` popülasyon yolunda **çağrılıyor** ve **I5.4 pilotta
+  `applied 463x`** ⇒ **Kanal 1 ölü değil**, ölü olan **uyku konsolidasyonu**.
+  ⭐ Ve `run_consolidation`'ı bağlamak `lived ≠ shuffle`'ı **Kanal 1 testi
+  yapmazdı** — müdahale zaten Kanal 2'ye yapılıyor. ⇒ **Bağlanmadı, sınır
+  ilan edildi, kaldıraç harcanmadı (2/2).** ⚠️ **Bir günde ikinci kez** bir
+  yol haritası maddesi ölçümle çürüdü (ilki: *"iki kol"*, D-176).
+- ⏸ **DR #14 ertelendi (D-178)** — D-176 *"evet"* demişti; sorusu
+  **ratcheting = Kat 3**, ve Kat 3 aynı denetimde kapsam dışına çıktı.
+  **Karar değişikliği olarak ilan edildi**, sessizce düşürülmedi.
 - ⚠️ **D-177'nin açık bıraktığı tek şey:** resume'un eşdeğerliği **stub
   altında** ölçüldü; `--lora` açıkken **denenmedi** ⇒ doğrulayıcı koşumun
   **ilk gecesinde bir kez fiilen sınanmalı**.
@@ -160,8 +172,8 @@ G=6'yı Kat 2 değil **Kat 3'ün kancası** istiyor ⇒ aynı parayla duyarlıl�
 | ~~**B1**~~ | ✅ **I4.2 kilidi** — `_lock_seeds` nesil döngüsünün içinde (**D-177**, `250f7e5`) | yok | ✅ 1 mutasyon yakalandı |
 | ~~**B2**~~ | ✅ **Resume** — `--resume`, opt-in, uyuşmazlıkta **reddediyor** (**D-177**, `07d0cae`) | yok | ✅ 4 mutasyon yakalandı |
 | ~~**B3**~~ | ✅ **Birleştirici** — `--results` N dosya (**D-177**, `00f1252`) | yok | ✅ 7 mutasyon yakalandı |
-| **B4** | **Kanal 1 kararı** (kuyruk 3.0f) — kaldıraç hakkı **2**, biri buraya aday | yok | D-kaydında seçilen şık + reddedilenler |
-| **B5** | Adapter temizliği (**~9.3 GB**, Katman 1 öncesi) · **DR #14 brief'i** | yok | — |
+| ~~**B4**~~ | ✅ **Kanal 1: bağlanmıyor, sınır ilan edildi** (**D-178**) — ölçüm kararı tersine çevirdi: Kanal 1 **ölü değil**, ölü olan uyku konsolidasyonu ve o **her kolda simetrik**. Kaldıraç **harcanmadı** | yok | ✅ 2 mutasyon yakalandı |
+| ~~**B5**~~ | ✅ **İkisi de gerekmedi (D-178):** temizlik — 41 GB boş, koşum ~17 GB ⇒ **kanıt silmeye gerek yok** · DR #14 **ertelendi**, sorusu Kat 3'e ait | yok | ✅ |
 | **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü**. ⚠️ **Yeni sınır:** bütçe sansürü (gen3-4'te **5.2/8** ajan 30 olay tavanında) | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
 | **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, slotlar + alet kimliği dondurulur | yok | Commit hash + §12 deseni |
 | **E** | **Doğrulayıcı koşum** — parçalı, 3 kol, G=4 | ✅ | `complete`, kapılar okundu |
