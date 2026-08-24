@@ -14526,3 +14526,191 @@ aynen bağlayıcı (DOI · birebir alıntı · kaynakça + boşluk ilanı).
 | 3 | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
 | 4 | Kalan kaldıraç hakkı (1) nereye | **Kanal 1'in onarımı** |
 | 5 | DR brief'i gönderilsin mi | evet, §7'nin tek sorusuyla |
+
+---
+
+## D-176 · 2026-08-24 · ⭐⭐ **BEŞ KARAR İLAN EDİLDİ (Yasin) + KOŞUM-ÖNCESİ DENETİM — denetim iki kararı değiştirdi**
+
+**Bağlam:** `ROADMAP.md` §8'in beş kararı Yasin'e soruldu. Üçü doğrudan
+cevaplandı; **bütçe kararı için Yasin önce denetim istedi**:
+
+> *"her uzun runda tekrar kontrol edilmesi istediğimde ya uğraşılması gereken
+> sorunlarla ya da çok daha az run süresiyle istediklerimizi alabileceğimizi
+> bulmuştum … 70 saat 100 saat kaybetmeyelim"*
+
+⇒ Denetim yapıldı (**salt-okunur, sıfır GPU**), ve **haklı çıktı**: bulgu 1
+tek başına yol haritasının bütçe tablosunu çürüttü.
+
+---
+
+### 1. ⛔ Denetimin altı bulgusu
+
+#### Bulgu 1 — **Kat 2 = seviye 3 = ÜÇ kol; pilot İKİ kolla koştu**
+
+`analyze_population_run.py:18` seviye 3'ü `lived != shuffle != null` diye
+tanımlıyor. `level3_arm_contrast` (§627) kapanış uyarısı:
+*"B2 0.3852 / 0.3812 / 0.3814 ölçtü ve bu desen bir NULL"*.
+⇒ **İki kolla o deseni görmek yapısal olarak imkânsız** — tek mesafe çıkar,
+kıyas ekseni olmaz.
+
+D-173 pilotunun argv'si (koşum dosyasından okundu):
+`--arms lived shuffle` ⇒ **null kolu koşulmadı.**
+⛔ **`ROADMAP.md` §2'nin 47/70/93 saatlik tablosunun tamamı iki kol
+üzerinden hesaplanmış** ⇒ Kat 2 için geçersiz.
+
+#### Bulgu 2 — **devam (resume) yok**
+
+`Checkpoint` (D-111) her nesilde **yazıyor**; dosyada `checkpoint` geçen
+15 satırın **hepsi yazma tarafında**, okuyan/atlayan kod yok.
+⇒ Kesilen bir parti **baştan** koşulur. ⚠️ Bir kez yaşandı
+(`…ABORTED-1303.json`, makine kapandı).
+
+#### Bulgu 3 — **analiz aracı tek dosya alıyor**
+
+`analyze_population_run.py:776` → `--results` tek `Path`; birleştirici yok.
+⇒ Parçalı koşum N dosya üretir ve **okuyacak alet olmaz**.
+
+#### Bulgu 4 — **disk (ölçüldü, bloke etmiyor)**
+
+D-173 pilotu (3 tohum · 2 kol · G=4): **208 dizin / 2.7 GB**
+(tohum-nesil başına ~208 MB, dizin başına ~13 MB).
+Boş alan **41 GB**; `dau_runs/adapters/` **18 GB / 1402 dizin**.
+
+| şekil | adapter | 41 GB'a |
+|---|---|---|
+| 21 tohum · G=4 · 3 kol | ~17 GB | ✅ |
+| 30 tohum · G=6 · 3 kol | ~37 GB | ⛔ |
+
+⭐ **~9.3 GB temizlenebilir (tahmin, 712 dizin × ~13 MB):** Katman 1 öncesi
+fizikten s9601 · s9911–9913 · s9915–9922. ⚠️ s9923–9928 **korunur** (D-168 ve
+D-173'ün kanıtı).
+✅ **Yasin: *"disk temizlemek sorun değil"*** ⇒ disk bağlayıcı kısıt değil.
+⚠️ **Ve zaten değildi** — seçilen şekil temizliksiz de sığıyordu.
+
+#### Bulgu 5 — **I4.2'nin sayısı geldi; kodun kendi planı "mod yükselir" diyordu**
+
+`run_population_experiment.py:1988–1998` gerekçeyi koşumdan önce yazmıştı:
+*"the first run MEASURES, and the mode escalates once there is a number."*
+**Sayı:** D-173'te **6/6 hücrede** kollar gen3 ve gen4'e **farklı RNG
+durumundan** girdi. Sebep kodda yazılı (`:1526`): bu koşucu döngü **başında
+bir kez** kilitliyor, `run_cprime_multigen` **her nesilden önce** (dört çağrı).
+⇒ G=6'da 6 değil **12** hücre.
+
+⭐ **Ama maruziyet sanıldığından dar — ölçüldü:** çalışma yolunda
+(`graph.py` · `society/` · `memory/`) global RNG'yi tüketen **tek çağrı yok**;
+üretim `reproduction.py`'ye **açıkça verilen yerel** `random.Random(seed)`
+ile. Ortam da global stream'den gelmiyor: `shared_pasture` havuzu
+**kurucuların nişinden** okuyor (`:861`). ⇒ Kalan gerçek maruziyet **DPO
+eğitimi** (torch RNG).
+⇒ **Düzeltme tek satır** (`_lock_seeds` döngünün içine), **sıfır GPU**, ve
+🔒 **kilitten ÖNCE** yapılmalı — sonra yapılırsa ön-kayıt geçersizleşir.
+
+#### Bulgu 6 — **bütçe sansürü büyüyor; ⛔ ve kendi hipotezim çürüdü**
+
+Yaşamlar `--events 30` tavanına dayanıyor. Tavandaki ajan sayısı (24 hücre):
+
+| | gen1 | gen2 | gen3 | gen4 |
+|---|---|---|---|---|
+| tavandaki ajan | **2.0/8** | 4.2/8 | **5.2/8** | 5.2/8 |
+| `f_agent` yayılımı | 0.1139 | 0.1211 | 0.1873 | **0.1899** |
+
+⛔ **Hipotezim:** *"tavan yayılımı çökertir ⇒ turnuva yazı-turaya döner"*.
+❌ **Ölçüm tersini söyledi:** korelasyon(tavandaki ajan, `f_agent` yayılımı)
+= **+0.283** (n=24), yayılım nesilden nesile **büyüyor**, `w_variance`
+**0.75–1.75** (hepsi > 0), `selection_measurable` **True**.
+⇒ Koşumu kırmıyor. ⚠️ Kalan gerçek: geç nesillerde yaşamların çoğu **ölümle
+değil bütçeyle** bitiyor ⇒ **ön-kayıta sınır olarak yazılacak**, sabit
+**değiştirilmeyecek** (§2.7 — sayıyı sonuca bakarak oynatmak).
+
+---
+
+### 2. Süre kaldıraçları — üçü ölü, biri gerçek
+
+| kaldıraç | sonuç |
+|---|---|
+| **Paralel koşum** (2 süreç) | ❌ **imkânsız** — GPU `RTX 4070 Laptop`, **8188 MiB**. NF4 8B tek örnek zaten sığıyor |
+| **Kuantizasyon / model** | ❌ NF4 en ucuzu; fp16 sığmaz; model değişimi alet kimliğini bozar (D-026) |
+| **Üretim ayarı** | ❌ `max_new_tokens=64` + greedy, zaten en dar. Düşürmek kararı keser ⇒ fizik değişikliği |
+| ⭐ **`G`** | **gerçek** — ve G=6'yı **Kat 2 istemiyor, Kat 3'ün kancası istiyor** (`ROADMAP.md` §2/c'nin kendi cümlesi). Seviye 3 bir **kol karşıtlığı**, nesil başına okunuyor |
+| ⭐ **parçalı koşumun sabit maliyeti** | her çağrı I4.1 replay kolunu yeniden ödüyor (~2 nesil ≈ **35 dk**) ⇒ gece başına tohum sayısı büyük tutulur |
+
+---
+
+### 3. Bütçe aritmetiği — **ölçülmüş tabandan**
+
+**Taban (ölçüldü, D-173):** 2 kol · G=4 = **2 sa 20 dk**/tohum.
+**Üçüncü kol (`null`) eğitim yapmıyor** ⇒ maliyeti çıkarım payına eşit.
+⚠️ **Tahmin ve sınırı (K4):** eğitim payı ölçülmedi; alt sınır +%35
+(eğitim ≈ %30), üst sınır **+%50** (eğitim ≈ 0).
+
+| 3 kol · G=4 varsayımı | `t`/tohum | `N_eff` = ⌊70/t⌋ | MDE `d_z` |
+|---|---|---|---|
+| +%35 | 3 sa 09 dk | 22 | 0.641 |
+| +%43 | 3 sa 20 dk | 21 | 0.658 |
+| ⭐ **+%50 (muhafazakâr)** | **3 sa 30 dk** | **20** | **0.676** |
+
+⇒ **İlan edilen değer muhafazakâr olan:** `N_eff` = **20**, MDE = **0.676**.
+Durma kuralının aritmetiği (`N_eff = ⌊q × T_max / t⌋`) `t` ölçülünce yeniden
+uygulanır; bu **post-hoc değil**, kuralın kendi tanımı (D-174).
+
+⭐ **MDE aleti bu turda yeniden doğrulandı:** noncentral-t + Wilcoxon ARE
+(0.955) ile hesaplanan eğri D-174'ün üç sayısını **birebir** üretti
+(20 → 0.676 · 30 → 0.542 · 39 → 0.471).
+
+**Elenen şekiller:**
+
+| şekil | neden alınmadı |
+|---|---|
+| 70 sa · G=6 · 3 kol → 13 tohum, MDE **0.866** | aynı parayla duyarlılık **düşüyor**; satın aldığı şey Kat 2 değil Kat 3'ün kancası |
+| 103 sa · G=6 · 3 kol → 20 tohum, MDE 0.68 | +33 saatin aldığı Kat 3 kancasının **karşılaştırma modeli henüz yazılmadı** (`ROADMAP.md` §4: *"seçilim-tek-başına null modeli"*) ⇒ bugün ödenirse boşa gider. ⚠️ Disk **engeli değil** (Yasin temizliği onayladı) |
+| 70 sa · G=4 · 2 kol → 30 tohum, MDE 0.542 | en duyarlı okuma, **ama `null` yok ⇒ seviye 3 raporlanamaz** ⇒ Kat 2 iddiası kurulamaz |
+
+---
+
+### 4. ⭐⭐ İLAN — beş karar (Yasin, D-007)
+
+| # | karar | **ilan edilen** |
+|---|---|---|
+| **1** | Hedef katı | ⭐ **Kat 2 — aksiyom, seviye 3** (`lived ≠ shuffle ≠ null`) |
+| **2** | `T_max` · `G` · kol | **`T_max` = 70 sa** · **`G` = 4** · **3 kol** (`lived shuffle null`) ⇒ `N_eff` = **20** (muhafazakâr), MDE = **0.676** |
+| **3** | Koşum şekli | **parçalı**, saate dokunulmadan; gece başına tohum **mümkün olduğunca çok** (replay sabit maliyeti). Taze blok **9929+** (denetlendi: 9929–9969 arasında **0 adapter**, I0.7 temiz) |
+| **4** | Kaldıraç hakkı | **2**, ve ⭐ **tanım değişti:** yalnız **tabanı geçersiz kılan** (fizik/sabit) değişiklikler sayılır. **Alet onarımı bedava** — bilimi değiştirmiyor, aleti çalıştırıyor |
+| **5** | DR brief #14 | ✅ **evet**, D-175 §7'nin tek sorusuyla (ratcheting'in yayımlanmış ampirik standardı) |
+
+⚠️ **Karar 4'ün gerekçesi Yasin'in itirazıyla değişti** — *"neden kendimizi
+araştırmayı tamamlayabilecekken kısıtlayalım"*. Haklı olduğu yer: eski taslak
+**iki farklı şeyi tek sayıda topluyordu**. Bulgu 2/3/5'in onarımları
+(resume · birleştirici · I4.2 kilidi) hiçbir sayıyı sıfırlamıyor ⇒ hak
+harcamaları için sebep yok. **Sınırın kalma gerekçesi tek cümlede:** karmaşık
+bir sistemde *"kırık bir şey"* her zaman bulunur, dolayısıyla *"bir kaldıraç
+daha"*nın kendi içinde durma noktası yoktur — sayı araştırmayı kısıtlamak
+için değil, **döngünün çıkışı olsun** diye var (C2'den bu yana **50 karar
+kaydı**, hepsi ön-koşul, hiçbiri hipotez).
+
+---
+
+### 5. ⚠️ Bu kaydın sınırları
+
+- **Üçüncü kolun süresi ÖLÇÜLMEDİ** — +%35…+%50 bandı bir tahmindir, dayanağı
+  *"`null` eğitim yapmıyor, çıkarım payı kadar sürer"*. İlk gecede `t` okunur.
+- **G=6'nın süresi de tahmindir** (×1.55), dayanağı nesil başına olay sayısı
+  (kol başına 178.3 · 204.0 · 208.7 · 215.5) ve gen5/gen6 için düzleşme
+  varsayımı. ⭐ Vekil doğrulandı: gen1 payı %22.1 × 70 dk = **15.5 dk**,
+  D-174'ün ölçtüğü tek sayı **14 dk**.
+- **Bulgu 5'in "maruziyet dar" sonucu bir grep taramasıdır**, koşum
+  ölçümü değil. Düzeltme yine de yapılır (bedeli sıfır).
+- **Hiçbir sabit değişmedi, hiçbir kod değişmedi** bu kayıtta.
+
+### 6. Sıradaki iş — ⛔ kilitten önce, hepsi GPU'suz
+
+| # | iş | bitti sayılır |
+|---|---|---|
+| **B1** | **I4.2 kilidi** — `_lock_seeds` nesil döngüsünün içine | kod + test + **mutasyon kontrolü** (K5: md5 + `__pycache__` silinmiş) |
+| **B2** | **Resume** — checkpoint okunup tamamlanmış kollar atlanır | kesilip devam ettirilen koşum, digest'ler birebir |
+| **B3** | **Birleştirici** — `analyze_population_run.py` çok dosya alsın | K2: testte **en az iki tohum**, iki dosya |
+| **B4** | **Kanal 1 kararı** (kuyruk 3.0f) — kaldıraç hakkı 2, biri buraya aday | D-kaydında seçilen şık + reddedilenler |
+| **B5** | Adapter temizliği (~9.3 GB) · DR #14 brief'i | — |
+| **C** | Ön-kayıt taslağının dört kusuru (D-145) | — |
+| **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md` | commit hash + §12 deseni |
+
+⛔ **B1–B3 kilitten önce yapılmak zorunda** — üçü de koşum yolunu değiştiriyor.
