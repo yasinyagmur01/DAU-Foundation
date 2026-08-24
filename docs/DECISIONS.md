@@ -14271,3 +14271,115 @@ her tohumda ayrışıyor, kriz kanalı canlı, tohum kullanılabilirliği 3/3.
 aritmetikle çıkıyor.
 ⏸ **Kapanmamış:** popülasyon yolunda konsolidasyon (D-172 §4) · `k`'nin
 tek değerliliği · `I4.2`.
+
+---
+
+## D-174 · 2026-08-24 · 🔢 **DURMA KURALININ ARİTMETİĞİ KURULDU** — ⛔ ama kuralın kendi ön-taahhüt şartı **kaçtı**, ve bu ilan ediliyor
+
+**Yetki:** Yasin, 2026-08-24: *"ne yapılacaksa yapabilirsin"*.
+⛔ **Üç sayının ilanı bu kayıtta YAPILMIYOR** — kuyruk 2.2-DURMA onları
+açıkça Yasin'e bırakıyor (D-007). Bu kayıt yalnız **aritmetiği** kuruyor.
+
+---
+
+### 1. ⛔ ÖNCE: kuralın kendi şartı kaçtı
+
+Kuyruk 2.2-DURMA'nın *bitti sayılır* maddesi şöyle yazıyordu:
+
+> *"üç sayı bir D-kaydında ilan edilmiş, ve kayıt **D-173'ten önce** commit
+> edilmiş olacak — sonra yazılırsa kural değil, gerekçelendirme olur."*
+
+| olay | zaman |
+|---|---|
+| taslak commit'i (`af27e29`) | 24.08 **14:17** |
+| **D-173** (pilotun okuması, `9cceac3`) | 24.08 **~20:05** |
+| bu kayıt | 24.08 **20:2x** |
+
+⇒ **Şart karşılanmadı.** İlan, okumadan **sonra** yapılacak.
+
+**Bulaşmanın tam yeri, abartmadan:**
+
+| sayı | okumadan etkilenir mi |
+|---|---|
+| **kaldıraç hakkı** (öneri 1) | ❌ hayır — taslakta **14:17'de** yazılıydı, okumadan önce |
+| **`G`** (öneri 4) | ❌ hayır — **D-161**'de ölçümle kararlaştırılmıştı |
+| ⚠️ **`T_max`** | ⭐ **EVET** — `t` ve `q` artık biliniyor, yani `T_max` seçmek fiilen **`N_eff` seçmektir** |
+
+⇒ **Sınır olarak ilan ediliyor:** `T_max`'ın ön-taahhüt niteliği **zayıf**.
+⚠️ Hafifletici olan ve uydurma olmayan şey: kuralın kendisi *"MDE bir kapı
+değil, bir **ilandır**"* diyor, ve **D-052 zaten aynı usulle** çalıştı
+(`N = 40` **bütçeden**, MDE **raporlandı**). ⇒ Bu bir hipotez testi ayarı
+değil, **kaynak planlaması**. Ama şart yine de kaçtı ve **kayda geçiyor**.
+
+### 2. Alet — D-052'nin makinesi, yeniden yazılmadı (§2.8)
+
+Eşleştirilmiş **Wilcoxon**, α = 0.05 çift yönlü, güç 0.80; non-central `t`
+üzerinden, `ARE = 3/π` düzeltmesiyle (D-052 §"MDE'ler yeniden hesaplandı").
+
+**Doğrulama — D-052'nin yayımladığı sayılara karşı:**
+
+| N | t-testi (D-052) | bu alet | Wilcoxon (D-052) | bu alet |
+|---|---|---|---|---|
+| 32 | 0.511 | **0.511** | 0.524 | **0.523** |
+| 40 | 0.454 | **0.454** | 0.465 | **0.465** |
+
+⚠️ **İlk denemem yanlış tablo üretti ve atıldı.** `scipy.stats.nct` büyük
+`ncp`'de `NaN` veriyor; onu `0.0` saymıştım ⇒ güç fonksiyonu sahte biçimde
+düşüyor ⇒ çözücü **sahte kök** buluyordu (MDE'ler monoton değildi: 17.9,
+19.2, 16.4, 7.8, 0.68…). ⇒ `NaN` → `1.0` ve ızgara üzerinde ikili arama.
+**Monotonluk artık açıkça kontrol ediliyor.**
+
+### 3. Girdiler — D-173'te ölçüldü
+
+```
+q = ΔCov'ün tanımlı olduğu tohum oranı = 3/3 = 1.00
+t = tohum başına süre                  = 2 sa 20 dk   (G = 4, iki kol)
+N_eff = floor(q × T_max / t)
+```
+
+### 4. Bütçe → duyarlılık tablosu
+
+| `T_max` | ≈ gün | `N_eff` | **MDE (`d_z`)** | not |
+|---|---|---|---|---|
+| 14 sa | 0.6 | 6 | 1.468 | B2'nin çıpası 13.3 sa idi |
+| 23 sa | 1.0 | 9 | 1.092 | |
+| 35 sa | 1.5 | 15 | 0.796 | |
+| **47 sa** | **2.0** | **20** | **0.676** | ⭐ MDE ilk kez 0.7'nin altında |
+| 70 sa | 2.9 | 30 | 0.542 | |
+| 93 sa | 3.9 | 39 | 0.471 | ≈ D-052'nin `N = 40` duyarlılığı |
+
+⚠️ **Azalan getiri ölçüldü:** 47 → 70 sa (**+23 sa**) MDE'yi **0.124**
+iyileştiriyor; 70 → 93 sa (**+23 sa**) yalnız **0.071**.
+
+⛔ **Claude Code bir değer seçmiyor.** Bu bir GPU/zaman taahhüdü ve D-007
+onu Yasin'e bırakıyor.
+
+### 5. ⭐ `G` sorusu **kapandı: G = 4 baskın**
+
+`G`, hem `q`'yu hem `t`'yi belirlediği için tek başına seçilemez. İkisi de
+**bu koşumdan** okundu:
+
+| | `q` | `t` |
+|---|---|---|
+| **G = 4** | **1.00** (3/3) | 2 sa 20 dk |
+| G = 3 *(yalnız gen2→gen3 okunur, D-156/B)* | **0.67** (s9927 iki kolda da `max_z_variance = 0`) | 1 sa 45 dk |
+
+| `T_max` | G = 4 | G = 3 |
+|---|---|---|
+| 35 sa | N=15 · **0.796** | N=13 · 0.866 |
+| 47 sa | N=20 · **0.676** | N=17 · 0.741 |
+| 70 sa | N=30 · **0.542** | N=26 · 0.585 |
+| 93 sa | N=39 · **0.471** | N=35 · 0.499 |
+
+⇒ **G = 4 her bütçede daha duyarlı.** G = 3'ün tohum başına ucuzluğu,
+`q`'daki kaybı **kapatmıyor**. ⇒ **D-161'in `G = 4` kararı doğrulandı**,
+ve bu bir tercih değil **aritmetik**.
+
+### 6. Ne kaldı
+
+⛔ **Tek eksik `T_max`** — ve o Yasin'in (D-007). Diğer iki sayı zaten
+taslakta önerilmişti (kaldıraç hakkı **1**, `G` = **4**) ve §5 ikincisini
+ölçümle doğruladı.
+
+⇒ `T_max` söylendiği an `N_eff` ve MDE **aritmetikle** çıkıyor, kayıt
+yazılıyor, kuyruk **3.1 doğrulayıcı koşum**a geçiyor.
