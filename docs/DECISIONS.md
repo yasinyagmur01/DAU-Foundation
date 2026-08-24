@@ -15177,3 +15177,81 @@ satırına 🔒 + commit hash yazılır. ⛔ **Bu Yasin'in kararı**, ve tek at�
 - §4.1 bir **çerçeve** kararıdır; `ΔP_active`'in gerçekten reddedip
   reddedemeyeceği **koşum sonrası** belli olur.
 - L9 kapısı **yalnız `analyze_population_run`'ı** kapatıyor.
+
+---
+
+## D-181 · 2026-08-24 · ⛔⛔ **KİLİT ÖNCESİ DUMAN TESTİ: birleştirici HER parçalı koşumu reddediyordu** — ve birim testi bunu göremezdi
+
+**Bağlam:** Yasin *"kilitle eğer runı bozucak bir şey kalmadıysa"* dedi. ⇒
+Kilitten önce, gerçek komut zinciri **mock ile uçtan uca** koşuldu (GPU yok,
+adapter yok, mock tohumları **9305–9310** — 9929+ bloğu temiz kaldı).
+
+---
+
+### 1. ⛔⛔ Bulunan kusur — 70 saatin **sonunda** ortaya çıkardı
+
+İki mock gece koşuldu, sonra birleştirildi:
+
+```
+ValueError: night2.json was produced by a different instrument or design
+than night1.json (['tool_identity'] differ)
+```
+
+⇒ **B3'ün birleştiricisi, aynı çalışmanın iki meşru gecesini reddediyordu.**
+Ölçüldü (tahmin edilmedi) — gece gece **tasarım gereği** değişen alanlar:
+
+| alan | gece 1 | gece 2 |
+|---|---|---|
+| `tool_identity.argv` | (dışlanmıştı ✅) | |
+| `tool_identity.seeds.{n,start,end,list}` | `[9305, 9306]` | `[9307, 9308]` |
+| `tool_identity.sampling.seed_env` | `9305` | `9307` |
+
+**Düzeltme:** dışlanan alan sayısı **2 → 4**. ⚠️ **`sampling` bloğunun tamamı
+değil, yalnız `seed_env`** — `do_sample`, `temperature`, `max_new_tokens`
+modelin **ne yaptığını** belirliyor ve eşleşmek zorunda. (Bunun kendi testi
+yazıldı: `do_sample` farkı hâlâ **reddediliyor**.)
+
+⚠️ **`_resume_fingerprint` (B2) etkilenmedi ve bilerek değiştirilmedi:**
+resume aynı tohumlarla koşar ⇒ bu alanlar zaten aynı; farklıysa **reddetmek
+doğrudur**.
+
+### 2. ⭐ Asıl ders — birim testi neden göremedi
+
+`test_two_nights_merge_into_one_study` **geçiyordu**, çünkü fixture'ında
+**`tool_identity` hiç yoktu.** Karşılaştırılan alan **fixture'da mevcut
+değildi** ⇒ test, gerçekte her parçalı koşumu reddeden bir kontrole karşı
+boş yere yeşildi.
+
+⇒ **K2'nin bir üst basamağı, ve kayda geçiyor:**
+
+> **K2 bir boyutta *iki farklı değer* ister. Bu vaka bir öncesini gösterdi:
+> karşılaştırılan alan fixture'da ÖNCE VAR OLMALI. Yok olan bir alan, testte
+> "eşit" görünür.**
+
+Fixture gerçeğe yaklaştırıldı (gece gece değişen üç alanı **taşıyor**) ve
+**önce kusuru gösterdi** (5 test kırıldı), sonra düzeltme yeşile çevirdi.
+
+**K5:** 2 mutasyon (`seeds` dışlanmasın · `seed_env` dışlanmasın), ikisi de
+yakalandı. md5 `092339ce…` birebir.
+
+### 3. ✅ Duman testinin doğruladıkları — gerçek komut zinciri
+
+| kontrol | sonuç |
+|---|---|
+| `--arms lived shuffle null` · `--n-generations 4` | ✅ üç kol, 6 kol-tohum/gece |
+| ⭐ **B1 canlıda** | ✅ **`I4.2 = True`** (pilotta 6/6 hücrede ayrışıyordu) |
+| ⭐ **B2 canlıda** | ✅ koşum 60 sn'de **öldürüldü** → `--resume` → **3 bitmiş kol korundu**, **yarım kalan kol (1 nesil, RNG defteri yok) yeniden koşuldu** → `complete: true`, 6 kol, partial **silindi** |
+| ⭐ **B3 canlıda** | ✅ **üç gece tek çalışma** olarak okundu (6 tohum), dosya başına defter basıldı |
+| ⭐ **D-178 canlıda** | ✅ `I5.1 = None` (*"değerlendirilmedi"*), `False` değil |
+| ⭐ **D-180 canlıda** | ✅ `pre-registration: 📝 NOT LOCKED — levels 1-3 WITHHELD (L9)` |
+
+**Suite: 667 passed.**
+
+### 4. ⚠️ Sınırlar
+
+- Duman testi **mock LLM** ile koşuldu ⇒ **eğitim yolu (DPO) hiç çalışmadı**.
+  Doğrulanan şey **orkestrasyon**, öğrenme değil.
+- Süre ölçümü değil: mock koşumun süresi gerçek koşum hakkında **hiçbir şey**
+  söylemez.
+- `I5.5 = False` ve `run_quality = flagged` **stub'ın kendi özelliği**
+  (`STUB_EXPECTED_FLAGS` deseni), koşum hakkında bir şey değil.

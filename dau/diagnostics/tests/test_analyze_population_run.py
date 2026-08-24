@@ -925,10 +925,37 @@ def test_the_one_sided_warning_reaches_the_report(monkeypatch) -> None:
 
 
 def _night(seeds: tuple[int, ...], **overrides: Any) -> dict[str, Any]:
+    """One night's result file — WITH the tool_identity a real run writes.
+
+    ⛔ The first version of this fixture had no `tool_identity` at all, so
+    `test_two_nights_merge_into_one_study` passed against a comparability check
+    that in reality refused every partitioned run. A mock end-to-end smoke
+    caught it; this fixture did not, because the field under test was missing
+    from it. K2's lesson one level up: the dimension being compared has to be
+    PRESENT in the fixture, not just have two values.
+
+    The three fields below are the ones a real run varies night to night, and
+    they are here precisely so a fingerprint that forgets to exclude them
+    fails this test instead of a 70-hour run.
+    """
+
     arms: list[dict[str, Any]] = []
     for seed in seeds:
         arms.extend(_three_arms(seed=seed))
-    return _run(arms, seeds=list(seeds), complete=True, **overrides)
+    identity = {
+        "model_id": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        "dpo": {"beta": 0.1, "learning_rate": 1e-06},
+        "lora": {"rank": 8, "adapter": {"n_agent_dirs": 1400 + len(seeds)}},
+        # ⚠ These three differ BY DESIGN between nights of one study.
+        "argv": ["run.py", "--seeds", *[str(s) for s in seeds]],
+        "sampling": {"do_sample": False, "max_new_tokens": 64,
+                     "seed_env": str(seeds[0])},
+        "seeds": {"n": len(seeds), "start": seeds[0], "end": seeds[-1],
+                  "list": list(seeds)},
+    }
+    run = _run(arms, seeds=list(seeds), complete=True, tool_identity=identity)
+    run.update(overrides)
+    return run
 
 
 def test_two_nights_merge_into_one_study(tmp_path) -> None:
@@ -1191,3 +1218,24 @@ def test_the_default_asks_the_real_pre_registration(tmp_path) -> None:
 
     assert calls, "format_report never asked whether the pre-registration is locked"
     assert mod.L9_REFUSAL in report
+
+
+def test_a_real_sampling_change_still_refuses_the_merge() -> None:
+    """⚠ The exclusion is narrow ON PURPOSE (D-181).
+
+    `sampling.seed_env` is dropped because it is the invocation's first seed.
+    The rest of `sampling` decides what the model DOES, so a night run greedy
+    and a night run sampled are two experiments — and dropping the whole block
+    to make the smoke pass would have hidden exactly that.
+    """
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    first = _night((9901,))
+    second = _night((9902,))
+    second["tool_identity"]["sampling"]["do_sample"] = True
+
+    with pytest.raises(ValueError, match="different instrument or design"):
+        merge_runs([first, second], [Path("a.json"), Path("b.json")])

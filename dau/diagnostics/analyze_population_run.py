@@ -193,18 +193,30 @@ def load_run(path: Path) -> dict[str, Any]:
 def _comparability_fingerprint(run: dict[str, Any]) -> dict[str, Any]:
     """The part of a run that decides whether two files may be read together.
 
-    Two fields are dropped, and neither is dropped for convenience:
+    ⛔ FOUR fields are dropped, and the list was not guessed — it is what a
+    mock end-to-end smoke MEASURED to differ between two legitimate nights of
+    one study (D-181). The first version dropped two, and refused every
+    partitioned run; the unit test missed it because its fixture had no
+    ``tool_identity`` at all.
 
-    * ``tool_identity.lora.adapter`` is a census of the adapter directory,
-      which every run adds to — so two nights of the same experiment differ
-      here by construction.
-    * ``tool_identity.argv`` carries the seed list and the output path, which
-      are exactly what a partitioned run varies on purpose.
+    * ``lora.adapter`` — a census of the adapter directory, which every run
+      adds to, so two nights differ here by construction.
+    * ``argv`` — carries the seed list and the output path.
+    * ``seeds`` — the per-run seed block (``n``/``start``/``end``/``list``).
+      This IS the thing a partitioned run varies on purpose.
+    * ``sampling.seed_env`` — set by ``_lock_seeds`` to the first seed of the
+      invocation. ⚠ Only this key: the rest of ``sampling`` (greedy or not,
+      temperature, ``max_new_tokens``) still has to match, because those change
+      what the model does.
 
     Everything else is compared verbatim: model, quantization, DPO settings,
-    metabolism, fitness, endpoints, sampling, reproduction rule, versions,
-    N, G, events. Two files that disagree on any of those are two experiments,
-    and averaging across them would be the reporting drift §2.8 keeps catching.
+    metabolism, fitness, endpoints, reproduction rule, versions, N, G, events.
+    Two files that disagree on any of those are two experiments, and averaging
+    across them would be the reporting drift §2.8 keeps catching.
+
+    ⚠ Seed IDENTITY is not lost by dropping the block: overlap is checked
+    separately, against the run-level ``seeds`` key, and that check is what
+    stops the same seed being counted twice.
     """
 
     keep = {
@@ -216,9 +228,13 @@ def _comparability_fingerprint(run: dict[str, Any]) -> dict[str, Any]:
     identity = fingerprint.get("tool_identity")
     if isinstance(identity, dict):
         identity.pop("argv", None)
+        identity.pop("seeds", None)
         lora = identity.get("lora")
         if isinstance(lora, dict):
             lora.pop("adapter", None)
+        sampling = identity.get("sampling")
+        if isinstance(sampling, dict):
+            sampling.pop("seed_env", None)
     return fingerprint
 
 
