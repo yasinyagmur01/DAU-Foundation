@@ -58,6 +58,12 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
   `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ artık
   **her çekiliş** tavanı olay 1'de bağlıyor. ❌ Katman 1 pilotu ve talep
   ölçümü **taban olmaktan çıktı**.
+- ⛔⛔ **KOŞUMDAN ÖNCE İLAN EDİLMESİ GEREKEN: DURMA KURALI** — taslak hazır,
+  kuyruk **2.2-DURMA**. Üç sayı senden: **`T_max`** (GPU bütçesi) · **kalan
+  kaldıraç hakkı** (öneri **1**) · **`G`**. ⭐ En eski borç (*"en küçük anlamlı
+  etki"*) burada kapanıyor: ilan edilen şey bir etki değil, bir **bütçe**
+  (D-052 + D-140 zinciri zaten tam). ⚠️ **D-173'ten sonra yazılırsa kural
+  değil, gerekçelendirme olur.**
 - **KOŞUM BİTİNCE: D-173** yazılır (Q1/Q2/Q3 okuması + §5'in kriz tahmini).
   ⭐ **Okunabilirliği önceden denetlendi (D-172):** beş kalemin **dördü**
   okunuyor, **`I5.1` bilgisiz çıkacak** — sebebi aşağıda.

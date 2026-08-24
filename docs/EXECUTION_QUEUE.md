@@ -404,6 +404,91 @@ değişirse süre de tanımlılık da değişir.
 
 ---
 
+### ⛔⛔ 2.2-DURMA · **DURMA KURALI — taslak hazır, ilan SENİN** *(D-007)*
+
+⚠️ **D-172 turunda, koşum SÜRERKEN ve okumadan ÖNCE yazıldı.** Sonra
+yazılsaydı eşikleri çıktıya göre seçmiş olurdum (§2.7 / L9). Bu maddenin
+varlık sebebi tam olarak budur.
+
+#### Teşhis — döngünün çıkışı neden yok
+
+C2'den (D-123) bugüne **50 karar kaydı**, ve **her koşum bir ÖN-KOŞULU
+sınadı, hiçbiri hipotezi sınamadı.** Sebep bir kusur değil, bir **eksik**:
+kimse *"evren ne zaman yeterince iyi"* sorusunu **sayıya bağlamadı**.
+⇒ Bağlanmadığı sürece her sonuç *"henüz değil"* diye okunabilir ve
+*"bir kaldıraç daha"* her zaman durmaktan ucuz görünür.
+
+#### ⭐ Zincir zaten tam — yalnız kimse yazmamış
+
+| halka | nereden geliyor |
+|---|---|
+| SESOI **ilan edilmiyor** | DR #1, §G.3'te **benimsendi** (Lakens 2022) |
+| yerine **bütçe-kısıtlı `N` + duyarlılık analizi** | aynı yer; **D-052 bunu zaten uyguladı** (N = 40 **bütçeden**, 13.3 sa) |
+| kovaryans için de geçerli mi | ✅ **D-140 / DR #12 Q1+Q5:** `Cov` → tohum başına `ΔCov` skaleri → `d_z` ⇒ **D-052'nin makinesi aynen çalışıyor** |
+| tekrarlama birimi | **tohum** (Lazic 2010, D-140) |
+| çıpa | **N = 40 → MDE `d_z` = 0.465** (Wilcoxon, çift yönlü, α = 0.05, güç 0.80) |
+
+⇒ **En eski borç (*"en küçük anlamlı etki"*, DR #1'den beri açık) burada
+kapanıyor:** ilan edilecek şey bir etki değil, bir **bütçe**.
+
+#### Kural — aritmetiği
+
+```
+q       = ΔCov'ün TANIMLI olduğu tohum oranı        ← pilottan okunur
+t       = tohum başına süre                          ← pilottan okunur
+T_max   = doğrulayıcı koşum için GPU bütçesi         ← ⛔ SENİN İLAN EDECEĞİN
+N_eff   = floor(q × T_max / t)                       ← kullanılabilir tohum
+MDE     = Wilcoxon(N_eff, α=0.05, güç=0.80)          ← çalışmanın DUYARLILIĞI
+```
+
+⛔ **MDE bir kapı DEĞİL, bir ilandır.** Bütçe-kısıtlı çerçevede sonuç *"MDE
+çok büyük, durduk"* diye okunmaz; **ne kadar duyarlı olduğumuz raporlanır**.
+Bu, D-052'nin ve DR #1'in zaten benimsenmiş usulü.
+
+#### Üç dal — ve **kaldıraç sayısı sınırlı**
+
+| dal | koşul | sonuç |
+|---|---|---|
+| **GEÇ** | `q > 0` **ve** `N_eff ≥ 2` | ⇒ **3.1 doğrulayıcı koşum.** MDE ne çıkarsa ilan edilir |
+| **DUR ve RAPORLA** ⭐ | `q = 0` — uç nokta hiçbir tohumda tanımlı değil | ⇒ evren **olduğu gibi kilitlenir**, sonuç **sınırlarıyla** raporlanır. ⚠️ **Bu meşru bir bilimsel çıktıdır** (Değiştirilemez Süreç Kuralı) ve bugüne kadar kuyrukta **adı bile yoktu** |
+| **BİR KALDIRAÇ DAHA** | yalnız: (a) belirli bir mekanizmanın **kırık olduğu ölçülmüşse**, (b) düzeltmenin **türetmesi** varsa, (c) ⛔ **ve bu hakkın kalan sayısı > 0** | ⇒ tarama koşumu |
+
+⛔⛔ **Kaldıraç bütçesi — kuralı KURAL yapan madde.** Kalan hak
+**ilan edilir ve azalır**; sıfırlandığında yalnız **GEÇ** ya da
+**DUR ve RAPORLA** kalır. ⚠️ Sayıyı sen koyarsın. **Öneri: 1.**
+Gerekçe: D-162/D-163 (Katman 1) ve D-171 (Katman 1b) **iki kaldıraç**
+harcadı; üçüncü bir hak, harcanmış ikisinin bedelini (sayıların üç kez
+sıfırlanması) dördüncüye taşımaya izin verir.
+
+#### ⭐ Tarama ≠ deney — ölçülen bedel
+
+⛔ **Kaldıraç sınamak için deney fiyatı ödedik.** D-171'in Q1 ve Q2'si
+**gen1** nicelikleri, kriz ve ilk Price geçişi **gen2** — hiçbiri gen3/gen4
+istemiyor. Ölçüldü (2026-08-24, `.partial.json`): gen1 **~14 dk**
+(12:57 → 13:11, eğitim dahil).
+
+| iş | doğru şekil | ölçülen süre |
+|---|---|---|
+| **fizik kaldıracı taraması** | 3 tohum · **G = 2** · **tek kol** | **2 sa 9 dk** (D-167/D-168'in şekli) |
+| **deney** (Price birikimi) | 3 tohum · G = 4 · iki kol | 8 sa 3 dk (D-164) |
+
+⇒ **Bundan sonra hiçbir fizik kaldıracı G = 4 / iki kolla sınanmaz.**
+
+#### ⛔ İlan etmen gereken üç sayı
+
+1. **`T_max`** — doğrulayıcı koşum için GPU bütçesi (saat). ⚠️ Çıpa: B2
+   **13.3 sa** ile koştu; Katman 1 pilotu tohum başına **2 sa 41 dk**.
+2. **Kalan kaldıraç hakkı** — öneri **1**.
+3. **`G`** — `G − 2` kullanılabilir geçiş verdiği için (D-156/B yolu)
+   doğrudan `q`'yu ve süreyi belirliyor. ⚠️ D-161 **G = 4** dedi; onaylanacak
+   ya da bütçeye göre değiştirilecek.
+
+**Bitti sayılır:** üç sayı bir D-kaydında **ilan edilmiş**, ve kayıt
+**D-173'ten önce** commit edilmiş olacak — sonra yazılırsa kural değil,
+gerekçelendirme olur.
+
+---
+
 ## ✅ 2.4b · **KARAR VERİLDİ: B yolu** — **D-156** (Yasin: *"önerdiğin şekilde devam et"*)
 ✅ **B: kurucu nesil ısınma neslidir**; Price yalnız ebeveyni **gen ≥ 2** olan
 geçişlerden okunur ⇒ kullanılabilir geçiş **G − 2**. ⛔ **A elenmedi,
