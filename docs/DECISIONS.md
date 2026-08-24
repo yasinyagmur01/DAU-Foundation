@@ -13951,3 +13951,169 @@ büyüklüğü · `ΔP_active`.
 `NICHE_POOL_FRACTION_RANGE`'in **tabanı (0.40)** · `metabolic_gain` ·
 landmark · travma eşiği · fitness bantları · prompt · adapter yolu ·
 Katman 2/3/4 · diğer üç niş aralığı.
+
+---
+
+## D-172 · 2026-08-24 · 🔍 **OKUNABİLİRLİK DENETİMİ (koşum sürerken, SALT-OKUNUR)** — ⛔ ve `I5.1` popülasyon yolunda **yapı gereği sıfır** çıktı
+
+**Yetki:** Yasin, 2026-08-24: *"tüm yapılabilir işleri yap"* — Katman 1b pilotu
+koşarken yapılabilecek işler sorulmuş, sınır çizilmiş ve onaylanmıştı.
+
+⚠️ **Bu kayıt koşum SÜRERKEN yazıldı. Tek satır `.py` değişmedi, test suite
+koşulmadı, `git checkout` yapılmadı** (§1.8). Kaynak: koşan sürecin kendi
+yazdığı `.partial.json` + `grep`.
+
+---
+
+### 1. Neden bu denetim — D-164'ün 8 saatlik dersi
+
+D-164'te ön-taahhüdün **P3'ünün iki maddesi** (`cooperate` ve `null` kolu)
+koşum bittikten **sonra** *"okunamadı"* çıktı. Bedeli 8 saatti.
+
+⇒ **Sorulmamış soru:** *ön-taahhüde yazdığım niceliğin, koşumun ürettiği
+artefaktta bir KARŞILIĞI var mı?* K1(c) *"mevcut veriden dejenere olmadığını
+göster"* diyor; bu onun kardeşi ve **hiç sorulmamıştı**.
+
+⭐ Ve bu tur sorulabilir, çünkü koşum `.partial.json` yazıyor (D-111) —
+tohum 9926'nın 1. nesli **13:11'de** diske düşmüştü.
+
+### 2. Koşumun durumu (ölçüldü, tahmin değil)
+
+| ne | ölçüm |
+|---|---|
+| PID 82377 | `etime` 27:17 @ 13:24 ⇒ başlangıç **2026-08-24 ~12:57** |
+| ⚠️ `CLAUDE.md` §1 ne diyordu | *"başlangıç 2026-08-22 ~17:5x"* — **yanlış** |
+| gerçek | makine 08-22 koşumunun ortasında kapandı; Yasin bugün **Cursor'dan** yeniden başlattı (uptime 1 sa 36 dk @ 13:24 ⇒ açılış ~11:48) |
+| ⚠️ 08-22 denemesi | **hiçbir çıktı bırakmadı** — `ABORTED`/`partial` dosyası yok. D-168'in `…ABORTED-1303.json` deseni bu kez işlemedi |
+| temizlik | `pop-*-s9926/9927/9928` adapter dizinlerinin **hepsi bugün 13:05+** ⇒ kalıntı yok, I0.7 temiz başladı |
+| GPU | 7289 / 8188 MiB · 87 °C · %100 ⇒ VRAM boşluğu **~900 MiB** |
+
+⛔ **Bu yüzden test suite KOŞULMADI:** torch ayıran herhangi bir test
+**koşumu** OOM'a sokabilirdi. Ayrıca `__pycache__` yazardı (K5'in tuzağı).
+
+### 3. Sonuç — D-171 §7'nin beş kalemi
+
+Kaynak: `layer1b_pilot_g4_s9926_9928.json.partial.json`, kol `lived`,
+tohum **9926**, nesil **1**, 8 ajan, 172 havuz olayı satırı.
+
+| kural | nicelik | alan | okunabilir mi |
+|---|---|---|---|
+| **Q1** | ilk eksik alma olayı | `generations[].harvest_shortfall.first_event` | ✅ **okunuyor** |
+| **Q2** | `Var(F_agent) > 0` | `generations[].agents[].f_agent` | ✅ **okunuyor** |
+| **Q3-a** | `k` dağılımı | `agents[].delta_profile.axes.primary_axis` | ✅ **okunuyor** |
+| **Q3-b** | `cooperate` histogramı | `generations[].demand.outcomes` | ✅ **okunuyor** |
+| **Q3-c** | tanımlılık oranı | `price_for_previous_transition` | ⏳ gen1'de **yapısal olarak `null`** (önceki geçiş yok) ⇒ gen2'de okunacak. Alan **mevcut** |
+| **Q3-d** | **`I5.1` verdict'i** | `invariants["I5.1"]` | ⛔ **okunacak ama BİLGİSİZ** — §4 |
+| **Q3-e** | kriz olayı sayısı | `agents[].delta_profile.crisis.n_crisis_events` | ✅ **okunuyor** |
+
+⇒ **Beş kalemin dördü sağlam.** Q3-c gen2'yi bekliyor (yapısal, kusur değil).
+**Q3-d bir kusur ve aşağıda.**
+
+### 4. ⛔⛔ BULGU — popülasyon yolunda **konsolidasyon hiç çağrılmıyor**
+
+D-170 `I5.1`'i popülasyon kapılarına bağladı ve kendi borcunu şöyle yazmıştı:
+*"`I5.1` sıfır dediğinde «konsolidasyon çalışmadı» ile «çalıştı, eşleşecek DEEP
+düğüm yoktu» ayırt edilemez."*
+
+**Zincir `grep`'le sonuna kadar okundu (§2.2) ve gerçek daha keskin çıktı:**
+
+```
+store.write_edge            ← TEK çağıran: consolidation.py:106
+  └ run_consolidation()       (consolidation.py:41)
+      └ memory_bridge.consolidate_run  (memory_bridge.py:113)
+          ├ run_cprime_multigen.py:1091      ← TEK SOY yolu
+          └ graph.py:2033                    ← ⛔ `if __name__ == "__main__":`
+                                                bloğunun İÇİNDE (graph.py:1962)
+```
+
+`run_population_experiment.py`, `run_cprime_multigen`'den yalnız
+`_count_edges · _decisions · _landmark_reading · install_mock_llm ·
+mock_llm_enabled` alıyor — **`consolidate_run` ve `_consolidate_gen1` yok**.
+Ve `graph`'ı **modül olarak** import ediyor (`graph_mod`), yani `__main__`
+bloğu **hiç çalışmıyor**.
+
+⇒ **Popülasyon koşumlarında `run_consolidation` HİÇ çağrılmıyor.**
+⇒ `write_edge` hiç çağrılmıyor ⇒ ilişki grafiği **yapı gereği boş**
+⇒ `_count_edges` **0** ⇒ `I5.1` *"PPR is inert"* der — **sistem hakkında
+değil, koşucunun kablolaması hakkında.**
+
+⚠️ **Ve bu telemetriden büyük.** `run_consolidation` yalnız kenar yazmıyor;
+**budama (`deleted_count`) ve güçlendirme (`strengthened_count`)** de onun
+işi. Popülasyon yolunda **hiçbiri olmuyor** ⇒ Ebbinghaus unutması popülasyon
+ajanlarında **çalışmıyor**.
+
+⛔ **Ad, boşluğu gizlemiş.** `run_population_experiment.py:1590` şu yorumu
+taşıyor: *"Channel 1: end-of-life consolidation for every parent"*. Çağrılan
+şey `consolidate_parents → consolidate_generation` ve o fonksiyon
+(`generation.py:364`) **yalnız aktarım paketini** kuruyor — `select_for_transfer`
++ `GenerationRecord`. **Uyku konsolidasyonuna hiç dokunmuyor.**
+⇒ **§2.8'in deseni en saf hâlinde: rapor aleti tekrar ediyor, takip etmiyor.**
+
+### 5. ⭐ TAHMİN — sayı yazılmadan önce kayda geçiyor
+
+`memory_edges` alanı **D-170'te eklendi**; tamamlanmış hiçbir popülasyon
+koşumunda **henüz yok** (D-168'in dosyasında üç kolda da `None`).
+
+> **TAHMİN:** bu koşumun **her kolunda** `memory_edges = 0` ve `I5.1 = false`,
+> detay *"memory_edges is empty in every one of the arm vaults — PPR is inert"*.
+
+⛔ **Sıfır çıkmazsa yukarıdaki zincir yanlıştır ve bu da bir bulgudur.**
+D-171 §5'in deseni: kendi tahminime kural koymak onu çürütülemez kılardı.
+
+⚠️ **Bu koşumu geçersiz KILMAZ.** Aynı kablolama C2'de, Katman 1 pilotunda ve
+talep ölçümünde de vardı ⇒ **sabit**, kollar arası bir terim değil.
+
+### 6. ⚠️ `CLAUDE.md`'de üç eskimiş madde bulundu
+
+| madde | durum |
+|---|---|
+| *"D-164: `cooperate` sayısı aletlenmemiş"* | ❌ **ESKİMİŞ.** D-166 aletledi. `demand.outcomes` hem D-168'in dosyasında hem bu koşumda **dolu**. D-171 §7 zaten *"D-166'dan beri okunabiliyor"* diyordu; §1 güncellenmemişti |
+| ⛔ **`deadlock` üçüncü bir karar sonucu** | Hiçbir belgede **geçmiyor**. Ölçüldü: bu koşum gen1 **9**, D-168 gen1 **4**, gen2 **11**. *"cooperate vs defect"* ikili anlatısı **eksik** |
+| *"D-170: konsolidasyon telemetrisi yazılmıyor"* | ✅ **doğru, ve sebebi §4'te** — alan yok çünkü **iş yapılmıyor** |
+
+### 7. Salt-okunur okunanlar *(Q3 eşiksiz ve betimleyici — D-171 §7)*
+
+⚠️ **Tek tohumun tek neslinin tek kolu.** Genelleme değil, kanıt:
+
+```
+harvest_shortfall : n_rows=172 · n_short=100 · first_event=2 · max=20.3955
+demand            : mean=8.384 · median=8.0 · p90=25.0 · max=25.0
+                    outcomes = {cooperate: 91, defect: 72, deadlock: 9}
+demand_to_landmark: n_rows=80 · mean=7.800 · {cooperate: 40, defect: 40}
+F_agent (n=8)     : var=4.4668e-4 · min=0.4981 · max=0.5741
+fitness_class     : high 1 · normal 5 · low 2
+reproduction      : f_agent_spread=0.0759 · w_variance=1.25 · w_n_distinct=4
+                    w=[2,0,1,2,0,0,3,0] · selection_measurable=TRUE
+primary_axis      : resource_load 172 · social_load 0 · uncertainty_load 0
+n_crisis_events   : 8 ajanın 8'inde de 0
+pool_ratio_end    : 0.4180 · hit_round_cap=False
+events_lived      : [21,21,22,21,21,25,21,20] · landmark 8/8
+```
+
+### 8. ⚠️ GAP TETİK KONTROLÜ (§2.1 adım 2)
+
+**GAP-10'un yeniden açılma tetiği** (D-137 §7): *"`k` ajanlar arasında
+değişkenleşirse"*. **Ölçüldü: 172/172 `resource_load` ⇒ TETİK ATEŞLENMEDİ.**
+D-164'te 192/192 idi; **Katman 1b de oynatmadı.** GAP-10 kapalı kalıyor.
+
+### 9. ⛔ OKUNMAYANLAR (L9 — D-171 §7'nin yasağı)
+
+Kovaryans değeri · işareti · kol farkı · etki büyüklüğü · `ΔP_active`
+**açılmadı**. `price_for_previous_transition` gen1'de `null` olduğu için
+**bakma fırsatı da doğmadı**; gen2'den itibaren **bakılmayacak**.
+
+### 10. K6 — bu kayıttaki kusur nereye bağlandı
+
+⛔ **§4'ün bulgusu bir KAPIYA bağlanamaz** — `I5.1` zaten var ve zaten
+raporlayacak; eksik olan **kapı değil, kablolama**. ⇒ Kuyruğa **3.0f** olarak,
+bitti-ölçütüyle yazıldı. ⚠️ **Ve düzeltmesi saf aletleme DEĞİL** — popülasyon
+yoluna `run_consolidation` eklemek **bellek budamasını açar**, yani koşumun
+davranışını değiştirir ⇒ **karar Yasin'in** (D-007, §2.7).
+
+### 11. Reddedilen alternatif
+
+*"Koşumu durdurup kabloyu şimdi düzeltelim"* — **reddedildi.** (a) 27 dakikalık
+ilerleme ve temiz bir I0.7 başlangıcı çöpe giderdi; (b) düzeltme bir **karar**
+gerektiriyor (§10) ve karar Yasin'in; (c) kablolama **bugüne kadarki her
+popülasyon koşumunda aynıydı** ⇒ bu pilot kendi tabanıyla karşılaştırılabilir
+kalıyor. ⇒ Koşum **dokunulmadan** devam ediyor.

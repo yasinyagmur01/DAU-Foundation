@@ -310,6 +310,51 @@ popülasyon çıktısına yazılmıyor ⇒ `I5.1` sıfır dediğinde *"konsolida
 adapter yığıyor (D-102) ve taban temsilin bozulup bozulmadığı **hiç ölçülmedi**.
 Fizik değişirse `H^(0)` tabanı kayar ⇒ karardan sonra.
 
+⛔ **D-172 borcu BÜYÜTTÜ ve yerini değiştirdi** ⇒ madde **3.0f** (aşağıda).
+Eksik olan telemetri değil, **kablolama**.
+
+---
+
+## ⬜ 3.0f · ⛔ **KARAR — popülasyon yoluna konsolidasyon bağlanacak mı** *(senin, D-007)*
+
+⭐ **D-172 ölçtü (salt-okunur, koşum sürerken):** popülasyon koşumlarında
+`run_consolidation` **hiç çağrılmıyor**. Zincir sonuna kadar okundu:
+
+```
+store.write_edge  ← TEK çağıran: consolidation.py:106  (run_consolidation içinde)
+run_consolidation ← memory_bridge.consolidate_run
+consolidate_run   ← run_cprime_multigen.py:1091   (TEK SOY yolu)
+                  ← graph.py:2033  ⛔ `if __name__ == "__main__":` İÇİNDE
+run_population_experiment.py: ikisini de import ETMİYOR
+```
+
+⇒ Popülasyon yolunda **ilişki grafiği yapı gereği boş** ⇒ `I5.1` her zaman
+*"PPR is inert"* der, **sistem hakkında değil kablolama hakkında**.
+⚠️ **Ve kenar yalnız yarısı:** `run_consolidation` **budama
+(`deleted_count`)** ve **güçlendirme**yi de yapıyor ⇒ **Ebbinghaus unutması
+popülasyon ajanlarında çalışmıyor.**
+
+⛔ **Ad boşluğu gizlemiş:** `run_population_experiment.py:1590` *"Channel 1:
+end-of-life consolidation"* diyor; çağrılan `consolidate_generation`
+(`generation.py:364`) **yalnız aktarım paketini** kuruyor.
+
+⛔ **Bu saf aletleme DEĞİL** — `run_consolidation` eklemek bellek budamasını
+açar, yani koşumun **davranışını** değiştirir (§2.7). Üç seçenek:
+
+| # | seçenek | bedeli |
+|---|---|---|
+| **A** | popülasyon yoluna `run_consolidation` bağla (D-031 sırası: faz-2 sonrası, transfer'den önce) | ⚠️ **fizik değişir** — sayılar dördüncü kez sıfırlanır. GAP-4 riski canlanır |
+| **B** | bağlama, **sınır ilan et**: *"popülasyon evreninde uyku konsolidasyonu yok"* + `I5.1`'i mock deseniyle **`None`** yap | ⚠️ Kanal 1'in yarısı ilan edilmiş biçimde ölü kalır |
+| **C** | yalnız telemetriyi yaz (`edges_created`/`deleted_count` = 0) | ⛔ **yetersiz** — sıfırın sebebini yazmak sıfırı açıklamıyor |
+
+**Bitti sayılır:** D-kaydında seçilen şık + gerekçesi + reddedilenler, ve
+seçim A ise **fiziğin dördüncü kez değiştiği ilan edilmiş** olarak.
+⚠️ **Koşum bitmeden yapılamaz** (§1.8: `.py` düzenleme yasak).
+
+⭐ **Önce D-172 §5'in tahmini okunur:** bu koşumda `memory_edges = 0` ve
+`I5.1 = false` bekleniyor. **Sıfır çıkmazsa zincir yanlıştır** ve bu madde
+baştan yazılır.
+
 ---
 
 ## ⛔ 3.0d · **KARAR — hangi kaldıraç** *(senin, D-007)*

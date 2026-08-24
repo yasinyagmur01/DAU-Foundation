@@ -46,16 +46,25 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-171** (sıradaki: **D-172**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-172** (sıradaki: **D-173**).
   **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
 - ⏳ **KOŞUM DÖNÜYOR:** Katman 1b pilotu (D-171) —
-  `dau_runs/layer1b_pilot_g4_s9926_9928.json`. Başlangıç **2026-08-22 ~17:5x**,
-  tahmin **~8 sa** ⚠️ (tahmin; süre tahminlerim üçte ikisinde tutmadı).
+  `dau_runs/layer1b_pilot_g4_s9926_9928.json`. ⚠️ **Başlangıç 2026-08-24
+  ~12:57** — ilk deneme (08-22) **makine kapanınca öldü** ve ⛔ **hiçbir çıktı
+  bırakmadı** (`ABORTED` dosyası yok); Yasin bugün **Cursor'dan** yeniden
+  başlattı. ✅ Temiz başladı: s9926–9928 adapter'larının hepsi bugün 13:05+.
+  ⚠️ Süre tahmini **verilmiyor** (K4) — tahminlerim üçte ikisinde tutmadı.
 - ⭐ **FİZİK ÜÇÜNCÜ KEZ DEĞİŞTİ (D-171):** `NICHE_POOL_FRACTION_RANGE`
   `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ artık
   **her çekiliş** tavanı olay 1'de bağlıyor. ❌ Katman 1 pilotu ve talep
   ölçümü **taban olmaktan çıktı**.
-- **KOŞUM BİTİNCE: D-172** yazılır (Q1/Q2/Q3 okuması + §5'in kriz tahmini).
+- **KOŞUM BİTİNCE: D-173** yazılır (Q1/Q2/Q3 okuması + §5'in kriz tahmini).
+  ⭐ **Okunabilirliği önceden denetlendi (D-172):** beş kalemin **dördü**
+  okunuyor, **`I5.1` bilgisiz çıkacak** — sebebi aşağıda.
+- ⛔ **YENİ, D-172 (koşum sürerken, salt-okunur): popülasyon yolunda
+  `run_consolidation` HİÇ çağrılmıyor.** ⇒ ilişki grafiği yapı gereği boş,
+  **Ebbinghaus budaması popülasyon ajanlarında çalışmıyor.** Karar gerektiriyor
+  ⇒ kuyruk **3.0f**. ⭐ Tahmin kayda geçti: bu koşumda `memory_edges = 0`.
 - ✅ **Talep ölçüm koşumu bitti** (D-168) — `demand_probe_g2_s9923_9925`,
   **2 sa 9 dk**, `complete`, kapı **9/10**, `I5.6` **geçti**.
 - ⛔ **SIRADAKİ İŞ: KARAR — hangi kaldıraç**, ve o **senin** (D-007).
@@ -272,7 +281,8 @@ hücreleri okunabilir (gerekçe D-156 §2).
 - ⚠️ **GAP-10 ertelendi** (D-137): spillover skaler kalıyor; `k` ajanlar
   arasında değişkenleşirse yeniden açılır. ⚠️ **Tetik D-164'te yeniden
   ölçüldü ve ateşlenmedi:** `k` **192/192 `resource_load`** — Katman 1
-  bunu oynatmadı.
+  bunu oynatmadı. ⚠️ **D-172 üçüncü kez ölçtü: 172/172 — Katman 1b de
+  oynatmadı.** GAP-10 kapalı kalıyor.
 - ⛔ **YENİ, D-164: kriz kanalı bugünkü fizikte ölçülemez (0/192)** ⇒ ön-kayıtın
   **D-070/kilit K6** uç noktası (*"S5'in ilk travması = commons krizi"*)
   **askıda**. Sabit kararı (A/B/C) bunu doğrudan etkiler.
@@ -285,18 +295,24 @@ hücreleri okunabilir (gerekçe D-156 §2).
   ⏸ **LoRA-FA/TIES** üçüncü ön-kayıt aday listesine. ⭐ **RCI alındı** ama
   **fizik kararından sonra**. Tam tablo `RECONCILIATION.md` **§V**.
 - ⏸ **YENİ, D-169: adapter diski 16 GB / 1194 dizin** — ev işi, bloke etmiyor.
-- ⏸ **YENİ, D-170: konsolidasyon telemetrisi popülasyon çıktısına yazılmıyor**
-  (`edges_created` · `deleted_count`) ⇒ `I5.1` sıfır dediğinde *"konsolidasyon
-  çalışmadı"* ile *"çalıştı, eşleşecek DEEP düğüm yoktu"* ayırt edilemez.
-- ⛔ **YENİ, D-164: `cooperate` sayısı aletlenmemiş.** Popülasyon koşumu
-  karar→sonuç dağılımını ne JSON'a ne loga yazıyor ⇒ P3'ün bir maddesi
-  okunamadı. Karar kanalına bakan her iş (sonda bataryası, Katman 3) **önce
-  bunu aletlemek zorunda**.
+- ⛔⛔ **YENİ, D-172: popülasyon yolunda uyku konsolidasyonu HİÇ çalışmıyor.**
+  D-170'in *"telemetri yazılmıyor"* borcu ölçülünce büyüdü: `write_edge`'in tek
+  çağıranı `run_consolidation`, onun popülasyon yolunda **hiç çağrısı yok**
+  (`graph.py:2033` `__main__` bloğunun içinde). ⇒ grafik yapı gereği boş,
+  **budama ve güçlendirme de olmuyor**. ⛔ Düzeltmesi **fizik değişikliği** ⇒
+  **karar senin**, kuyruk **3.0f**.
+- ~~D-164: `cooperate` aletlenmemiş~~ ✅ **KAPANMIŞ** — D-166 aletledi,
+  `demand.outcomes` alanında. D-172 iki koşumda da dolu okudu. ⚠️ Bu satır
+  bugüne kadar **yanlış duruyordu**.
+- ⚠️ **YENİ, D-172: karar sonuçları İKİ değil ÜÇ** — `cooperate` · `defect` ·
+  **`deadlock`**. Üçüncüsü hiçbir belgede geçmiyordu (bu koşum gen1 **9**,
+  D-168 gen1 **4** / gen2 **11**) ⇒ *"%X cooperate"* cümleleri **hangi paydaya
+  göre** olduğunu söylemek zorunda.
 - ⚠️ **Davranış çökük** (D-068): olayların %94–100'ünde DEFECT.
 - ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916
   (sonda-3) · 9917–9919 (tanımlılık pilotu) · 9920–9922 (Katman 1 pilotu) ·
-  **9923–9925 (talep ölçümü, D-167)** · 9305–9310 · 9399 (mock).
-  Taze blok: **9926+**.
+  **9923–9925 (talep ölçümü, D-167)** · **9926–9928 (Katman 1b pilotu,
+  D-171)** · 9305–9310 · 9399 (mock). Taze blok: **9929+**.
 - **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
