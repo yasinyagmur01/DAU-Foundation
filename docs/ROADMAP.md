@@ -32,19 +32,28 @@ karşılaştırması **KALITIMI**. Seviye 1 dolu, seviye 3 boş olabilir."*
 
 ## 2. Üç kat — hedefi nereye koyarsak maliyet ne
 
-| kat | iddia | seviye | `G` | N=20 için |
-|---|---|---|---|---|
-| **1** | *"seçilim ölçülebilir"* | 1 | 4 | **47 sa** |
-| **2** ⭐ | *"yaşanmış iz aktarılıyor, karıştırılmış aktarılmıyor"* — **AKSİYOM** | 3 | 6 | **70 sa** |
-| **3** | *"kümülatif birikim"* — başarım artıyor **ve** kontrolde artmıyor | 2+3 | 8 | 93 sa ⚠️ |
+⚠️⚠️ **BU TABLO D-176'DA DÜZELTİLDİ — aşağıdaki ilk sürüm İKİ KOL üzerinden
+hesaplanmıştı ve Kat 2 için geçersizdi.** Seviye 3 tanımı gereği **üç kol**
+(`lived ≠ shuffle ≠ null`, `analyze_population_run.py:18`); D-173 pilotu
+`--arms lived shuffle` ile koştu.
 
-⚠️ **`G = 8` şu an "ölçülmeden hayır"** — adapter sönümü uzun soyda sinyali
-seyreltebilir (D-130 §12). Önce ucuz bir ölçüm ister.
+| kat | iddia | seviye | `G` | kol | `T_max` | N | MDE |
+|---|---|---|---|---|---|---|---|
+| **1** | *"seçilim ölçülebilir"* | 1 | 4 | 2 | 47 sa | 20 | 0.676 |
+| ⭐ **2** | *"yaşanmış iz aktarılıyor, karıştırılmış aktarılmıyor"* — **AKSİYOM** | 3 | **4** | **3** | **70 sa** | **20** | **0.676** |
+| **3** | *"kümülatif birikim"* — başarım artıyor **ve** kontrolde artmıyor | 2+3 | 6 | 3 | 103 sa | 20 | 0.68 |
 
-**Claude Code'un önerisi: Kat 2, Kat 3'ün kancası aynı koşuma gömülü.**
-Gerekçe: (a) Kat 3, Kat 2 olmadan çürütülemez — iz aktarılmıyorsa *"birikiyor"*
-denemez; (b) kalan tek kaldıraç hakkı **Kanal 1'in onarımına** gitmeli;
-(c) Kat 3'ün kancası ek GPU istemiyor, yalnız `G`'yi 4 → 6 yapmayı.
+⚠️ **`G = 8` "ölçülmeden hayır"** — adapter sönümü uzun soyda sinyali
+seyreltebilir (D-130 §12).
+
+⭐ **Ve `G = 6` de Kat 2'nin şartı değil, Kat 3'ün kancasının şartı.**
+Seviye 3 bir **kol karşıtlığı** — nesil başına okunuyor, `G = 4` onu verir.
+Aynı 70 saatte `G = 6`'ya çıkmak tohum sayısını 20 → 13'e, duyarlılığı
+0.676 → **0.866**'ya düşürür (D-176 §3).
+
+**Karar (D-176, Yasin): Kat 2 · 70 sa · `G` = 4 · üç kol.** Kat 3'ün kancası
+**ertelendi** — §4'ün *"seçilim-tek-başına null modeli"* henüz yazılmadı,
+bugün ödenirse boşa gider.
 
 ---
 
@@ -121,12 +130,16 @@ durmaktan ucuz göründüğü için, sayı olmadan bu döngünün çıkışı yo
 
 ---
 
-## 8. Karar noktaları — hepsi Yasin'in (D-007)
+## 8. ✅ Karar noktaları — **İLAN EDİLDİ, D-176** (2026-08-24, Yasin)
 
-| # | karar | öneri |
+| # | karar | **ilan edilen** |
 |---|---|---|
-| 1 | **Hedef katı** | **Kat 2** (+ Kat 3 kancası) |
-| 2 | `T_max` · `G` | Kat 2 ⇒ **70 sa · G = 6** |
-| 3 | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
-| 4 | Kalan kaldıraç hakkı (**1**) nereye | **Kanal 1'in onarımı** |
-| 5 | DR brief'i | evet — **tek soru**: ratcheting'in yayımlanmış ampirik standardı |
+| 1 | **Hedef katı** | ⭐ **Kat 2** — aksiyom, seviye 3 |
+| 2 | `T_max` · `G` · kol | **70 sa · G = 4 · üç kol** ⇒ `N_eff` = 20, **MDE 0.676** |
+| 3 | Koşum şekli | **parçalı**, saate dokunulmadan, gece başına tohum mümkün olduğunca çok (I4.1 replay sabit maliyeti ~35 dk/çağrı) |
+| 4 | Kaldıraç hakkı | **2** — yalnız **tabanı geçersiz kılan** değişiklikler sayılır; **alet onarımı bedava** |
+| 5 | DR brief #14 | ✅ **evet** — tek soru: ratcheting'in yayımlanmış ampirik standardı |
+
+⛔ **Ve koşumdan önce üç alet onarımı** (D-176 §6): **I4.2 kilidi** ·
+**resume** · **çok-dosya birleştirici**. Üçü de GPU'suz, üçü de koşum yolunu
+değiştirdiği için 🔒 **kilitten sonra yapılamaz**.

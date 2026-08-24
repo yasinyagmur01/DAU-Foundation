@@ -39,13 +39,14 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-**Ön-koşul zinciri ilk kez kuruldu** (Katman 1b: tavan 24/24 hücrede bağlıyor,
-kurucular her tohumda ayrışıyor, kriz kanalı canlı) ⇒ sıradaki iş artık bir
-kod işi değil, **hedefin ne kadar yükseğe konacağı kararı** — ve o senin.
+**Ön-koşul zinciri kuruldu ve hedef ilan edildi** (D-176: **Kat 2 · 70 sa ·
+G=4 · üç kol · MDE 0.676**) ⇒ sıradaki iş **kilitten önce üç alet onarımı**
+(I4.2 kilidi · resume · birleştirici) — üçü de GPU'suz, üçü de koşum yolunu
+değiştirdiği için **kilitten sonra yapılamaz**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-175** (sıradaki: **D-176**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
   **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
@@ -61,12 +62,21 @@ kod işi değil, **hedefin ne kadar yükseğe konacağı kararı** — ve o seni
   `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ artık
   **her çekiliş** tavanı olay 1'de bağlıyor. ❌ Katman 1 pilotu ve talep
   ölçümü **taban olmaktan çıktı**.
-- ⛔⛔ **KOŞUMDAN ÖNCE İLAN EDİLMESİ GEREKEN: DURMA KURALI** — taslak hazır,
-  kuyruk **2.2-DURMA**. Üç sayı senden: **`T_max`** (GPU bütçesi) · **kalan
-  kaldıraç hakkı** (öneri **1**) · **`G`**. ⭐ En eski borç (*"en küçük anlamlı
-  etki"*) burada kapanıyor: ilan edilen şey bir etki değil, bir **bütçe**
-  (D-052 + D-140 zinciri zaten tam). ⚠️ **D-173'ten sonra yazılırsa kural
-  değil, gerekçelendirme olur.**
+- ✅⭐ **DURMA KURALI İLAN EDİLDİ (D-176):** `T_max` = **70 sa** · kaldıraç
+  hakkı = **2** (yalnız **tabanı geçersiz kılan** değişiklikler sayılır) ·
+  `G` = **4**, ve **üç kol**. ⭐ **En eski borç (*"en küçük anlamlı etki"*,
+  DR #1'den beri açık) burada kapandı:** ilan edilen şey bir etki değil bir
+  **bütçe** ⇒ `N_eff` = 20, **MDE `d_z` = 0.676**.
+- ⛔⛔ **YENİ, D-176 (koşum-öncesi denetim, salt-okunur): ÜÇ ALET KUSURU
+  KİLİTTEN ÖNCE KAPANMALI.** (1) **I4.2** — bu koşucu RNG'yi döngü başında
+  **bir kez** kilitliyor, multigen her nesilden önce ⇒ kollar gen3+'a **6/6
+  hücrede** farklı durumdan giriyor. (2) **Resume yok** — checkpoint yalnız
+  yazılıyor, okuyan kod yok ⇒ kesilen parti baştan. (3) **Birleştirici yok** —
+  analiz aracı `--results` olarak **tek dosya** alıyor ⇒ parçalı koşum
+  okunamaz. ⚠️ **Üçü de sıfır GPU.**
+- ⛔ **YENİ, D-176: Kat 2 = seviye 3 = ÜÇ kol** (`lived ≠ shuffle ≠ null`);
+  D-173 pilotu **iki kolla** koştu ⇒ yol haritasının 47/70/93 sa tablosunun
+  tamamı **iki kol üzerinden** hesaplanmıştı ve Kat 2 için geçersizdi.
 - **KOŞUM BİTİNCE: D-173** yazılır (Q1/Q2/Q3 okuması + §5'in kriz tahmini).
   ⭐ **Okunabilirliği önceden denetlendi (D-172):** beş kalemin **dördü**
   okunuyor, **`I5.1` bilgisiz çıkacak** — sebebi aşağıda.
@@ -119,29 +129,38 @@ KALITIMI."*
 (aksiyom, seviye 3) **70 sa · G=6** · Kat 3 (kümülatif) 93 sa · G=8 ⚠️
 *"ölçülmeden hayır"*.
 
-### 2. ⛔ ŞU AN BEKLEYEN — beş karar, hepsi **senin** (D-007)
+### 2. ✅ BEŞ KARAR İLAN EDİLDİ — **D-176** (2026-08-24, Yasin)
 
-| # | karar | Claude Code'un önerisi |
+| # | karar | **ilan edilen** |
 |---|---|---|
-| **1** | **Hedef katı** | **Kat 2** (+ Kat 3 kancası) |
-| **2** | `T_max` · `G` | Kat 2 ⇒ **70 sa · G = 6** ⚠️ (Kat 1 için 47 sa · G=4 onaylanmıştı; hedef değişirse bu da değişir) |
-| **3** | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
-| **4** | Kalan kaldıraç hakkı (**1**) nereye | **Kanal 1'in onarımı** |
-| **5** | DR brief'i | evet — **tek soru**: ratcheting'in yayımlanmış ampirik standardı |
+| **1** | **Hedef katı** | ⭐ **Kat 2** — aksiyom, **seviye 3** (`lived ≠ shuffle ≠ null`) |
+| **2** | `T_max` · `G` · kol | **70 sa · G = 4 · ÜÇ kol** ⇒ `N_eff` = **20** (muhafazakâr), **MDE = 0.676** |
+| **3** | Koşum şekli | **parçalı**, saate dokunulmadan, gece başına tohum **mümkün olduğunca çok**. Taze blok **9929+** (denetlendi, 0 adapter) |
+| **4** | Kaldıraç hakkı | **2** — ve ⭐ **tanım değişti:** yalnız **tabanı geçersiz kılan** değişiklikler sayılır, **alet onarımı bedava** |
+| **5** | DR brief #14 | ✅ **evet**, tek soru: ratcheting'in yayımlanmış ampirik standardı |
+
+⚠️ **Karar 2 denetim sonrası değişti** (D-176 §1): yol haritasının 70 sa · G=6
+önerisi **iki kol** üzerinden hesaplanmıştı; seviye 3 **üç kol** ister ve
+G=6'yı Kat 2 değil **Kat 3'ün kancası** istiyor ⇒ aynı parayla duyarlılık
+0.676 → 0.866'ya **düşüyordu**.
 
 ### 3. SIRADAKİ ADIMLAR — sırayla, **her birinin sonunda onay beklenir**
 
 | # | adım | GPU | bitti sayılır |
 |---|---|---|---|
-| **A** | ⛔ **Beş kararı al** (§2) | yok | Kararlar **D-176**'da ilan edilmiş |
-| **B** | **Kanal 1'in onarımı** — `run_consolidation` popülasyon yolunda çağrılmıyor (D-172 §4) | yok | Kod + test + **mutasyon kontrolü** · kısa doğrulama koşumu |
-| **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü** | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
+| ~~**A**~~ | ✅ **Beş karar** — **D-176**'da ilan edildi | yok | ✅ |
+| **B1** | ⛔ **I4.2 kilidi** — `_lock_seeds` nesil döngüsünün **içine** (D-176 §1/Bulgu 5) | yok | Kod + test + **mutasyon kontrolü** (K5) |
+| **B2** | ⛔ **Resume** — checkpoint yalnız **yazılıyor**, okuyan yok | yok | Kesilip devam ettirilen koşum, digest'ler birebir |
+| **B3** | ⛔ **Birleştirici** — analiz aracı **tek dosya** alıyor, parçalı koşum okunamaz | yok | K2: testte **iki tohum, iki dosya** |
+| **B4** | **Kanal 1 kararı** (kuyruk 3.0f) — kaldıraç hakkı **2**, biri buraya aday | yok | D-kaydında seçilen şık + reddedilenler |
+| **B5** | Adapter temizliği (**~9.3 GB**, Katman 1 öncesi) · **DR #14 brief'i** | yok | — |
+| **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü**. ⚠️ **Yeni sınır:** bütçe sansürü (gen3-4'te **5.2/8** ajan 30 olay tavanında) | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
 | **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, slotlar + alet kimliği dondurulur | yok | Commit hash + §12 deseni |
-| **E** | **Doğrulayıcı koşum** — parçalı, gecede 5 tohum | ✅ | `complete`, kapılar okundu |
+| **E** | **Doğrulayıcı koşum** — parçalı, 3 kol, G=4 | ✅ | `complete`, kapılar okundu |
 | **F** | **Analiz + sonuç sınıfı** | yok | Dört seviye raporlandı; sınıf **koşumdan önce** tanımlıydı |
 
-⛔ **A'dan önce hiçbir şey başlatılmaz.** ⚠️ **C, D'den önce gelmek
-zorunda** — kilit, kusurlar kapanmadan atılamaz.
+⛔ **B1–B3 kilitten (D) önce yapılmak zorunda** — üçü de koşum yolunu
+değiştiriyor, sonra yapılırsa ön-kayıt geçersizleşir. ⚠️ **C de D'den önce.**
 
 ### 4. Son koşum ve bugün elimizdeki taban
 

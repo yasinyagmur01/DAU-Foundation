@@ -427,7 +427,25 @@ değişirse süre de tanımlılık da değişir.
 
 ---
 
-### ⛔⛔ 2.2-DURMA · **DURMA KURALI — taslak hazır, ilan SENİN** *(D-007)*
+### ✅ 2.2-DURMA · **DURMA KURALI İLAN EDİLDİ — D-176** *(Yasin, 2026-08-24)*
+
+✅ **Üç sayı ilan edildi:** `T_max` = **70 sa** · kaldıraç hakkı = **2**
+(⭐ tanım değişti: yalnız **tabanı geçersiz kılan** değişiklikler sayılır,
+**alet onarımı bedava**) · `G` = **4**, ve **üç kol** (`lived shuffle null`).
+⇒ `N_eff` = **20** (muhafazakâr), **MDE `d_z` = 0.676**.
+⭐ **En eski borç (*"en küçük anlamlı etki"*) kapandı.**
+
+⚠️ **Koşum-öncesi denetim iki kararı değiştirdi** (D-176 §1): Kat 2 = seviye 3
+= **ÜÇ kol**, ve `G = 6` Kat 2'nin değil **Kat 3'ün kancasının** şartı.
+
+⛔ **Ve denetim üç alet kusuru buldu — kilitten önce kapanmalı:**
+**I4.2 kilidi** (kollar gen3+'a 6/6 hücrede farklı RNG durumundan giriyor) ·
+**resume yok** (checkpoint yalnız yazılıyor) · **birleştirici yok** (analiz
+aracı tek dosya alıyor). Üçü de sıfır GPU.
+
+<details><summary>özgün madde (taslak hâli)</summary>
+
+#### ⛔⛔ 2.2-DURMA · **DURMA KURALI — taslak hazır, ilan SENİN** *(D-007)*
 
 ⚠️ **D-172 turunda, koşum SÜRERKEN ve okumadan ÖNCE yazıldı.** Sonra
 yazılsaydı eşikleri çıktıya göre seçmiş olurdum (§2.7 / L9). Bu maddenin
@@ -509,6 +527,10 @@ istemiyor. Ölçüldü (2026-08-24, `.partial.json`): gen1 **~14 dk**
 **Bitti sayılır:** üç sayı bir D-kaydında **ilan edilmiş**, ve kayıt
 **D-173'ten önce** commit edilmiş olacak — sonra yazılırsa kural değil,
 gerekçelendirme olur.
+
+---
+
+</details>
 
 ---
 
