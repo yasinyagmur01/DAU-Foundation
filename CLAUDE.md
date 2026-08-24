@@ -46,14 +46,16 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-172** (sıradaki: **D-173**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-173** (sıradaki: **D-174**).
   **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
-- ⏳ **KOŞUM DÖNÜYOR:** Katman 1b pilotu (D-171) —
-  `dau_runs/layer1b_pilot_g4_s9926_9928.json`. ⚠️ **Başlangıç 2026-08-24
-  ~12:57** — ilk deneme (08-22) **makine kapanınca öldü** ve ⛔ **hiçbir çıktı
-  bırakmadı** (`ABORTED` dosyası yok); Yasin bugün **Cursor'dan** yeniden
-  başlattı. ✅ Temiz başladı: s9926–9928 adapter'larının hepsi bugün 13:05+.
-  ⚠️ Süre tahmini **verilmiyor** (K4) — tahminlerim üçte ikisinde tutmadı.
+- ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
+  `dau_runs/layer1b_pilot_g4_s9926_9928.json` · **6 sa 59 dk 11 sn**
+  (tohum başına **2 sa 20 dk**) · `complete` · çökme yok · kapı **8/11**.
+  ✅ **`I5.6` geçti: tavan 24 nesil hücresinin 24'ünde de bağladı**, 20'sinde
+  **olay 1'de**. ✅ Kurucular **her tohumda 8/8 ayrı**.
+  ⭐ **Kriz kanalı geri döndü: 1068 olay / 79 yaşam** (D-164: 0/192,
+  D-168: 0/48) ⇒ **D-070/kilit K6'nın S5 uç noktası askıdan çıktı**.
+  ⚠️ Bayraklar: `I4.2` · `I5.1` · `I5.5`.
 - ⭐ **FİZİK ÜÇÜNCÜ KEZ DEĞİŞTİ (D-171):** `NICHE_POOL_FRACTION_RANGE`
   `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ artık
   **her çekiliş** tavanı olay 1'de bağlıyor. ❌ Katman 1 pilotu ve talep

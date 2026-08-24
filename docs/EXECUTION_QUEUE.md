@@ -404,6 +404,29 @@ değişirse süre de tanımlılık da değişir.
 
 ---
 
+### ✅ 3.0f · Katman 1b pilotu — **D-173: Q1 ve Q2 ikisi de 3/3 TUTTU**
+
+`dau_runs/layer1b_pilot_g4_s9926_9928.json` · **6 sa 59 dk** (tohum başına
+**2 sa 20 dk**) · `complete` · çökme yok · kapı **8/11**.
+
+| kural | sonuç |
+|---|---|
+| **Q1** kıtlık her tohumda mı başlıyor (3/3, olay ≤ 2) | ✅ **3/3** — olay 2 · 2 · 1 |
+| **Q2** kurucular her tohumda ayrışıyor mu (3/3) | ✅ **3/3**, sekizinin sekizi de ayrı |
+| **Q3** *(eşiksiz)* | `k` **4839/4839 sabit** · defect %58.3 / cooperate %38.4 / deadlock %3.2 · tanımlılık 10/16 · `I5.1` ❌ (yapısal) |
+
+⭐ **`I5.6` geçti:** tavan **24 hücrenin 24'ünde** bağladı, 20'sinde olay 1'de.
+⭐⭐ **D-171 §5'in tahmini TUTTU — kriz kanalı geri döndü:** 1068 olay /
+79 yaşam (D-164: 0/192 · D-168: 0/48) ⇒ **D-070/kilit K6 askıdan çıktı**.
+⭐ **D-172'nin tahmini de tuttu:** altı kolda da `memory_edges = 0`.
+
+**Durma kuralının girdileri ölçüldü:** **`q` = 3/3 = 1.00** · **`t` = 2 sa 20 dk**.
+
+⏸ Kapanmamış: popülasyon yolunda konsolidasyon (D-172 §4) · `k` tek değerli ·
+`I4.2`.
+
+---
+
 ### ⛔⛔ 2.2-DURMA · **DURMA KURALI — taslak hazır, ilan SENİN** *(D-007)*
 
 ⚠️ **D-172 turunda, koşum SÜRERKEN ve okumadan ÖNCE yazıldı.** Sonra
