@@ -1,98 +1,132 @@
-# Yol Haritası — Yön 3'e (ajan-ajan etkileşimi) hızlandırılmış geçiş
+# YOL HARİTASI — DAU nereye gidiyor
 
-**2026-08-19 · D-133 · Yasin: *"Yön 3 cazip, ona geçme adımlarını hızlandıralım"***
+**2026-08-24 · D-175 · Yasin: *"nereye gidiyoruz, gözümüzü kapattık gidiyoruz gibi geliyor"***
 
----
-
-## ⭐ Stratejik çıkış noktası
-
-> **Yön 3'e gideceksek, bugünkü fizikle 30–80 saatlik doğrulayıcı koşum
-> yapmak boşa gider.** Sosyal kuplaj eklendiğinde evren değişir ve o sayılar
-> ne karşılaştırılabilir ne yeniden kullanılabilir.
-
-⇒ GPU **yalnız geçişten sağ çıkacak** şeylere harcanır.
-
-| taşınır mı | ne |
-|---|---|
-| ✅ | Uç noktanın boyut düzeltmesi (Yön 1) — yeni evrende de aynı problem |
-| ✅ | Alet: kapılar · checkpoint · estimability · pozitif kontrol · K1–K5 |
-| ✅ | Provenans denetimi yöntemi ve maliyet modeli |
-| ✅ | **C2 sonucu** — kapanmış, raporlanmış bir bölüm (evren null'ı) |
-| ❌ | Bugünkü fizikle atılacak **yeni** doğrulayıcı koşum |
+⚠️ **Bu belge baştan yazıldı.** Önceki sürüm (*"Yön 3'e hızlandırılmış geçiş"*)
+**iptal edilmiş bir hedefi** gösteriyordu — Yön 3 **D-135'te kapatıldı** ve
+belge güncellenmedi ⇒ **2026-08-19'dan 08-24'e kadar projenin yazılı varış
+noktası yoktu.** Eski sürüm `ROADMAP_v1_yon3.md.bak` olarak duruyor.
 
 ---
 
-## ⭐⭐ Yön 3 sanıldığı kadar pahalı değil — mekanizma **kodda var**
+## 1. Sonunda kurmak istediğimiz cümle
 
-| parça | durum |
-|---|---|
-| `compute_social_load(social, agent_id, opponent_id)` | ✅ **genel** — NPC'ye özel değil |
-| `record_interaction` · `compute_coordination_friction` · `compute_markov_expectation` | ✅ hepsi rastgele id alıyor |
-| **N ajan arasında hepsi-hepsiyle sosyal güncelleme** | ✅ `run_convention_pilot.py:243` — **çalışan referans uygulama** |
-| Popülasyon koşucusunun bağlantısı | ⛔ `opponent_id = OPPONENT_ID` (**tek NPC**) — değişecek tek yer |
+> **Aksiyom:** *"Bir agent'a trait veremezsin, sadece yaşam verebilirsin,
+> trait oradan çıkar."*
 
-⭐ **Eşleştirme için yeni sabit gerekmeyebilir:** havuz erişimi zaten
-**rotasyonlu** (D-104). Aynı rotasyon eşleştirmeyi de tanımlarsa **sıfır yeni
-sabit** ile sosyal kuplaj kurulur. ⚠ Doğrulanacak, varsayılmayacak.
+Bunun **ölçülebilir** hâli, aletin kendi tanımladığı dört seviyedir
+(`analyze_population_run.py` başlığı):
 
----
-
-## Fazlar
-
-### Faz 0 — GPU'suz, %100 taşınır (~2–3 sa)
-
-| # | iş | çıktı |
+| seviye | ne gösterir | iddia edilebilecek cümle |
 |---|---|---|
-| 0.1 | **Uç nokta boyutu:** dört eksenin büyüklüklerini de kaydet (argmax kazananı **yanında**, yerine değil). Saf raporlama | `delta_profile` yeni alan |
-| 0.2 | **Sosyal kablolama tasarımı:** eşleştirme rotasyondan türetilebiliyor mu — **grep + hesap**, koşum yok | evet/hayır + kaç yeni sabit |
-| 0.3 | **K1 mekanizma kontrolü** yazılı: niceliği ne üretiyor · hangi bayrak kapatır · dejenere olmadığının kanıtı | D-kaydı |
-| 0.4 | Testler: **K2** (çok-tohumlu/çok-ajanlı) · **K3** (çağrı yeri) · **K5** (md5'li mutasyon) | yeşil suite |
+| **0** | `Var(w) > 0` | ⛔ **hiçbir şey** — yalnız ön-koşul |
+| **1** | `Cov(w, z) ≠ 0` | *"seçilim yaşanmış drift'e etki etti"* |
+| **2** | terim nesiller boyu sönmüyor | *"etki birikimli"* |
+| **3** | `lived ≠ shuffle ≠ null` | ⭐ **"yaşanmış iz aktarılıyor" — AKSİYOM** |
 
-### Faz 1 — tek ucuz doğrulama koşumu (~1–2 sa GPU)
-
-**Tek soru:** *sosyal kuplaj `null` kolunu değişken yapıyor mu?*
-
-| | |
-|---|---|
-| yapılandırma | 1 tohum · N=8 · G=3 · `--lora` · **`lived` + `null`** (D-128'in dersi: zayıf kol dahil) |
-| önce | **mock prova** — birebir aynı bayraklarla, yapı doğrulaması |
-| okunacak | ⛔ **yalnız tanımlılık:** `Var(F_agent)`, `Var(z)`, hasat yayılımı — kol farkı **hesaplanmaz** |
-| karar kuralı | **koşumdan önce** yazılır (D-125 deseni) |
-
-⇒ **Bu koşum yol ayrımı:** `null` değişkenleşiyorsa Yön 3 kuruldu;
-değişkenleşmiyorsa D-131 (null betimleyici) kalıcı olur ve Yön 2'ye dönülür.
-
-### Faz 2 — üçüncü ön-kayıt (GPU'suz)
-
-Kilitlenecekler: sosyal kuplaj fiziği · uç nokta (Faz 0.1'den) · birincil
-karşıtlık · geçerlilik kriterleri · **gerçek güç hesabı** (*en küçük anlamlı
-etki* nihayet isimlendirilir — DR #1'den beri açık) · tohum sayısı.
-
-⚠ İlan edilecek sınırlar: **G=3** (DR #11'in "8 nesil" normatifi reddedildi,
-T.2) · **adapter sönümü / LoP** (D-132) · **n=1 deney, tek model**.
-
-### Faz 3 — tek pahalı koşum
-
-Nihai fizikle, Faz 2'nin verdiği tohum sayısıyla. Checkpoint sayesinde
-gözetimsiz koşar. ⚠ Maliyet **tohum başına ~2 sa** (ölçüldü, yayılım 2.3 kat).
+⛔ **Aletin kendi uyarısı, unutulmasın:** *"Price **SEÇİLİMİ** verir, kol
+karşılaştırması **KALITIMI**. Seviye 1 dolu, seviye 3 boş olabilir."*
+⇒ **Seviye 1 bitiş çizgisi değildir.**
 
 ---
 
-## ⛔ Bilerek YAPILMAYACAKLAR
+## 2. Üç kat — hedefi nereye koyarsak maliyet ne
 
-1. **Bugünkü fizikle doğrulayıcı koşum** — Yön 3'e gidiliyorsa taşınmaz.
-2. **G'yi 8'e çıkarmak** — DR'nin normatifi dayanaksız (T.2), ve adapter
-   sönümü uzun soyda sinyali **seyreltebilir** (D-130 §12). Ölçülmeden hayır.
-3. **Davranışa dokunmak** — C1/K7.
-4. **Kapasite / kriz eşiği ayarı** — D-131'de aritmetikle elendi.
+| kat | iddia | seviye | `G` | N=20 için |
+|---|---|---|---|---|
+| **1** | *"seçilim ölçülebilir"* | 1 | 4 | **47 sa** |
+| **2** ⭐ | *"yaşanmış iz aktarılıyor, karıştırılmış aktarılmıyor"* — **AKSİYOM** | 3 | 6 | **70 sa** |
+| **3** | *"kümülatif birikim"* — başarım artıyor **ve** kontrolde artmıyor | 2+3 | 8 | 93 sa ⚠️ |
+
+⚠️ **`G = 8` şu an "ölçülmeden hayır"** — adapter sönümü uzun soyda sinyali
+seyreltebilir (D-130 §12). Önce ucuz bir ölçüm ister.
+
+**Claude Code'un önerisi: Kat 2, Kat 3'ün kancası aynı koşuma gömülü.**
+Gerekçe: (a) Kat 3, Kat 2 olmadan çürütülemez — iz aktarılmıyorsa *"birikiyor"*
+denemez; (b) kalan tek kaldıraç hakkı **Kanal 1'in onarımına** gitmeli;
+(c) Kat 3'ün kancası ek GPU istemiyor, yalnız `G`'yi 4 → 6 yapmayı.
 
 ---
 
-## Karar noktaları (Yasin'in)
+## 3. ⛔ Kat 2'nin önündeki tek yapısal engel
 
-| ne zaman | karar |
+**D-172 §4:** popülasyon yolunda **`run_consolidation` hiç çağrılmıyor.**
+
+Aksiyom **iki kanal** diyor (§3, `CLAUDE.md`): sembolik kasa (Kanal 1) ve LoRA
+(Kanal 2), *"biri diğerinin yerine geçmez"*.
+
+⇒ Bugün `lived`/`shuffle` karşıtlığı **yalnız Kanal 2'nin testi**.
+⇒ **Seviye 3 — yani aksiyomun kendisi — bugünkü kablolamayla sınanamaz.**
+⚠️ Ebbinghaus unutması da popülasyon ajanlarında çalışmıyor (aynı sebep).
+
+---
+
+## 4. Kat 3'ün kancası — ölçüldü, ve tuzağı da ölçüldü
+
+Kümülatif iddia **artabilen** bir nicelik ister. Var (D-175 §4, kollar birlikte,
+L9 korunarak):
+
+| | gen1 | gen4 |
+|---|---|---|
+| ömür | 22.29 | **26.94** |
+| enerji | 0.4970 | **0.6664** |
+| `F_agent` | 0.5643 | **0.6871** |
+
+⛔ **Bu kümülatif birikim DEĞİL.** Turnuva `F_agent` üzerinden seçiyor ⇒ artış
+**tanım gereği**; ömür ve enerji onun girdileri ⇒ **döngüsel**.
+
+⭐ **Eksik olan nicelik değil, karşılaştırma modeli:** *"seçilim tek başına ne
+kadar artış öngörür, gerçekleşen ondan fazla mı?"*
+⇒ **Seçilim-tek-başına null modeli koşumdan ÖNCE ilan edilmeli.**
+
+---
+
+## 5. Bugün nerede duruyoruz
+
+| | durum |
 |---|---|
-| Faz 0 sonu | Eşleştirme rotasyondan mı türetilsin, yoksa ayrı sabit mi |
-| Faz 1 öncesi | Karar kuralı: `null`'ın *"değişkenleşti"* sayılması için eşik |
-| Faz 1 sonu | Yön 3 mi, Yön 2'ye dönüş mü |
-| Faz 2 | **En küçük anlamlı etki** — bu, DR #1'den beri açık olan ve hâlâ verilmemiş tek karar |
+| Fizik | ⭐ **Katman 1b (D-171)** — tavan **24/24 hücrede** bağlıyor, kurucular **her tohumda 8/8 ayrı**, kriz kanalı **canlı** (1068 olay) |
+| Ön-koşul zinciri | ✅ **kurulu** — `q` = 3/3, seviye 0 = 18/18 |
+| Alet | 11 kapı · checkpoint · replay · pozitif kontrol · K1–K6 |
+| Kapanmış sonuçlar | **B2 = alet null'ı** · **C2 = evren null'ı** — ikisi de raporlandı |
+| Harcanan kaldıraç | **2** (Katman 1, Katman 1b) · **kalan hak: 1** |
+| Yapılmamış | ⛔ **hipotez testinin kendisi — bir kez bile koşulmadı** |
+
+---
+
+## 6. Döngünün çıkışı — bu belgenin asıl işi
+
+⛔ **Kaldıraç bütçesi sıfırlandığında yalnız iki dal kalır:**
+
+| dal | koşul |
+|---|---|
+| **GEÇ** | `q > 0` ve `N_eff ≥ 2` ⇒ doğrulayıcı koşum, MDE ne çıkarsa **ilan edilir** |
+| **DUR ve RAPORLA** | uç nokta hiçbir tohumda tanımlı değil ⇒ evren olduğu gibi kilitlenir, sonuç **sınırlarıyla** raporlanır |
+
+⭐ **İkincisi meşru bir bilimsel çıktıdır** (Değiştirilemez Süreç Kuralı) ve
+kuyrukta uzun süre **adı bile yoktu**. *"Bir kaldıraç daha"* her zaman
+durmaktan ucuz göründüğü için, sayı olmadan bu döngünün çıkışı yoktur.
+
+---
+
+## 7. ⛔ Bilerek YAPILMAYACAKLAR
+
+1. **Davranışa dokunmak** — C1 / kilit K7, aksiyom.
+2. **Trait enjeksiyonu** — Değiştirilemez Yasak #1. ⚠️ DR #13'ün önerdiği
+   *"epigenetik trait vektörü"* buraya düşer (D-169).
+3. **Çıkarım anında aktivasyon yönlendirme** — kilit K7 zaten reddetti (D-169).
+4. **`G = 8`** — ölçülmeden hayır (D-130 §12).
+5. **Kapasite / kriz eşiği ayarı** — D-131'de aritmetikle elendi.
+6. **Sabiti sonuca bakarak seçmek** — §2.7.
+
+---
+
+## 8. Karar noktaları — hepsi Yasin'in (D-007)
+
+| # | karar | öneri |
+|---|---|---|
+| 1 | **Hedef katı** | **Kat 2** (+ Kat 3 kancası) |
+| 2 | `T_max` · `G` | Kat 2 ⇒ **70 sa · G = 6** |
+| 3 | Koşum şekli | **5 tohum × 4–6 gece**, saate dokunulmadan |
+| 4 | Kalan kaldıraç hakkı (**1**) nereye | **Kanal 1'in onarımı** |
+| 5 | DR brief'i | evet — **tek soru**: ratcheting'in yayımlanmış ampirik standardı |
