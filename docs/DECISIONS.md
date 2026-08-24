@@ -13785,3 +13785,169 @@ bekçi** sokacaktı.
 
 **Suite:** 640 → **644 passed**, 2 deselected. md5 doğrulaması +
 `no:cacheprovider` + `__pycache__` silme uygulandı (K5 / D-148).
+
+---
+
+## D-171 · 2026-08-22 · ✅ **KALDIRAÇ 0 SEÇİLDİ: `NICHE_POOL_FRACTION_RANGE` daraltılıyor** + 🔒 **K1 kontrolü ve ön-taahhüt — KODA DOKUNULMADAN ÖNCE yazıldı**
+
+**Yetki:** Yasin, 2026-08-22: *"0. önerisini baştan sona koş"*.
+
+⚠️ **Bu kayıt kod değişmeden önce commit edilmiştir** (D-160/D-162/D-167
+deseni). Sonra yazılsaydı kuralı çıktıya göre seçmiş olurdum (§2.7 / L9).
+
+---
+
+### 1. Neden bu kaldıraç
+
+**D-168 ölçtü:** Katman 1'in mekanizması **çalışıyor** — tavan 6 nesil
+hücresinin 6'sında da landmark'tan **önce** bağladı. Ama **hangi tohumu
+çektiğine bağlı**:
+
+| başlangıç oranı | 0.577 | 0.605 | 0.620 | 0.794 | 0.825 | 0.877 |
+|---|---|---|---|---|---|---|
+| ilk eksik alma | 2 | 3 | 3 | 5 | **hiç** | 9 *(ilandan)* |
+
+⇒ **Baskın değişken `r` de talep de değil, tohumun çektiği BAŞLANGIÇ NİŞİ.**
+Bu kaldıraç tam olarak o değişkene dokunuyor.
+
+### 2. ⚠️ Önce girdiler koddan doğrulandı (D-168'in dersi)
+
+İki tur üst üste eşik **doğrulanmamış bir girdiden** türetilmişti. Bu turda
+zincir `grep` ile okundu (§2.2):
+
+```
+run_protocol_c_prime.py:697   pool = POOL_MAX * rng.uniform(*NICHE_POOL_FRACTION_RANGE)
+run_population_experiment.py  shared_pasture(): pool = per_capita_stock * N
+                                                capacity = POOL_MAX * N
+⇒ başlangıç ORANI = uniform(*NICHE_POOL_FRACTION_RANGE), N'den BAĞIMSIZ
+```
+
+```
+environment.py:242  step_pool(): ÖNCE yenilenir, SONRA hasat
+⇒ tavan, yenilenmiş stoktan hesaplanır
+```
+
+### 3. Türetme — sıfır yeni serbest parametre, sıfır koşum verisi
+
+**Ölçüt:** *"bir nesil, kanonik `EXTRACTION_DEFECT` talebinin tavana **ilk
+olaydan itibaren** takıldığı bir havuzdan başlamalıdır."*
+
+```
+tavan/ajan   = EXTRACTION_LIMIT_RATIO × POOL_MAX × oran₁  = 14.25 × oran₁
+oran₁        = p·(1 + POOL_REGEN_RATE·(1 − p))          ← yenilenme önce
+DEFECT bağlar ⟺ 14.25·oran₁ < 8.0 ⟺ oran₁ < T = 0.561404
+
+REGEN·p² − (1+REGEN)·p + T = 0   ⇒   p_max = 0.523990
+```
+
+⇒ **`NICHE_POOL_FRACTION_RANGE = (0.40, 0.523990)`**
+
+**Taban `0.40` DEĞİŞMİYOR** — kodun kendi assert'i (`run_protocol_c_prime.py:247`)
+tabanın `POOL_CRISIS_THRESHOLD = 0.30`'u aşmasını zaten dayatıyor, ve D-084'ün
+*"ölçütü sağlayan en az müdahale"* ilkesi tabanı yerinde bırakmayı söylüyor.
+
+⛔ **Kodda İFADE olarak yazılacak, sayı olarak değil** (D-162 §3), ki türetme
+kaybolmasın (§2.8).
+
+### 4. ⭐ BANT BOŞ DEĞİL — aynı turda gösteriliyor (D-165'in dersi)
+
+D-165 bandın boş olmadığını **varsaymıştı** ve bir tur sonra boş çıkmıştı.
+Bu kez aralığın her noktası tek tek kontrol edildi:
+
+| `p₀` | `oran₁` | tavan | DEFECT bağlar mı |
+|---|---|---|---|
+| 0.4000 | 0.4360 | 6.213 | ✅ |
+| 0.4500 | 0.4871 | 6.942 | ✅ |
+| 0.5000 | 0.5375 | 7.659 | ✅ |
+| **0.5240** | 0.5614 | **8.000** | ✅ *(tam sınır)* |
+
+⇒ Genişlik **0.124**, ve **aralığın tamamı ölçütü sağlıyor** — üst uç bir
+seçim değil, **en kötü çekilişin garantisi**.
+
+### 5. DENGE NOKTASI (D-163'ün şartı) ve ⭐ bir TAHMİN
+
+`r` **değişmiyor** ⇒ denge de değişmiyor:
+
+```
+tavan bağladığında hasat = r·p  ⇒  denge = 1 − r/POOL_REGEN_RATE = 0.0500
+```
+
+| eşik | değer | dengenin konumu |
+|---|---|---|
+| `COLLAPSE_EPSILON` | 0.05 | denge **tam burada** (D-163'ün seçimi, miras) |
+| `POOL_CRISIS_THRESHOLD` | 0.30 | **yeni aralığın altında, dengenin üstünde** ⇒ **yol üzerinde** |
+| yeni başlangıç aralığı | 0.40 – 0.524 | krizin üstünde başlıyor |
+
+⭐ **TAHMİN (kural değil, ve bilerek eşiksiz):** havuz artık 0.40–0.524'ten
+başlayıp 0.05'e doğru gittiği için **kriz eşiği 0.30 yol üzerindedir ⇒ kriz
+kanalı ateşlenmelidir.** D-164'te **0/192**, D-168'de **0/48** idi.
+⛔ **Ateşlenmezse bu bir bulgudur ve öyle yazılır** — kendi tahminime kural
+koymak onu çürütülemez kılardı (D-162 §5'in P3 gerekçesi).
+
+### 6. K1 — mekanizma kontrolü (bağlayıcı)
+
+**(a) Ölçülen niceliği hangi mekanizma üretir**
+başlangıç nişi ≤ 0.524 → tavan olay 1'de bağlar → eksik alma → sıralı servis
+sırayı gradyana çevirir → hasat farkı → `metabolic_gain` → enerji → ömür/drift
+→ `Var(z) > 0`
+
+**(b) ⛔ Hangi bayrak bu mekanizmayı kapatır**
+
+| bayrak | etkisi | kararım |
+|---|---|---|
+| ⛔ `--mock-llm` | talepler kanned ⇒ tavanın bağlaması stub'ın özelliği olur | **KULLANILMIYOR** |
+| ⛔ `sequential=False` | tavan herkese aynı uygulanır ⇒ gradyan doğmaz | **`SEQUENTIAL_ACCESS` açık** |
+| ⛔ `rotate=False` | fark kalıcı olur ⇒ ölçülen şey konum avantajı olur | **`ROTATE_ACT_ORDER` açık** |
+| `--no-lora` | Kanal 2'yi kapatır | **KULLANILMIYOR** |
+| dış `timeout` | D-126 | **YOK** |
+
+**(c) Dejenere olmadığının **mevcut veriden** kanıtı**
+D-168: landmark penceresinde talep ≥ 8.0 olan hücre **6/6**; defect payı
+**44–71/80 (%55–89)**. ⇒ Tavanın bağlayacağı talep **her hücrede mevcut**.
+
+### 7. 🔒 ÖN-TAAHHÜT — pilotun okuma kuralları
+
+**Pilot:** tohum **9926 · 9927 · 9928** (taze), N = 8, **G = 4**, 30 olay,
+kollar `lived shuffle`, `--lora --fresh-pasture`. ⚠️ Süre **~8 sa** — tahmin,
+dayanağı Katman 1 pilotunun aynı şekli (8 sa 3 dk).
+
+> **KURAL Q1 — kıtlık her tohumda mı başlıyor?**
+> **3 tohumun 3'ünde de**, birinci nesilde ilk eksik alma **olay ≤ 2**.
+> **Eşiğin türetmesi:** tavan kanonik DEFECT'i olay 1'de **yapı gereği**
+> bağlıyor (§3–4); geriye yalnız o olayda bir DEFECT kararı çıkması kalıyor.
+> Ölçülen defect payı ≥ %55 ve N = 8 ⇒ iki olay boyunca hiç DEFECT çıkmama
+> olasılığı `(0.45⁸)² ≈ 3×10⁻⁶`. ⇒ **3/3 istemek meşru; 2/3 gevşetme olurdu.**
+
+> **KURAL Q2 — kurucular her tohumda ayrışıyor mu?**
+> **3 tohumun 3'ünde de** birinci nesilde `Var(F_agent) > 0`.
+> ⚠️ **Kasıtlı olarak tohum başına, hücre başına değil:** D-168 gen1'de iki
+> kolun **birebir aynı** olduğunu gösterdi ⇒ 6 hücre yapısal olarak 3 tohumdur.
+> Taban: Katman 1 pilotunda **2/3**.
+
+> **KURAL Q3 — zincirin geri kalanı *(betimleyici, EŞİKSİZ)*.**
+> `k` dağılımı · **`cooperate` histogramı** (D-166'dan beri okunabiliyor) ·
+> tanımlılık oranı · **`I5.1` verdict'i** (D-170'ten beri bağlı) ·
+> **kriz olayı sayısı** (§5'in tahmini).
+
+⛔ **OKUNMAYACAKLAR (L9):** kovaryans değeri · işareti · kol farkı · etki
+büyüklüğü · `ΔP_active`.
+
+⛔ **Hiçbir kural gevşetilmez.** *"3/3 olmadı ama 2/3 de iyi"* denmez.
+
+### 8. İlan edilen bedeller
+
+| bedel | büyüklüğü |
+|---|---|
+| ❌ **Sayılar ÜÇÜNCÜ kez sıfırlanıyor** | Katman 1 pilotu (8 sa) ve talep ölçümü (2 sa 9 dk) **taban olmaktan çıkıyor** |
+| ⚠️ Ön-kayıtlı bir **aralık** değişiyor | `NICHE_POOL_FRACTION_RANGE` üçüncü ön-kayıt taslağında ilan edilmişti; taslak **kilitli değil** (D-145) ⇒ pencere açık, ama bedel kayda geçiyor |
+| ⚠️ Nişin **çeşitliliği azalıyor** | aralık 0.60 → **0.124** genişliğe iniyor ⇒ tohumlar arası ortam farkı küçülüyor; *"tohuma bağlılık"* azalırken **tohum çeşitliliği** de azalıyor |
+| ⚠️ Kriz kanalı **canlanabilir** | §5'in tahmini. Canlanırsa D-070/K6'nın S5 uç noktası **askıdan çıkar** — ama travma yükü de artar |
+| ⚠️ Enerji geliri düşer | tavan olay 1'den bağladığı için hasat baştan kısıtlı |
+
+### 9. Ne değişmeyecek
+
+`EXTRACTION_DEFECT` · `EXTRACTION_LIMIT_RATIO` · `POOL_REGEN_RATE` ·
+`POOL_MAX` · `POOL_CRISIS_THRESHOLD` · `COLLAPSE_EPSILON` ·
+`NICHE_POOL_FRACTION_RANGE`'in **tabanı (0.40)** · `metabolic_gain` ·
+landmark · travma eşiği · fitness bantları · prompt · adapter yolu ·
+Katman 2/3/4 · diğer üç niş aralığı.
