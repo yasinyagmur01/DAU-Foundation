@@ -46,8 +46,16 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-170** (sıradaki: **D-171**).
-  **Suite:** **644 passed**, 2 deselected. **Kapı: 11** (`I5.1` bağlandı, D-170).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-171** (sıradaki: **D-172**).
+  **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
+- ⏳ **KOŞUM DÖNÜYOR:** Katman 1b pilotu (D-171) —
+  `dau_runs/layer1b_pilot_g4_s9926_9928.json`. Başlangıç **2026-08-22 ~17:5x**,
+  tahmin **~8 sa** ⚠️ (tahmin; süre tahminlerim üçte ikisinde tutmadı).
+- ⭐ **FİZİK ÜÇÜNCÜ KEZ DEĞİŞTİ (D-171):** `NICHE_POOL_FRACTION_RANGE`
+  `(0.40, 1.00)` → **`(0.40, 0.523990)`**, üst uç **türetiliyor** ⇒ artık
+  **her çekiliş** tavanı olay 1'de bağlıyor. ❌ Katman 1 pilotu ve talep
+  ölçümü **taban olmaktan çıktı**.
+- **KOŞUM BİTİNCE: D-172** yazılır (Q1/Q2/Q3 okuması + §5'in kriz tahmini).
 - ✅ **Talep ölçüm koşumu bitti** (D-168) — `demand_probe_g2_s9923_9925`,
   **2 sa 9 dk**, `complete`, kapı **9/10**, `I5.6` **geçti**.
 - ⛔ **SIRADAKİ İŞ: KARAR — hangi kaldıraç**, ve o **senin** (D-007).
