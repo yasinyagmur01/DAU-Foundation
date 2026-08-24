@@ -14117,3 +14117,157 @@ ilerleme ve temiz bir I0.7 başlangıcı çöpe giderdi; (b) düzeltme bir **kar
 gerektiriyor (§10) ve karar Yasin'in; (c) kablolama **bugüne kadarki her
 popülasyon koşumunda aynıydı** ⇒ bu pilot kendi tabanıyla karşılaştırılabilir
 kalıyor. ⇒ Koşum **dokunulmadan** devam ediyor.
+
+---
+
+## D-173 · 2026-08-24 · ⭐⭐ **KATMAN 1b PİLOTU: Q1 ve Q2 İKİSİ DE 3/3 TUTTU — mekanizma ilk kez HER tohumda çalıştı, ve kriz kanalı geri döndü**
+
+**Yetki:** Yasin, 2026-08-24: *"0. önerisini baştan sona koş"*.
+**Ön-taahhüt:** **D-171 §7**, koşumdan önce commit'li (`4fd266f`, 12:50 —
+koşum 12:57:11'de başladı).
+
+---
+
+### 0. Koşumun kimliği
+
+| | |
+|---|---|
+| Dosya | `dau_runs/layer1b_pilot_g4_s9926_9928.json` |
+| **Süre (ölçüldü)** | 12:57:11 → 19:56:22 = **6 sa 59 dk 11 sn** · tohum başına **2 sa 20 dk** |
+| `complete` | **True** · 3 tohum × 2 kol × G=4 · Traceback/ABORT **0** |
+| Kapılar | **8/11** · bayrak `I4.2` · `I5.1` · `I5.5` |
+| ⭐ **`I5.6`** | **GEÇTİ** — tavan **24 nesil hücresinin 24'ünde de** bağladı |
+| Koşum sırasında `.py` | **dokunulmadı** — hepsinin mtime'ı 12:51–12:56, koşum 12:57:11 |
+
+⚠️ **Süre Katman 1 pilotundan kısa** (8 sa 3 dk → 6 sa 59 dk; tohum başına
+2 sa 41 dk → **2 sa 20 dk**). ⛔ **Sebebi ölçülmedi.** Koşum sürerken
+*"muhtemelen ömürler kısalıyor"* demiştim; **ömür ortalaması 25.2** çıktı ve
+bu açıklamayı **desteklemiyor**. Gözlem geri çekiliyor, sayı kayda geçiyor.
+
+---
+
+### 1. KURAL Q1 — kıtlık her tohumda mı başlıyor? ✅ **TUTTU (3/3)**
+
+Ölçüt (D-171 §7): *3 tohumun **3'ünde de**, birinci nesilde ilk eksik alma
+**olay ≤ 2***
+
+| tohum | ilk eksik alma (gen1) | kısa satır | ölçüt |
+|---|---|---|---|
+| **9926** | olay **2** | 100/172 | ✅ |
+| **9927** | olay **2** | 122/216 | ✅ |
+| **9928** | olay **1** | 65/147 | ✅ |
+
+⇒ **3/3.** Ve `I5.6` bunu bütün koşuma yaydı: **24 hücrenin 24'ünde** tavan
+bağladı, **20'sinde olay 1'de**, 4'ünde olay 2'de.
+
+⭐ **Karşılaştırma:** Katman 1 pilotu (D-164) **1/3** idi ve bir tohumda tavan
+**hiç** bağlamamıştı. Talep ölçümü (D-168) 6/6 bağlamıştı ama **tohuma bağlı**
+biçimde (olay 2 ile 9 arasında saçılmış). ⚠️ **Fizik değiştiği için bu bir
+kontrollü karşılaştırma değil**, aynı ölçütün üç evrende okunuşudur.
+
+### 2. KURAL Q2 — kurucular her tohumda ayrışıyor mu? ✅ **TUTTU (3/3)**
+
+| tohum | benzersiz `F_agent` | `Var(F_agent)` |
+|---|---|---|
+| **9926** | **8/8** | 4.47e-4 |
+| **9927** | **8/8** | 1.99e-3 |
+| **9928** | **8/8** | 1.61e-3 |
+
+⇒ **3/3, ve sekiz kurucunun sekizi de her tohumda ayrı.** Taban: Katman 1
+pilotunda **2/3** (ve s9922'de 8 kurucu bit düzeyinde özdeşti).
+
+⭐⭐ **P0-①'in aradığı şey ilk kez her tohumda kuruldu.** D-078'den beri açık
+olan *"aynı nişte doğan ajanlar bit düzeyinde özdeş kalıyor"* kusuru, bu
+koşumda **hiçbir tohumda görülmedi**.
+
+### 3. KURAL Q3 — betimleyici, eşiksiz
+
+| # | nicelik | ölçüm |
+|---|---|---|
+| **a** | `k` dağılımı | ⚠️ **4839/4839 `resource_load`** — yine **hiç oynamadı**. GAP-10'un yeniden açılma tetiği (D-137) **ateşlenmedi** |
+| **b** | karar dağılımı | `defect` **2823 (%58.3)** · `cooperate` **1859 (%38.4)** · `deadlock` **155 (%3.2)** · `coordinate` **2 (%0.04)** |
+| **c** | tanımlılık | **10/16 = %62.5** (alan `energy`) |
+| **d** | **`I5.1`** | ❌ **false** — *"memory_edges is empty in every one of the arm vaults"*, altı kolun altısında **`memory_edges = 0`** |
+| **e** | **kriz** | ⭐ **1068 olay · 79/192 yaşam** |
+
+⚠️ **Drift ekseni kazananları:** `energy` 4300 · `resource` 470 ·
+`uncertainty` 59 · `social` 10.
+
+### 4. ⭐⭐ D-171 §5'in TAHMİNİ **TUTTU** — kriz kanalı geri döndü
+
+D-171 §5, sayı yazılmadan önce şunu ilan etmişti: *"havuz artık 0.40–0.524'ten
+başlayıp 0.05'e doğru gittiği için kriz eşiği 0.30 yol üzerindedir ⇒ kriz
+kanalı ateşlenmelidir."*
+
+| koşum | kriz olayı | kriz gören yaşam |
+|---|---|---|
+| Katman 1 pilotu (D-164) | **0** | **0 / 192** |
+| Talep ölçümü (D-168) | **0** | **0 / 48** |
+| ⭐ **bu koşum** | **1068** | **79 / 192** |
+
+Havuz yörüngesi tahminle uyumlu — nesil sonu oranları **0.223 – 0.671**
+arasında, kriz eşiğinin (**0.30**) **altına inen hücreler var**
+(s9926 g2: 0.284, g4: 0.292 · s9928 g3: 0.264, g4: 0.223).
+
+⇒ ⭐ **D-070 / kilit K6'nın S5 uç noktası** (*"ilk travma = commons krizi"*)
+**askıdan çıktı** — D-164'ten beri ölçülemez durumdaydı.
+
+### 5. ⭐ D-172'nin TAHMİNİ de **TUTTU** — ve teşhisi doğruladı
+
+D-172 §5, okumadan önce şunu yazmıştı: *"bu koşumun her kolunda
+`memory_edges = 0` ve `I5.1 = false`, detay «PPR is inert»."*
+
+**Ölçülen:** altı kolun altısında da `memory_edges = 0`; `I5.1` detayı
+**birebir** o cümle.
+
+⇒ D-172 §4'ün zinciri doğrulandı: **popülasyon yolunda `run_consolidation`
+hiç çağrılmıyor** ⇒ ilişki grafiği yapı gereği boş.
+⚠️ **Bu koşumu geçersiz kılmaz** — aynı kablolama C2'de, Katman 1 pilotunda
+ve talep ölçümünde de vardı ⇒ **sabit**, kollar arası bir terim değil.
+⛔ **Ama Ebbinghaus unutması popülasyon ajanlarında çalışmıyor** ve bu
+kapanmamış bir borçtur.
+
+### 6. Durma kuralının (kuyruk 2.2-DURMA) beklediği iki girdi — ölçüldü
+
+| girdi | değer |
+|---|---|
+| **`q`** (ΔCov'ün tanımlı olduğu tohum oranı) | ⭐ **3/3 = 1.00** |
+| **`t`** (tohum başına süre) | **2 sa 20 dk** |
+
+| sayı | Katman 1 öncesi | Katman 1 (D-164) | **bugün** |
+|---|---|---|---|
+| Tohum kullanılabilirliği | 2/3 | 3/3 | ✅ **3/3** |
+| Tohum başına süre | ~1 sa 58 dk | 2 sa 41 dk | **2 sa 20 dk** |
+
+⇒ **Bütçe kararı için gereken aritmetik artık tam.** ⛔ `T_max` (GPU bütçesi)
+**hâlâ Yasin'in ilan edeceği sayı** (D-007).
+
+### 7. İlan edilen sınırlar
+
+1. ⚠️ **Fizik üçüncü kez değişti** ⇒ Katman 1 pilotu ve talep ölçümü **taban
+   olmaktan çıktı**; yukarıdaki karşılaştırmalar **kontrollü değil**.
+2. ⛔ **`I5.1` bu koşum hakkında bilgisiz** — sıfır, sistemin değil koşucunun
+   kablolamasının sonucu (D-172 §4).
+3. ⚠️ **`I5.5` iki hücrede bayrak:** s9927 gen2→gen3, her iki kolda
+   (`max_z_variance = 0`).
+4. ⚠️ **`I4.2` bayrağı açık:** kollar gen3/gen4'e farklı RNG durumundan giriyor
+   — Katman 1 pilotunda da açıktı. **Kol karşıtlığı okunacaksa önce bu
+   açıklanmalı.**
+5. ⚠️ **`k` hâlâ tek değerde** (4839/4839) ⇒ `z` **etkin olarak tek boyutlu**
+   (GAP-10'un ilan edilmiş sınırı, L8).
+6. ⛔ **L9 uygulandı:** kovaryansın değeri, işareti, kol farkı, etki büyüklüğü
+   ve `ΔP_active` **okunmadı**.
+7. ⚠️ **Süre kısalmasının sebebi ölçülmedi**, ve tahminim (kısa ömür)
+   **desteklenmedi** (ömür ort. 25.2).
+
+### 8. ⇒ Ne açıldı
+
+⭐ **Katman 1 ilk kez vaadini tuttu:** kıtlık her tohumda kademeli, kurucular
+her tohumda ayrışıyor, kriz kanalı canlı, tohum kullanılabilirliği 3/3.
+⇒ **Ön-koşul zinciri artık kurulu.**
+
+⛔ **Sıradaki iş bir KARAR ve Yasin'in:** durma kuralının `T_max`'ı
+(kuyruk 2.2-DURMA) — ondan sonra doğrulayıcı koşumun `N`'i ve MDE'si
+aritmetikle çıkıyor.
+⏸ **Kapanmamış:** popülasyon yolunda konsolidasyon (D-172 §4) · `k`'nin
+tek değerliliği · `I4.2`.
