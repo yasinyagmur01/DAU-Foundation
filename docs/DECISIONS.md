@@ -14714,3 +14714,140 @@ kaydı**, hepsi ön-koşul, hiçbiri hipotez).
 | **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md` | commit hash + §12 deseni |
 
 ⛔ **B1–B3 kilitten önce yapılmak zorunda** — üçü de koşum yolunu değiştiriyor.
+
+---
+
+## D-177 · 2026-08-24 · ✅ **ÜÇ ALET ONARIMI (B1·B2·B3) — kilitten önce, sıfır GPU** · ⛔ ve mutasyon koşumu bir kusur daha buldu
+
+**Bağlam:** D-176'nın koşum-öncesi denetimi üç alet kusuru ölçmüştü. Yasin:
+*"hepsini ard arda yap"* ⇒ üçü tek turda kapandı. **Hiçbiri fizik
+değişikliği değil**, ama **üçü de koşum yolunu değiştiriyor** ⇒ 🔒
+`PREREGISTRATION_3` kilidinden **önce** yapılmak zorundaydı (§2.10).
+
+**Suite: 645 → 660.** Commit'ler `250f7e5` · `07d0cae` · `00f1252`.
+
+---
+
+### B1 — I4.2: RNG her nesilden önce yeniden kilitleniyor (`250f7e5`)
+
+D-149 kapıyı **kilitsiz** göndermiş ve gerekçesini yazmıştı: eğitimin global
+stream'i tüketip tüketmediği stub koşumdan çözülemez (K1(b) tuzağı), *"ilk
+koşum ÖLÇER ve sayı gelince mod yükselir"*. **Sayı D-173'te geldi: 6/6
+hücrede ayrışma.**
+
+⇒ `_run_arm_generations` artık her nesilden önce `_lock_seeds(seed)` çağırıyor
+— `run_cprime_multigen`'in **dört çağrı yeriyle aynı şekil, aynı tohum**.
+
+⛔ **Mod FLAG'de bırakıldı — ve karar burada ilan ediliyor, Yasin
+değiştirebilir.** Gerekçe **değişti**, o yüzden yeniden yazıldı: artık
+*"önerme ölçülmedi"* değil, **maliyet şekli**. Kapı faz-2'de, bütün
+yaşamlardan **sonra** koşuyor ve `main()` `PreflightAbort`'ta **sonuç dosyası
+yazmıyor** (okundu, `run_population_experiment.py` `main()`) ⇒ ABORT, son
+hücrede ayrışan **70 saatlik bir koşumu okunacak hiçbir şey bırakmadan**
+öldürürdü. Yakaladığı şey **kirli ölçüm değil, alet regresyonu**.
+
+⭐ **Ve maruziyet ölçüldü, sanıldığından dar:** çalışma yolunda (`graph.py` ·
+`society/` · `memory/`) global RNG'yi tüketen **tek çağrı yok**; üretim
+`reproduction.py`'ye **açıkça verilen yerel** `random.Random(seed)` ile,
+mera `shared_pasture` üzerinden **kurucuların nişinden**. Kalan gerçek
+maruziyet **DPO** (torch RNG). ⚠️ **Bu bir grep taramasıdır**, koşum ölçümü
+değil — düzeltme yine de yapıldı, bedeli sıfır.
+
+**Testin kendi tuzağı:** stub global stream'i **kol başına farklı miktarda**
+tüketiyor, yoksa sessiz bir stub kolları **kazara** uyumlu bırakır ve test
+**hiç kilitlemeyen** bir koşucuya karşı da geçerdi (K1(b)'nin test hâli).
+Fixture kendini önce kanıtlıyor. ⭐ **Test bir kusur yakaladı:** replay kolu
+`pop-replay-*` id'siyle geliyor ve sessiz bir varsayılan onun çekilişlerini
+yanlış kovaya koyardı.
+
+**K5:** 1 mutasyon, yakalandı. md5 `251645fb…` birebir.
+
+---
+
+### B2 — checkpoint artık okunabiliyor: `--resume` (`07d0cae`)
+
+D-111 checkpoint'i verdi ve o günden beri **yazma-yalnız**: `checkpoint`
+geçen 15 satırın hepsi yazma tarafındaydı. Planlanan 70 saatte bu **bir
+geceyi kaybetmekle bütçeyi kaybetmek** arasındaki fark.
+
+| karar | gerekçe |
+|---|---|
+| **opt-in** (`--resume`), asla otomatik | bayat `.partial` dosyası `Checkpoint`'in kendi docstring'inin uyardığı tuzak; `--results`'taki bir yazım hatası **başkasının kollarını** sessizce miras alırdı |
+| uyuşmayan checkpoint **reddediliyor**, yok sayılmıyor | §2.9 — sıfırdan başlamak *"resume"*'u bazen hiçbir şey ifade etmeyen bir söze çevirirdi |
+| bitmiş kol **yapısal** olarak tanınıyor (nesil sayısı + RNG defteri), konumla değil | ileride başka yere ekleyen bir yazar **yarı-yaşanmış** bir kolu sonuç hâline getiremesin |
+| **I0.7 muafiyeti** (`planned_founder_ids.skip_cells`) | bitmiş kolun adapterları diskte **olmak zorunda**, kapı onları kirlilik diye okur |
+| ⛔ **replay kolu asla muaf değil** | replay **sırasında** kesilen koşum ikinci geçişi **adapterli** başlatır ⇒ yüksek sesle abort etmeli, koşucu kendi kendine **silmemeli** |
+
+⚠️ `build_tool_identity` faz-0'ın **üstüne taşındı**: I0.7'nin muafiyet listesi
+checkpoint'ten çıkıyor, checkpoint ise karşılaştırılacak bir header olmadan
+okunamaz. Faz 0 bu okumanın gördüğü hiçbir şeyi **yaratmıyor** (env,
+determinizm, adapter dizini) ⇒ sayım iki tarafta da aynı. `_lock_seeds`'in
+**altında** kalıyor, o load-bearing.
+
+⭐ **Testin kendi zayıflığı kapatıldı:** eşitlik **tek başına yetmiyordu** —
+her şeyi yeniden koşan bir resume de **aynı dosyayı** üretir ve geçerdi. ⇒
+kazanılan GPU zamanı da ölçülüyor (**2 çağrı, 6 değil**). Ve eşitlik **dosya**
+üzerinden iddia ediliyor: resume edilen kol `json.loads`'tan geliyor,
+tuple'ları list; **ölçüldü**, iki taraf aynı byte'lara dönüyor.
+
+**Kasıtlı test kırılması aynı commit'te:** `i04` testinin
+`planned_founder_ids` sahtesi imza büyüyünce eskidi.
+
+**K5:** **4 mutasyon, dördü de yakalandı.** md5 `aeebfed0…` birebir.
+
+---
+
+### B3 — analiz aracı N dosya okuyor (`00f1252`)
+
+`--results` **tek** `Path` alıyordu; parçalı koşum biter, **okuyacak alet
+olmazdı**.
+
+`merge_runs` **üç şeyi reddediyor:** checkpoint (D-111'in arka kapısı olmasın)
+· alet/tasarım uyuşmazlığı (**iki geceyi değil iki DENEYİ** ortalamak olurdu)
+· ⛔ **çakışan tohum** — tekrarlama birimi **tohum** (Lazic 2010, D-140) ⇒
+aynı tohumu iki kez saymak **pseudoreplication**, ve bu tam da parçalı
+koşumun **davet ettiği** hata (ters görünen bir geceyi yeniden koşmak doğal
+gelir).
+
+⚠️ **Kapı verdictleri tek bir sağlıklı damgaya düzleştirilmiyor.** Birleşik
+koşum ancak **her gece** clean ise clean; kalite `mixed:…` diye yazılıyor —
+hiçbir koşumun içinde olmadığı bir kategori **uydurulmuyor**; dosya başına
+defter sonuca giriyor. Tek gecenin replay'i **çalışmaya kalmıyor**.
+
+### ⛔⛔ Mutasyon koşumu gerçek bir kusur buldu — K5'in asıl işi
+
+İlk sürüm `all(v is True)`'ya düşüyordu ⇒ bir gece **GEÇEN**, öteki gece
+**HİÇ DEĞERLENDİRİLMEYEN** bir değişmez **FAILED** çıkıyordu — **D-121'in
+ayırdığı iki şey tam tersine çevrilmiş.** ⇒ Üç sonuçlu hâle getirildi
+(`False` / `True` / `None`) ve **karışık durum `None`**: çalışma tam
+denetlenmedi, *"geçti"* demek sahip olunmayan bir kapsamı iddia etmek olurdu.
+Bulgunun **kendi testi** yazıldı.
+
+⭐ **Bu, mutasyon kontrolünün testi değil KODU düzelttiği ilk kayıt.** K5'e
+kadarki bütün örnekler *"test boştu"* idi.
+
+**K5:** **7 mutasyon, yedisi de yakalandı.** md5 `4e74f63a…` birebir.
+
+---
+
+### ⚠️ Bu kaydın sınırları
+
+- **Hiçbiri GPU'da koşulmadı.** Üçü de stub/mock altında sınandı; B1'in gerçek
+  maruziyet iddiası (*"yalnız DPO"*) bir **grep taramasıdır**.
+- **B2'nin eşdeğerlik iddiası stub altında ölçüldü** — eğitim açıkken
+  (`--lora`) resume'un aynı dosyayı üretip üretmediği **denenmedi**.
+  ⚠️ Doğrulayıcı koşumun **ilk gecesinde** bir kez fiilen sınanmalı.
+- **Hiçbir sabit değişmedi**, hiçbir fizik değişmedi ⇒ **kaldıraç hakkı
+  harcanmadı** (D-176/karar 4'ün tanımı gereği).
+- ⚠️ **Digest'ler değişti** (B1, RNG stream'i oynattı) ⇒ D-173 öncesi
+  `arm_digest`'lerle bugünküler **karşılaştırılamaz**. Sayılar sıfırlanmadı,
+  **kimlikler** değişti.
+
+### Sıradaki
+
+| # | iş |
+|---|---|
+| **B4** | ⛔ **KARAR — Kanal 1** (kuyruk 3.0f), kaldıraç hakkı **2**, biri buraya aday |
+| **B5** | adapter temizliği (~9.3 GB) · **DR #14 brief'i** |
+| **C** | ön-kayıt taslağının dört kusuru (D-145) + **yeni sınır: bütçe sansürü** |
+| **D** | 🔒 **KİLİT** |
