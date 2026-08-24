@@ -15255,3 +15255,66 @@ yakalandı. md5 `092339ce…` birebir.
   söylemez.
 - `I5.5 = False` ve `run_quality = flagged` **stub'ın kendi özelliği**
   (`STUB_EXPECTED_FLAGS` deseni), koşum hakkında bir şey değil.
+
+---
+
+## D-182 · 2026-08-24 · 🔒🔒 **ÜÇÜNCÜ ÖN-KAYIT KİLİTLENDİ** — commit `a1163ac778c9`
+
+**Yetki:** Yasin, 2026-08-24: *"kilitle eğer runı bozucak bir şey
+kalmadıysa."* ⇒ Şart D-181'in duman testiyle karşılandı (bir kusur bulundu,
+düzeltildi, zincir uçtan uca doğrulandı), sonra kilit atıldı.
+
+`docs/PREREGISTRATION_3.md` durum satırı: **🔒 KİLİTLİ · 2026-08-24 · commit
+`a1163ac778c9`**. §12'nin alet kimliği **donduruldu** — hepsi koddan okundu,
+yeniden yazılmadı (§2.8).
+
+### 1. Dondurulan hâl — özet
+
+| | |
+|---|---|
+| commit · suite | **`a1163ac778c9`** · **667 passed** |
+| model · quantization | Llama-3.1-8B-Instruct · NF4 + double_quant, fp16 compute |
+| LoRA · DPO | rank 8 / alpha 16 · β=0.1, lr=1e-06, grad_accum=4, max_seq=512 |
+| üretim | greedy, `max_new_tokens`=64 |
+| uç nokta ordinali | `LANDMARK_EVENT` = 10 |
+| havuz fiziği (Katman 1b) | `NICHE_POOL_FRACTION_RANGE` = (0.40, 0.5239898356037742) · `EXTRACTION_LIMIT_RATIO` = 0.1425 |
+| üreme | turnuva k=2 · kazanan başına 1 varis · sıralı erişim + rotasyon açık |
+| sınır sabiti | `SLEEP_CONSOLIDATION_WIRED` = False (L23) |
+
+### 2. ⭐ Kilit kendi kapısını açtı — ve bu tasarlanmıştı
+
+D-180'in L9 kapısı izni **bu belgenin durum satırından** okuyor. Kilit
+atılınca `preregistration_locked()` **kendiliğinden `True`** döndü ve rapor
+seviye 1–3'ü açtı — **hiçbir bayrak elle çevrilmedi**.
+
+⇒ İki yönlü kanıt: yazılmamış bir kilit raporu **açmıyor**, açılan bir rapor
+kilidin **yazıldığının kanıtı**.
+
+### 3. Kilide giden yolda bulunan ve düzeltilenler
+
+| kayıt | ne bulundu |
+|---|---|
+| **D-176** | Kat 2 = seviye 3 = **üç kol**; yol haritasının maliyet tablosu **iki kol** üzerinden yazılmıştı |
+| **D-177** | I4.2 kilitsizdi · **resume yoktu** · **birleştirici yoktu** |
+| **D-178** | ROADMAP §3'ün çıkarımı çürüktü — Kanal 1 **ölü değil** |
+| **D-179** | ⛔ **L9 ihlali** (ilan edildi, L25) · kusur 1 **tersine döndü** |
+| **D-180** | §3.1'in beklentisi ve **L20'nin sonuç cümlesi eskimişti** |
+| **D-181** | ⛔⛔ birleştirici **her parçalı koşumu reddediyordu** |
+
+⇒ **Altı denetimin altısı da bir şey buldu.** ⚠️ Bunların **üçü** (D-176,
+D-178, D-180) *"belge güncel ama eskimiş"* sınıfındandı — bu projenin en
+tekrarlayan hata deseni, ve artık adı var.
+
+### 4. ⚠️ Kilit anında bilinen ve ilan edilen riskler
+
+- ⛔ **Eğitim yolu (DPO) B1'den SONRA gerçek GPU'da koşulmadı.** D-181'in
+  duman testi **mock**tu ⇒ doğrulanan şey orkestrasyon. B1'in eklediği
+  `_lock_seeds` **multigen koşucusunun eğitim yolunda zaten kullandığı**
+  desendir, ama bu koşucuda ölçülmedi. ⇒ **`I1.1` kapısı bunu ilk gecede
+  sınar ve ağırlık hareket etmediyse ABORT eder.**
+- ⚠️ **Resume'un eşdeğerliği stub altında ölçüldü** (D-177 §5); `--lora`
+  açıkken **denenmedi**. İlk gecede fiilen sınanmalı.
+- ⚠️ **Tohum başına süre bir TAHMİNDİR** (3 sa 00 dk – 3 sa 13 dk), dayanağı
+  D-173'ün ölçülen **16.1 dk/kol-nesil** oranı. Gerçek `t` **ilk geceden**
+  okunacak ve `N_eff` durma kuralının aritmetiğiyle (`⌊q·T_max/t⌋`) yeniden
+  uygulanacak — bu **post-hoc değil**, kuralın kendi tanımı (D-174).

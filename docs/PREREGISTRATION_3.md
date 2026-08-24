@@ -1,11 +1,18 @@
 # Popülasyon C‴ — Üçüncü Ön-Kayıt
 
-**Durum: 📝 TASLAK · 2026-08-24 · ✅ **ALTI SLOTUN ALTISI DA KAPALI** ·
-⏳ KİLİDE HAZIR — kilit Yasin'in**
+**Durum: 🔒 KİLİTLİ · 2026-08-24 · commit `a1163ac778c9`**
 
-✅ **D-145'in dört kusuru kapandı** (D-161 · D-179) ve **SLOT 3 (bütçe)
-D-176'da kapandı.** Geriye yalnız kilit anının kendisi kalıyor: §12'nin alet
-kimliği donduruluyor ve durum satırına **🔒 + commit hash** yazılıyor.
+🔒 **KİLİTLENDİ (D-182, Yasin).** Altı slotun altısı kapalı, §12'nin alet
+kimliği donduruldu. Bu noktadan sonra `constraints.py` eşik değeri, uç nokta,
+test, çift kurma stratejisi ve `SYSTEM_PROMPT` **değiştirilemez**; değişirse
+sonuç **post-hoc** olur ve bu ön-kayıt geçersizleşir (§2.10).
+
+⭐ **Kilit aynı zamanda L9 kapısını AÇIYOR:** `analyze_population_run` bu
+belgenin durum satırını okuyor ve artık seviye 1–3'ü raporluyor (D-180).
+
+✅ **D-145'in dört kusuru kapandı** (D-161 · D-179) · **SLOT 3 (bütçe)
+D-176'da kapandı** · ⛔ **kilitten önce üç alet kusuru** (D-177) **ve bir
+birleştirici kusuru** (D-181) bulunup düzeltildi.
 
 | # | kusur (D-145) | durum (2026-08-24) |
 |---|---|---|
@@ -495,11 +502,33 @@ C2'ye göre asıl kazancıdır.
 
 ---
 
-## 12. Alet kimliği — ⏳ kilitte dondurulacak
+## 12. Alet kimliği — 🔒 **DONDURULDU** (commit `a1163ac778c9`)
 
-Kilit anında (kuyruk 2.3) buraya yazılacaklar: commit hash · `tool_identity`
-çıktısı · model kimliği ve quantization · `constraints.py` özeti ·
-`pip freeze` özeti · suite sayısı.
+⚠️ Hepsi **koddan okundu**, yeniden yazılmadı (§2.8). Bu bloktan sapan bir
+koşum **bu ön-kayda ait değildir**.
+
+| | |
+|---|---|
+| **commit** | **`a1163ac778c9`** — dondurulan alet durumu |
+| **suite** | **667 passed**, 2 deselected |
+| **backend** | `local` |
+| **model** | `meta-llama/Meta-Llama-3.1-8B-Instruct` |
+| **quantization** | NF4 · `double_quant=true` · `load_in_4bit=true` · compute `float16` · `device_map=auto` |
+| **LoRA** | rank **8** · alpha **16** |
+| **DPO** | β=0.1 · lr=**1e-06** · epochs=1 · batch=1 · grad_accum=4 (etkin 4) · max_seq=512 · max_grad_norm=1.0 |
+| **üretim** | greedy (`do_sample=false`) · `max_new_tokens=64` |
+| **metabolizma** | `gain_max`=0.5 · `half_saturation`=2.0 · `grace_events`=10 · **`calibrated=false`** · ölüm açık |
+| **uygunluk** | `w_energy`=0.4 · `w_pool`=0.3 · `w_survival`=0.3 · enerji okuması **`mean_over_life`** · havuz terimi tavanı 8.0 |
+| **uç nokta ordinali** | `LANDMARK_EVENT` = **10** |
+| **havuz fiziği (Katman 1b)** | `NICHE_POOL_FRACTION_RANGE` = **(0.40, 0.5239898356037742)** · `EXTRACTION_LIMIT_RATIO` = **0.1425** · `POOL_REGEN_RATE` = 0.15 · `POOL_CRISIS_THRESHOLD` = 0.30 · `POOL_MAX` = 100.0 · `EXTRACTION_DEFECT` = 8.0 |
+| **üreme** | turnuva `k` = **2** · kazanan başına varis **1** · sıralı erişim **açık** · rotasyon **açık** · P0 = *shared-per-seed (①)* |
+| **sınır sabiti** | `SLEEP_CONSOLIDATION_WIRED` = **False** (L23) |
+| **sürümler** | python 3.14.6 · torch 2.13.0 · transformers 5.14.1 · peft 0.20.0 · accelerate 1.14.0 · bitsandbytes 0.50.0 · numpy 2.4.5 · scipy 1.18.0 |
+
+⛔ **Kilitten sonra yasak:** `constraints.py` eşik **değeri** · uç nokta ·
+test · çift kurma · `SYSTEM_PROMPT` · herhangi bir ön-kayıtlı protokol maddesi.
+**Hâlâ meşru:** hesaplamayı değiştirmeyen saf raporlama, ve **açık hata
+düzeltmesi** — ikincisi D-kaydı **ve** Yasin onayı ister (§2.10).
 
 ---
 
