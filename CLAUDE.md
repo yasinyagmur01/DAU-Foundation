@@ -39,16 +39,17 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-⏳ **KİLİDE HAZIR — altı slotun altısı kapalı.** Hedef ilan edildi, alet
+🔒 **ÖN-KAYIT KİLİTLİ (`a1163ac778c9`, D-182) — sıradaki iş KOŞUM.** Hedef ilan edildi, alet
 onarıldı, taslağın dört kusuru kapandı (D-176: **Kat 2 ·
 70 sa · G=4 · üç kol · MDE 0.676** · D-177: I4.2 kilidi · resume ·
 birleştirici · D-178: Kanal 1 **bağlanmıyor** · D-179/D-180: dört kusur +
-**L9 artık bir kapıya bağlı**) ⇒ sıradaki iş 🔒 **KİLİT**, ve o **senin**.
+**L9 artık bir kapıya bağlı** · D-181: birleştirici **her parçalı koşumu
+reddediyordu**, düzeltildi) ⇒ sıradaki iş **doğrulayıcı koşum**.
 
 ## Durum
 
 - **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
-  **Suite:** **666 passed**, 2 deselected. **Kapı: 11.**
+  **Suite:** **667 passed**, 2 deselected. **Kapı: 11.**
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
@@ -190,8 +191,8 @@ G=6'yı Kat 2 değil **Kat 3'ün kancası** istiyor ⇒ aynı parayla duyarlıl�
 | ~~**B4**~~ | ✅ **Kanal 1: bağlanmıyor, sınır ilan edildi** (**D-178**) — ölçüm kararı tersine çevirdi: Kanal 1 **ölü değil**, ölü olan uyku konsolidasyonu ve o **her kolda simetrik**. Kaldıraç **harcanmadı** | yok | ✅ 2 mutasyon yakalandı |
 | ~~**B5**~~ | ✅ **İkisi de gerekmedi (D-178):** temizlik — 41 GB boş, koşum ~17 GB ⇒ **kanıt silmeye gerek yok** · DR #14 **ertelendi**, sorusu Kat 3'e ait | yok | ✅ |
 | ~~**C**~~ | ✅ **Dört kusur kapandı** (**D-179** · **D-180**) — kusur 2 **yeniden açılmadı**: kriz geri döndü ama `resource`, `energy`'nin **yanına** yazılıyor ⇒ hiçbir tohum düşmüyor. Yeni sınırlar **L22–L25** | yok | ✅ **altı slotun altısı kapalı** |
-| **D** | 🔒 **KİLİT** — `PREREGISTRATION_3.md`, §12 alet kimliği dondurulur, durum satırına **🔒 + commit hash** | yok | ⛔ **SENİN KARARIN** · tek atış |
-| **E** | **Doğrulayıcı koşum** — parçalı, 3 kol, G=4 | ✅ | `complete`, kapılar okundu |
+| ~~**D**~~ | 🔒 **KİLİTLENDİ — commit `a1163ac778c9`** (**D-182**). §12 donduruldu; kilit **L9 kapısını kendiliğinden açtı** | yok | ✅ |
+| **E** | ⏳ **Doğrulayıcı koşum** — 20 tohum (**9929–9948**), 3 kol, G=4, parçalı. **~63–67 sa** · öneri **5 gece × 4 tohum ≈ 12.6–13.4 sa/gece**. ⛔ **Önce kısa GPU dumanı** (eğitim yolu B1'den sonra koşulmadı) | ✅ | `complete`, kapılar okundu |
 | **F** | **Analiz + sonuç sınıfı** | yok | Dört seviye raporlandı; sınıf **koşumdan önce** tanımlıydı |
 
 ⛔ **B1–B3 kilitten (D) önce yapılmak zorunda** — üçü de koşum yolunu
