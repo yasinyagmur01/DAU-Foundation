@@ -39,15 +39,14 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-**Ön-koşul zinciri kuruldu ve hedef ilan edildi** (D-176: **Kat 2 · 70 sa ·
-G=4 · üç kol · MDE 0.676**) ⇒ sıradaki iş **kilitten önce üç alet onarımı**
-(I4.2 kilidi · resume · birleştirici) — üçü de GPU'suz, üçü de koşum yolunu
-değiştirdiği için **kilitten sonra yapılamaz**.
+**Hedef ilan edildi ve alet onarıldı** (D-176: **Kat 2 · 70 sa · G=4 · üç kol
+· MDE 0.676**; D-177: I4.2 kilidi · resume · birleştirici) ⇒ sıradaki iş
+**Kanal 1 kararı** (kuyruk 3.0f) — ve o **senin** (D-007).
 
 ## Durum
 
 - **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
-  **Suite:** **645 passed**, 2 deselected. **Kapı: 11.**
+  **Suite:** **660 passed**, 2 deselected. **Kapı: 11.**
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
@@ -67,8 +66,17 @@ değiştirdiği için **kilitten sonra yapılamaz**.
   `G` = **4**, ve **üç kol**. ⭐ **En eski borç (*"en küçük anlamlı etki"*,
   DR #1'den beri açık) burada kapandı:** ilan edilen şey bir etki değil bir
   **bütçe** ⇒ `N_eff` = 20, **MDE `d_z` = 0.676**.
-- ⛔⛔ **YENİ, D-176 (koşum-öncesi denetim, salt-okunur): ÜÇ ALET KUSURU
-  KİLİTTEN ÖNCE KAPANMALI.** (1) **I4.2** — bu koşucu RNG'yi döngü başında
+- ✅⭐ **ÜÇ ALET KUSURU KAPANDI (D-177, `250f7e5` · `07d0cae` · `00f1252`)** —
+  üçü de GPU'suz, üçü de **kilitten önce**. ⭐ **Mutasyon koşumu ilk kez bir
+  TESTİ değil KODU düzeltti:** birleştiricide *"bir gece geçen + öteki gece
+  değerlendirilmeyen"* bir değişmez **FAILED** çıkıyordu (D-121'in ayrımı ters
+  çevrilmiş). ⛔ **Senin bilmen gereken tek karar: `I4.2` FLAG'de bırakıldı** —
+  ABORT, son hücrede ayrışan 70 saatlik koşumu **çıktısız** öldürürdü
+  (`main()` `PreflightAbort`'ta sonuç yazmıyor). Değiştirmek istersen söyle.
+- ⚠️ **D-177'nin açık bıraktığı tek şey:** resume'un eşdeğerliği **stub
+  altında** ölçüldü; `--lora` açıkken **denenmedi** ⇒ doğrulayıcı koşumun
+  **ilk gecesinde bir kez fiilen sınanmalı**.
+- ⛔⛔ **Geçmiş kayıt, D-176 (koşum-öncesi denetim):** (1) **I4.2** — bu koşucu RNG'yi döngü başında
   **bir kez** kilitliyor, multigen her nesilden önce ⇒ kollar gen3+'a **6/6
   hücrede** farklı durumdan giriyor. (2) **Resume yok** — checkpoint yalnız
   yazılıyor, okuyan kod yok ⇒ kesilen parti baştan. (3) **Birleştirici yok** —
@@ -149,9 +157,9 @@ G=6'yı Kat 2 değil **Kat 3'ün kancası** istiyor ⇒ aynı parayla duyarlıl�
 | # | adım | GPU | bitti sayılır |
 |---|---|---|---|
 | ~~**A**~~ | ✅ **Beş karar** — **D-176**'da ilan edildi | yok | ✅ |
-| **B1** | ⛔ **I4.2 kilidi** — `_lock_seeds` nesil döngüsünün **içine** (D-176 §1/Bulgu 5) | yok | Kod + test + **mutasyon kontrolü** (K5) |
-| **B2** | ⛔ **Resume** — checkpoint yalnız **yazılıyor**, okuyan yok | yok | Kesilip devam ettirilen koşum, digest'ler birebir |
-| **B3** | ⛔ **Birleştirici** — analiz aracı **tek dosya** alıyor, parçalı koşum okunamaz | yok | K2: testte **iki tohum, iki dosya** |
+| ~~**B1**~~ | ✅ **I4.2 kilidi** — `_lock_seeds` nesil döngüsünün içinde (**D-177**, `250f7e5`) | yok | ✅ 1 mutasyon yakalandı |
+| ~~**B2**~~ | ✅ **Resume** — `--resume`, opt-in, uyuşmazlıkta **reddediyor** (**D-177**, `07d0cae`) | yok | ✅ 4 mutasyon yakalandı |
+| ~~**B3**~~ | ✅ **Birleştirici** — `--results` N dosya (**D-177**, `00f1252`) | yok | ✅ 7 mutasyon yakalandı |
 | **B4** | **Kanal 1 kararı** (kuyruk 3.0f) — kaldıraç hakkı **2**, biri buraya aday | yok | D-kaydında seçilen şık + reddedilenler |
 | **B5** | Adapter temizliği (**~9.3 GB**, Katman 1 öncesi) · **DR #14 brief'i** | yok | — |
 | **C** | **Ön-kayıt taslağının dört kusuru** (D-145) — ⛔ **kusur 2 yeniden açılmış olabilir**: alan **tohuma** bağlı (kriz→`resource`, yoksa→`energy`) ve **kriz D-173'te geri döndü**. ⚠️ **Yeni sınır:** bütçe sansürü (gen3-4'te **5.2/8** ajan 30 olay tavanında) | yok | Dört kusurun her biri kapandı ya da **sınır olarak ilan edildi** |
