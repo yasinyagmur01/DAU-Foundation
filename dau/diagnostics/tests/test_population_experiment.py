@@ -3320,3 +3320,86 @@ def test_arm_edge_count_is_read_from_the_vault_not_assumed(monkeypatch) -> None:
     # is pinned is the READ — a hard-coded count cannot produce the sentinel,
     # which is exactly the mutation (`_count_edges(vault.store)` -> `0`) that
     # the previous version of this test failed to catch.
+
+
+# ⚠ Named beside the two markers the module already had; without it the
+# "everything else is lived" default would be invisible in the burn table.
+LIVED_MARKER: str = "-lived-"
+# The I4.1 replay arm runs under its own label but re-runs `lived`, so it
+# belongs in lived's row. Found by the test itself refusing an unknown id —
+# a silent default would have put the replay's draws in the wrong bucket.
+REPLAY_MARKER: str = "-replay-"
+
+
+def _arm_of(agent_id: str) -> str:
+    """Which arm an agent belongs to, from its id (founder_id's own shape)."""
+
+    for marker in (SHUFFLE_MARKER, NULL_MARKER, LIVED_MARKER):
+        if marker in agent_id:
+            return marker.strip("-")
+    if REPLAY_MARKER in agent_id:
+        return LIVED_MARKER.strip("-")
+    raise AssertionError(f"agent id carries no arm marker: {agent_id}")
+
+
+def test_every_arm_enters_every_generation_from_the_same_rng_state(
+    monkeypatch,
+) -> None:
+    """I4.2 / GAP-12 on the population path — the per-generation re-lock (D-176/B1).
+
+    D-173 measured the failure this guards: the arms entered generations 3 and
+    4 from different global RNG states in 6 of 6 cells, because this runner
+    locked once per arm while run_cprime_multigen re-locks before every
+    generation (four call sites).
+
+    ⚠ The stub MUST burn the global stream, and burn a different amount per
+    arm, or the test would pass against a runner that never locks at all — a
+    quiet stub leaves the arms in agreement by accident. That is K1(b) in test
+    form: the mechanism under test has to be alive in the fixture testing it.
+    Real runs burn it through DPO, which lived/shuffle do and null does not.
+    """
+
+    import random as _random
+
+    burns_per_arm: dict[str, int] = {"lived": 1, "shuffle": 3, "null": 0}
+    burned: dict[str, int] = {}
+
+    def _rng_burning_agent(state: DAUAgentState) -> dict[str, Any]:
+        arm = _arm_of(state.agent_id)
+        draws = burns_per_arm[arm]
+        for _ in range(draws):
+            _random.random()
+        burned[arm] = burned.get(arm, 0) + draws
+        return _stub_agent(state)
+
+    monkeypatch.setattr(graph_mod, "agent_node", _rng_burning_agent)
+    results = run_population_experiment(
+        seeds=[SEED],
+        n_agents=N_AGENTS,
+        n_generations=N_GENERATIONS,
+        events_budget=EVENTS,
+    )
+
+    # The fixture proves itself before the assertion it exists to support.
+    assert len(set(burned.values())) > 1, (
+        f"the arms consumed the global stream equally ({burned}) — this test "
+        "would pass without any lock at all"
+    )
+
+    detail = results["invariant_details"]["I4.2"]["detail"]
+    assert results["invariants"]["I4.2"] is True, detail
+
+    # K2: assert the digests themselves, over BOTH aggregated dimensions —
+    # more than one arm and more than one generation. Reading only the gate's
+    # verdict would leave a gate that silently stopped looking undetected.
+    by_cell: dict[tuple[Any, int], set[str]] = {}
+    for arm in results["arms"]:
+        for row in arm["generation_rng_digests"]:
+            by_cell.setdefault((row["seed"], row["generation"]), set()).add(
+                row["rng_digest"]
+            )
+    checked = {gen for (_, gen), _ in by_cell.items() if gen > 1}
+    assert len(checked) > 1, f"only one generation was checked: {checked}"
+    assert len(results["arms"]) > 1
+    for cell, digests in by_cell.items():
+        assert len(digests) == 1, f"{cell} entered from {len(digests)} states"

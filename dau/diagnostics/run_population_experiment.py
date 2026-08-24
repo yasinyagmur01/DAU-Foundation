@@ -1523,14 +1523,22 @@ def _run_arm_generations(
     """The generation loop of one arm; run_arm owns the global it borrows."""
 
     for generation in range(FIRST_GENERATION, FIRST_GENERATION + n_generations):
-        # D-149 / I4.2. The multigen runner re-locks before EVERY generation
-        # (run_cprime_multigen: four call sites); this runner locks once, above
-        # the loop. So generations 2+ start from whatever state generation 1
-        # left, and `lived`/`shuffle` train while `null` does not — the exact
-        # shape GAP-12 is about. Whether training actually consumes the global
-        # stream cannot be settled from a stub run (the stub turns training
-        # off, which is K1(b)'s trap), so the run records the state and the
-        # gate reads it. Instrumentation only: nothing here changes a number.
+        # D-176/B1 / D-149 / I4.2 / GAP-12. Re-lock before EVERY generation,
+        # matching run_cprime_multigen's four call sites — same seed, same
+        # function, so the two runners answer GAP-12 the same way instead of
+        # two ways.
+        #
+        # ⚠ This line replaces a measurement. D-149 shipped the digest WITHOUT
+        # the lock on purpose: whether training consumes the global stream
+        # could not be settled from a stub run (the stub turns training off,
+        # which is K1(b)'s trap), so the first run recorded the state and the
+        # gate read it. The number came back in D-173 — arms entered gen3 and
+        # gen4 from different states in 6 of 6 cells — and the mode escalates
+        # here, as that comment said it would.
+        #
+        # ⛔ NOT instrumentation: the RNG stream moves, so digests move. Done
+        # BEFORE the PREREGISTRATION_3 lock for exactly that reason (§2.10).
+        _lock_seeds(seed)
         generation_rng_digests.append(
             {
                 "seed": int(seed),
@@ -1985,17 +1993,21 @@ def run_population_experiment(
     # D-149 / GAP-12. Wired here for the first time on this path (D-147/AV-3
     # measured 6 of 26 invariants live, and this was one of the 20).
     #
-    # ⚠ FLAG, not ABORT — and the reason is written down rather than left as a
-    # preference. The multigen runner re-locks the RNG before every generation;
-    # THIS runner locks once, above the loop, so generations 2+ inherit
-    # whatever generation 1 left. Whether that actually splits the arms depends
-    # on whether DPO consumes the global stream, and that cannot be settled
-    # without training: a stub run turns training off, which is exactly K1(b)'s
-    # trap (D-126 spent 50 GPU minutes on it). An ABORT on an unmeasured
-    # premise would kill a 24-hour run on a guess. So the first run MEASURES,
-    # and the mode escalates once there is a number. Declared in
-    # PREREGISTRATION_3 §5.1 so the choice is visible before the run, not
-    # explained after it.
+    # ⭐ D-176/B1: the number D-149 was waiting for arrived. D-173 measured the
+    # arms entering gen3 and gen4 from DIFFERENT states in 6 of 6 cells, so
+    # `_run_arm_generations` now re-locks before every generation and the two
+    # runners answer GAP-12 the same way.
+    #
+    # ⚠ STILL FLAG, not ABORT — and the reason changed, so it is rewritten
+    # rather than left standing. It is no longer "the premise is unmeasured";
+    # it is the cost shape. This gate runs in phase 2, AFTER every life, and
+    # `main()` writes NO results file on a PreflightAbort. Escalating would
+    # mean a 70-hour run that diverges at the last cell produces nothing to
+    # read — while the divergence it caught is a TOOL regression, not a dirty
+    # measurement: the lives already ran, and the flag names the split cells.
+    # So the failure is reported at full volume and the data survives.
+    # Declared in PREREGISTRATION_3 §5.1 so the choice is visible before the
+    # run, not explained after it.
     gate.check(
         "I4.2",
         lambda: check_generation_rng_uniform(arm_results),
