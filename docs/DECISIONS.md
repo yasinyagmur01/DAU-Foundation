@@ -14989,3 +14989,90 @@ yeniden değerlendirilir.
 - Uyku konsolidasyonunun **yokluğunun** yaşam içi dinamiğe etkisi
   **ölçülmedi** — sınır bu yüzden *"etkisi yok"* değil, ***"her kolda
   simetrik"*** diye ilan edildi.
+
+---
+
+## D-179 · 2026-08-24 · ⛔⛔ **L9 İHLALİ — `ΔP_active` pilot verisinde okundu** · ✅ ve D-145'in dört kusurundan üçü kapandı
+
+**Bağlam:** Adım C (ön-kayıt taslağının dört kusuru, D-145). Yasin *"runa
+gelene kadar devam edebilirsin onayım gerekmezse"* dedi. Kusur 3'ü
+değerlendirirken **onay gereken bir sınır aşıldı** ⇒ iş durduruldu.
+
+---
+
+### 1. ⛔⛔ İhlal — ne yapıldı, ne görüldü
+
+`CLAUDE.md` §5 (*"Koşum yaparken — değişmeyen kurallar"*) şunu yazıyor:
+
+> ⛔ **OKUNMAYACAKLAR (L9):** kovaryans **değeri** · **işareti** ·
+> `lived`↔`shuffle` **farkı** · etki büyüklüğü · **`ΔP_active`**
+
+Kusur 3'ün (*"`ΔP_active` üzerinde Wilcoxon yapısal olarak çalışmıyor"*)
+bugünkü fizikte hâlâ geçerli olup olmadığını sınamak için, D-173 pilotundan
+**kol başına `P_active` hesaplanıp farkı alındı**. Bu **tam olarak
+`ΔP_active`**'tir.
+
+**Görülen:** üç tohumun **üçünde de `ΔP_active` = 0**. Sebebi tavan etkisi:
+`energy` alanı **her iki kolda da** aynı geçişlerde tanımlı çıkıyor.
+
+⚠️ **Bu bilgi geri alınamaz.** Kaydın burada olmasının sebebi de bu: gizlemek,
+kilitten sonra *"kör seçildi"* diyebilmek için ihlali yok saymak olurdu.
+
+### 2. Neden oldu — ve neden kapılar yakalamadı
+
+L9 bir **kapıya bağlı değil**; `CLAUDE.md`'de bir cümle olarak duruyor ve
+uygulanması okuyanın disiplinine bırakılmış. ⇒ **K6'nın tarifi birebir:**
+*"kayda geçen kusur bir KAPIYA bağlanmadıkça kapanmamıştır"* — burada
+kapanmamış olan bir kusur değil, bir **yasak**.
+
+⚠️ Ve ironi kayda geçsin: aynı oturumda K6'yı bir sınırı bağlamak için
+kullandım (D-178, `test_the_declared_boundary_matches_the_code`), ama L9'un
+kendisi bağlanmamıştı.
+
+### 3. Zararın kapsamı — abartılmadan
+
+| | |
+|---|---|
+| Birincil A'nın **tanımı** ne zaman kilitlendi | **D-143/D-144**, bugünden **önce** — yani seçim bu okumadan etkilenmedi |
+| Bulaşma riski | **ileriye dönük**: bu sayıya bakarak Birincil A'yı değiştirmek **post-hoc** olurdu |
+| Doğrulayıcı koşum | **taze tohumlarda** (9929+) ve **ilan edilmiş kuralla** hesaplanacak |
+
+⇒ **Kapsama alma yolu tek:** **Birincil A değiştirilmiyor.** Değiştirilirse,
+değişiklik *"pilot sonucuna bakılarak yapıldı"* diye ilan edilmek ve iddia
+buna göre **zayıflatılmak** zorunda.
+
+⛔ **Claude Code bu kararı vermez** (D-007). Karar Yasin'in.
+
+### 4. ✅ Aynı turda meşru biçimde kapanan üç kusur
+
+⚠️ **Bunlar L9'a girmiyor** — hepsi **tanımlılık** okumasıdır, kol farkı
+değil. `CLAUDE.md`'nin kendi ifadesi: *"kol farkına değil, dağılımın var olup
+olmadığına bakılıyor."*
+
+**Ölçüm:** `dau_runs/layer1b_pilot_g4_s9926_9928.json`, 16 Price hücresi,
+25 satır (anahtar: `selection_estimable`).
+
+| kusur (D-145) | C2'de | **bugün** | durum |
+|---|---|---|---|
+| **1** — birincil alan `energy` neredeyse hiç yazılmıyor | 4/15 satır, **1** tanımlı | **16/16 satır, 10 tanımlı** | ✅ **kapandı, ve tersine döndü** |
+| **2** — hangi alanın yazıldığı **tohuma** bağlı ⇒ tohum düşer | kriz→`resource`, yoksa→`energy` | **her hücrede `energy` satırı var**; s9926 `energy`+`resource`, s9927 yalnız `energy`, s9928 `energy`+`resource` | ✅ **kapandı — hiçbir tohum düşmüyor** |
+| **4** — bütün bir kol-tohumun **hiç** Price satırı olmayabilir | `null` s9912: 0/2 | **s9927 gen2 iki kolda da yok** ⇒ 18 değil **16 hücre** | ⚠️ **gerçek, sınır olarak ilan edilecek** |
+
+⭐ **Ve yeni bir yapısal olgu (L9 dışı, tanımlılık):** `resource` **9 satırın
+9'unda `z_variance = 0.0`** ⇒ **hiç tanımlı değil**. L14'ün confound'u
+(`CRISIS_AFFECTED_DOMAIN` sabit ⇒ kriz herkese aynı skarı verir) kendini
+**sıfır varyans** olarak gösteriyor. ⇒ §3.1'in *"`resource` hücre içi bilgi
+taşımaz"* gerekçesi **artık ölçülmüş**, türetilmiş değil.
+
+⚠️ **§3.1'in bir cümlesi eskidi:** *"C2'de `energy` 216 okumanın 11'inde
+doluydu ⇒ `P_active` düşük beklenmelidir."* Katman 1/1b'den sonra bu **yanlış
+yönde**. Cümle düzeltilmeli — ⚠️ ama bu bir **beklenti**dir, uç nokta seçimi
+değil.
+
+### 5. Sıradaki — ⛔ Yasin'in kararı olmadan ilerlemiyor
+
+| # | soru |
+|---|---|
+| **1** | Birincil A (`ΔP_active`) **olduğu gibi mi kalsın** (öneri: evet), yoksa betimleyiciye mi düşsün — ikincisi **post-hoc olarak ilan edilmek** zorunda |
+| **2** | §4'ün testi ile D-145 §6'nın *"kestirim, hipotez testi değil"* sonucu **çelişiyor** (§4 hâlâ α + Holm diyor). Hangisi geçerli? ⚠️ §2.11: sessizce seçilmez |
+| **3** | L9 bir **kapıya** bağlansın mı — yani analiz aracı bu nicelikleri pilot dosyalarında hesaplamayı **reddetsin** mi |
