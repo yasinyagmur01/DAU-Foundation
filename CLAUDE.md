@@ -46,8 +46,8 @@ bağladı), ama **hangi tohumu çektiğine bağlı**.
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-168** (sıradaki: **D-169**).
-  **Suite:** **640 passed**, 2 deselected. **Kapı: 10.**
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-170** (sıradaki: **D-171**).
+  **Suite:** **644 passed**, 2 deselected. **Kapı: 11** (`I5.1` bağlandı, D-170).
 - ✅ **Talep ölçüm koşumu bitti** (D-168) — `demand_probe_g2_s9923_9925`,
   **2 sa 9 dk**, `complete`, kapı **9/10**, `I5.6` **geçti**.
 - ⛔ **SIRADAKİ İŞ: KARAR — hangi kaldıraç**, ve o **senin** (D-007).
@@ -268,6 +268,18 @@ hücreleri okunabilir (gerekçe D-156 §2).
 - ⛔ **YENİ, D-164: kriz kanalı bugünkü fizikte ölçülemez (0/192)** ⇒ ön-kayıtın
   **D-070/kilit K6** uç noktası (*"S5'in ilk travması = commons krizi"*)
   **askıda**. Sabit kararı (A/B/C) bunu doğrudan etkiler.
+- ⭐ **YENİ, D-169: DR #13 (v3.0 mimari raporu) mutabakata bağlandı — koddan
+  hiçbir değişiklik çıkmadı.** Taşıyıcı iddia (*"DPO kaybı `ln 2`'ye doyuyor"*)
+  **cebirsel olarak ters**: `L = ln 2` ⟺ marj **sıfır**, doygunlukta `L → 0`.
+  Ölçüldü: 64 eğitim çağrısı, **28/64 `ln 2`'nin ÜSTÜNDE** (= negatif marj).
+  ⚠️ Ve zaten teşhis konulamaz: eğitim başına **1–7 optimizer adımı**.
+  **EGI** ⛔ Yasak #1 (trait injection) · **SVC** ⛔ kilit K7 · **CKE** ⛔ L9.
+  ⏸ **LoRA-FA/TIES** üçüncü ön-kayıt aday listesine. ⭐ **RCI alındı** ama
+  **fizik kararından sonra**. Tam tablo `RECONCILIATION.md` **§V**.
+- ⏸ **YENİ, D-169: adapter diski 16 GB / 1194 dizin** — ev işi, bloke etmiyor.
+- ⏸ **YENİ, D-170: konsolidasyon telemetrisi popülasyon çıktısına yazılmıyor**
+  (`edges_created` · `deleted_count`) ⇒ `I5.1` sıfır dediğinde *"konsolidasyon
+  çalışmadı"* ile *"çalıştı, eşleşecek DEEP düğüm yoktu"* ayırt edilemez.
 - ⛔ **YENİ, D-164: `cooperate` sayısı aletlenmemiş.** Popülasyon koşumu
   karar→sonuç dağılımını ne JSON'a ne loga yazıyor ⇒ P3'ün bir maddesi
   okunamadı. Karar kanalına bakan her iş (sonda bataryası, Katman 3) **önce

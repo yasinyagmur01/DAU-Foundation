@@ -13705,3 +13705,83 @@ istiyor) ⇒ ham metin `docs/research/` altında **yok**, izlenebilirlik düşü
 ⚠️ **Ve kodu görmeyen ikinci değerlendirme EGI'yi *"EN TAVSİYE EDİLEN &
 RİSKSİZ"* diye işaretledi** — Yasak #1 ile K7'nin ikisini de kaçırarak.
 Mutabakat adımının neden zorunlu olduğunun bu turdaki kanıtı.
+
+---
+
+## D-170 · 2026-08-22 · ✅ **I5.1 POPÜLASYON KAPILARINA BAĞLANDI** — tanımlıydı, bağlı değildi (D-149'un birebir tekrarı)
+
+**Yetki:** Yasin, 2026-08-22: *"bir diğer adımı önerdiğin şekilde çözelim"* —
+D-169 §2'nin 7. kararı.
+
+### 1. Borç
+
+**D-169 ölçtü:** `I5.1` (*PPR grafiğinde hiç kenar var mı*) `preflight.py:1020`'de
+**tanımlı** ve `run_cprime_multigen` yolunda **bağlı**, ama popülasyon
+koşumunun kapı listesinde **yok**. Son iki popülasyon koşumu on kapı raporladı
+ve bu onlardan biri değildi.
+
+⇒ *"PPR sabit katkı verdi"* (`{seed: 1.0}`, GAP-14) ile *"PPR skor verdi"*
+**bugüne kadarki her popülasyon koşumunda ayırt edilemez** durumdaydı.
+**D-149'un birebir tekrarı** — K6 bu yüzden var.
+
+### 2. Değişiklik — saf aletleme, fizik değişmedi
+
+| yer | ne |
+|---|---|
+| `preflight.check_ppr_active` | yeni `unit` parametresi (varsayılan `"lives"`). Popülasyon koşucusu **ARM başına tek kasa** tutuyor (P1); altı kol kasasını *"altı yaşam"* diye raporlamak §2.8'in bozulma deseni olurdu. **Mesajı değiştirir, verdict'i asla** |
+| `run_arm` sonucu | `"memory_edges": _count_edges(vault.store)` — **burada** okunuyor, çünkü `arm_vault` çıkışta store'u kapatıyor |
+| `UNREADABLE_EDGES = -1` | okunamayan kasa **boş grafik değildir**; `I5.1` tam olarak bu ikisini ayırmak için var |
+| kapı | **FLAG kalıyor** — PPR'ın koşum yoluna bağlanması mı yoksa atıl ilan edilmesi mi gerektiği **GAP-14 kararı**, kapının kararı değil |
+
+### 3. ⚠️ Kapıyı kaydederken yazdığım yorum **aynı turda çürüdü**
+
+İlk sürüm şöyle diyordu: *"Kenarlar bellek hattının özelliği, modelin değil —
+stub da yazar; bu yüzden mock altında da değerlendirilir."*
+
+**Ölçüldü, yanlış:** `write_edge`'in **tek çağıranı** `consolidation.py:106`
+ve yalnız **DEEP/TRAUMA** düğümlerini `DOMAIN_EDGE_WINDOW` içinde eşliyor.
+Stub duygusal ağırlık biriktirmiyor ⇒ o düğümleri **hiç üretmiyor** ⇒ kapı
+*"PPR atıl"* derse **stub hakkında** konuşmuş olur.
+
+⚠️ **`I5.6`'nın ilk sürümü tam aynı hatayı yapmıştı** (D-163: *"arz tarafı
+model-bağımsız görünüyordu, ama talep tarafı karardır"*). ⇒ Aynı sınıf hata,
+aynı yerde, ikinci kez.
+
+**Düzeltildi:** `--mock-llm` altında `None` kaydediyor (I4.1/I5.4/I5.6
+sözleşmesi); stub'lı testlerde `STUB_EXPECTED_FLAGS`'e **beyan edildi** —
+susturma değil, *"burada grafik yapı gereği boş"* ilanı.
+
+### 4. ⛔ Hiçbir iddia yapılmıyor — ve yapılamaz
+
+Mock koşum `0` kenar raporladı. **Bu gerçek koşum hakkında kanıt değildir**
+(§3). Ve gerçek sayı **diskte de yok**: popülasyon çıktı dosyası
+konsolidasyon telemetrisini (`edges_created` · `deleted_count` ·
+`strengthened`) **hiç yazmıyor** ⇒ D-051'in düzeltmesi bu yola ulaşmamış.
+
+⇒ **Verdict bir sonraki GERÇEK koşumda okunacak.** Bugün elde olan şey:
+o koşum artık **sorabilir**.
+
+⏸ **Açılan küçük borç:** konsolidasyon raporu popülasyon çıktısına da yazılmalı,
+yoksa `I5.1` sıfır dediğinde *"konsolidasyon çalışmadı"* ile *"çalıştı, eşleşecek
+DEEP düğüm yoktu"* ayırt edilemez.
+
+### 5. Mutasyon kontrolü (K5) — dördü de yakalandı, **ama biri ilk hâlinde değil**
+
+| # | mutasyon | sonuç |
+|---|---|---|
+| M1 | okunamayan store (`-1`) sıfır sayılsın | ✅ yakalandı |
+| M2 | `unit` yok sayılsın | ✅ yakalandı |
+| **M3** | kasa okunmasın, sabit `0` yazılsın | ⛔ **İLK TESTTE YAKALANMADI** |
+| M4 | kapı başka adla kaydedilsin | ✅ yakalandı |
+
+⛔ **M3:** ilk testim `memory_edges >= 0` diyordu ve **sabit `0` da bunu
+sağlıyordu** — stub'ta gerçek değer de `0` olduğu için test *"kasayı oku"* ile
+*"sabit yaz"* arasını göremiyordu. Okuma noktası **sentinel** ile pinlendi
+(`_count_edges` → 4242), mutasyon tekrarlandı, **yakalandı**.
+
+⚠️ **Bu oturumda mutasyon kontrolünün ikinci kez zayıf test yakalaması**
+(ilki D-166/M2, totolojik `outcome == SABIT`). İkisi de repoya **işe yaramaz
+bekçi** sokacaktı.
+
+**Suite:** 640 → **644 passed**, 2 deselected. md5 doğrulaması +
+`no:cacheprovider` + `__pycache__` silme uygulandı (K5 / D-148).
