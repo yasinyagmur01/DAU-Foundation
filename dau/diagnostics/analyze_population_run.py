@@ -72,6 +72,9 @@ RUN_KEY_INFORMATIVE: str = "generations_informative"
 # which is why "not False" is the test rather than "is True": those files are
 # complete, they just predate the flag.
 RUN_KEY_COMPLETE: str = "complete"
+# D-176/B3. Present only on a merged run; its presence is what tells the
+# report to stop speaking as if there were one file behind it.
+MERGE_KEY_SOURCES: str = "merged_from"
 GEN_KEY_PRICE: str = "price_for_previous_transition"
 GEN_KEY_REPRODUCTION: str = "reproduction_report"
 GEN_KEY_AGENTS: str = "agents"
@@ -136,6 +139,162 @@ class ArmGenerationView:
 
 def load_run(path: Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _comparability_fingerprint(run: dict[str, Any]) -> dict[str, Any]:
+    """The part of a run that decides whether two files may be read together.
+
+    Two fields are dropped, and neither is dropped for convenience:
+
+    * ``tool_identity.lora.adapter`` is a census of the adapter directory,
+      which every run adds to — so two nights of the same experiment differ
+      here by construction.
+    * ``tool_identity.argv`` carries the seed list and the output path, which
+      are exactly what a partitioned run varies on purpose.
+
+    Everything else is compared verbatim: model, quantization, DPO settings,
+    metabolism, fitness, endpoints, sampling, reproduction rule, versions,
+    N, G, events. Two files that disagree on any of those are two experiments,
+    and averaging across them would be the reporting drift §2.8 keeps catching.
+    """
+
+    keep = {
+        key: run.get(key)
+        for key in ("protocol", "n_agents", "n_generations", "events_budget",
+                    "tool_identity")
+    }
+    fingerprint = json.loads(json.dumps(keep))
+    identity = fingerprint.get("tool_identity")
+    if isinstance(identity, dict):
+        identity.pop("argv", None)
+        lora = identity.get("lora")
+        if isinstance(lora, dict):
+            lora.pop("adapter", None)
+    return fingerprint
+
+
+def merge_runs(runs: list[dict[str, Any]], paths: list[Path]) -> dict[str, Any]:
+    """Read several result files as one study (D-176/B3).
+
+    The verifying run is planned as 70 GPU-hours, which cannot be one
+    invocation, so it lands as one file per night. Until now this module took
+    a single ``--results`` path and there was nothing to read them together
+    with — a partitioned run would have finished with no way to report it.
+
+    ⛔ Three refusals, none of them best-effort:
+
+    * a CHECKPOINT is refused, by the same rule a single file is (D-111);
+    * files that disagree on the instrument or the design are refused, because
+      pooling them would silently average two experiments;
+    * OVERLAPPING SEEDS are refused. The repetition unit is the seed
+      (Lazic 2010, adopted in D-140), so the same seed counted twice is
+      pseudoreplication — and it is the failure mode a partitioned run invites,
+      because re-running a night that looked wrong is the natural thing to do.
+
+    ⚠ The gate verdicts are NOT flattened into one healthy-looking stamp. A
+    merged run is `clean` only if every file was, an invariant passes only if
+    it passed everywhere, and the per-file ledger travels in the result so the
+    report can name which night flagged what.
+    """
+
+    if not runs:
+        raise ValueError("merge_runs needs at least one run")
+    for run, path in zip(runs, paths):
+        refuse_if_incomplete(run, path)
+    first = _comparability_fingerprint(runs[0])
+    for run, path in zip(runs[1:], paths[1:]):
+        theirs = _comparability_fingerprint(run)
+        if theirs != first:
+            differing = sorted(k for k in first if theirs.get(k) != first.get(k))
+            raise ValueError(
+                f"{path.name} was produced by a different instrument or design "
+                f"than {paths[0].name} ({differing} differ) — these are two "
+                "experiments, not two nights of one."
+            )
+    seen: dict[int, str] = {}
+    for run, path in zip(runs, paths):
+        for seed in run.get(RUN_KEY_SEEDS, []):
+            if int(seed) in seen:
+                raise ValueError(
+                    f"seed {seed} appears in both {seen[int(seed)]} and "
+                    f"{path.name}. The repetition unit is the seed (D-140), so "
+                    "counting one twice is pseudoreplication — drop a file or "
+                    "re-run one of them on fresh seeds."
+                )
+            seen[int(seed)] = path.name
+
+    names: set[str] = set()
+    for run in runs:
+        names.update((run.get(RUN_KEY_INVARIANTS) or {}).keys())
+    invariants: dict[str, Any] = {}
+    for name in sorted(names):
+        verdicts = [
+            (run.get(RUN_KEY_INVARIANTS) or {}).get(name) for run in runs
+        ]
+        # ⛔ Three outcomes, not two, and the third one is the point. Written
+        # this way after a mutation run: the first version fell through to
+        # `all(v is True)`, which turned a {passed one night, NOT EVALUATED the
+        # other} pair into FAILED — inverting the exact distinction D-121 spent
+        # a decision on. None is not False and it is not True either.
+        if any(verdict is False for verdict in verdicts):
+            invariants[name] = False
+        elif all(verdict is True for verdict in verdicts):
+            invariants[name] = True
+        else:
+            # Some night did not evaluate it, so the STUDY was not fully
+            # checked — reporting a pass would claim coverage the merge does
+            # not have. The per-file ledger says which night saw what.
+            invariants[name] = None
+    qualities = [run.get(RUN_KEY_QUALITY) for run in runs]
+    merged: dict[str, Any] = {
+        **runs[0],
+        RUN_KEY_SEEDS: [seed for run in runs for seed in run.get(RUN_KEY_SEEDS, [])],
+        RUN_KEY_ARMS: [arm for run in runs for arm in run.get(RUN_KEY_ARMS, [])],
+        RUN_KEY_INVARIANTS: invariants,
+        # ⚠ No category is invented when the files disagree. Collapsing
+        # {clean, mock} or {clean, aborted} onto "flagged" would name a state
+        # no run was in; "mixed:…" cannot be mistaken for any single verdict,
+        # and `== "clean"` stays false, which is the direction that matters.
+        RUN_KEY_QUALITY: (
+            qualities[0]
+            if len(set(map(str, qualities))) == 1
+            else "mixed:" + "+".join(sorted({str(q) for q in qualities}))
+        ),
+        RUN_KEY_INFORMATIVE: all(
+            bool(run.get(RUN_KEY_INFORMATIVE)) for run in runs
+        ),
+        MERGE_KEY_SOURCES: [
+            {
+                "file": path.name,
+                "seeds": run.get(RUN_KEY_SEEDS),
+                RUN_KEY_QUALITY: run.get(RUN_KEY_QUALITY),
+                "failed": sorted(
+                    name
+                    for name, ok in (run.get(RUN_KEY_INVARIANTS) or {}).items()
+                    if ok is False
+                ),
+                "replay": _replay_verdict(run),
+            }
+            for run, path in zip(runs, paths)
+        ],
+    }
+    # Belongs to one file and cannot be pooled: each night replayed its own
+    # first seed. The per-file ledger above carries every verdict; leaving the
+    # single-run key behind would let a reader take one night's determinism
+    # for the study's.
+    merged.pop(RUN_KEY_REPLAY, None)
+    return merged
+
+
+def _replay_verdict(run: dict[str, Any]) -> str:
+    replay = run.get(RUN_KEY_REPLAY)
+    if replay is None:
+        return "not run"
+    return (
+        "identical"
+        if replay.get("recorded_digest") == replay.get("replay_digest")
+        else "DIVERGED"
+    )
 
 
 def arm_views(run: dict[str, Any]) -> list[ArmGenerationView]:
@@ -436,15 +595,32 @@ def level0_gate(run: dict[str, Any], views: list[ArmGenerationView]) -> list[str
             "this run has is the one whose selection term is zero BY "
             "CONSTRUCTION (D-107). Levels 1-2 below cannot mean anything."
         )
-    replay = run.get(RUN_KEY_REPLAY)
-    if replay is None:
-        lines.append("I4.1 replay: not run — determinism is not demonstrated")
+    sources = run.get(MERGE_KEY_SOURCES)
+    if sources:
+        # D-176/B3. One line per file, because the study's health is not a
+        # single fact: a night that flagged I4.2 and a night that did not are
+        # different measurements, and a merged stamp would hide which was
+        # which. Printed INSTEAD of the single-run replay line — each night
+        # replayed its own first seed, so there is no study-level replay.
+        lines.append("")
+        lines.append(f"merged from {len(sources)} files:")
+        for source in sources:
+            failed = ", ".join(source.get("failed") or []) or "none"
+            lines.append(
+                f"  {source.get('file')}: seeds={source.get('seeds')} "
+                f"quality={source.get(RUN_KEY_QUALITY)} "
+                f"failed={failed} I4.1 replay={source.get('replay')}"
+            )
     else:
-        same = replay.get("recorded_digest") == replay.get("replay_digest")
-        lines.append(
-            f"I4.1 replay: {'identical' if same else 'DIVERGED'} over "
-            f"{replay.get('n_generations')} generation(s)"
-        )
+        replay = run.get(RUN_KEY_REPLAY)
+        if replay is None:
+            lines.append("I4.1 replay: not run — determinism is not demonstrated")
+        else:
+            same = replay.get("recorded_digest") == replay.get("replay_digest")
+            lines.append(
+                f"I4.1 replay: {'identical' if same else 'DIVERGED'} over "
+                f"{replay.get('n_generations')} generation(s)"
+            )
 
     lines.append("")
     lines.append("Var(w) per arm per transition — the gate itself:")
@@ -740,8 +916,14 @@ def refuse_if_incomplete(run: dict[str, Any], path: Path) -> None:
 def format_report(run: dict[str, Any], path: Path) -> str:
     refuse_if_incomplete(run, path)
     views = arm_views(run)
+    sources = run.get(MERGE_KEY_SOURCES)
+    title = (
+        path.name
+        if not sources
+        else " + ".join(str(source.get("file")) for source in sources)
+    )
     out: list[str] = [
-        f"# Population run report — {path.name}",
+        f"# Population run report — {title}",
         "",
         f"note: {run.get('note')}",
         f"seeds={run.get(RUN_KEY_SEEDS)} N={run.get('n_agents')} "
@@ -773,14 +955,19 @@ def format_report(run: dict[str, Any], path: Path) -> str:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results", type=Path, required=True)
+    # D-176/B3. nargs="+" so a partitioned run can be reported: pass every
+    # night's file and they are merged, with the refusals merge_runs documents.
+    parser.add_argument("--results", type=Path, nargs="+", required=True)
     parser.add_argument("--out", type=Path, default=None)
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_arg_parser().parse_args(argv)
-    report = format_report(load_run(args.results), args.results)
+    paths = list(args.results)
+    runs = [load_run(path) for path in paths]
+    run = runs[0] if len(runs) == 1 else merge_runs(runs, paths)
+    report = format_report(run, paths[0])
     if args.out is not None:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(report + "\n", encoding="utf-8")

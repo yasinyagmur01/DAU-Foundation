@@ -916,3 +916,190 @@ def test_the_one_sided_warning_reaches_the_report(monkeypatch) -> None:
 
     assert "only one arm entered" in text
     assert "100%" in text
+
+
+# ── D-176/B3: reading a partitioned run ──────────────────────────────────────
+# The verifying run is 70 GPU-hours and lands as one file per night. Until B3
+# this module took a single --results path, so a partitioned run would have
+# finished with nothing able to read it.
+
+
+def _night(seeds: tuple[int, ...], **overrides: Any) -> dict[str, Any]:
+    arms: list[dict[str, Any]] = []
+    for seed in seeds:
+        arms.extend(_three_arms(seed=seed))
+    return _run(arms, seeds=list(seeds), complete=True, **overrides)
+
+
+def test_two_nights_merge_into_one_study(tmp_path) -> None:
+    """K2: two files AND two seeds each, or a collapse could not be seen."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    first = _night((9901, 9902))
+    second = _night((9903, 9904))
+
+    merged = merge_runs([first, second], [Path("a.json"), Path("b.json")])
+
+    assert merged["seeds"] == [9901, 9902, 9903, 9904]
+    assert len(merged["arms"]) == len(first["arms"]) + len(second["arms"])
+    # Every seed still reaches the reader as its own row: pooling must not
+    # aggregate the repetition unit away (D-140 / Lazic 2010).
+    assert {view.seed for view in arm_views(merged)} == {9901, 9902, 9903, 9904}
+
+
+def test_a_repeated_seed_is_refused_as_pseudoreplication() -> None:
+    """The failure a partitioned run invites: re-running a night that looked off.
+
+    The repetition unit is the seed, so counting one twice inflates N without
+    adding information — and nothing in the report would show it.
+    """
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    with pytest.raises(ValueError, match="pseudoreplication"):
+        merge_runs(
+            [_night((9901, 9902)), _night((9902, 9903))],
+            [Path("a.json"), Path("b.json")],
+        )
+
+
+def test_files_from_different_instruments_are_refused() -> None:
+    """Pooling two designs would silently average two experiments."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    with pytest.raises(ValueError, match="different instrument or design"):
+        merge_runs(
+            [_night((9901,)), _night((9902,), n_generations=4)],
+            [Path("a.json"), Path("b.json")],
+        )
+
+
+def test_a_checkpoint_cannot_be_merged_in() -> None:
+    """The single-file refusal (D-111) must not have a back door."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import IncompleteRun, merge_runs
+
+    partial = _night((9902,))
+    partial["complete"] = False
+
+    with pytest.raises(IncompleteRun):
+        merge_runs([_night((9901,)), partial], [Path("a.json"), Path("b.json")])
+
+
+def test_one_flagged_night_cannot_be_averaged_into_a_clean_study() -> None:
+    """⛔ The merged stamp is the conservative one, and the ledger survives.
+
+    A night that flagged and a night that did not are different measurements.
+    Reporting the pair as `clean` is exactly the silent fake result the whole
+    preflight system exists to prevent.
+    """
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    clean = _night((9901,))
+    flagged = _night(
+        (9902,),
+        run_quality="flagged",
+        invariants={"I0.3": True, "I4.1": True, "I4.2": False},
+    )
+
+    merged = merge_runs([clean, flagged], [Path("a.json"), Path("b.json")])
+
+    assert merged["run_quality"] != "clean"
+    assert merged["invariants"]["I4.2"] is False
+    assert merged["invariants"]["I0.3"] is True
+    report = "\n".join(level0_gate(merged, arm_views(merged)))
+    assert "merged from 2 files" in report
+    assert "b.json" in report and "I4.2" in report
+
+
+def test_a_never_evaluated_invariant_does_not_become_a_pass() -> None:
+    """None is not True — the distinction D-121 spent a decision on."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    merged = merge_runs(
+        [
+            _night((9901,), invariants={"I5.4": None}),
+            _night((9902,), invariants={"I5.4": None}),
+        ],
+        [Path("a.json"), Path("b.json")],
+    )
+
+    assert merged["invariants"]["I5.4"] is None
+
+
+def test_a_gate_that_only_one_night_evaluated_is_not_reported_as_failed() -> None:
+    """⛔ Found by a surviving mutant, not by design.
+
+    The first version of the merge fell through to `all(v is True)`, so an
+    invariant that PASSED one night and was never evaluated the other came out
+    FAILED — the D-121 distinction inverted. None is the honest answer: the
+    study was not fully checked, and the per-file ledger says by whom.
+    """
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import merge_runs
+
+    merged = merge_runs(
+        [
+            _night((9901,), invariants={"I5.4": True}),
+            _night((9902,), invariants={"I5.4": None}),
+        ],
+        [Path("a.json"), Path("b.json")],
+    )
+
+    assert merged["invariants"]["I5.4"] is None, "not evaluated is not failed"
+
+
+def test_the_merged_report_never_claims_one_nights_replay_for_the_study() -> None:
+    """Each night replayed its own first seed; there is no study-level replay."""
+
+    from pathlib import Path
+
+    from dau.diagnostics.analyze_population_run import (
+        RUN_KEY_REPLAY,
+        merge_runs,
+    )
+
+    merged = merge_runs(
+        [_night((9901,)), _night((9902,))], [Path("a.json"), Path("b.json")]
+    )
+
+    assert RUN_KEY_REPLAY not in merged
+    report = "\n".join(level0_gate(merged, arm_views(merged)))
+    assert "I4.1 replay=identical" in report
+    assert "determinism is not demonstrated" not in report
+
+
+def test_cli_reports_several_files_at_once(tmp_path) -> None:
+    """K3 — the wiring, not just merge_runs (the whole point of B3)."""
+
+    first = tmp_path / "night1.json"
+    second = tmp_path / "night2.json"
+    first.write_text(json.dumps(_night((9901, 9902))), encoding="utf-8")
+    second.write_text(json.dumps(_night((9903, 9904))), encoding="utf-8")
+    out = tmp_path / "report.md"
+
+    main(["--results", str(first), str(second), "--out", str(out)])
+
+    report = out.read_text(encoding="utf-8")
+    assert "night1.json + night2.json" in report
+    assert "merged from 2 files" in report
+    for seed in (9901, 9902, 9903, 9904):
+        assert f"s{seed}" in report
