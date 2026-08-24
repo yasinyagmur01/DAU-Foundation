@@ -20,7 +20,13 @@ from dau.diagnostics.preflight import RUN_QUALITY_CLEAN, PreflightAbort
 # meet the harvest ceiling — so "the ceiling never bound" is a fact about the
 # canned agent, not about the commons. The gate is right to fire and the suite
 # is right to expect it.
-STUB_EXPECTED_FLAGS: frozenset[str] = frozenset({"I5.4", "I5.6"})
+# ⚠ I5.1 joined this set in D-170, and it is a DECLARATION, not a silencing:
+# `write_edge` has exactly one caller (consolidation.py), which pairs only
+# DEEP/TRAUMA nodes inside DOMAIN_EDGE_WINDOW. A stubbed `agent_node`
+# accumulates no emotional weight, so it produces none of those and the graph
+# is empty BY CONSTRUCTION here. The gate is right to fire; what it describes
+# is the stub. A real run's verdict is not predicted by this list.
+STUB_EXPECTED_FLAGS: frozenset[str] = frozenset({"I5.1", "I5.4", "I5.6"})
 
 
 def _flagged(results: dict[str, Any]) -> frozenset[str]:
@@ -3172,3 +3178,136 @@ def test_demand_summary_reaches_the_results_file(monkeypatch) -> None:
             assert demand[DEMAND_KEY_OUTCOMES], "the outcome histogram is empty"
             seen_rows += demand[DEMAND_KEY_ROWS]
     assert seen_rows > 0
+
+
+def test_ppr_gate_separates_empty_graph_from_unreadable_store() -> None:
+    """⚠ K2. D-170. I5.1's whole reason for existing is telling "association
+    found nothing" from "association never ran", so the rows carry BOTH an
+    unreadable store (-1) and real counts, and two different real counts —
+    a predicate that summed blindly or treated -1 as zero would pass.
+    """
+
+    from dau.diagnostics.preflight import check_ppr_active
+
+    passed, detail = check_ppr_active(
+        [{"agent_id": "a", "memory_edges": 3}, {"agent_id": "b", "memory_edges": 7}]
+    )
+    assert passed is True
+    assert "10 edges" in detail, detail
+
+    unreadable, detail_unreadable = check_ppr_active(
+        [{"agent_id": "a", "memory_edges": 12}, {"agent_id": "b", "memory_edges": -1}]
+    )
+    assert unreadable is False, "an unreadable store was counted as an empty graph"
+    assert "unreadable" in detail_unreadable
+
+    inert, detail_inert = check_ppr_active(
+        [{"agent_id": "a", "memory_edges": 0}, {"agent_id": "b", "memory_edges": 0}]
+    )
+    assert inert is False
+    assert "inert" in detail_inert
+
+    empty, _ = check_ppr_active([])
+    assert empty is False, "no rows at all was reported as a healthy graph"
+
+
+def test_ppr_gate_unit_label_follows_the_caller() -> None:
+    """⚠ §2.8. D-170. The population runner keeps one vault per ARM, not per
+    life, so the message must not call six arm vaults "six lives" — the
+    reporting/measuring pair drifting apart is this project's oldest bug class.
+    The verdict must be untouched by the label.
+    """
+
+    from dau.diagnostics.preflight import check_ppr_active
+
+    rows = [{"agent_id": "a", "memory_edges": 5}]
+    default_passed, default_detail = check_ppr_active(rows)
+    labelled_passed, labelled_detail = check_ppr_active(rows, unit="arm vaults")
+
+    assert default_passed == labelled_passed
+    assert "lives" in default_detail
+    assert "arm vaults" in labelled_detail, labelled_detail
+    assert "lives" not in labelled_detail, "the caller's unit was ignored"
+
+
+def test_i51_and_arm_edge_count_reach_the_results_file(monkeypatch) -> None:
+    """⚠ K3 — wired, not merely written. D-169 measured that I5.1 was DEFINED
+    in preflight and bound only on the single-lineage path, so every population
+    run to date reported ten gates without this one. That is D-149's failure
+    verbatim.
+
+    ⚠ The gate's VERDICT is not asserted: under a canned LLM the vault sees no
+    DEEP/TRAUMA nodes, so consolidation writes no edges and "inert" would be a
+    statement about the stub. What is asserted is that the gate ran, that its
+    detail is the registered predicate's own, and that the count reached the
+    arm record at all.
+    """
+
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    results = run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    from dau.diagnostics.preflight import check_ppr_active
+
+    assert "I5.1" in results["invariants"], "the gate never ran"
+    recorded = results["invariant_details"]["I5.1"]
+    assert recorded["mode"] == "flag"
+    # ⚠ The VERDICT is deliberately not asserted to mean anything: a stubbed
+    # agent writes no DEEP/TRAUMA nodes, so consolidation writes no edges and
+    # "inert" describes the stub. What is asserted is that the registered
+    # predicate is the one under test — D-149's failure was a gate that was
+    # defined and never bound, and this is the check for that.
+    _, expected_detail = check_ppr_active(
+        [
+            {
+                "agent_id": f"{arm['arm']}-s{arm['seed']}",
+                "memory_edges": int(arm["memory_edges"]),
+            }
+            for arm in results["arms"]
+        ],
+        unit="arm vaults",
+    )
+    assert recorded["detail"] == expected_detail, (
+        "the registered predicate is not the one under test"
+    )
+    assert "arm vaults" in recorded["detail"]
+
+    for arm in results["arms"]:
+        assert "memory_edges" in arm, "the arm vault count never reached the record"
+        assert int(arm["memory_edges"]) >= 0, (
+            "the vault was read after arm_vault closed it"
+        )
+
+
+def test_arm_edge_count_is_read_from_the_vault_not_assumed(monkeypatch) -> None:
+    """⚠ K5 caught this one. D-170.
+
+    The previous test asserts `memory_edges >= 0`, which a hard-coded 0 also
+    satisfies — under a canned LLM the true count IS 0, so the test could not
+    tell "read the vault" from "wrote a constant". The mutation
+    (`_count_edges(vault.store)` -> `0`) passed it.
+
+    So the read itself is pinned: `_count_edges` is replaced by a sentinel and
+    that sentinel has to appear in the arm record AND in the gate's detail. A
+    constant cannot produce it.
+    """
+
+    import dau.diagnostics.run_population_experiment as rpe
+
+    sentinel = 4242
+    monkeypatch.setattr(graph_mod, "agent_node", _stub_agent)
+    monkeypatch.setattr(rpe, "_count_edges", lambda store: sentinel)
+
+    results = rpe.run_population_experiment(
+        seeds=[SEED], n_agents=2, n_generations=2, events_budget=EVENTS
+    )
+
+    for arm in results["arms"]:
+        assert int(arm["memory_edges"]) == sentinel, (
+            "the arm record did not come from the vault read"
+        )
+    # ⚠ The GATE is not asserted here: it does not evaluate under a stub. What
+    # is pinned is the READ — a hard-coded count cannot produce the sentinel,
+    # which is exactly the mutation (`_count_edges(vault.store)` -> `0`) that
+    # the previous version of this test failed to catch.

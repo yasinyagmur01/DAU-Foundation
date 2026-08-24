@@ -89,6 +89,7 @@ from dau.diagnostics.preflight import (
     arm_digest,
     check_determinism_settings,
     check_no_stale_adapters,
+    check_ppr_active,
     check_pythonhashseed,
     check_replay_identical,
     check_seed_derivation,
@@ -98,6 +99,7 @@ from dau.diagnostics.preflight import (
 )
 from dau.diagnostics.run_cprime_multigen import (
     MOCK_LLM_ENV,
+    _count_edges,
     _decisions,
     _landmark_reading,
     install_mock_llm,
@@ -414,6 +416,9 @@ DEMAND_KEY_P90: str = "requested_p90"
 DEMAND_KEY_MAX: str = "requested_max"
 DEMAND_KEY_OUTCOMES: str = "outcomes"
 DEMAND_P90_QUANTILE: float = 0.90
+# D-170. Missing rather than zero: an arm whose vault could not be read is not
+# an arm with an empty graph, and I5.1 exists precisely to tell those apart.
+UNREADABLE_EDGES: int = -1
 
 
 def demand_summary(
@@ -1746,6 +1751,11 @@ def _run_arm_generations(
         "arm": arm,
         "seed": seed,
         "generations": generations,
+        # D-170 / I5.1. Read HERE because `arm_vault` closes the store on the
+        # way out: after that the count is gone and the gate would have to
+        # guess. One number per ARM, not per life — the vault is per arm by
+        # design (P1), so this is the finest grain that exists.
+        "memory_edges": _count_edges(vault.store),
         # D-149 / I4.2 (GAP-12). The global RNG state each generation STARTED
         # from. Kept at arm level rather than inside `generations` because the
         # gate compares ACROSS arms of one seed, and a per-generation nesting
@@ -2003,6 +2013,46 @@ def run_population_experiment(
         (lambda: (None, "not evaluated under a canned LLM"))
         if use_mock
         else check_somatic_scale_applied,
+        mode=MODE_FLAG,
+    )
+    # I5.1 (GAP-14 / D-169) — is the association graph anything but empty?
+    # Bound here because it was DEFINED in preflight and bound only on the
+    # single-lineage path: the population runs reported ten gates and this was
+    # not one of them, so "PPR contributed a constant" and "PPR contributed a
+    # score" were indistinguishable across every population run to date. That
+    # is D-149's failure verbatim (a gate defined but not wired) and K6 exists
+    # because of it.
+    #
+    # ⚠ FLAG, and it stays FLAG: whether PPR SHOULD be wired into the run path
+    # or documented as inert is the GAP-14 decision, not the gate's call. The
+    # gate reports; it does not decide.
+    #
+    # ⚠ Skipped under a canned LLM, and the first version of this line got the
+    # reason wrong in the same way I5.6's first version did. It said edges are
+    # "a property of the memory pipeline, not of the model" — measured, and
+    # false: `write_edge` has exactly one caller (consolidation.py), which
+    # pairs only DEEP/TRAUMA nodes inside DOMAIN_EDGE_WINDOW. A stub life
+    # accumulates no emotional weight, so it produces none of those, and the
+    # gate would report "PPR is inert" about the stub rather than about the
+    # system. Records None — not evaluated — like I4.1, I5.4 and I5.6.
+    gate.check(
+        "I5.1",
+        (lambda: (None, "not evaluated under a canned LLM"))
+        if use_mock
+        else (
+            lambda: check_ppr_active(
+                [
+                    {
+                        "agent_id": f"{arm['arm']}-s{arm['seed']}",
+                        "memory_edges": int(
+                            arm.get("memory_edges", UNREADABLE_EDGES)
+                        ),
+                    }
+                    for arm in arm_results
+                ],
+                unit="arm vaults",
+            )
+        ),
         mode=MODE_FLAG,
     )
     # I5.5 (D-159 / queue 2.6) — is the selection term measurable where the

@@ -1017,24 +1017,31 @@ def run_phase2(
     return preflight
 
 
-def check_ppr_active(life_stats: list[dict[str, Any]]) -> tuple[bool, str]:
+def check_ppr_active(
+    life_stats: list[dict[str, Any]], unit: str = "lives"
+) -> tuple[bool, str]:
     """I5.1 — the association graph has edges at all.
 
     compute_ppr_scores returns {seed_domain: 1.0} on an empty graph without
     complaining, so PPR reads as a working component while contributing a
     constant (GAP-14).
+
+    ``unit`` names what one row is, and exists because the population runner
+    keeps ONE vault per ARM rather than one per life (D-170): reporting six
+    arm vaults as "six lives" would be the reporting/measuring pair drifting
+    apart again (§2.8). It changes the message, never the verdict.
     """
 
     if not life_stats:
-        return False, "no lives sampled"
+        return False, f"no {unit} sampled"
     total = sum(int(s.get("memory_edges", 0)) for s in life_stats if
                 int(s.get("memory_edges", -1)) >= 0)
     unreadable = sum(1 for s in life_stats if int(s.get("memory_edges", -1)) < 0)
     if unreadable:
-        return False, f"{unreadable} lives had an unreadable store"
+        return False, f"{unreadable} {unit} had an unreadable store"
     if total <= 0:
-        return False, "memory_edges is empty in every life — PPR is inert"
-    return True, f"{total} edges across {len(life_stats)} lives"
+        return False, f"memory_edges is empty in every one of the {unit} — PPR is inert"
+    return True, f"{total} edges across {len(life_stats)} {unit}"
 
 
 def check_memory_written(life_stats: list[dict[str, Any]]) -> tuple[bool, str]:
