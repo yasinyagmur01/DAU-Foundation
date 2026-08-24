@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DAU Master Reference v2.5</title>
+  <title>DAU — Master Reference</title>
   <style>
     html {
       color: #1a1a1a;
@@ -170,7 +170,7 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">DAU Master Reference v2.5</h1>
+<h1 class="title">DAU — Master Reference</h1>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
@@ -465,19 +465,134 @@ id="toc-dr-kanalı-12-kimlik-hatasından-sonra-ne-değişti">27.6 DR kanalı:
 id="toc-ikinci-ön-kayıt-kilitli">27.7 İkinci ön-kayıt — 🔒
 kilitli</a></li>
 </ul></li>
+<li><a
+href="#d-123d-163-c2nin-nullı-teşhis-zinciri-ve-katman-1-v2.6-yeni"
+id="toc-d-123d-163-c2nin-nullı-teşhis-zinciri-ve-katman-1-v2.6-yeni">28.
+D-123…D-163: C2’nin null’ı, teşhis zinciri ve Katman 1 (v2.6 — yeni)</a>
+<ul>
+<li><a href="#c2-koşuldu-sonuç-evren-nullı-d-123"
+id="toc-c2-koşuldu-sonuç-evren-nullı-d-123">28.1 C2 koşuldu: sonuç
+<strong>evren null’ı</strong> (D-123)</a></li>
+<li><a href="#sebep-tek-cümleye-indi-d-129d-130"
+id="toc-sebep-tek-cümleye-indi-d-129d-130">28.2 Sebep tek cümleye indi
+(D-129/D-130)</a></li>
+<li><a href="#znin-tek-boyutluluğu-ölçüldü-d-136-d-137-d-138"
+id="toc-znin-tek-boyutluluğu-ölçüldü-d-136-d-137-d-138">28.3
+<code>z</code>’nin tek boyutluluğu ölçüldü (D-136 · D-137 ·
+D-138)</a></li>
+<li><a href="#üçüncü-ön-kayıt-yazıldı-kilitlenemedi-d-144-d-145"
+id="toc-üçüncü-ön-kayıt-yazıldı-kilitlenemedi-d-144-d-145">28.4 Üçüncü
+ön-kayıt: yazıldı, <strong>kilitlenemedi</strong> (D-144 ·
+D-145)</a></li>
+<li><a href="#darboğaz-ölçüldü-bütçe-değil-uç-nokta-d-146"
+id="toc-darboğaz-ölçüldü-bütçe-değil-uç-nokta-d-146">28.5 Darboğaz
+ölçüldü: bütçe değil, uç nokta (D-146)</a></li>
+<li><a href="#kapılar-bağlandı-ve-anında-kusur-buldular-d-149-d-159"
+id="toc-kapılar-bağlandı-ve-anında-kusur-buldular-d-149-d-159">28.6
+Kapılar bağlandı ve anında kusur buldular (D-149 · D-159)</a></li>
+<li><a href="#fitness-bantları-göreli-yapıldı-d-152"
+id="toc-fitness-bantları-göreli-yapıldı-d-152">28.7 Fitness bantları
+göreli yapıldı (D-152)</a></li>
+<li><a href="#iki-koşum-iki-karar-d-155-d-161"
+id="toc-iki-koşum-iki-karar-d-155-d-161">28.8 İki koşum, iki karar
+(D-155 · D-161)</a></li>
+<li><a href="#kurucu-nesil-ısınma-neslidir-d-156-d-157"
+id="toc-kurucu-nesil-ısınma-neslidir-d-156-d-157">28.9 Kurucu nesil
+ısınma neslidir (D-156 · D-157)</a></li>
+<li><a href="#katman-1-fizik-ikinci-kez-değişti-d-162-d-163"
+id="toc-katman-1-fizik-ikinci-kez-değişti-d-162-d-163">28.10 ⭐⭐ Katman
+1 — fizik ikinci kez değişti (D-162 · D-163)</a></li>
+<li><a href="#katman-planı-iddia-nasıl-genişleyecek"
+id="toc-katman-planı-iddia-nasıl-genişleyecek">28.11 Katman planı —
+iddia nasıl genişleyecek</a></li>
+<li><a href="#bu-bölümün-ilan-ettiği-sınırlar"
+id="toc-bu-bölümün-ilan-ettiği-sınırlar">28.12 ⚠ Bu bölümün ilan ettiği
+sınırlar</a></li>
+</ul></li>
+<li><a
+href="#d-164d-167-katman-1-ölçüldü-ve-sabit-kararı-verilemez-çıktı-v2.7-yeni"
+id="toc-d-164d-167-katman-1-ölçüldü-ve-sabit-kararı-verilemez-çıktı-v2.7-yeni">29.
+D-164…D-167: Katman 1 ölçüldü, ve sabit kararı
+<strong>verilemez</strong> çıktı (v2.7 — yeni)</a>
+<ul>
+<li><a href="#katman-1-pilotu-ön-taahhüt-edilmiş-üç-kural-d-164"
+id="toc-katman-1-pilotu-ön-taahhüt-edilmiş-üç-kural-d-164">29.1 Katman 1
+pilotu — ön-taahhüt edilmiş üç kural (D-164)</a></li>
+<li><a href="#projeksiyon-çürüdü-28.10un-tablosu-düzeltilir"
+id="toc-projeksiyon-çürüdü-28.10un-tablosu-düzeltilir">29.2 ⛔
+Projeksiyon çürüdü — §28.10’un tablosu düzeltilir</a></li>
+<li><a href="#neden-beş-bulgu-d-164-4"
+id="toc-neden-beş-bulgu-d-164-4">29.3 Neden — beş bulgu (D-164
+§4)</a></li>
+<li><a
+href="#sabit-kararı-denendi-boş-küme-sanıldı-ve-o-sonuç-çürüdü-d-165-d-168"
+id="toc-sabit-kararı-denendi-boş-küme-sanıldı-ve-o-sonuç-çürüdü-d-165-d-168">29.4
+⛔ Sabit kararı denendi, <strong>boş küme</strong> sanıldı — ve o sonuç
+<strong>çürüdü</strong> (D-165 → D-168)</a></li>
+<li><a href="#b-talep-ölçüldü-d-167-ön-taahhüt-d-168-okuma"
+id="toc-b-talep-ölçüldü-d-167-ön-taahhüt-d-168-okuma">29.4-b Talep
+ölçüldü (D-167 ön-taahhüt · D-168 okuma)</a></li>
+<li><a href="#alet-talep-dağılımı-d-166"
+id="toc-alet-talep-dağılımı-d-166">29.5 Alet: talep dağılımı
+(D-166)</a></li>
+<li><a href="#bu-bölümün-ilan-ettiği-sınırlar-1"
+id="toc-bu-bölümün-ilan-ettiği-sınırlar-1">29.6 Bu bölümün ilan ettiği
+sınırlar</a></li>
+<li><a href="#ders-türetme-disiplininin-üçüncü-katı"
+id="toc-ders-türetme-disiplininin-üçüncü-katı">29.7 Ders — türetme
+disiplininin üçüncü katı</a></li>
+</ul></li>
+<li><a
+href="#d-169d-172-fizik-üçüncü-kez-değişti-ve-kanal-1in-yarısı-hiç-çalışmıyormuş-v2.9-yeni"
+id="toc-d-169d-172-fizik-üçüncü-kez-değişti-ve-kanal-1in-yarısı-hiç-çalışmıyormuş-v2.9-yeni">30.
+D-169…D-172: fizik <strong>üçüncü kez</strong> değişti, ve Kanal 1’in
+yarısı hiç çalışmıyormuş (v2.9 — yeni)</a>
+<ul>
+<li><a href="#dr-13-mutabakatı-rapordan-kod-değişmedi-d-169"
+id="toc-dr-13-mutabakatı-rapordan-kod-değişmedi-d-169">30.1 DR #13
+mutabakatı — rapordan <strong>kod değişmedi</strong> (D-169)</a></li>
+<li><a href="#i5.1-popülasyon-kapılarına-bağlandı-d-170"
+id="toc-i5.1-popülasyon-kapılarına-bağlandı-d-170">30.2
+<code>I5.1</code> popülasyon kapılarına bağlandı (D-170)</a></li>
+<li><a href="#katman-1b-fizik-üçüncü-kez-değişti-d-171"
+id="toc-katman-1b-fizik-üçüncü-kez-değişti-d-171">30.3 ⭐⭐ Katman 1b —
+<strong>fizik üçüncü kez değişti</strong> (D-171)</a></li>
+<li><a href="#okunabilirlik-denetimi-ve-kanal-1in-yarısı-d-172"
+id="toc-okunabilirlik-denetimi-ve-kanal-1in-yarısı-d-172">30.4 ⛔⛔
+Okunabilirlik denetimi — ve Kanal 1’in yarısı (D-172)</a></li>
+<li><a href="#bu-bölümün-ilan-ettiği-sınırlar-2"
+id="toc-bu-bölümün-ilan-ettiği-sınırlar-2">30.5 Bu bölümün ilan ettiği
+sınırlar</a></li>
+<li><a href="#ders-29.7nin-dördüncü-katı"
+id="toc-ders-29.7nin-dördüncü-katı">30.6 Ders — §29.7’nin dördüncü
+katı</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </nav>
 <h1 id="dau-master-reference">DAU — Master Reference</h1>
-<p><strong>Versiyon 2.5</strong> · 2026-08-18 <strong>Dosya:</strong>
+<p><strong>Versiyon 2.9</strong> · 2026-08-24 ⚠ <em>(Başlık
+<strong>2.6</strong>’da kalmıştı, §22 ise 2.7 ve 2.8’i çoktan yazmıştı —
+belgenin kendi sürüm alanı iki tur geriydi. D-172 turunda
+düzeltildi.)</em> ✅ <em>(<code>.html</code> ve <code>.pdf</code>
+<strong>v2.9’da senkron</strong> — üç sürüm boyunca v2.5’te kalmışlardı.
+Üretim artık <code>docs/build_master_reference.sh</code> ile
+<strong>koşturulabilir</strong>, reçete bir cümlede değil. pandoc 3.7 +
+xelatex. ⚠ Sayfa sayısı burada <strong>yazmıyor</strong>: bu satırın
+kendisi PDF’e girdiği için sayıyı yazmak onu değiştiriyordu.)</em>
+<strong>Dosya:</strong>
 <code>docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}</code>
 <em>(<code>.md</code> kaynaktır. ⚠ <code>.html</code> ve
-<code>.pdf</code> <strong>v2.4.3’te kaldı</strong> — v2.4.4’ün §26’sı ve
-v2.5’in §27’si orada <strong>yok</strong>. <code>.md</code> tek güncel
-kaynaktır. Önceki üretim v2.4.3’te yapılmıştı — pandoc; PDF’te emoji’ler
-metin karşılığına çevrildi (<code>✅</code> → <code>[OK]</code> vb.)
-çünkü LaTeX fontunda karşılıkları yok. Anlam korunur, yalnız PDF’in
-görüntüsü md’den farklıdır.)</em></p>
+<code>.pdf</code> <strong>v2.5’te kaldı</strong> — v2.6 yalnız
+<code>.md</code>. (2026-08-18, pandoc 3.7 + xelatex, 34 sayfa). PDF’te
+emoji’ler metin karşılığına çevriliyor (<code>✅</code> →
+<code>[OK]</code>, <code>⚠</code> → <code>[!]</code>, <code>⛔</code> →
+<code>[STOP]</code> …) ve DejaVu ailesi kullanılıyor ki Türkçe
+karakterler kod bloklarında da düşmesin. Önceki üretim v2.4.3’te
+yapılmıştı — pandoc; PDF’te emoji’ler metin karşılığına çevrildi
+(<code>✅</code> → <code>[OK]</code> vb.) çünkü LaTeX fontunda
+karşılıkları yok. Anlam korunur, yalnız PDF’in görüntüsü md’den
+farklıdır.)</em></p>
 <hr />
 <h2 id="v2.4.4-evrenin-fiziği-değişti-2026-08-13">🔔 v2.4.4 — EVRENİN
 FİZİĞİ DEĞİŞTİ (2026-08-13)</h2>
@@ -1075,6 +1190,38 @@ ADIM 1)</h2>
 <pre><code>P_next = clamp(P + r·P·(1 - P/P_max) - Σe_i, 0, P_max)
 collapse = P_next &lt;= P_max · COLLAPSE_EPSILON
 # POOL_MAX=100, POOL_REGEN_RATE=0.15, COLLAPSE_EPSILON=0.05</code></pre>
+<p>⛔⛔ <strong>HASAT KURALI DEĞİŞTİ (2026-08-20, D-162/D-163) — bu
+bölüm bu haliyle artık tarihçedir.</strong> <code>Σe_i</code> yukarıda
+<strong>sabit kota</strong>ydı: ajan ne ilan ettiyse stok bitene kadar
+tamamı veriliyordu. Ölçüldü ki bu evrene <strong>iki kararlı
+durum</strong> veriyor — ya havuz çöker ya hiç ısırmaz, arada rejim yok
+(D-081’in <em>“kıtlık anı”</em>sı, D-163 §1’de doğrudan kanıtlandı).</p>
+<p>Bugünkü kural <strong>stoka oranlı bir tavan</strong> ekliyor, ve
+tavan <strong>sırası gelen ajanın gördüğü kalan stoktan</strong>
+hesaplanıyor:</p>
+<pre><code>cap_i    = EXTRACTION_LIMIT_RATIO · (kalan_stok / N)
+alınan_i = min(talep_i, cap_i, kalan_stok)
+EXTRACTION_LIMIT_RATIO = POOL_REGEN_RATE · (1 − COLLAPSE_EPSILON) = 0.1425</code></pre>
+<p>⭐ <strong>Sabit türetilmiştir, seçilmemiştir.</strong> Tavanlı bir
+havuz bir dengeye oturur ve denge kapalı formdadır:
+<code>denge = 1 − r/REGEN</code>. Yani oranı seçmek <em>“havuz nerede
+duracak”</em> demektir, ve savunulabilir yer kodun <strong>zaten çöküş
+dediği taban</strong>dır. ⛔ Reddedilen alternatif
+(<code>DEFECT/POOL_INIT = 0.10</code>) <strong>aynı temizlikte
+türetilmişti</strong> ama dengeyi 0.333’e koyuyordu — kriz eşiğinin
+(0.30) üstüne — ve <strong>kriz kanalını yapısal olarak
+öldürüyordu</strong> (o kanal gerçek koşumda 192 yaşamın 127’sinde
+ateşleniyor).</p>
+<p>⚠ <strong>Talep DEĞİŞMEDİ.</strong>
+<code>EXTRACTION_DEFECT = 8.0</code> ve karar→çıkarım eşlemesi aynen
+duruyor: talep <strong>davranıştır</strong> ve ona dokunmak K7’nin
+aksiyom gerekçesiyle kapattığı kanaldır. Değişen şey <strong>ortamın
+karnesi</strong>.</p>
+<p>⇒ <strong>İki yapısal sonuç:</strong> çöküş artık <strong>soğurucu
+değil</strong> (havuz tabana yaklaşır, çakılmaz), ve
+<code>realized_extractions</code>’ın <strong>orantılı paylaştırma dalı
+ulaşılamaz</strong> hâle geldi — silinmedi, ulaşılmazlığı testle
+sabitlendi. Ayrıntı §28.</p>
 <h3 id="adim-1-somatic-enforcement-kodlandı">ADIM 1 — Somatic
 Enforcement (kodlandı)</h3>
 <pre><code>POOL_CRISIS_THRESHOLD   = 0.30
@@ -1296,7 +1443,8 @@ dau/generation/
                             plan_next_generation / close_transition (D-101)
 
 dau/society/
- ├── environment.py        — pool physics + apply_crisis_trauma (ADIM 1)
+ ├── environment.py        — 381 satır; pool physics + apply_crisis_trauma
+ │                            (ADIM 1) + **stoka oranlı hasat tavanı** (D-163)
  ├── run_convention_pilot*.py / run_meta_ab.py / run_nuance_loss_pilot.py
  └── tests/
 
@@ -1305,12 +1453,12 @@ dau/diagnostics/
  ├── run_protocol_c_prime.py — C′ harness (ADIM 6; lived/null/shuffle, N≥15)
  ├── run_cprime_multigen.py — 1610 satır; gen1→transfer→gen2 (B2&#39;nin yolu,
  │                          DEĞİŞMEDİ — `prereg/b2-code` etiketi)
- ├── run_population_experiment.py — 1464 satır; **popülasyon sarmalayıcısı**
+ ├── run_population_experiment.py — 2056 satır; **popülasyon sarmalayıcısı**
  │                          (N ajan · G nesil · kol başına ayrı mera);
  │                          I0.3·I0.4·I0.6·I0.7·I1.1·I4.1 + checkpoint
  ├── analyze_population_run.py — 724 satır; dört seviyeye göre okuma;
  │                          **p-değeri üretmez** (test bekçiliğiyle)
- ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.4);
+ ├── preflight.py          — 1293 satır; değişmez kapıları (I0.1–I5.6);
  │                          ABORT/FLAG modları
  ├── tool_identity.py      — 299 satır; koşumun alet kimliği; yüklenen
  │                          ağırlığı ve ayarları raporlar (+ cuda_allocator)
@@ -1400,14 +1548,16 @@ Llama-3.1-8B + peft · LangSmith</p>
 <td><code>test_precision_pe.py</code> (rolling-history suite)</td>
 </tr>
 <tr>
-<td><strong>Collect (v2.4.4 branch)</strong></td>
-<td><strong>384 passed, 2 deselected</strong></td>
+<td><strong>Collect (v2.6)</strong></td>
+<td><strong>636 passed, 2 deselected</strong></td>
 </tr>
 </tbody>
 </table>
 <p><em>(Master v1.4’teki “137” / v2.2’deki “177” / v2.3’teki “182” /
-v2.4.1’deki “206” sayıları önceki kesitler; bu belge <strong>bu branch
-collect=384</strong> ile kilitlenir.)</em></p>
+v2.4.1’deki “206” / v2.4.4’teki “384” sayıları önceki kesitler; bu belge
+<strong>collect=636</strong> ile kilitlenir. Artış çoğunlukla popülasyon
+yolunun kapıları ve K2/K3/K5 disiplininden geliyor — her düzeltme
+testiyle ve mutasyon turuyla girdi.)</em></p>
 <p><strong>NLI flake ÇÖZÜLDÜ (<code>3d760e8</code>):</strong> unit path
 mock HF; gerçek model <code>@pytest.mark.integration</code> (günlük
 suite dışı). Kök neden: HF Hub canlı çağrı + ağ kesintisi
@@ -2458,6 +2608,75 @@ güç yok; “etki doğrulandı” yasak). Sıradaki = multi-gen pre-reg (§23).
 </tr>
 </tbody>
 </table>
+<div class="line-block"><strong>2.4.2</strong> |
+<strong>2026-08-11</strong> | §24 preflight değişmez sistemi + §25 karar
+kaydı sistemi eklendi (v2.4.1’de <strong>hiç yoktu</strong>). Yanlışlar
+yerinde ⚠ ile işaretlendi: <code>W=10</code> beş yerde · greedy plato
+reçetesi · §21 NLI satırı. <strong>Anlatı yeniden yazılmadı.</strong>
+|<br />
+<strong>2.4.3</strong> | <strong>2026-08-12</strong> | Faz C belge
+borcu: §23 baştan yazıldı · D-045…D-053 · consolidation anlatısı ilk
+ölçülen <code>deleted_count</code> ile ·
+<code>.html</code>/<code>.pdf</code> yeniden üretildi (29 sayfa). B2
+sonucu <strong>alet null’ı</strong> olarak sınıflandı. |<br />
+<strong>2.4.4</strong> | <strong>2026-08-13</strong> | <strong>§26 —
+evrenin fiziği değişti</strong> (D-054…D-068): metabolik döngü kapandı,
+ölüm eşiği bağlandı, kasa saati düzeldi. B2 öncesi empirik tablo
+<strong>karşılaştırılamaz</strong> ilan edildi. |<br />
+<strong>2.5</strong> | <strong>2026-08-18</strong> | <strong>§27 —
+popülasyon makinesi ve ikinci ön-kayıt</strong> (D-069…D-122). Tek soy →
+popülasyon, sabit <code>w</code> → değişken <code>w</code>.
+<code>PREREGISTRATION_2.md</code> kilitlendi
+(<code>72df476ebd54</code>). <code>.html</code>/<code>.pdf</code>
+yeniden üretildi (34 sayfa). |<br />
+<strong>2.8</strong> | <strong>2026-08-22</strong> | <strong>§29.4
+düzeltildi — D-165’in <em>boş küme</em>si ÇÜRÜDÜ</strong> (D-168).
+Başlangıç havuzu <code>POOL_INIT</code> değil, <strong>tohumun
+nişinden</strong> (<code>U(0.40, 1.00)</code>) geliyor ⇒ bant
+<strong>boş değil, tohuma bağlı</strong>; baskın değişken
+<strong>başlangıç nişi</strong>. Talep ölçüldü: landmark’ta iki değerli
+(8.0/2.0), <code>cooperate</code> <strong>%43.9</strong> ⇒ karar kanalı
+işliyor. <code>I5.6</code> <strong>geçti</strong>. ⚠ Kriz kanalı hâlâ
+<strong>0</strong>. |<br />
+<strong>2.7</strong> | <strong>2026-08-21</strong> | <strong>§29 —
+Katman 1 ölçüldü, sabit kararı VERİLEMEDİ</strong> (D-164…D-167). Pilot:
+<strong>P2 tuttu (4/6), P1 tutmadı (1/3)</strong>, kriz kanalı
+<strong>0/192</strong> öldü — hem de sabitin seçilme gerekçesiyken.
+D-163 §5’in projeksiyonu <strong>çürüdü</strong>. Sabit bandı
+<strong>boş küme</strong> çıktı (<code>r ≤ 0.06271</code> vs
+<code>r &gt; 0.10500</code>); asıl değişken <code>r</code> değil
+<strong>talep</strong>, kritik eşik
+<strong><code>D* = 6.078</code></strong>. Talep dağılımı aletlendi
+(D-166), ölçüm koşumu ön-taahhütle (D-167) başlatıldı. Suite <strong>636
+→ 640</strong>. ⚠ <code>.html</code>/<code>.pdf</code> <strong>v2.5’te
+kaldı</strong>. |<br />
+<strong>2.9</strong> | <strong>2026-08-24</strong> | <strong>§30 — fizik
+ÜÇÜNCÜ kez değişti, ve Kanal 1’in yarısı hiç çalışmıyormuş</strong>
+(D-169…D-172). DR #13 mutabakatı: taşıyıcı iddia <strong>cebirsel olarak
+ters</strong>, koddan değişiklik çıkmadı. <code>I5.1</code> popülasyon
+kapılarına bağlandı (kapı <strong>11</strong>). ⭐ <strong>Kaldıraç
+0:</strong> <code>NICHE_POOL_FRACTION_RANGE</code>
+<code>(0.40, 1.00)</code> →
+<strong><code>(0.40, 0.523990)</code></strong>, üst uç
+<strong>türetiliyor</strong> ⇒ tavan her çekilişte olay 1’de bağlıyor;
+bant boş olmadığı <strong>aynı turda</strong> gösterildi. ⛔⛔
+<strong>D-172:</strong> popülasyon yolunda
+<code>run_consolidation</code> <strong>hiç çağrılmıyor</strong> ⇒ ilişki
+grafiği yapı gereği boş, <strong>Ebbinghaus budaması
+çalışmıyor</strong>; düzeltmesi fiziği <strong>dördüncü kez</strong>
+değiştirir ⇒ karar bekliyor. ⚠ Başlık sürümü 2.6’da takılıydı,
+düzeltildi. ⚠ <code>.html</code>/<code>.pdf</code> <strong>v2.5’te
+kaldı</strong>. |<br />
+<strong>2.6</strong> | <strong>2026-08-20</strong> | <strong>§28 — C2
+null’ı, teşhis zinciri ve Katman 1</strong> (D-123…D-163). C2 =
+<strong>evren null’ı</strong>; sebebi ölçüldü (kurucu nesil dejenere,
+farklılaşmanın tek kaynağı adapter). Üçüncü ön-kayıt taslağı
+<strong>kilitlenemedi</strong> (D-145). Sonda-3 ve tanımlılık pilotu
+koştu ⇒ alan <code>energy</code>, <strong>G = 4</strong>, kurucu nesil
+<strong>ısınma</strong>. ⭐ <strong>Fizik yeniden değişti:</strong>
+stoka oranlı hasat tavanı (D-162/D-163). Kapılar 6 → <strong>9</strong>;
+suite <strong>636</strong>. ⚠ <code>.html</code>/<code>.pdf</code>
+<strong>v2.5’te kaldı</strong>. |</div>
 <hr />
 <h2 id="nerede-duruyoruz-v2.4.3-baştan-yazıldı">23. Nerede Duruyoruz
 (v2.4.3 — baştan yazıldı)</h2>
@@ -3308,5 +3527,1107 @@ eksik değil) · bütçe (<strong>3 tohum · N=8 · G=3 · 30 olay ⇒ 18 Price
 satırı</strong>) · tohumlar (<strong>9911–9913</strong>).</p>
 <p>⚠ <strong>Birinci ön-kayıt yürürlükte kalır</strong> — ayrı bir
 deneyi bağlar, bu belge onu geçersiz kılmaz.</p>
+<hr />
+<h2 id="d-123d-163-c2nin-nullı-teşhis-zinciri-ve-katman-1-v2.6-yeni">28.
+D-123…D-163: C2’nin null’ı, teşhis zinciri ve Katman 1 (v2.6 —
+yeni)</h2>
+<p>⚠ <strong>Bu bölüm §27’nin devamıdır.</strong> §26 evrenin fiziğinin
+değiştiğini, §27 deneyin popülasyona geçtiğini anlatıyordu. Burada
+anlatılan şey <strong>ikinci ön-kaydın koşulması, sonucunun ne olduğu,
+ve o sonucun fiziği ikinci kez değiştirmesi</strong>.</p>
+<p>⛔ <strong>Bu bölümden sonra, §10’un hasat kuralı dahil, belgenin
+fizik anlatısının bir kısmı tarihçedir</strong> — ilgili yerlere işaret
+kondu.</p>
+<hr />
+<h3 id="c2-koşuldu-sonuç-evren-nullı-d-123">28.1 C2 koşuldu: sonuç
+<strong>evren null’ı</strong> (D-123)</h3>
+<p><code>dau_runs/c2_population_n8_g3_s3.json</code> · tohum 9911–9913 ·
+N=8 · G=3 · 30 olay · <strong>5 sa 53 dk</strong> ·
+<code>run_quality = clean</code> · 6/6 kapı · I4.1 replay
+<strong>identical</strong> · pozitif kontrol <strong>hareket
+etti</strong>.</p>
+<p>⇒ <em>“Ölçemedik”</em> ile <em>“ölçtük, yoktu”</em> <strong>ilk kez
+ayrıldı</strong> — ve cevap ikisinden de farklı çıktı:</p>
+<blockquote>
+<p><strong>18 Price satırının yalnız 4’ü ölçülebilirdi.</strong> Seviye
+1 <strong>kurulamadı</strong>; tanımlı terim <strong>tek
+tohumdaydı</strong>.</p>
+</blockquote>
+<p>⚠ Bu, B2’nin <em>“alet null’ı”</em>ndan <strong>kategorik olarak
+farklı</strong> bir sonuçtur: alet çalıştı, <strong>uç nokta
+ölçmedi</strong>.</p>
+<h3 id="sebep-tek-cümleye-indi-d-129d-130">28.2 Sebep tek cümleye indi
+(D-129/D-130)</h3>
+<blockquote>
+<p>Farklılaşmanın tek kaynağı <strong>adapter</strong>. Sıralı erişim
+ancak <strong>kıtlıkta</strong> ısırır, kıtlık ancak davranış farkıyla
+doğar, davranış farkı ancak adapter’la. ⇒ <code>null</code> kolu zengin
+nişte <strong>donmuş klon popülasyonu</strong>.</p>
+</blockquote>
+<p>Bunun iki doğrudan sonucu oldu:</p>
+<ul>
+<li><strong>D-131 — birincil karşıtlık değişti:</strong>
+<code>lived ↔︎ shuffle</code>; <code>null</code>
+<strong>betimleyici</strong>. İki fizik kaldıracı (kapasite · kriz
+eşiği) <strong>aritmetikle elendi</strong>, çünkü bu evrende kıtlık ile
+kriz <strong>aynı olay</strong>tır (D-081).</li>
+<li><strong>D-132/D-133 — yön arayışı:</strong> DR #11 ajan-ajan
+etkileşimini önerdi. ⛔ <strong>D-135 onu GPU’suz eledi:</strong> sosyal
+kuplaj özdeş ajanlarda simetriyi <strong>kırmıyor</strong> — bir
+<strong>çarpan</strong>, kaynak değil. Faz 1
+<strong>iptal</strong>.</li>
+</ul>
+<h3 id="znin-tek-boyutluluğu-ölçüldü-d-136-d-137-d-138">28.3
+<code>z</code>’nin tek boyutluluğu ölçüldü (D-136 · D-137 · D-138)</h3>
+<p><code>z</code> dört alanlı görünüyordu; ölçüm üç şey söyledi:</p>
+<ol type="1">
+<li><code>social</code>/<code>uncertainty</code> <strong>ölü
+değil</strong> — C2’nin <em>“sıfır kez”</em>i bir <strong>argmax
+artefaktı</strong>ydı.</li>
+<li>⛔ <strong>Ama dört sayı dört boyut değil:</strong> spillover
+<strong>tekdüze</strong> (<code>PE × 0.20</code>) ⇒ üç eksen birincilin
+<strong>ölçekli kopyası</strong>.</li>
+<li>⛔ <strong>Ve matris çözüm değil:</strong> birincil eksen
+<code>k</code> <strong>192/192</strong> olayda
+<code>resource_load</code>’a kilitli ⇒ asimetrik matris skalerin
+<strong>üç kopyalı hâli</strong> olurdu; eşiği de geçirmiyordu
+(<code>M</code> 0.820·PE → 0.839·PE, <strong>+%2.29</strong>, tepeler
+0.62 → 0.634, kapı 0.70).</li>
+</ol>
+<p>⇒ <strong>GAP-10 karara bağlandı (D-137, Yasin): skaler kalıyor,
+sınır ilan ediliyor.</strong> <code>z</code> <strong>etkin olarak tek
+boyutludur</strong>; kovaryans drift’in <strong>büyüklüğü</strong>
+üzerinedir, <strong>alanı</strong> üzerine değil (ön-kayıt L3). ⏸
+Yeniden açılma tetiği: <strong><code>k</code> ajanlar arasında
+değişkenleşirse.</strong></p>
+<h3 id="üçüncü-ön-kayıt-yazıldı-kilitlenemedi-d-144-d-145">28.4 Üçüncü
+ön-kayıt: yazıldı, <strong>kilitlenemedi</strong> (D-144 · D-145)</h3>
+<p>📝 <code>docs/PREREGISTRATION_3.md</code>. Beş slot kapandı, iki
+<strong>eş-birincil</strong> uç nokta tanımlandı (D-143):
+<strong><code>ΔP_active</code></strong> (ölçülebilirlik) ve
+<strong><code>ΔCov_cond</code></strong> (koşullu seçilim). Test birimi
+<strong>tohum</strong> (D-140/D-141, Lazic 2010 —
+pseudoreplication).</p>
+<p>⛔⛔ <strong>Kilit öncesi denetim durdurdu (D-145) — dört
+kusur.</strong> Üçü sonradan ölçümle kapandı, biri kısmen:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>kusur</th>
+<th>bugünkü durumu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Birincil alan <code>energy</code> C2’de 15 hücrenin 1’inde
+ölçülebilirdi</td>
+<td>✅ <strong>kapandı (D-161)</strong> — o ölçüm <strong>eski
+fizikten</strong>miş; bugünkü fizikte 2/3 tohum kullanılabilir</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Alan <strong>kola değil TOHUMA</strong> bağlı</td>
+<td>✅ <strong>kapandı (D-161)</strong> — <code>energy</code> sabit
+kalıyor, atılan tohum oranı <strong>ölçüldü</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>ΔP_active</code> sıfır-şişkin ⇒ S=12’de reddedebilme ihtimali
+<strong>%6.6</strong></td>
+<td>⚠️ <strong>kısmen</strong> — <strong>tavan</strong> hâli
+gerçekleşmedi (12 hücrenin 5’i aktif), <strong>taban</strong> açık</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Bir kol-tohumun <strong>hiç</strong> Price satırı olmayabilir</td>
+<td>✅ <strong>kapandı (D-159)</strong> — <strong>I5.5</strong> kapısı
+yakalıyor</td>
+</tr>
+</tbody>
+</table>
+<h3 id="darboğaz-ölçüldü-bütçe-değil-uç-nokta-d-146">28.5 Darboğaz
+ölçüldü: bütçe değil, uç nokta (D-146)</h3>
+<p><code>F_agent</code> <strong>%78</strong> · sürekli nicelik
+<strong>%78</strong> · ⛔ <code>z</code> <strong>%25</strong> ⇒
+<strong>seçilim makinesi çalışıyor</strong>, ölü olan tek şey <strong>uç
+noktanın eşikli olması</strong>.</p>
+<h3 id="kapılar-bağlandı-ve-anında-kusur-buldular-d-149-d-159">28.6
+Kapılar bağlandı ve anında kusur buldular (D-149 · D-159)</h3>
+<p>⛔ <strong>D-147/AV-3 ölçtü: 26 kapının yalnız 6’sı popülasyon
+yolunda bağlıydı.</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>kapı</th>
+<th>bağlandığında ne buldu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>I4.2</strong> (D-149)</td>
+<td>Kollar nesil 2+’ye <strong>farklı RNG durumundan</strong> giriyor
+(GAP-12) — FLAG, çünkü öncül ölçülmemişti; sonda-3 öncülü
+<strong>doğruladı</strong></td>
+</tr>
+<tr>
+<td><strong>I5.4</strong> (D-149)</td>
+<td>⛔⛔ C2’de <strong>144 varisin 0’ında</strong> somatik ölçek — buna
+karşılık anılar geçmiş (~10/varis) ve adapter geçmiş (96/144).
+<strong>Kanal 1’in engram yarısı çalışıyor, somatik yarısı
+çalışmıyor</strong> (GAP-3). ⚠ Ve C2 bunu
+<strong><code>clean</code></strong> raporlamıştı</td>
+</tr>
+<tr>
+<td><strong>I5.5</strong> (D-159)</td>
+<td>⛔ Bağlandığı gün C2’nin puanlanan <strong>6 geçişinin 5’ini
+ölü</strong> buldu — yine <code>clean</code> raporlanmış bir
+koşumda</td>
+</tr>
+<tr>
+<td><strong>I5.6</strong> (D-163)</td>
+<td>Katman 1’in kendi bekçisi (§28.10)</td>
+</tr>
+</tbody>
+</table>
+<p>⇒ ⭐ <strong>K6 bağlayıcı kural oldu (D-151/D-153):</strong>
+<em>“kayda geçen kusur, bir KAPIYA bağlanmadıkça kapanmamıştır.”</em>
+Bedeli ölçüldü: D-086’nın Bulgu 2’si sekiz oturum boyunca
+<em>“biliniyordu”</em> diye durdu ve C2 yine <code>clean</code>
+raporladı.</p>
+<h3 id="fitness-bantları-göreli-yapıldı-d-152">28.7 Fitness bantları
+göreli yapıldı (D-152)</h3>
+<p>⛔ <strong>Kök:</strong> eşikler mutlaktı ve C2’de <strong>216 ajanın
+216’sı</strong> <code>normal</code>’e düşüyordu ⇒ miras uyarısı dalı
+<strong>ulaşılamaz</strong>.</p>
+<p>✅ <strong>Düzeltme, hiçbir eşik DEĞERİ değişmeden:</strong> bantlar
+hücre içi <strong>göreli konuma</strong> uygulanıyor (D-088’in deseni —
+<em>“çıta kalibre edildiği niceliğe uygulanır”</em>). ⛔ <strong>Yasak
+referans testle çivilendi:</strong> bant turnuva sonucundan
+(<code>w</code>) türetilemez — türetilseydi <code>Cov(w, z)</code>
+kısmen özdeşlik olurdu (D-075’in totolojisi).</p>
+<h3 id="iki-koşum-iki-karar-d-155-d-161">28.8 İki koşum, iki karar
+(D-155 · D-161)</h3>
+<p><strong>Sonda-3</strong> (tohum 9916, G=3, 2 sa 10 dk) ve
+<strong>tanımlılık pilotu</strong> (9917–9919, G=4, 6 sa 11 dk) — ikisi
+de <strong>ön-taahhütle</strong>, okuma kuralları koşumdan
+<strong>önce</strong> commit edilerek koşuldu (D-154/D-160).</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>soru</th>
+<th>cevap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sürekli uç nokta (<code>to_landmark.max</code>) girsin mi?</td>
+<td>❌ <strong>hayır</strong> — 2/4 (kural ≥3/4). Üç şart yerine
+getirilerek yeniden açıldı, taze veriyle sınandı, <strong>yine
+reddedildi</strong> ⇒ kapalı soru</td>
+</tr>
+<tr>
+<td>Birincil alan?</td>
+<td>✅ <strong><code>energy</code> kalıyor</strong> — 2/3 tohum
+kullanılabilir</td>
+</tr>
+<tr>
+<td>Kaç nesil?</td>
+<td>✅ <strong>G = 4</strong></td>
+</tr>
+<tr>
+<td>Somatik kanal?</td>
+<td>✅ <strong>I5.4 ilk kez geçti</strong> — 144 varisin
+<strong>34’ü</strong></td>
+</tr>
+</tbody>
+</table>
+<p>⭐⭐ <strong>Pilotun en büyük kazancı bir felaketin
+önlenmesi:</strong> birinci puanlanan geçiş (gen2→gen3) <strong>üç
+tohumun üçünde de</strong> kullanılamaz çıktı ⇒ ön-kayıtın o güne kadar
+ilan ettiği <strong><code>G = 3</code> ile bu üç tohumun hiçbiri
+kullanılabilir olmazdı (0/3)</strong>. S=12 · G=3’lük ~24 saatlik koşum
+<strong>sıfır kullanılabilir tohumla</strong> bitebilirdi.</p>
+<p>⭐ <strong>Ve GAP-3’ün sebebi bulundu:</strong> somatik miras
+<strong>birinci varis kuşağında yapısal olarak sıfır</strong> (0/48;
+sonda-3’te de 0/16), çünkü onların ebeveynleri
+<strong>kurucular</strong> ve hepsi özdeş ⇒ <strong>düz hücrede göreli
+bant kimseyi <code>low</code>/<code>high</code> yapamıyor</strong>. ⇒
+<strong>Kurucu neslin dejenerasyonu iki ayrı arızayı
+üretiyor.</strong></p>
+<h3 id="kurucu-nesil-ısınma-neslidir-d-156-d-157">28.9 Kurucu nesil
+ısınma neslidir (D-156 · D-157)</h3>
+<p>✅ <strong>Ölçüldü:</strong> <strong>4 tohum · 3 kol · 11 kurucu
+hücre, ölçülebilir olan 0</strong> — ve <strong>iki ayrı
+fizikte</strong> (D-152 öncesi/sonrası) aynı.</p>
+<p>⇒ 🔒 <strong>Kapsam kısıtı (YENİ-4):</strong> Price yalnız ebeveyni
+<strong>gen ≥ 2</strong> olan geçişlerden okunur ⇒ kullanılabilir geçiş
+<strong>G − 2</strong>. ⛔ <strong>Bu bir düzeltme değil, ilan edilmiş
+bir kısıttır</strong> — tasarım kurucu nesildeki seçilim hakkında
+<strong>hiçbir şey söylemez</strong> (L21).</p>
+<h3 id="katman-1-fizik-ikinci-kez-değişti-d-162-d-163">28.10 ⭐⭐ Katman
+1 — fizik ikinci kez değişti (D-162 · D-163)</h3>
+<p>⚠ <strong>Teşhis önce yanlış kondu, sonra düzeltildi ve düzeltme
+kayda geçti.</strong> İlk okuma <em>“kıtlık ısırmıyor”</em> idi; ölçüm
+bunu <strong>çürüttü</strong>: 34 nesil hücresinin
+<strong>22’sinde</strong> havuz <strong>tamamen çöküyor</strong>.
+Hatanın kaynağı <strong>tek bir sayıdan zincir kurmak</strong>tı
+(K4).</p>
+<p>⭐ <strong>Belirleyici ölçüm teşhisi tersine çevirdi:</strong>
+havuzun çöktüğü tohumda (s9917) kurucular <strong>ayrışıyor</strong> (3
+farklı <code>F_agent</code>, 3 farklı <code>Δhavuz</code>, 2 farklı
+ömür); çökmediği üç tohumda <strong>bit düzeyinde özdeş</strong>.</p>
+<blockquote>
+<p>✅ <strong>P0-① (sıralı erişim) bozuk değil.</strong> ❌
+<strong>Sorun havuzun iki kararlı durumda olması:</strong> ya çöker ya
+hiç ısırmaz — <strong>arada rejim yok.</strong></p>
+</blockquote>
+<p>⇒ <strong>Değiştirilen şey kıtlığın varlığı değil, biçimi</strong>
+(§10’daki yeni kural).</p>
+<p><strong>Sabitin türetmesi ve reddedilen alternatif:</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>aday</th>
+<th>türetme</th>
+<th>denge</th>
+<th>sonucu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td><code>DEFECT / POOL_INIT = 0.10</code></td>
+<td>0.333</td>
+<td>❌ kriz eşiğinin (0.30) <strong>üstünde</strong> ⇒ kriz kanalı
+<strong>ölür</strong></td>
+</tr>
+<tr>
+<td>B</td>
+<td><code>REGEN × (1 − KRİZ) = 0.105</code></td>
+<td>0.300</td>
+<td>❌ eşiğin tam üstünde ⇒ yine ölür</td>
+</tr>
+<tr>
+<td><strong>D</strong> ✅</td>
+<td><strong><code>REGEN × (1 − ÇÖKÜŞ) = 0.1425</code></strong></td>
+<td><strong>0.050</strong></td>
+<td>✅ kriz <strong>15/30 olayda</strong> aktif</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>Ders (D-163 §6):</strong> <em>bir sabitin türetmesinin
+temiz olması onu doğru yapmıyor.</em> A da B kadar temiz türetilmişti ve
+ikisi de bir kanalı öldürüyordu. ⇒ <strong>Bundan sonra bir havuz/hasat
+sabiti önerilirken denge noktası ve hangi eşiklerin altında/üstünde
+kaldığı aynı kayda yazılır.</strong></p>
+<p><strong>Ölçülen etki (gerçek <code>step_pool</code>, 8 ajan, hepsi
+DEFECT):</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>sabit kota (eski)</th>
+<th>stoka oranlı tavan (bugün)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ilk eksik alma</td>
+<td>olay <strong>17</strong></td>
+<td>olay <strong>6</strong></td>
+</tr>
+<tr>
+<td><strong>landmark penceresinde yayılım</strong></td>
+<td>❌ <strong>0.0000</strong></td>
+<td>✅ <strong>0.3923</strong></td>
+</tr>
+<tr>
+<td>olay 30’da havuz</td>
+<td><strong>0.000</strong> (soğurucu)</td>
+<td><strong>0.179</strong>, tabana yaklaşıyor</td>
+</tr>
+</tbody>
+</table>
+<p>⭐⭐ <strong>Tablonun asıl satırı ortadaki:</strong> birincil uç
+noktanın okunduğu <strong>landmark anında</strong>, eski fizikte
+ortamdan gelen ayrışma <strong>tam olarak sıfırdı</strong>. C2’nin ve
+sonda-3’ün <em>“kurucular bit düzeyinde özdeş”</em> sonucu <strong>tek
+bir sayıya</strong> indi.</p>
+<p><strong>İki yapısal sonuç:</strong> 1. <strong>Çöküş soğurucu
+olmaktan çıktı</strong> ⇒ bütün ajanların aynı anda ölmesi bitti,
+<strong>ömür farkı</strong> doğdu. 2. ⛔ <strong>Orantılı paylaştırma
+dalı ulaşılamaz</strong> hâle geldi
+(<code>capped toplam ≤    r × available &lt; available</code>).
+<strong>Silinmedi</strong> — tavan yükseltilirse taşma koruması — ama
+<strong>ulaşılmazlığı testle sabitlendi</strong>, çünkü herkesin
+çalıştığını sandığı ama hiç açılmayan bir kapı D-088’in kazdığı hatanın
+ta kendisidir.</p>
+<p><strong>Bekçisi — <code>I5.6</code> (FLAG):</strong> her nesilde en
+az bir olayda <code>talep &gt; alınan</code>, <strong>ve</strong> ilk
+eksik alma <code>LANDMARK_EVENT</code>’ten <strong>önce</strong>. ⚠ İki
+kusur <strong>ayrı</strong> raporlanır: <em>hiç bağlamadı</em> (katman
+hiçbir şey yapmadı) ile <em>geç bağladı</em> (çalıştı ama uç noktanın
+penceresi dışında).</p>
+<h3 id="katman-planı-iddia-nasıl-genişleyecek">28.11 Katman planı —
+iddia nasıl genişleyecek</h3>
+<p>⛔ <strong>Bir katman bitmeden diğeri açılmaz</strong> — birlikte
+değiştirilirse hangisinin işe yaradığı <strong>bilinemez</strong>.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>katman</th>
+<th>kaldırdığı sınır</th>
+<th>iddia ne kazanır</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong> ✅</td>
+<td>Kademeli kıtlık</td>
+<td><em>“farklılaşmanın tek kaynağı adapter”</em></td>
+<td>⭐ <strong>İz yaşamaktan doğuyor</strong> — aksiyomun çekirdeği</td>
+</tr>
+<tr>
+<td>1-b</td>
+<td><em>(yan ürün, ölçülecek)</em></td>
+<td><strong>L12</strong> — <code>null</code> donmuş klon</td>
+<td>Sürüklenme ile seçilim <strong>ayrılabilir</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>k</code> değişkenleşsin</td>
+<td><strong>L3</strong> — <code>z</code> tek boyutlu</td>
+<td>Drift’in <strong>içeriği</strong>, yalnız büyüklüğü değil</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Karar kanalı katılsın</td>
+<td><strong>L18</strong> — davranış çökük</td>
+<td><strong>Kararlar</strong> da ayrıştırıyor</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Birikimli kalıtım</td>
+<td><strong>L10/L11</strong></td>
+<td>Nesiller arası eğilim</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>Katman 3’ün meşru tek yolu dünyayı pahalı
+yapmaktır</strong> — <em>“davranışı düzelt”</em> K7’yi ihlal eder. D-090
+ölçtü ki <code>cooperate</code> bölgesi <strong>var</strong> (düşük
+enerji + travma-bilgili durum), ajanlar oraya
+<strong>girmiyor</strong>.</p>
+<h3 id="bu-bölümün-ilan-ettiği-sınırlar">28.12 ⚠ Bu bölümün ilan ettiği
+sınırlar</h3>
+<ul>
+<li><strong>Bütün sayılar sıfırlandı.</strong> Katman 1 bir fizik
+değişikliğidir ⇒ pilot, sonda-3 ve C2 <strong>bugünün aletiyle
+karşılaştırılamaz</strong>.</li>
+<li><strong>Hipotez hakkında hâlâ sıfır kanıt var.</strong> B2 <em>“alet
+null’ı”</em>, C2 <em>“evren null’ı”</em> verdi; üçüncü koşum
+<strong>henüz koşulmadı</strong>.</li>
+<li><strong>En eski borç ödenmedi:</strong> <em>“en küçük anlamlı
+etki”</em> DR #1’den beri açık. D-140 yöntemi çözdü (bütçe-kısıtlı
+duyarlılık analizi, Lakens) ama eşik <strong>ilan
+edilmedi</strong>.</li>
+<li><strong>Tohum bağımlılığı ciddi:</strong> 3 tohumun biri (s9917) hem
+kovaryansta hem somatik kanalda sıfır verdi.</li>
+<li><strong><code>.html</code> / <code>.pdf</code> v2.5’te
+kaldı</strong> — v2.6 yalnız <code>.md</code>.</li>
+</ul>
+<hr />
+<h2
+id="d-164d-167-katman-1-ölçüldü-ve-sabit-kararı-verilemez-çıktı-v2.7-yeni">29.
+D-164…D-167: Katman 1 ölçüldü, ve sabit kararı
+<strong>verilemez</strong> çıktı (v2.7 — yeni)</h2>
+<p>⚠ <strong>Bu bölüm §28’in devamıdır ve onun bir iddiasını
+çürütür.</strong> §28.10 Katman 1’i <em>“fizik ikinci kez değişti”</em>
+diye anlatıyor ve D-163 §5’in projeksiyon tablosunu taşıyor.
+<strong>Pilot koştu; tablo tutmadı.</strong></p>
+<h3 id="katman-1-pilotu-ön-taahhüt-edilmiş-üç-kural-d-164">29.1 Katman 1
+pilotu — ön-taahhüt edilmiş üç kural (D-164)</h3>
+<p><strong>Koşum:</strong> tohum 9920–9922 · N = 8 · G = 4 · 30 olay ·
+<code>lived shuffle</code> · <code>--lora --fresh-pasture</code> ·
+<strong>8 sa 3 dk</strong> (tohum başına 2 sa 41 dk) ·
+<code>complete</code> · çökme yok · kapı <strong>7/10</strong> (bayrak
+<code>I4.2</code> <code>I5.5</code> <code>I5.6</code>).</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>kural</th>
+<th>ölçüt</th>
+<th>sonuç</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P1</strong> kıtlık kademeli mi</td>
+<td>3 tohumun ≥2’sinde ilk eksik alma olay ≤ 8</td>
+<td>❌ <strong>1/3</strong> (9921 olay 2 · 9920 olay 9 · 9922 hiç)</td>
+</tr>
+<tr>
+<td><strong>P2</strong> kurucular ayrışıyor mu</td>
+<td>6 kurucu hücrenin ≥4’ünde <code>Var(F_agent) &gt; 0</code></td>
+<td>✅ <strong>4/6</strong> ⚠ gen1’de kollar özdeş ⇒ fiilen 2/3
+tohum</td>
+</tr>
+<tr>
+<td><strong>P3</strong> zincir oynadı mı <em>(eşiksiz)</em></td>
+<td><code>k</code> · <code>cooperate</code> · tanımlılık ·
+<code>null</code></td>
+<td><code>k</code> <strong>192/192 sabit</strong> · tanımlılık
+<strong>11/17</strong> · <code>cooperate</code> ve <code>null</code> ⛔
+<strong>okunamadı</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="projeksiyon-çürüdü-28.10un-tablosu-düzeltilir">29.2 ⛔
+Projeksiyon çürüdü — §28.10’un tablosu düzeltilir</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>D-163 §5 projeksiyonu</th>
+<th><strong>ölçülen (D-164)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ilk eksik alma</td>
+<td>olay <strong>6</strong></td>
+<td><strong>9 · 2 · hiç</strong> (tohuma göre)</td>
+</tr>
+<tr>
+<td>olay 30’da havuz</td>
+<td><strong>0.179</strong></td>
+<td><strong>0.60–0.86</strong></td>
+</tr>
+<tr>
+<td>kriz kanalı</td>
+<td>aktif, 15/30 olay</td>
+<td>❌ <strong>0 / 192 yaşam</strong></td>
+</tr>
+</tbody>
+</table>
+<p>⛔ <strong>Kriz kanalının ölmesi tek başına belirleyicidir:</strong>
+<code>r = 0.1425</code>’in <code>r = 0.10</code>’a tercih edilme
+gerekçesi (D-163 §2) <strong>tam olarak o kanalı yaşatmaktı</strong>.
+Sabit değişti, kanal yine öldü ⇒ <strong>D-070 / kilit K6’nın S5 uç
+noktası askıda</strong>.</p>
+<h3 id="neden-beş-bulgu-d-164-4">29.3 Neden — beş bulgu (D-164 §4)</h3>
+<ol type="1">
+<li><strong>Kriz kanalı 0/192.</strong> En düşük havuz oranı 0.375, eşik
+0.30.</li>
+<li><strong>Tavan <code>= 14.25 × havuz_oranı</code></strong> ⇒ kanonik
+DEFECT (8.0) ancak oran <strong>&lt; 0.561</strong> iken bağlar; havuz
+0.60–0.86’da oturuyor.</li>
+<li><strong>Eksik almaların çoğu havuzdan değil ilandan.</strong> 24
+hücrenin 15’i <code>EXTRACTION_PARSE_MAX = 25</code>’e yakın ilanlardan
+(gap 16–19); 2’si tasarlanan rejim; 5’i hiç bağlamadı.</li>
+<li><strong>Denge hiç kurulmadı.</strong> <code>0.1425 p</code> terimi
+<em>“herkes tavanı alır”</em> varsayıyordu; gerçek hasat
+<strong>~36/olay ve havuzla orantısız</strong> (tavanların toplamı
+74.1).</li>
+<li><strong>s9922 gen1’de 8 kurucu bit düzeyinde özdeş</strong>
+(<code>F = 0.420587919</code>, ömür 11, Δhavuz 50.000000) — zincir
+<strong>ilk halkada</strong> koptu.</li>
+</ol>
+<h3
+id="sabit-kararı-denendi-boş-küme-sanıldı-ve-o-sonuç-çürüdü-d-165-d-168">29.4
+⛔ Sabit kararı denendi, <strong>boş küme</strong> sanıldı — ve o sonuç
+<strong>çürüdü</strong> (D-165 → D-168)</h3>
+<p>D-165 bandın sınanmamış ikinci şartını (<em>tavan landmark’tan önce
+bağlamalı</em>) uygulayıp <strong>boş küme</strong> ilan etmişti:</p>
+<pre><code>landmark&#39;tan ÖNCE bağlasın     ⇒  r ≤ 0.06271
+kriz rejimi erişilebilir olsun ⇒  r &gt;  0.10500</code></pre>
+<p>⛔ <strong>Bu hesap yanlıştır ve D-168’de geri çekilmiştir.</strong>
+İki varsayımı da kod doğrulamadı (§2.2):</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>varsayım</th>
+<th>gerçek</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>havuz <code>POOL_INIT</code>’ten, oran <strong>0.80</strong>’den
+başlar</td>
+<td><code>shared_pasture()</code> stoğu <strong>kurucunun
+nişinden</strong> alıyor; <code>_seed_niche()</code> onu
+<code>POOL_MAX × U(0.40, 1.00)</code> ile çekiyor ⇒ <strong>tohuma göre
+0.40–1.00</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>talep = ömür-boyu gerçekleşen hasat <strong>4.438</strong></td>
+<td>landmark penceresindeki gerçek talep <strong>5.1–7.3</strong>
+(D-168)</td>
+</tr>
+</tbody>
+</table>
+<p>İkisi de tavanın bağlamasını <strong>olduğundan zor</strong>
+gösterdi.</p>
+<p>⭐ <strong>Düzeltilmiş hesap (D-168):</strong> bant <strong>boş
+değil, tohuma bağlı</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>tohum</th>
+<th>başlangıç oranı</th>
+<th>ölçülen <code>D</code></th>
+<th>bantta uygun <code>r</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9923</td>
+<td>0.794</td>
+<td>7.325</td>
+<td>✅ bandın tamamı</td>
+</tr>
+<tr>
+<td>9924</td>
+<td>0.620</td>
+<td>5.125</td>
+<td>⛔ boş</td>
+</tr>
+<tr>
+<td>9925</td>
+<td>0.605</td>
+<td>5.450</td>
+<td>✅ ince şerit (0.1050, 0.1085)</td>
+</tr>
+</tbody>
+</table>
+<p>⭐⭐ <strong>Ve baskın değişken bulundu — <code>r</code> de talep de
+değil, BAŞLANGIÇ NİŞİ:</strong></p>
+<table>
+<thead>
+<tr>
+<th>başlangıç oranı</th>
+<th>0.577</th>
+<th>0.605</th>
+<th>0.620</th>
+<th>0.794</th>
+<th>0.825</th>
+<th>0.877</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ilk eksik alma</td>
+<td><strong>2</strong></td>
+<td>3</td>
+<td>3</td>
+<td>5</td>
+<td><strong>hiç</strong></td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<p><code>NICHE_POOL_FRACTION_RANGE = (0.40, 1.00)</code> ⇒
+<strong>aralığın üst ucu mekanizmayı öldüren tohumlar üretiyor.</strong>
+D-164’ün P1 başarısızlığı (1/3) bu sıralamayla uyumlu: pilotun üç
+tohumundan yalnız en düşük başlangıçlı olan (9921) erken bağladı. ⚠
+<strong>Gözlem, kontrollü karşılaştırma değil.</strong></p>
+<h3 id="b-talep-ölçüldü-d-167-ön-taahhüt-d-168-okuma">29.4-b Talep
+ölçüldü (D-167 ön-taahhüt · D-168 okuma)</h3>
+<p><strong>Koşum:</strong> 9923–9925 · N = 8 · G = 2 · tek kol ·
+<strong>2 sa 9 dk</strong> · <code>complete</code> · kapı
+<strong>9/10</strong> · ⭐ <strong><code>I5.6</code> GEÇTİ</strong>
+(tavan 6 hücrenin 6’sında, landmark’tan önce).</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>kural</th>
+<th>sonuç</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>M1</strong> <em>(bağlayıcı)</em></td>
+<td>❌ <strong>1/3</strong> — 7.325 · 5.125 · 5.450 vs eşik 6.078. ⛔
+<strong>Eşik geçersiz</strong> (yukarıdaki cebir hatası) ⇒ verdict kayda
+geçer, anlamını taşımaz</td>
+</tr>
+<tr>
+<td><strong>M2</strong> <em>(eşiksiz)</em></td>
+<td>⭐ <code>cooperate</code> <strong>523/1190 = %43.9</strong> · defect
+626 · deadlock 41 ⇒ <strong>karar kanalı işliyor</strong>. ⚠ D-068’in
+<em>“%94–100 DEFECT”</em>u başka fizikten,
+<strong>karşılaştırılamaz</strong></td>
+</tr>
+<tr>
+<td><strong>M3</strong> <em>(eşiksiz)</em></td>
+<td>landmark penceresinde talep <strong>iki değerli</strong> (8.0 /
+2.0), azami <strong>8.0</strong> (6 hücrenin 5’inde) ⇒ <strong>ilan
+enflasyonu geç yaşam olgusu</strong>. <code>mean &gt; 6.078</code> için
+defect payı <strong>&gt; %68</strong> gerekiyor</td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>Kriz kanalı hâlâ 0</strong> (0/48 yaşam) ⇒ D-070/K6
+askıda.</p>
+<p>⚠ <strong>Düzeltilmiş hesap ön-taahhütlü DEĞİL</strong> — koşum
+görüldükten sonra yapıldı. Karara temel olacaksa <strong>yeni bir
+ön-taahhütle</strong> sınanmalı.</p>
+<h3 id="alet-talep-dağılımı-d-166">29.5 Alet: talep dağılımı
+(D-166)</h3>
+<p>Saf raporlama; hesap değişmedi, hiçbir sabitin değeri değişmedi.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>yer</th>
+<th>ne</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CommonsRequest.outcome</code></td>
+<td>varsayılansız (§2.9)</td>
+</tr>
+<tr>
+<td><code>commons_request_from_state</code></td>
+<td><code>decision_to_outcome</code> ile — <strong>fiziğin kullandığı
+fonksiyon, aynı yerde</strong> (§2.8)</td>
+</tr>
+<tr>
+<td><code>_record_pool_event</code></td>
+<td>satıra <code>outcome</code> yazıyor</td>
+</tr>
+<tr>
+<td><code>POOL_STEP_EMPTY_OUTCOME</code></td>
+<td><code>"no_decision"</code> — COORDINATE’e katlanmıyor</td>
+</tr>
+<tr>
+<td><code>demand_summary()</code></td>
+<td><code>mean</code> · <code>median</code> · <code>p90</code> ·
+<code>max</code> + <code>outcomes</code> histogramı;
+<strong><code>demand</code></strong> ve
+<strong><code>demand_to_landmark</code></strong></td>
+</tr>
+</tbody>
+</table>
+<p>⭐ <strong>Alanın var olma sebebi:</strong>
+<code>requested = 2.0</code> hem gerçek COOPERATE’ten hem <em>“extract 2
+units”</em> diyen DEFECT’ten gelebilir. <strong>Miktar ayırt edemez,
+etiket eder.</strong></p>
+<p>⚠ <strong>Mutasyon kontrolü kendi testimi çürüttü.</strong> Dört
+mutasyondan biri (<em>boş etiketi <code>"coordinate"</code> yap</em>)
+<strong>yakalanmadı</strong>: test
+<code>outcome == POOL_STEP_EMPTY_OUTCOME</code> diyordu, yani
+<strong>totolojiydi</strong> — §2.4’ün U7/A2 örneğinin birebir tekrarı.
+Test <code>OUTCOME_*</code> kümesine karşı yeniden yazıldı ve mutasyon
+yakalandı. <strong>Suite 636 → 640.</strong></p>
+<h3 id="bu-bölümün-ilan-ettiği-sınırlar-1">29.6 Bu bölümün ilan ettiği
+sınırlar</h3>
+<ul>
+<li>⛔ <strong>Kriz kanalı bugünkü fizikte ölçülemez (0/192)</strong> ⇒
+D-070/K6’nın S5 uç noktası askıda.</li>
+<li>⛔ <strong><code>null</code>’ın donmuşluğu hâlâ okunamıyor</strong>
+— kol meselesi, aletleme değil.</li>
+<li>⚠ <strong>P2’nin 6 hücresi 3 bağımsız tohumdur</strong>; gen1’de
+kollar özdeş.</li>
+<li>⚠ <strong><code>I4.2</code> bayrağı açık:</strong> kollar
+gen3/gen4’e farklı RNG durumundan giriyor.</li>
+<li>⚠ <strong>D-164’ün A/B/C sınıflandırması <code>max_shortfall</code>
+üzerindendir</strong> ⇒ hücre düzeyinde geçerli, satır düzeyinde
+değil.</li>
+<li>⭐ <strong>Kazanılan:</strong> tohum kullanılabilirliği <strong>2/3
+→ 3/3</strong>, puanlanan hücre tanımlılığı <strong>11/12</strong>,
+tohum başına süre <strong>1 sa 58 dk → 2 sa 41 dk</strong>. Katman 1
+kıtlığı kademelendirmedi ama <strong>ölçüm zincirini daha sık tanımlı
+kıldı</strong>.</li>
+</ul>
+<h3 id="ders-türetme-disiplininin-üçüncü-katı">29.7 Ders — türetme
+disiplininin üçüncü katı</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>kayıt</th>
+<th>ders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D-163</td>
+<td><em>bir sabitin türetmesinin temiz olması onu doğru yapmıyor;</em>
+<strong>denge noktası da yazılmalı</strong></td>
+</tr>
+<tr>
+<td><strong>D-164</strong></td>
+<td><em>denge, sabitlerin <strong>izin verdiği</strong> talebe göre
+değil, evrenin <strong>fiilen ürettiği</strong> talebe göre hesaplanır —
+ve o talep <strong>ölçülmüş bir sayı</strong> olarak kayda
+girer</em></td>
+</tr>
+<tr>
+<td><strong>D-165</strong></td>
+<td><em>bir sabit için bant türetildiğinde, bandın <strong>boş
+olmadığı</strong> aynı turda gösterilir</em></td>
+</tr>
+<tr>
+<td><strong>D-168</strong></td>
+<td>⛔ <em>türetmenin <strong>girdileri</strong> koddan doğrulanır —
+D-165 iki tur boyunca <code>POOL_INIT</code> sanılan bir başlangıçla
+hesapladı ve <strong>yanlış bir imkânsızlık</strong> ilan etti</em></td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>Üçü de aynı kusurun katmanları:</strong> türetme temiz,
+<strong>varsayımı ölçülmemiş</strong>.</p>
+<hr />
+<h2
+id="d-169d-172-fizik-üçüncü-kez-değişti-ve-kanal-1in-yarısı-hiç-çalışmıyormuş-v2.9-yeni">30.
+D-169…D-172: fizik <strong>üçüncü kez</strong> değişti, ve Kanal 1’in
+yarısı hiç çalışmıyormuş (v2.9 — yeni)</h2>
+<p>⚠ <strong>Bu bölüm §29’un devamıdır.</strong> §29 sabit kararının
+<em>“verilemez”</em> çıktığı noktada bitiyordu; D-168 o imkânsızlığı
+çürüttü, D-171 kararı verdi.</p>
+<h3 id="dr-13-mutabakatı-rapordan-kod-değişmedi-d-169">30.1 DR #13
+mutabakatı — rapordan <strong>kod değişmedi</strong> (D-169)</h3>
+<p>v3.0 mimari raporu dört öneri getirdi; <strong>hiçbiri
+alınmadı</strong>, ve taşıyıcı iddia <strong>cebirsel olarak
+ters</strong> çıktı:</p>
+<blockquote>
+<p><em>“DPO kaybı <code>ln 2</code>’ye doyuyor”</em> —
+<code>L = ln 2</code> ⟺ tercih marjı <strong>sıfır</strong> demektir;
+doygunlukta <code>L → 0</code>’a gider, <code>ln 2</code>’ye değil.</p>
+</blockquote>
+<p><strong>Ölçüldü:</strong> 64 eğitim çağrısı, <strong>28/64
+<code>ln 2</code>’nin ÜSTÜNDE</strong> (= negatif marj). ⚠ Ve bu veriden
+teşhis zaten konulamaz: eğitim başına <strong>1–7 optimizer
+adımı</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>öneri</th>
+<th>akıbeti</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EGI</strong></td>
+<td>⛔ Yasak #1 (trait injection)</td>
+</tr>
+<tr>
+<td><strong>SVC</strong></td>
+<td>⛔ kilit K7 (davranışsal önsel)</td>
+</tr>
+<tr>
+<td><strong>CKE</strong></td>
+<td>⛔ L9 (etkiye bakarak uç nokta seçme)</td>
+</tr>
+<tr>
+<td><strong>LoRA-FA / TIES</strong></td>
+<td>⏸ üçüncü ön-kayıt aday listesine</td>
+</tr>
+<tr>
+<td><strong>RCI</strong></td>
+<td>✅ alındı — ⏸ <strong>fizik kararından sonra</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Tam tablo: <code>docs/research/RECONCILIATION.md</code>
+<strong>§V</strong>.</p>
+<h3 id="i5.1-popülasyon-kapılarına-bağlandı-d-170">30.2
+<code>I5.1</code> popülasyon kapılarına bağlandı (D-170)</h3>
+<p><code>I5.1</code> (<em>PPR grafiğinde hiç kenar var mı</em>)
+<code>preflight.py</code>’de <strong>tanımlıydı</strong> ve tek-soy
+yolunda <strong>bağlıydı</strong>, ama popülasyon koşumunun kapı
+listesinde <strong>yoktu</strong> ⇒ <em>“PPR sabit katkı verdi”</em> ile
+<em>“PPR skor verdi”</em> bugüne kadarki her popülasyon koşumunda
+<strong>ayırt edilemezdi</strong>. <strong>D-149’un birebir
+tekrarı.</strong> Kapı <strong>10 → 11</strong>.</p>
+<p>⚠ <strong>Kapıyı kaydederken yazılan yorum aynı turda
+çürüdü:</strong> <em>“kenarlar bellek hattının özelliği, modelin
+değil”</em> denmişti; ölçüldü, <strong>yanlış</strong> — kenarlar yalnız
+<strong>DEEP/TRAUMA</strong> düğümlerinden doğuyor, stub onları
+üretmiyor. ⚠ <strong><code>I5.6</code>’nın ilk sürümü tam aynı hatayı
+yapmıştı</strong> (D-163) ⇒ aynı sınıf hata, aynı yerde, <strong>ikinci
+kez</strong>.</p>
+<h3 id="katman-1b-fizik-üçüncü-kez-değişti-d-171">30.3 ⭐⭐ Katman 1b —
+<strong>fizik üçüncü kez değişti</strong> (D-171)</h3>
+<p><strong>Kaldıraç 0 seçildi:</strong> baskın değişken <code>r</code>
+de talep de değil, <strong>tohumun çektiği başlangıç nişi</strong>
+(D-168, §29.4).</p>
+<p><strong>Türetme — sıfır yeni serbest parametre, sıfır koşum
+verisi:</strong></p>
+<pre><code>tavan/ajan = EXTRACTION_LIMIT_RATIO × POOL_MAX × oran₁ = 14.25 × oran₁
+oran₁      = p·(1 + POOL_REGEN_RATE·(1 − p))        ← step_pool: ÖNCE yenilenir
+DEFECT bağlar ⟺ 14.25·oran₁ &lt; 8.0 ⟺ oran₁ &lt; T = 0.561404
+REGEN·p² − (1+REGEN)·p + T = 0  ⇒  p_max = 0.523990</code></pre>
+<p>⇒ <strong><code>NICHE_POOL_FRACTION_RANGE</code>:
+<code>(0.40, 1.00)</code> → <code>(0.40, 0.523990)</code></strong>, üst
+uç <strong>sayı olarak değil İFADE olarak</strong> koda yazıldı (§2.8).
+Taban <code>0.40</code> <strong>değişmedi</strong> (kodun kendi assert’i
+krizin üstünde kalmayı zaten dayatıyor).</p>
+<p>⭐ <strong>Bant boş olmadığı AYNI turda gösterildi</strong> (D-165’in
+dersi): aralığın her noktasında tavan bağlıyor — <code>p₀ = 0.40</code>
+→ tavan 6.213 · <code>0.5240</code> → <strong>8.000</strong> (tam
+sınır). ⇒ Üst uç bir seçim değil, <strong>en kötü çekilişin
+garantisi</strong>.</p>
+<p><strong>Denge noktası</strong> (D-163’ün şartı): <code>r</code>
+değişmedi ⇒ denge de değişmedi
+(<code>1 − r/POOL_REGEN_RATE = 0.0500</code>). Yeni başlangıç aralığı
+krizin (0.30) <strong>üstünde</strong>, denge <strong>altında</strong> ⇒
+<strong>kriz eşiği yol üzerinde</strong>.</p>
+<p>⭐ <strong>Ve buradan eşiksiz bir TAHMİN yazıldı:</strong> <em>kriz
+kanalı ateşlenmeli.</em> D-164’te 0/192, D-168’de 0/48 idi. ⛔
+<strong>Ateşlenmezse bulgu olarak yazılır</strong> — kendi tahminine
+kural koymak onu çürütülemez kılardı.</p>
+<p><strong>Ön-taahhüt (koda dokunulmadan önce yazıldı):</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>kural</th>
+<th>ölçüt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Q1</strong></td>
+<td>3 tohumun <strong>3’ünde de</strong> gen1’de ilk eksik alma
+<strong>olay ≤ 2</strong>. Türetme: tavan olay 1’de yapı gereği
+bağlıyor; geriye o olayda bir DEFECT çıkması kalıyor. Defect payı ≥ %55,
+N = 8 ⇒ iki olay boyunca hiç DEFECT çıkmama olasılığı
+<code>(0.45⁸)² ≈ 3×10⁻⁶</code> ⇒ <strong>3/3 meşru</strong></td>
+</tr>
+<tr>
+<td><strong>Q2</strong></td>
+<td>3 tohumun <strong>3’ünde de</strong> gen1’de
+<code>Var(F_agent) &gt; 0</code>. ⚠ Kasıtlı olarak <strong>tohum
+başına</strong> — gen1’de iki kol birebir aynı ⇒ 6 hücre yapısal olarak
+3 tohum</td>
+</tr>
+<tr>
+<td><strong>Q3</strong> <em>(eşiksiz)</em></td>
+<td><code>k</code> · <code>cooperate</code> histogramı · tanımlılık ·
+<code>I5.1</code> · kriz olayı sayısı</td>
+</tr>
+</tbody>
+</table>
+<p><strong>İlan edilen bedeller:</strong> ❌ sayılar <strong>üçüncü
+kez</strong> sıfırlandı (Katman 1 pilotu ve talep ölçümü taban olmaktan
+çıktı) · ⚠ ön-kayıtlı bir aralık değişti (taslak kilitli değil, pencere
+açık) · ⚠ niş çeşitliliği <strong>0.60 → 0.124</strong> genişliğe indi ·
+⚠ enerji geliri düşüyor.</p>
+<h3 id="okunabilirlik-denetimi-ve-kanal-1in-yarısı-d-172">30.4 ⛔⛔
+Okunabilirlik denetimi — ve Kanal 1’in yarısı (D-172)</h3>
+<p><strong>D-164’ün 8 saatlik dersi:</strong> ön-taahhüdün P3’ünün iki
+maddesi koşum bittikten <strong>sonra</strong> <em>“okunamadı”</em>
+çıkmıştı. ⇒ Sorulmamış soru: <strong>ön-taahhüde yazdığım niceliğin,
+koşumun ürettiği artefaktta bir karşılığı var mı?</strong></p>
+<p>Bu tur sorulabildi, çünkü koşum <code>.partial.json</code> yazıyor
+(D-111). Denetim <strong>salt-okunur</strong> yapıldı — koşum sürerken
+tek satır <code>.py</code> değişmedi, test suite koşulmadı (VRAM boşluğu
+<strong>~900 MiB</strong> ölçüldü).</p>
+<p><strong>Sonuç: beş kalemin dördü okunuyor.</strong> Beşincisi
+(<code>I5.1</code>) okunacak ama <strong>bilgisiz</strong> — ve sebebi
+telemetriden büyük çıktı:</p>
+<pre><code>store.write_edge  ← TEK çağıran: consolidation.py:106  (run_consolidation içinde)
+run_consolidation ← memory_bridge.consolidate_run
+consolidate_run   ← run_cprime_multigen.py:1091   ← TEK SOY yolu
+                  ← graph.py:2033  ⛔ `if __name__ == &quot;__main__&quot;:` İÇİNDE
+run_population_experiment.py: ikisini de import ETMİYOR</code></pre>
+<p>⇒ ⛔ <strong>Popülasyon koşumlarında <code>run_consolidation</code>
+HİÇ çağrılmıyor.</strong> ⇒ ilişki grafiği <strong>yapı gereği
+boş</strong> ⇒ <code>I5.1</code> <em>“PPR is inert”</em> der,
+<strong>sistem hakkında değil koşucunun kablolaması
+hakkında</strong>.</p>
+<p>⚠ <strong>Ve kenar yalnız yarısı:</strong>
+<code>run_consolidation</code> <strong>budama
+(<code>deleted_count</code>)</strong> ve <strong>güçlendirme</strong>yi
+de yapıyor ⇒ <strong>Ebbinghaus unutması popülasyon ajanlarında
+çalışmıyor</strong> ⇒ §9’un ve D-022/D-031’in konsolidasyon anlatısı
+<strong>tek-soy yoluna aittir</strong>, popülasyona değil.</p>
+<p>⛔ <strong>Ad, boşluğu gizlemiş:</strong>
+<code>run_population_experiment.py:1590</code> yorumu <em>“Channel 1:
+end-of-life consolidation for every parent”</em> diyor; çağrılan
+<code>consolidate_generation</code> <strong>yalnız aktarım
+paketini</strong> kuruyor. ⇒ <strong>§2.8’in deseni en saf hâlinde:
+rapor aleti tekrar ediyor, takip etmiyor.</strong></p>
+<p>⭐ <strong>Tahmin sayı yazılmadan önce kayda geçti:</strong> bu
+koşumun her kolunda <code>memory_edges = 0</code> ve
+<code>I5.1 = false</code>. <strong>Sıfır çıkmazsa zincir
+yanlıştır.</strong></p>
+<p>⚠ <strong>Koşumu geçersiz kılmıyor</strong> — aynı kablolama C2’de,
+Katman 1 pilotunda ve talep ölçümünde de vardı ⇒ <strong>sabit</strong>,
+kollar arası bir terim değil.</p>
+<p><strong>Aynı denetim üç eskimiş belge maddesi buldu:</strong></p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>madde</th>
+<th>düzeltme</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>“D-164: <code>cooperate</code> aletlenmemiş”</em></td>
+<td>❌ <strong>eskimiş</strong> — D-166 aletledi
+(<code>demand.outcomes</code>)</td>
+</tr>
+<tr>
+<td>karar sonuçları ikili sanılıyordu</td>
+<td>⛔ <strong>üç kategori var:</strong> <code>cooperate</code> ·
+<code>defect</code> · <strong><code>deadlock</code></strong>. ⚠ D-172
+bunu tek hücreden alıntılamıştı; <strong>tam sayı:</strong> D-168’in
+altı hücresinde <code>defect</code> <strong>626</strong> ·
+<code>cooperate</code> <strong>523</strong> · <code>deadlock</code>
+<strong>41</strong>, toplam <strong>1190</strong> ⇒
+<code>deadlock</code> payı <strong>%3.4</strong>. Bu koşumun ilk
+hücresinde 9/172 (<strong>%5.2</strong>) ⇒ yüzde cümleleri
+<strong>paydayı söylemek zorunda</strong></td>
+</tr>
+<tr>
+<td>§1’in koşum başlangıcı</td>
+<td>08-22 yazıyordu; ilk deneme makine kapanınca <strong>hiçbir çıktı
+bırakmadan</strong> öldü, gerçek başlangıç <strong>08-24
+~12:57</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="bu-bölümün-ilan-ettiği-sınırlar-2">30.5 Bu bölümün ilan ettiği
+sınırlar</h3>
+<ul>
+<li>⛔ <strong>Popülasyon evreninde uyku konsolidasyonu yok</strong>
+(D-172) ⇒ <code>I5.1</code> bilgisiz, budama çalışmıyor. <strong>Karar
+bekliyor</strong> (kuyruk 3.0f) ve düzeltmesi <strong>fiziği dördüncü
+kez değiştirir</strong>.</li>
+<li>⛔ <strong>Kriz kanalı D-171 öncesinde ölçülemezdi (0/192,
+0/48)</strong> ⇒ D-070/kilit K6 askıda. D-171 canlanmasını
+<strong>tahmin ediyor</strong>, ⚠ <strong>doğrulanmadı</strong>.</li>
+<li>⚠ <strong>GAP-10’un tetiği üçüncü kez ateşlenmedi:</strong>
+<code>k</code> <strong>172/172 <code>resource_load</code></strong>
+(D-164’te 192/192) ⇒ Katman 1b de oynatmadı.</li>
+<li>⚠ <strong>Katman 1b öncesi hiçbir sayı taşınmıyor</strong> — üçüncü
+sıfırlama.</li>
+<li>✅ <strong><code>.html</code> / <code>.pdf</code> borcu
+kapandı</strong> — üç sürüm geride kalmışlardı; üretim artık betikle
+(<code>docs/build_master_reference.sh</code>), reçete bir cümlede değil.
+⭐ Betiğin üretim-sonrası doğrulayıcısı <strong>ilk koşuda gerçek bir
+sessiz kayıp buldu</strong>: <code>⟺</code> kod bloğunun içinde
+düşüyordu — hem de D-171 §3’ün türetmesindeki <em>“ancak ve ancak”</em>.
+⛔ Ve <strong>doğrulayıcının ilk sürümü boş bir bekçiydi</strong>
+(<em>“geçiyor mu”</em> diye soruyordu; düz metindeki geçiş kod
+bloğundaki kaybı maskeliyordu) — mutasyon kontrolü yakaladı,
+<strong>saymaya</strong> çevrildi. ⚠ <strong>İlan edilen sınır:</strong>
+xelatex 12 Türkçe harf için <code>ectt1000</code> uyarısı veriyor; ana
+metin <strong>etkilenmiyor</strong> (PDF’ten geri okundu), kaynağı
+<strong>yerelleştirilemedi</strong>.</li>
+</ul>
+<h3 id="ders-29.7nin-dördüncü-katı">30.6 Ders — §29.7’nin dördüncü
+katı</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>kayıt</th>
+<th>ders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D-163</td>
+<td><em>türetmenin temizliği doğruluk değildir;</em> <strong>denge
+noktası da yazılır</strong></td>
+</tr>
+<tr>
+<td>D-164</td>
+<td><em>denge, evrenin <strong>fiilen ürettiği</strong> talebe göre
+hesaplanır</em></td>
+</tr>
+<tr>
+<td>D-165</td>
+<td><em>bant türetilince <strong>boş olmadığı</strong> aynı turda
+gösterilir</em></td>
+</tr>
+<tr>
+<td>D-168</td>
+<td><em>türetmenin <strong>girdileri koddan</strong>
+doğrulanır</em></td>
+</tr>
+<tr>
+<td><strong>D-172</strong></td>
+<td>⛔ <em>ön-taahhüde yazılan niceliğin <strong>artefaktta karşılığı
+olduğu</strong>, koşum bitmeden gösterilir — ve bir fonksiyonun
+<strong>adı</strong>, çağrıldığının kanıtı değildir</em></td>
+</tr>
+</tbody>
+</table>
+<p>⚠ <strong>Beşi de aynı kusurun katmanları:</strong> yazdığımı
+doğruluyorum, <strong>sistemin yaptığını değil</strong> (K1’in doğuş
+gerekçesi).</p>
 </body>
 </html>

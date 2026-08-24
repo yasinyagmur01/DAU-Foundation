@@ -1391,7 +1391,7 @@ kaymış.)
 | Gate'i kodlarken | `docs/PREFLIGHT_INVARIANTS.md` (**26 madde tanımlı, 24'ü kodda** — I1.2 testte, I2.3 yapısal) + `dau/diagnostics/preflight.py` |
 | "Bu dosyanın sessiz yolları neler?" | `docs/RUNPATH_AUDIT.md` (K1–K8) |
 | Alet/literatür kararı öncesi | `docs/research/RECONCILIATION.md` |
-| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.6** — ⚠ **§28 yeni: C2 null'ı, teşhis zinciri ve Katman 1** (D-123…D-163). `.html`/`.pdf` **v2.5'te kaldı** |
+| Formül · tarihçe · empirik tablo | `docs/DAU_MASTER_REFERENCE_v20.md` **v2.9** — ⭐ **§30 yeni: fizik üçüncü kez değişti + Kanal 1'in yarısı çalışmıyor** (D-169…D-172). ✅ `.html`/`.pdf` **senkron** (46 sayfa); üretim `docs/build_master_reference.sh` |
 | Ön-kayıt: slotlar, uç noktalar, **on yedi ilan edilmiş sınır**, donmuş alet kimliği | `docs/PREREGISTRATION.md` 🔒 **KİLİTLİ** |
 | **Sonuç, sınıflandırma, ne iddia edilebilir** | **`docs/B2_RESULTS.md`** |
 | Gönderilemeyen DR brief'i (#5) | `docs/research/2026-08-13_variable-lifespan-endpoints-and-censoring.md` · yerine yapılan yerel tarama: `RECONCILIATION.md` **§K** |

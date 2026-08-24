@@ -3,6 +3,10 @@
 **Versiyon 2.9** · 2026-08-24
 ⚠ *(Başlık **2.6**'da kalmıştı, §22 ise 2.7 ve 2.8'i çoktan yazmıştı —
 belgenin kendi sürüm alanı iki tur geriydi. D-172 turunda düzeltildi.)*
+✅ *(`.html` ve `.pdf` **v2.9'da senkron** — üç sürüm boyunca v2.5'te kalmışlardı.
+Üretim artık `docs/build_master_reference.sh` ile **koşturulabilir**, reçete
+bir cümlede değil. pandoc 3.7 + xelatex. ⚠ Sayfa sayısı burada **yazmıyor**:
+bu satırın kendisi PDF'e girdiği için sayıyı yazmak onu değiştiriyordu.)*
 **Dosya:** `docs/DAU_MASTER_REFERENCE_v20.{md,html,pdf}`
 *(`.md` kaynaktır. ⚠ `.html` ve `.pdf` **v2.5'te kaldı** — v2.6 yalnız `.md`.
 (2026-08-18, pandoc 3.7 + xelatex, 34 sayfa). PDF'te emoji'ler metin
@@ -2145,7 +2149,16 @@ talep ölçümünde de vardı ⇒ **sabit**, kollar arası bir terim değil.
 - ⚠ **GAP-10'un tetiği üçüncü kez ateşlenmedi:** `k` **172/172 `resource_load`**
   (D-164'te 192/192) ⇒ Katman 1b de oynatmadı.
 - ⚠ **Katman 1b öncesi hiçbir sayı taşınmıyor** — üçüncü sıfırlama.
-- ⚠ **`.html` / `.pdf` hâlâ v2.5'te** — `.md` tek güncel kaynak.
+- ✅ **`.html` / `.pdf` borcu kapandı** — üç sürüm geride kalmışlardı; üretim
+  artık betikle (`docs/build_master_reference.sh`), reçete bir cümlede değil.
+  ⭐ Betiğin üretim-sonrası doğrulayıcısı **ilk koşuda gerçek bir sessiz kayıp
+  buldu**: `⟺` kod bloğunun içinde düşüyordu — hem de D-171 §3'ün türetmesindeki
+  *"ancak ve ancak"*. ⛔ Ve **doğrulayıcının ilk sürümü boş bir bekçiydi**
+  (*"geçiyor mu"* diye soruyordu; düz metindeki geçiş kod bloğundaki kaybı
+  maskeliyordu) — mutasyon kontrolü yakaladı, **saymaya** çevrildi.
+  ⚠ **İlan edilen sınır:** xelatex 12 Türkçe harf için `ectt1000` uyarısı
+  veriyor; ana metin **etkilenmiyor** (PDF'ten geri okundu), kaynağı
+  **yerelleştirilemedi**.
 
 ### 30.6 Ders — §29.7'nin dördüncü katı
 
