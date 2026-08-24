@@ -15318,3 +15318,79 @@ tekrarlayan hata deseni, ve artık adı var.
   D-173'ün ölçülen **16.1 dk/kol-nesil** oranı. Gerçek `t` **ilk geceden**
   okunacak ve `N_eff` durma kuralının aritmetiğiyle (`⌊q·T_max/t⌋`) yeniden
   uygulanacak — bu **post-hoc değil**, kuralın kendi tanımı (D-174).
+
+---
+
+## D-183 · 2026-08-25 · ✅✅ **GPU DUMAN KOŞUMU: `run_quality = clean`** — eğitim yolu ve resume muafiyeti canlıda doğrulandı
+
+**Yetki:** Yasin, 2026-08-24: *"duman yapalım sorun yok."*
+⚠️ **Süre tahminim düzeltildi ve öyle ilan edildi:** 40 dk demiştim, gerçek
+tasarım **1 sa 48 dk** sürdü — çünkü mock duman `--no-lora` koştuğu için
+**hiç adapter yazmamıştı** ⇒ resume'un I0.7 muafiyeti **hiç sınanmamıştı**.
+
+**Koşum:** `dau_runs/smoke_d182_lora_s9970.json` · tohum **9970** (koşum
+bloğunun **dışında**, 9929–9948 temiz kaldı) · 8 ajan · G=2 · 2 kol · `--lora`
+· 23:07:56 → 00:55:36 = **1 sa 48 dk** · ⚠️ **keşifsel**, hipotez testi değil.
+
+**Tasarım:** koşum, `lived` kolu **bitip diske gerçek adapter yazdıktan sonra**
+öldürüldü (çökme benzetimi), sonra `--resume` ile devam edildi. ⛔ Resume
+adımında **dış `timeout` YOK** (D-126).
+
+### 1. ⭐ Sonuç: 11 kapının hepsi
+
+| kapı | sonuç | detay |
+|---|---|---|
+| **I1.1** | ✅ **PASS** | *"48 train arms moved lora_B"* ⇒ ⭐ **eğitim yolu B1'in RNG kilidinden sonra çalışıyor** — kilit anında ilan edilen **en büyük risk kapandı** |
+| **I0.7** | ✅ **PASS** | *"16 agent(s) start from the base policy"* — ⭐ **diskte `lived` kolunun 16 adapter dizini varken**. ⇒ **resume muafiyeti (D-177/B2) canlıda doğrulandı** |
+| **I4.2** | ✅ **PASS** | *"one RNG state each"* — B1 gerçek eğitim altında da tutuyor |
+| **I4.1** | ✅ **PASS** | replay **bit-birebir** (`13173ca05451`), `--lora` altında |
+| **I5.4** | ✅ **PASS** | *"applied 321x"* ⇒ ⭐ **D-180'in L20 düzeltmesi teyit edildi** — somatik kanal akıyor |
+| **I5.1** | **None** | *"not evaluated: sleep consolidation is not wired…"* ⇒ **D-178'in sınırı canlıda okundu**, `False` değil |
+| **I5.6** · **I0.3/4/6** · **I5.5** | ✅ PASS | — |
+
+⇒ **`run_quality = clean`**, `complete = true`.
+
+⚠️ **I5.5'in içeriği bu koşumda bilgisiz:** *"2 transitions; 2 founder (out of
+scope by YENİ-4), 0 scored"* — G=2'de her iki geçiş de kurucu geçişi. Beklenen
+ve **koşumun amacı değil**.
+
+### 2. Ölçülen hız — ve bütçeye etkisi
+
+| | |
+|---|---|
+| koşum 1 (`lived`, 2 nesil, 424 olay) | 35.5 dk ⇒ **5.03 sn/olay** |
+| koşum 2 (`shuffle` 2 nesil + replay, ~856 olay) | 72.2 dk ⇒ **5.06 sn/olay** |
+
+⭐ **İki bağımsız ölçüm 5.03 / 5.06 sn** — D-173 pilotunun **5.2 sn/olay**'ıyla
+tutuyor ⇒ hız tabanı **doğrulandı**.
+
+**Doğrulayıcı koşum için yeniden hesap** (pilotun kol başına olay eğrisi:
+178 · 204 · 209 · 216 = **806.5 olay/kol**, üç kol ⇒ **2419.5 olay/tohum**):
+
+| | |
+|---|---|
+| tohum başına | **3 sa 12 dk – 3 sa 22 dk** (alt uç: `null` eğitim yapmıyor) |
+| replay (çağrı başına) | **~36 dk** |
+| **20 tohum · 5 gece** | **67 – 70.3 sa** |
+
+⛔ **Bu, ilan edilen `T_max` = 70 saatin SINIRINDA.** Durma kuralının kendi
+aritmetiği (`N_eff = ⌊q·T_max/t⌋`, D-174) replay yükü sayıldığında **19–20
+tohum** veriyor ⇒ MDE **0.676 – 0.696**.
+
+⇒ ⚠️ **Bu post-hoc bir daralma değil**, kuralın tanımı: `t` ölçülür, `N_eff`
+türetilir. **İlk gecenin gerçek `t`'si okunduktan sonra bir kez daha
+uygulanacak.**
+
+### 3. ⚠️ Sınırlar
+
+- **Keşifsel koşum**, G=2 ⇒ Price/seviye okumaları **bilgisiz** ve okunmadı.
+- Hız ölçümü **tek tohum**; niş yayılımı D-145'te **2.3 kat** ölçülmüştü ⇒
+  gece uzunluğu tohuma göre oynayabilir.
+- Model yükleme her çağrıda tekrar ödeniyor ve bu ölçümde **iki kez** ödendi
+  ⇒ uzun gecelerde etkin hız **biraz daha iyi** olur (tahmin **tutucu**).
+- **Tohum 9970 kullanıldı** ve diskte 48 adapter dizini bıraktı.
+
+### 4. Koşum öncesi durum
+
+Boş disk **40 GB** · `adapters/` **19 GB** · tohum bloğu **9929–9948
+tertemiz** (0 adapter) · suite **667 passed** · ön-kayıt 🔒 `a1163ac778c9`.

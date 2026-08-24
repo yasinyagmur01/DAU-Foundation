@@ -336,7 +336,8 @@ hücreleri okunabilir (gerekçe D-156 §2).
 - ⚠️ **Kullanılmış tohumlar:** …9911–9913 (C2) · 9915 (sonda-2) · 9916
   (sonda-3) · 9917–9919 (tanımlılık pilotu) · 9920–9922 (Katman 1 pilotu) ·
   **9923–9925 (talep ölçümü, D-167)** · **9926–9928 (Katman 1b pilotu,
-  D-171)** · 9305–9310 · 9399 (mock). Taze blok: **9929+**.
+  D-171)** · **9970 (GPU dumanı, D-183)** · 9305–9310 · 9399 (mock).
+  ⭐ **Koşum bloğu: 9929–9948 (20 tohum), denetlendi — 0 adapter.**
 - **Denetim belgeleri:** `docs/PROVENANCE_AUDIT.md` · `docs/ROADMAP.md`.
 
 ---
