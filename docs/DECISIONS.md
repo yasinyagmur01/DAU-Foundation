@@ -15961,3 +15961,106 @@ onlar **hakkında** yazılmış başka bir metin. ⚠️ **Yöntem doğru ve biz
   açık ve gerekçesi yazılı.
 - Nakil tasarımı **henüz koşulmadı**; bu bir tasarım kaydı.
 - van Veelen doğrulaması **web araması**, birincil kaynak değil.
+
+---
+
+## D-190 · 2026-08-25 · 🔍 **ÜÇ AZ-İNCELENMİŞ BOŞLUK ÖLÇÜLDÜ** — pozitif kontrol **canlı**, `null` **donmuş değil**, kurucu geçiş **kullanılabilir**
+
+**Bağlam:** Yasin *"bugün konuştuklarımız dışında hangi eksiği kapatmak en çok
+fayda sağlar"* diye sordu. Sıralamayı **tahminle değil ölçümle** yapmak için
+gece 1'den üç şey okundu. ⚠️ Havuzlanmış/betimleyici; **kol farkı okunmadı**.
+
+### 1. ⭐⭐ Pozitif kontrol CANLI — bu turun en değerli tek sayısı
+
+D-121'in pozitif kontrolü (`energy_mean_over_life`) *"bu koşum seçilimi
+görebilir mi"* sorusunun cevabı.
+
+| | |
+|---|---|
+| hücre | **36** |
+| `Var(kontrol) > 0` | ✅ **36/36** |
+| `Cov(w, kontrol)` | ort **+0.0353**, medyan +0.0167 |
+| işaret | **26 pozitif / 10 negatif** (%72) |
+
+⇒ ⭐⭐ **Seçilim makinesi ÇALIŞIYOR ve seçilim fiilen etki ediyor.**
+
+**Neden bu kadar önemli:** eğer `z` üzerinde bir şey çıkmazsa, o sonuç artık
+*"ölçemedik"* değil ***"ölçtük, yoktu"*** olur. C2'nin (D-123) en büyük
+zaafı tam buydu ve bu koşumda **kapanmış görünüyor**.
+⚠️ Nihai hüküm beş gece bitince, ön-kayıtlı okumayla verilir.
+
+### 2. ⛔ `null` kolu DONMUŞ DEĞİL — L12'nin gerekçesi zayıfladı
+
+D-129 eski fizikte `null`'ı *"zengin nişte donmuş klon popülasyonu"* diye
+ölçmüştü; L12 bu yüzden `null`'ı **betimleyici** ilan ediyor.
+
+| kol | benzersiz nesil-digest | ömür ort / std |
+|---|---|---|
+| `lived` | **16/16** | 25.7 / 4.81 |
+| `shuffle` | **16/16** | 25.4 / 5.25 |
+| **`null`** | **16/16** | **25.0 / 4.98** |
+
+⇒ **`null` da tamamen ayrışıyor** — hiç eğitim almadan.
+
+⚠️ **İki yönlü sonuç, ikisi de kayda değer:**
+- ⭐ `null` **daha iyi bir kontrol** — donmuş bir kol karşılaştırmaya bilgi
+  taşımaz, canlı bir kol taşır.
+- ⛔ **Ama farklılaşma Kanal 2'yi GEREKTİRMİYOR.** Sıralı erişim tek başına
+  üretiyor — ki P0-①'in tasarım amacı buydu (D-084). ⇒ Kolların **farkı**
+  artık *"biri ayrışıyor öteki ayrışmıyor"* olamaz; **ayrışmanın YÖNÜ/İÇERİĞİ**
+  olmak zorunda.
+
+### 3. ⚠️ Kurucu geçiş KULLANILABİLİR — `I5.5` bunu bayrakladı
+
+`I5.5` detayı: *"FOUNDER transition is estimable — YENİ-4 discards usable
+data: s9930 lived/shuffle/null gen1→gen2 (`f_agent_spread` = 0.1658)."*
+
+D-156 **B yolunu** seçmişti (kurucu nesil ısınma neslidir, Price yalnız
+ebeveyni gen ≥ 2 olan geçişlerden okunur ⇒ kullanılabilir geçiş **G−2**).
+Gerekçesi kurucu geçişlerin dejenere olmasıydı.
+
+⇒ **Bugünkü fizikte dejenere değiller.** `G = 4`'te kullanılabilir geçiş
+**2** yerine **3** olurdu ⇒ ⭐ **%50 daha fazla veri, sıfır ek GPU.**
+
+⛔ **Bu koşumda değiştirilemez** — D-156 kilitli (§2.10). **Dördüncü
+ön-kayıtın en ucuz kazancı.**
+
+### 4. `deadlock` — ilk kez betimlendi
+
+307 / 9736 = **%3.2**. Nesil bazında **81 · 103 · 75 · 48** ⇒ nesiller
+boyunca **azalıyor**. ⚠️ Yorum yok; bugüne kadar hiçbir belgede
+betimlenmemişti.
+
+### 5. ⛔ Ve ölçümlerin ortaya çıkardığı ASIL boşluk — dördüncü kol
+
+§2'nin ikinci yarısı bunu zorunlu kılıyor: farklılaşma Kanal 2 olmadan da
+oluyorsa, kolların farkı **içerikte** olmalı. Ama:
+
+⛔ **Tasarımda Kanal 1'i karıştıran bir kol YOK.** `shuffle` **DPO tercih
+çiftlerini** karıştırıyor — yani **yalnız Kanal 2'yi**. Kasanın içeriği üç
+kolda da **aynı mekanizmayla** üretiliyor.
+
+⇒ **Aksiyom *"iki kanal, biri diğerinin yerine geçmez"* diyor; bugünkü tasarım
+bu iddianın YALNIZ YARISINI sınayabilir** — ve bu bir uygulama kusuru değil,
+**tasarım kısıtı**. Ne kadar koşarsak koşalım kapanmaz.
+
+⭐ **Eksik olan kontrol: `vault-shuffle`** — anılar karıştırılmış, adapter
+gerçek. Aynı `shuffle` makinesi, **öbür kanala** uygulanmış.
+⚠️ Bedeli: dördüncü kol ⇒ **+%33 GPU**.
+
+### 6. Öncelik sıralaması — ölçüme dayalı
+
+| # | boşluk | neden | bedel | ne zaman |
+|---|---|---|---|---|
+| **1** | ⛔ **`vault-shuffle` kolu yok** | Aksiyomun **yarısı yapı gereği sınanamıyor**; koşmakla kapanmaz | +%33 GPU | **dördüncü ön-kayıt** |
+| **2** | ⚠️ **Kurucu geçiş atılıyor** | **%50 daha fazla veri**, sıfır ek GPU | ~0 | dördüncü ön-kayıt |
+| **3** | `z` tek boyutlu | D-187: `r_eff` 1.000 → 3.194, **fizik değişmeden** | ~0 | dördüncü ön-kayıt |
+| **4** | Fizik sıfırlamaları / n=1 | Ucuz çözümü **yok**; her tur birikimi siler | yüksek | açık |
+
+### 7. ⚠️ Sınırlar
+
+- Tek gece, 4 tohum. Üçü de beş gece bitince tekrarlanacak.
+- Pozitif kontrol okuması **betimleyici**; ön-kayıtlı hüküm değil.
+- `null`'ın ayrışması **digest ve ömür** üzerinden; `z` düzeyinde ayrışma
+  **ayrı bir soru** ve okunmadı (L9).
+- §5'in *"dördüncü kol"* önerisi bir **tasarım teklifi**, karar Yasin'in.
