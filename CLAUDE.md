@@ -146,9 +146,9 @@ yazılmalı** (L18 obsolet).
 
 ## Durum
 
-- **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
+- **Branch:** `main`, push edildi. **Son D-kaydı: D-190** (sıradaki: **D-191**).
   **Suite:** **667 passed**, 2 deselected. **Kapı: 11.**
-  **Son D-kaydı: D-190** (sıradaki: **D-191**).
+  🔒 Ön-kayıt kilidi: **`a1163ac778c9`** (D-182).
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
