@@ -220,13 +220,30 @@ ayrımın olduğu bölgeye sokmak, soruyu *"davranış değişti mi"*den
 **hiçbir taahhüt kırılmıyor** — K7'ye, C1'e, C2'ye dokunmuyor. Bir **okuma**,
 bir müdahale değil.
 
-⚠️ **Ama iki şey ölçülmeden varsayılmayacak:**
-1. **Varis diskten diriltilebiliyor mu?** Adapter'lar `dau_runs/adapters/`
-   altında **duruyor**; **kasanın (vault) kalıcılığı doğrulanmadı**
-   (`arm_vault` bir bağlam yöneticisi ve çıkışta kapanıyor). Diriltilemiyorsa
-   nakil, varisleri **üreten kısa bir koşum** gerektirir ve bedeli sıfır olmaz.
-2. **D-090 bugünkü fizikte hâlâ geçerli mi?** O ölçüm **tek-soy yolunda** ve
-   Katman 1/1b'den **önce** yapıldı. Eşik hâlâ orada mı, **önce sınanmalı**.
+### ✅ İki açık soru da CEVAPLANDI (D-189)
+
+**1. Varis diskten diriltilebilir mi? — YARISI.**
+⛔ **Kasa (vault) kalıcı DEĞİL:** `arm_vault` bir `tempfile.TemporaryDirectory`
+ve kol bitince **siliniyor** — ve bu **bilinçli**: *"D-033 adapter'ların
+koşumdan sağ çıktığını buldu, I0.7 o yüzden var; kalıcı bir kasa aynı deliği
+bellek tarafında açardı."*
+✅ **Adapter'lar duruyor:** gece 1'den **kol başına 32 dizin/tohum**, ve
+**144 varis dizini** soyağacı isimde kodlu (`pop-lived-s9929-a5-g2-h1-g3-h2`).
+`null` kolunda **0** — doğru, eğitim yapmıyor.
+
+⇒ ⭐ **Nakil YAPILABİLİR, ama yalnız KANAL 2 ile.** Ve bu iyi bir eşleşme:
+`lived`/`shuffle` farkı **zaten adapter'da**. Kanal 1 nakli, varisleri üreten
+**yeni bir koşum** ister ⇒ bedeli sıfır değil.
+⛔ **İlan edilecek sınır:** nakil **parametrik kanalı** sınar, **çift kanalı
+değil**; ve nakledilen ajan gerçek varisin **tamamı değildir** (tohumlanmış
+anılar yok).
+
+**2. D-090 bugünkü fizikte geçerli mi? — SORU DÜŞTÜ (D-188).**
+⛔ Ölçüm daha büyük bir şey buldu: **davranış çökük değil** (`cooperate`
+**%57.3**, `defect` %39.6). ⇒ *"Dar bir işbirliği bölgesi ara"* çerçevesi
+**geçersiz** — işbirliği **çoğunluk**. Nakil nişi artık o bölgeyi **avlamak
+zorunda değil**; soru doğrudan sorulabilir: **kol, davranış dağılımını
+öngörüyor mu?**
 
 ### 9.2 ⛔ Sıralama kuralı — nakil, sınır kırmadan ÖNCE
 

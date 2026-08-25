@@ -15875,3 +15875,89 @@ Bugün gösterilen şey yalnız **ön-koşulun var olduğu**.
 - ⛔ **L18'in metni kilitli belgede** (`PREREGISTRATION_3.md`) ⇒ **orada
   değiştirilmiyor**; düzeltme burada ilan ediliyor ve dördüncü ön-kayıta
   taşınıyor. Sonuç raporunda **bu kayda atıfla** okunacak.
+
+---
+
+## D-189 · 2026-08-25 · ✅ **NAKİL TESTİNİN İKİ AÇIK SORUSU KAPANDI** · ⚠️ ve iki alıntının doğrulaması **kısmi kaldı**
+
+**Bağlam:** ROADMAP §9.1 iki şeyi *"ölçülmeden varsayılmayacak"* diye
+işaretlemişti. İkisi de GPU'suz kapandı. Ayrıca D-184'ün doğrulama borcu
+denendi.
+
+### 1. ⛔ Kasa kalıcı DEĞİL — ve bu bilinçli
+
+`run_population_experiment.py:1404` → `tempfile.TemporaryDirectory`, kol
+bitince `tmp.cleanup()`. Docstring gerekçeyi yazmış:
+
+> *"The store is a temp directory, so nothing survives the run: D-033 found
+> adapters outliving their runs and I0.7 exists because of it, and a vault
+> that persisted would reopen the same hole on the memory side."*
+
+⇒ **Kanal 1 her kol sonunda yok oluyor.** Varis, kasasıyla birlikte
+diriltilemez.
+
+### 2. ✅ Adapter'lar duruyor — nakil Kanal 2 ile yapılabilir
+
+Gece 1 diski: her tohum için `lived` **32**, `shuffle` **32**, `null` **0**
+dizin (null eğitim yapmıyor — doğru). **144 varis dizini**, soyağacı isimde
+kodlu: `pop-lived-s9929-a5-g2-h1-g3-h2`.
+
+⇒ ⭐ **Nakil tasarımı belirlendi:** aynı tohumdan, aynı soyağacı konumundaki
+`lived` ve `shuffle` varis adapter'ları, **özdeş taze bir nişte** okunur.
+
+⭐ **Ve bu bir kayıp değil, iyi bir eşleşme:** kolları ayıran müdahale
+**zaten adapter'dadır** (`shuffle` = tercih yönü karıştırılmış DPO). Nakil
+tam olarak **manipüle edilen kanalı** sınar.
+
+⛔ **İlan edilecek iki sınır:**
+1. Nakil **parametrik kanalı** sınar, **çift kanalı değil**.
+2. Nakledilen ajan gerçek varisin **tamamı değildir** — tohumlanmış anılar
+   yok. ⇒ *"Varis şöyle davranır"* denemez; denebilecek olan: **"parametrik
+   iz tek başına, taze bir dünyada, davranışı öngörüyor mu?"**
+
+### 3. ✅ İkinci soru DÜŞTÜ — D-188 onu geçersiz kıldı
+
+*"D-090'ın dar işbirliği bölgesi bugün hâlâ orada mı?"* ⇒ **Soru anlamsız:**
+işbirliği **dar bir bölge değil, çoğunluk** (%57.3, D-188). Nakil nişi o
+bölgeyi **avlamak zorunda değil**; soru doğrudan sorulabilir.
+
+### 4. ⚠️ Alıntı doğrulaması — biri kısmi, biri kesin
+
+**van Veelen — KISMİ.** Web taraması *"there are a million tautological ways
+to rewrite or partition change, and that just being a tautology is not good
+enough"* ifadesinin **gerçekten van Veelen'a ait** olduğunu doğruladı (birden
+çok bağımsız kaynak aynı cümleyi ona atfediyor, devamıyla birlikte:
+*"What is needed is a tautology with a meaningful interpretation."*).
+
+⛔ **Ama HANGİ makale olduğu doğrulanamadı.** *"The problem with the Price
+equation"* (van Veelen **2020**, Phil Trans R Soc B, `10.1098/rstb.2019.0355`)
+doğrudan okundu: **cümle orada YOK**. DR'nin verdiği kaynak **2005** (JTB,
+`10.1016/j.jtbi.2005.04.026`) — makale gerçek ve konusu doğru, ama metni
+doğrudan okunamadı (paywall).
+
+⇒ ⚠️ **Kayıt kuralı:** yazar atfı **doğrulandı**, kaynak makale
+**doğrulanmadı** ⇒ **cümle *"2005 şunu diyor"* diye alıntılanmayacak.**
+Eleştirinin kendisi van Veelen'a atıfla kullanılabilir; **birebir alıntı
+kullanılacaksa önce PDF okunmalı.**
+
+**Roy & Vetterli — KESİN OLARAK BOZUK, web'e gerek yok.** DR'nin verdiği
+*"alıntı"* şöyle başlıyor: *"Roy and Vetterli define their effective rank
+as…"* ⇒ **bir makale kendi yazarlarından üçüncü şahısla söz edemez.** Bu,
+onlar **hakkında** yazılmış başka bir metin. ⚠️ **Yöntem doğru ve bizde
+çalıştı** (D-184, D-187); **alıntı kaynağından değil.**
+
+### 5. Sıradaki iş listesine etkisi
+
+| iş | durum |
+|---|---|
+| Kasa kalıcılığı | ✅ kapandı — kalıcı değil, nakil Kanal 2 ile |
+| D-090 geçerliliği | ✅ soru düştü (D-188) |
+| van Veelen alıntısı | ⚠️ **açık** — PDF okunana kadar birebir alıntılanmayacak |
+| Roy & Vetterli alıntısı | ✅ kapandı — **kullanılmayacak**, yöntem kendi ölçümümüzle destekleniyor |
+
+### 6. ⚠️ Sınırlar
+
+- Kasa kalıcılığı **koddan** okundu, koşumla sınanmadı — ama `tmp.cleanup()`
+  açık ve gerekçesi yazılı.
+- Nakil tasarımı **henüz koşulmadı**; bu bir tasarım kaydı.
+- van Veelen doğrulaması **web araması**, birincil kaynak değil.
