@@ -1,0 +1,399 @@
+DEEP RESEARCH BRIEF #14
+Escaping five structural bottlenecks in an evolutionary LLM-agent population
+with dual-channel (symbolic + parametric) inheritance
+
+Date: 2026-08-25
+Requested output language: English
+Format note: plain text, no tables, no special characters.
+
+
+==============================================================
+0. WHAT WE WANT FROM YOU, AND WHAT WE DO NOT
+==============================================================
+
+We want radical answers, including answers that tell us our architecture is
+wrong and should be rebuilt. Do not optimise for compatibility with what we
+have built.
+
+We are deliberately NOT telling you which of our design decisions are
+negotiable. Instead:
+
+  For every recommendation you make, add one line labelled COST, naming
+  which of the design commitments listed in section 2 it would require us
+  to abandon, and what we would lose by abandoning it.
+
+If the honest answer to a question is "your framing is wrong, the real
+problem is X", say that instead of answering the question as posed.
+
+If a bottleneck is, in your assessment, a known unsolved problem in the
+literature rather than an implementation defect, say so explicitly and cite
+the work that establishes it as unsolved. That answer is as valuable to us
+as a fix.
+
+
+==============================================================
+1. THE SYSTEM UNDER STUDY
+==============================================================
+
+Substrate
+  - Local LLM: Meta-Llama-3.1-8B-Instruct, NF4 4-bit quantisation with
+    double quantisation, fp16 compute, single consumer GPU (8 GB VRAM).
+  - Generation: greedy decoding, temperature 0, max_new_tokens 64.
+  - Per-agent LoRA adapters, rank 8, alpha 16.
+
+Environment
+  - A common-pool resource dilemma (commons / CPR). One shared pool per
+    population. Pool capacity and initial stock scale linearly with N so
+    per-capita conditions are held constant.
+  - Agents act sequentially within an event, and the acting order rotates
+    every round so that first-mover position does not become permanent.
+  - Harvest is capped by a ceiling proportional to remaining stock divided
+    by N, so an agent's realised harvest depends on what earlier agents in
+    the same event already took. This is the only mechanism by which two
+    agents that make identical decisions end up in different states.
+  - A crisis flag fires when the pool falls below a fixed fraction of
+    capacity. The crisis writes to a fixed, pre-declared domain of the
+    internal state, identically for every agent in the population at once.
+  - Agents die when energy is exhausted after a grace period. Lives last
+    roughly 20 to 30 events.
+
+Population and selection
+  - N = 8 agents. Fixed population size.
+  - Each generation, agents live, are scored, and a tournament of size k = 2
+    selects parents. Each tournament win produces one heir. Reproductive
+    success w is therefore a non-negative integer and varies between agents.
+  - Fitness input F_agent is a weighted sum of lifetime-mean energy,
+    per-event pool contribution, and survival fraction. It is an INPUT to
+    selection, deliberately kept distinct from w (the realised offspring
+    count) and from z (the measured outcome).
+
+The two inheritance channels
+  - Channel 1, symbolic: a per-agent memory vault (vector store) holding
+    episodic records with emotional/somatic weighting. At end of life a
+    consolidation step builds a transfer package; heirs are seeded with
+    selected records and a somatic scale factor derived from the parent's
+    experience.
+  - Channel 2, parametric: the agent's own decisions during life are turned
+    into preference pairs ranked by prediction error, and DPO-trained into
+    that agent's LoRA adapter. The trained adapter is copied to the heir.
+
+The measured outcome z
+  - z is the vector of internal-state drift magnitudes read at a fixed
+    ordinal in every life (a "landmark" event, chosen so that every lineage
+    reaches it before death is possible).
+  - z has four nominal domains: energy, resource, social, uncertainty.
+  - Prediction error (PE) is computed by a deterministic sentence-embedding
+    model, not by an LLM judge.
+
+The experimental design
+  - Three arms per seed, each with its own population and its own pool:
+      lived   - DPO trained on the agent's real preference pairs
+      shuffle - DPO trained on the SAME pairs with the preference direction
+                scrambled, so training volume is matched and only content
+                differs
+      null    - no parametric training at all
+  - Selection is quantified with the Price equation partition:
+      delta z-bar = Cov(w, z) + E(w * delta z)
+    where the first term is selection and the second is transmission.
+  - The claim ladder we are testing, in order:
+      level 0: Var(w) > 0                      (precondition only)
+      level 1: Cov(w, z) is non-zero           (selection acted)
+      level 2: the term does not decay across generations (cumulative)
+      level 3: lived, shuffle and null differ  (the inheritance claim)
+
+
+==============================================================
+2. DESIGN COMMITMENTS WE CURRENTLY HOLD
+==============================================================
+
+These are listed so you can tell us which ones to break, not so you avoid
+them. Treat every item as challengeable.
+
+  C1. No trait injection. Personality or trait values are never assigned to
+      an agent. Any differentiation must arise from lived interaction.
+  C2. No behavioural prior in the prompt. We do not tell agents to
+      cooperate, to reciprocate, to build reputation, or to follow a norm.
+      This is currently our strictest commitment and it is the direct cause
+      of bottleneck 1.
+  C3. No LLM-as-judge. All metrics are deterministic Python.
+  C4. Event-ordinal time only. No wall-clock time in agent-visible state.
+  C5. Constants are declared before a run and are not tuned by looking at
+      the run's outcome.
+  C6. Endpoints are pre-registered and cannot be selected after seeing
+      effect sizes.
+
+We are aware that C2 in particular may be the reason the system cannot
+escape defection. We want to know what it costs us to keep it and what
+becomes available if we drop or weaken it.
+
+
+==============================================================
+3. THE FIVE BOTTLENECKS, WITH WHAT WE HAVE MEASURED
+==============================================================
+
+BOTTLENECK 1 - Behavioural collapse into defection
+
+Between 94 and 100 percent of decision events resolve to DEFECT. A third
+outcome class, deadlock (failure to produce a parseable decision), accounts
+for roughly 3 to 5 percent. Cooperation is present but rare.
+
+We probed the decision channel directly with the real model under real
+prompt layers. Cooperation appears only in a narrow region of state space:
+low energy combined with high accumulated drift. Agents rarely enter that
+region under current physics. A separate probe found that perturbing the
+prompt's numeric fields by amounts from 1e-9 to 1e-1 changed the generated
+text but did not change the harvest amount, i.e. the decision map has a
+single absorbing output over the region the agents actually occupy.
+
+We have verified that this is not unique to our setup: published work on
+LLM agents in commons dilemmas reports similar sustainability failures for
+frontier models. We are not looking for reassurance that the problem is
+common. We are looking for mechanisms that break it.
+
+Constraint that makes this hard: under C2 we may not instruct the agent to
+cooperate, and under C1 we may not give it a cooperative disposition.
+
+QUESTIONS
+ 1a. What mechanisms in multi-agent RL, evolutionary game theory, or LLM
+     agent simulation reliably sustain strategy diversity in iterated
+     social dilemmas WITHOUT specifying the strategy? Consider at minimum:
+     intrinsic motivation and empowerment objectives, novelty search and
+     quality-diversity methods, partner choice and assortment, reputation
+     and indirect reciprocity, structured or spatial interaction,
+     punishment institutions that emerge rather than being imposed, and
+     modifications to the payoff structure itself.
+ 1b. Which of these are properties of the ENVIRONMENT rather than of the
+     agent's decision rule? We can change the environment freely. Changing
+     the decision rule is what C2 forbids, so we need the distinction drawn
+     precisely, not loosely.
+ 1c. Is there evidence that behavioural diversity in LLM agents can be
+     produced by environmental structure alone, with an identical prompt
+     and identical model weights at initialisation?
+ 1d. If the literature's answer is that this cannot be done without some
+     form of behavioural prior, say so, cite it, and tell us the weakest
+     possible prior that is known to work.
+
+
+BOTTLENECK 2 - The internal state z collapses to one dimension
+
+z nominally has four domains. In practice:
+
+  - The primary affected domain is selected as the axis with the largest
+    movement in an event. In our measurements this was the same domain in
+    every single event across an entire run (several hundred events),
+    because that domain is coupled to a scalar resource load that moves at
+    every step.
+  - Cross-domain spillover is a single scalar multiplier, so the other
+    three axes are scaled copies of the first. Four reported numbers are
+    not four dimensions.
+  - We tried an asymmetric spillover matrix. Measured improvement in the
+    relevant threshold was about two percent, which did not change any
+    outcome. We concluded the matrix was the wrong fix and reverted it.
+  - The crisis channel writes to a fixed domain and hits all agents at the
+    same event, so its contribution to z carries no between-agent
+    information at all.
+
+Consequence: our covariance is about the MAGNITUDE of drift, not about
+which aspect of experience drifted. We cannot make claims about the content
+of what is inherited.
+
+QUESTIONS
+ 2a. How should an internal somatic state be formalised so that it encodes
+     behavioural and episodic history rather than a scalar resource proxy?
+     We are interested in somatic marker implementations, affective state
+     models, latent cognitive embeddings, and non-parametric memory-derived
+     state, with concrete formulations.
+ 2b. What objectives or regularisers prevent representational collapse in a
+     state vector that is UPDATED BY RULES rather than trained by gradient
+     descent? Most anti-collapse literature we know of assumes a learned
+     encoder. If the standard techniques do not transfer to a rule-updated
+     state, say so.
+ 2c. Is a rule-updated state vector the wrong architecture entirely? If the
+     internal state should instead be a learned function of the agent's own
+     history, what is the training signal, and how does it avoid becoming
+     a second copy of the fitness function?
+ 2d. How do we verify empirically that a state vector is genuinely
+     multi-dimensional rather than reporting several projections of one
+     quantity? Give us the diagnostic, not just the design.
+
+
+BOTTLENECK 3 - Zero-inflation and structural non-identifiability
+
+Two separate problems.
+
+First, our measurability endpoint. For each arm and seed we compute the
+fraction of generational transitions in which the selection term is even
+DEFINED, i.e. in which the parents carried non-identical z. That fraction
+takes only a few discrete values because there are very few transitions per
+lineage. Differencing it between arms produces a heavily zero-inflated
+quantity, and a signed-rank test discards ties, so effective sample size
+collapses.
+
+Second, the definedness problem itself. Cov(w, z) requires Var(z) > 0 among
+the parents of a cell. When all parents of a generation carry identical z,
+the selection term is zero BY CONSTRUCTION and this is categorically
+different from a measured absence of selection. We currently report those
+cells as undefined rather than as zero. There is also a third case: a cell
+that never formed at all.
+
+We also have a deeper issue: we test whether the selection term differs
+between arms, but the number of usable generational transitions per lineage
+is small, and the repetition unit is the seed rather than the agent or the
+generation, because heirs inherit adapters and agents share a pool.
+
+QUESTIONS
+ 3a. What statistical frameworks handle a primary endpoint that is
+     zero-inflated, discrete, bounded, and defined only conditionally?
+     Consider permutation and randomisation tests, bootstrap over the
+     correct unit, mixed models with hurdle or zero-inflated components,
+     Bayesian estimation with explicit undefined-cell handling, and
+     information-theoretic alternatives.
+ 3b. Is measuring the DEFINEDNESS RATE as an endpoint defensible at all, or
+     is it a methodological error we should abandon? Argue both sides.
+ 3c. Are there published treatments of the Price equation under small
+     sample sizes, including bias of the covariance estimator and how
+     uncertainty should be reported? We are aware the estimator can be
+     biased in small samples and want the current state of that literature.
+ 3d. What alternative measures of intergenerational drift avoid the
+     definedness problem entirely? Consider distributional distances such
+     as earth mover's distance between parent and offspring z
+     distributions, information gain, transfer entropy, and permutation
+     based lineage tests. For each, state what it can and cannot license as
+     a claim about SELECTION as opposed to mere change.
+ 3e. What is the accepted experimental standard for this class of claim:
+     number of independent seeds, control arms, and whether a first run
+     should be framed as estimation rather than hypothesis test?
+
+
+BOTTLENECK 4 - Environmental changes confound the comparison across runs
+
+We have changed the environment's physics three times, each time for a
+principled reason and each time with the derivation written before the
+change. But every change resets our baselines: prior runs become
+incomparable, so we never accumulate evidence. Each run is effectively
+n = 1 in its own physics regime.
+
+We also cannot easily distinguish "the mechanism is absent" from "the
+environment never activated the mechanism", because the environment
+determines whether the measurement window is reachable at all.
+
+QUESTIONS
+ 4a. How do simulation-based fields handle the accumulation of evidence
+     across incompatible parameter regimes? Are there accepted methods for
+     pooling or meta-analysing runs whose generative model changed?
+ 4b. Is a parameter SWEEP across the environment's key constants a better
+     design than a single tuned operating point, given that the constants
+     cannot be calibrated against outcome data without invalidating the
+     inference? What is the cost in compute and in interpretability?
+ 4c. What is the accepted way to declare an environment as fixed, such that
+     later work can build on it rather than re-deriving it? Is there a
+     precedent for a "reference environment" in artificial life?
+ 4d. How should one report a sequence of runs in which the environment
+     changed between them, honestly, without either hiding the changes or
+     making the whole sequence uninterpretable?
+
+
+BOTTLENECK 5 - Cold start of the symbolic channel
+
+The symbolic channel applies an inherited somatic scale only when the
+heir's own experience log is non-empty. Newly born heirs have an empty log.
+Therefore the first decision of a new generation systematically ignores the
+inherited data, and in the first heir generation the somatic half of
+inheritance is structurally zero.
+
+The episodic half does transfer: heirs receive selected records from the
+parent. But the scale factor, which is the part that modulates how those
+records are weighted, does not apply until the heir has accumulated its own
+history.
+
+QUESTIONS
+ 5a. How do recent multi-generational agent frameworks initialise an
+     inherited internal state at t = 0 of a new lifetime, without hard
+     coding the state?
+ 5b. What distillation, summarisation, or latent-mapping methods let a
+     newborn agent inherit a meaningful prior derived from the parent's
+     lived experience, in a way that is verifiably NOT an injected trait?
+     The distinction between "compressed history" and "assigned
+     disposition" is exactly what our axiom rests on, so we need it drawn
+     sharply.
+ 5c. Is there a principled reason to WANT a cold start, i.e. is the empty
+     initial state a feature that preserves the claim that traits emerge
+     from living rather than being given?
+ 5d. If both channels should be seeded at birth, how is the relative weight
+     of the symbolic and parametric channel determined without tuning it
+     against the outcome?
+
+
+==============================================================
+4. CROSS-CUTTING QUESTION
+==============================================================
+
+Rank the five bottlenecks by how much each one limits what we could
+legitimately claim, and tell us which ones are worth fixing given that they
+interact. Specifically: if behavioural collapse (1) is the upstream cause
+of low-dimensional drift (2), then fixing 2 without fixing 1 may be wasted
+effort. Tell us the dependency structure as you see it.
+
+If your assessment is that this architecture cannot support the claim we
+are trying to make, and that a different experimental design would reach it
+faster, describe that design.
+
+
+==============================================================
+5. WHAT WE ARE NOT ASKING
+==============================================================
+
+  - Do not ask us for, or speculate about, our observed effect sizes, our
+    covariance values, or the difference between our arms. Those are
+    pre-registered outcomes and we are deliberately not sharing them.
+  - Do not comment on our version control history or on why past decisions
+    were made. You do not have access to that and plausible reconstruction
+    is worse than silence.
+
+
+==============================================================
+6. SOURCE REQUIREMENTS - BINDING
+==============================================================
+
+These exist because previous rounds of this brief produced a large number
+of citations whose author, year, or venue did not match the actual paper,
+and several claims that were attributed to real papers but did not appear
+in them.
+
+  R1. Every citation must carry author, year, venue, and a DOI or arXiv id.
+  R2. For every substantive claim you attribute to a source, quote the
+      supporting sentence VERBATIM from that source, in quotation marks.
+      Do not paraphrase and do not give a line or page number instead of a
+      quote. If you cannot produce the quote, mark the claim as your own
+      inference rather than as the source's.
+  R3. If the literature does not contain an answer to one of our questions,
+      declare the gap explicitly. A declared gap is a useful result. An
+      invented answer is not.
+  R4. Provide a full bibliography at the end.
+  R5. For every recommendation, add one line describing how a hostile
+      reviewer would attack it, and what evidence would refute it.
+
+  R6. For every recommendation, add the COST line described in section 0:
+      which of our design commitments C1 to C6 it breaks, and what is lost.
+
+
+==============================================================
+7. OUTPUT FORMAT
+==============================================================
+
+For each of the five bottlenecks:
+  - Diagnosis: is this an implementation defect, a design error, or a known
+    open problem?
+  - Candidate solutions, ordered by expected impact, with mathematical
+    formulation or pseudocode where the mechanism is not obvious from
+    description.
+  - For each candidate: COST line (R6), attack vector (R5), and the
+    citations that support it (R1, R2).
+  - Minimum viable version: the cheapest change that would test whether the
+    mechanism helps at all.
+
+Then the cross-cutting ranking from section 4, and the bibliography.
+
+Prefer 2021 to 2026 work, but cite older foundational work where it is the
+correct source rather than substituting a recent paper that merely repeats
+it.
