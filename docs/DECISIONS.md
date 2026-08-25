@@ -15513,3 +15513,97 @@ DR'nin **aksiyona dönük her önerisi bir fizik değişikliği**; ön-kayıt
   yazılmayacak.**
 - §W.5'in çürütmesi **bizim ölçümümüze** dayanıyor; DR'nin genel iddiası
   (iyi karışmış sistemlerde 1→2→3) **başka mimariler için doğru olabilir**.
+
+---
+
+## D-185 · 2026-08-25 · ⭐ **KAT 3 SONRASI YOL AÇILDI — nakil testi (common-garden) ve iki bağlayıcı kural**
+
+**Yetki:** Yasin, 2026-08-25. Kendi çerçevesi: *"makul bir noktada gerçekten
+bir şey kanıtlayarak listeyi bitir, sonra sınırlara takılmadan yapabileceğimizi
+yap … sonra gerekirse belimizi büken kısımların mimarisini değiştiririz, kodun
+aslını koruyarak, bir branch'te."*
+
+⚠️ **Bu kayıt bir plan kaydıdır**, ölçüm değil. Ama iki **bağlayıcı kural**
+kuruyor (§2, §3) ve o yüzden `ROADMAP.md` §9'a yazıldı.
+
+### 1. ⭐ Fikrin adı var: common-garden
+
+Yasin'in önerisi (*"bu agentları alıp sıfır bir ortama koysak davranışları
+gerçekten değişmiş mi, yoksa sadece bir rakam mı"*) biyolojide **common-garden
+deneyidir**: farklı soyları **özdeş** bir ortamda okuyup farkın sürüp
+sürmediğine bakmak.
+
+⭐ **Ve bu, bu projeye yöneltilecek en sert eleştirinin doğrudan cevabı.**
+D-176'dan beri kayıtlı olan saldırı: *"bu bir trait'in kalıtımı mı, yoksa bir
+durumun taşınması mı?"* Eğer `lived` ve `shuffle` varisleri **hiçbirinin
+yaşamadığı özdeş bir nişte** farklı davranıyorsa, kalıtılan şey **durum
+değildir** — çünkü durum orada yok.
+
+⭐ **Hiçbir taahhüdü kırmıyor:** K7'ye, C1'e, C2'ye dokunmuyor. Bir **okuma**,
+müdahale değil.
+
+### 2. ⛔ BAĞLAYICI KURAL 1 — nakil, sınır kırmadan ÖNCE
+
+Nakil bir sonuç değil **gündem belirleyicidir**: hangi sınırı kırmaya
+değeceğini o söylüyor.
+
+| nakil sonucu | sonraki hamle |
+|---|---|
+| davranış gerçekten farklı | **K7 kırılmaz**; enerji `z`'nin boyutuna (L3) gider |
+| davranış aynı, yalnız sayı farklı | **K7 kırılır**, gerekçesi artık **ölçüme** dayanır |
+
+⇒ Sınırı önce kırıp sonra bakmak, **hangisini kırmak gerektiğini bilmeden**
+kaldıraç harcamaktır (kalan hak: **2**).
+
+### 3. ⛔ BAĞLAYICI KURAL 2 — sıra bozulamaz
+
+> **`docs/C3_RESULTS.md` yazılıp commit edilmeden hiçbir keşifsel nakil
+> sonucuna BAKILMAZ.**
+
+Kilitli koşumun sonucunu, sonradan gelen keşifsel bir bulgunun ışığında
+**yeniden yorumlama** baskısı gerçektir. Sıra bozulursa *"ön-kayıt neyi
+korudu"* sorusunun cevabı kalmaz.
+
+### 4. ⚠️ Tasarımın keskinleştirilmesi — ve iki ölçülmemiş varsayım
+
+**Ham hâliyle *"taze dünyaya koy, bak"* bilgisiz dönebilir:** L18 yüzünden
+ikisi de DEFECT der. ⇒ Niş **rastgele seçilmiyor**: ajanları **D-090'ın
+işaretlediği bölgeye** sokan bir niş (düşük enerji + yüksek drift), çünkü orada
+`cooperate` eşiği **keskin ve tırtıksız** ölçülmüştü. Soru böylece
+*"davranış değişti mi"*den **"kol, eşiğin hangi tarafına düşüleceğini öngörüyor
+mu"**ya döner — sayılabilir bir soru.
+
+⛔ **İki şey ölçülmeden varsayılmayacak:**
+1. **Varis diskten diriltilebiliyor mu?** Adapter'lar `dau_runs/adapters/`
+   altında **duruyor**; **kasanın kalıcılığı doğrulanmadı** (`arm_vault` bir
+   bağlam yöneticisi, çıkışta kapanıyor). Diriltilemiyorsa nakil, varisleri
+   üreten **kısa bir koşum** ister ⇒ bedeli sıfır değil.
+2. **D-090 bugünkü fizikte hâlâ geçerli mi?** O ölçüm **tek-soy yolunda** ve
+   **Katman 1/1b'den önce** yapıldı. Eşiğin hâlâ orada olduğu **önce
+   sınanmalı** — aksi hâlde nakil yanlış bölgeye yapılır.
+
+### 5. Branch mekaniği — kayda geçirilen dört ayrıntı
+
+- **Kilit noktasından dallan:** `git branch exp/transplant a1163ac778c9` ⇒
+  dalın tabanı ön-kayıtın **dondurduğu** hâl.
+- `main` **dondurulmuş sayılır** (koşum + `C3_RESULTS.md` bitene kadar).
+  ⚠️ Koşum sürerken `.py` düzenleme **dalda da yasak** — aynı GPU.
+- Çıktılar **ayrı isim alanına**: `dau_runs/exp_*`. Yoksa D-177/B3'ün
+  birleştiricisi alet uyuşmazlığı diye reddeder (**doğru** davranış).
+- ⚠️ **Dalda keşif serbest, İDDİA değil.** İddia ⇒ **dördüncü ön-kayıt** +
+  kilit. *Keşif ucuz, iddia pahalı; ikisini ayıran şey kilittir.*
+
+### 6. `ROADMAP.md` §9 açıldı — ve neden
+
+Belge **Kat 3'te bitiyordu**. ⚠️ Bu, D-175'te düzelttiğimiz durumun aynısı:
+*"projenin yazılı varış noktası yoktu."* Kat 3 bir **bitiş çizgisi değil bir
+kapı**; arkasında ne olduğu artık yazılı (§9.1–§9.6), aday listesi DR #14'ten
+geliyor (D-184).
+
+### 7. ⚠️ Sınırlar
+
+- Bu **plan**, ölçüm değil. §4'ün iki varsayımı **ölçülmeden** nakil
+  tasarlanamaz.
+- Nakil **keşifseldir**; iddia üretmez. İddia dördüncü ön-kayıta bağlıdır.
+- §2'nin tablosu bir **karar ağacı**, tahmin değil — nakil sonucu her iki dala
+  da düşebilir.
