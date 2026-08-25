@@ -15607,3 +15607,97 @@ geliyor (D-184).
 - Nakil **keşifseldir**; iddia üretmez. İddia dördüncü ön-kayıta bağlıdır.
 - §2'nin tablosu bir **karar ağacı**, tahmin değil — nakil sonucu her iki dala
   da düşebilir.
+
+---
+
+## D-186 · 2026-08-25 · ⭐⭐ **L3'ÜN SONUCU DOĞRU, GEREKÇESİ YANLIŞ** — `z` argmax'ta ölüyor, spillover'da değil
+
+**Bağlam:** Yasin *"iddiamızı daraltan sonuçlara insana ve evrime bakarak
+basit çözümler düşünelim"* dedi. L3'e (*"`z` etkin olarak tek boyutlu"*)
+bakarken **eksenlerin kendisi ölçüldü** — ve gerekçe çöktü.
+
+### 1. Ölçüm (gece 1, 384 ajan-yaşamı, 9736 olay)
+
+**a) Dört eksen birbirinin skaler kopyası DEĞİL:**
+
+| çift | korelasyon |
+|---|---|
+| energy ↔ resource | **+0.101** |
+| energy ↔ social | **+0.021** |
+| energy ↔ uncertainty | **+0.060** |
+| resource ↔ social | **−0.062** |
+
+Oranların std'si **0.019–0.224**, 384 satırda **319 benzersiz oran**.
+⇒ Skaler kopya olsalardı oran **sabit** olurdu. Değil.
+
+**b) Ama `z` yine de tek boyutlu** (`r_eff` medyan **1.000**, D-184).
+
+**c) Sebep bulundu — argmax:**
+
+`graph.py:916` → `_primary_affected_domain` = `max(changes, key=changes.get)`.
+**Kazanan-hepsini-alır.** Sonuç:
+
+| `z`'de dolu alan sayısı | ajan |
+|---|---|
+| **0** | 182 / 384 |
+| **1** | 164 / 384 |
+| **2** | 38 / 384 |
+| 3 veya 4 | **0** |
+
+Argmax'ı kim kazanıyor: `energy` **8589**, `resource` 725, `social` 387,
+`uncertainty` 35 (9736 olayda).
+
+### 2. ⛔ L3'ün yazılı gerekçesi çürüdü
+
+`PREREGISTRATION_3.md` L3 ve `CLAUDE.md` GAP-10 şunu diyor: *"ikincil eksenler
+`k`'nin sabit katı ⇒ dört sayı dört boyut değil."*
+
+⛔ **Ölçüm bunu desteklemiyor.** Eksenler neredeyse **bağımsız**. `CROSS_AXIS_SPILLOVER
+= 0.20` yalnız **PE enjeksiyonuna** uygulanıyor (`delta.py:84`); durum
+değişkenleri ayrıca metabolizma ve hasattan da hareket ediyor
+(`graph.py:897` — dört ayrı fiziksel niceliğin farkı).
+
+⚠️ **D-136 bunun yarısını zaten görmüştü** (*"social/uncertainty ölü değil,
+C2'nin sıfırı bir argmax artefaktı"*) ama sonra *"asıl sebep argmax değil,
+skaler spillover"* dedi. **Bugünkü veriyle o çıkarım ayakta değil.**
+⚠️ Adil olmak gerekirse D-136 **C2 fiziğinde** ölçmüştü; fizik üç kez değişti.
+
+### 3. ⭐ Bunun neden büyük fark yarattığı
+
+| gerekçe | düzeltmenin bedeli |
+|---|---|
+| *"skaler spillover"* (eski) | **yeni fizik** — asimetrik matris denendi, **+%2.29**, eşiği geçmedi (D-137) |
+| ⭐ *"argmax bilgiyi atıyor"* (ölçülen) | **yeni sabit YOK, yeni fizik YOK** — uç noktanın **tanımı** değişir |
+
+⇒ **Bilgi zaten üretiliyor ve zaten kaydediliyor** (`delta_profile.axes.deltas`,
+D-136'nın aletlemesi). Onu **atan** şey uç noktanın indirgeme operatörü.
+
+⭐ **İnsan bilişi açısından:** Damasio'nun somatik işaretleyicileri
+**kazanan-hepsini-alır değildir** — beden aynı anda birden çok kanalda
+işaretler ve bunlar **birlikte** karara girer. `argmax` bir *hissin* değil,
+*bir kararın* modelidir. Bedende argmax yok.
+
+### 4. ⛔ Bu koşuma etkisi: YOK
+
+`z` ön-kayıtta **tanımlı ve kilitli**. Bu bir **dördüncü ön-kayıt** bulgusu.
+Koşan tur etkilenmiyor, hiçbir sayı değişmiyor.
+
+### 5. Kayıt düzeltmesi
+
+⛔ **L3'ün metni dördüncü ön-kayıtta düzeltilmeli.** Bugünkü doğru hâli:
+
+> `z` **etkin olarak tek boyutludur** (`r_eff` medyan 1.000) — ⚠️ ama sebebi
+> eksenlerin bağımlı olması **değil**, uç noktanın **argmax ile indirgenmesidir**.
+> Alttaki dört eksen **neredeyse bağımsız** ölçüldü (|r| ≤ 0.10).
+
+⚠️ `PREREGISTRATION_3.md` **kilitli** ⇒ metin **bu belgede değiştirilmiyor**;
+düzeltme dördüncü ön-kayıta taşınıyor ve burada ilan ediliyor.
+
+### 6. ⚠️ Sınırlar
+
+- Tek gecede (4 tohum) ölçüldü; beş gece bitince tekrarlanacak.
+- Korelasyonlar **yaşam-ortalaması** eksen deltaları üzerinden; olay
+  düzeyinde bağımlılık farklı çıkabilir.
+- *"Argmax kaldırılırsa `r_eff` yükselir"* bir **çıkarım**, ölçüm değil —
+  dördüncü ön-kayıt öncesi **mevcut veriden hesaplanabilir** (eksen
+  vektörünü doğrudan `z` sayıp `r_eff` bakmak). Ucuz, ve yapılmalı.
