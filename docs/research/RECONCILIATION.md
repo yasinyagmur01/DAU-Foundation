@@ -1920,3 +1920,163 @@ düşürdü — ham metin `docs/research/` altında **yok**.
 | ⏸ LoRA-FA · TIES-Merging | üçüncü ön-kayıt **aday listesi** |
 | ⏸ **RCI** | **fizik kararından sonra** — fizik değişirse tabanı kayar |
 | ⭐ **`I5.1`'i popülasyon kapılarına bağla** | **şimdi** — fizikten bağımsız, saf aletleme, K6 borcu |
+
+---
+
+# §W — DR #14 mutabakatı (2026-08-25) · beş darboğaz, radikal çözüm alanı açık
+
+**Brief:** `2026-08-25_five-bottlenecks-radical-redesign_PLAIN.txt`
+**Değerlendirme yetkisi:** Yasin — *"işimize yarayan bir şey var mı"*
+
+⚠️ **Bu turun brief'i bilerek gevşetilmişti** (*"sınırlamalardan çekil ki
+radikal karar alabilsin"*): C1–C6 taahhütleri **yasak** olarak değil **meydan
+okunacak liste** olarak verildi, ve her öneri için **COST satırı** (R6)
+istendi. Aşağıdaki değerlendirme o çerçeveye göre.
+
+## §W.1 ⭐ ALINAN — effective rank, ve **kendi verimizde ölçüldü**
+
+DR'nin tek gerçekten yeni aleti: **effective rank** (Roy & Vetterli 2007,
+`10.1109/TSP.2007.898918`) — tekil değerlerin normalize entropisinin üsteli:
+
+```
+r_eff(Z) = exp(-Σ p_k ln p_k),   p_k = σ_k / Σ σ_j
+```
+
+⭐ **Gece 1 verisinde hesaplandı** (48 hücre, `z` matrisi 8 ajan × 4 alan):
+
+| | |
+|---|---|
+| **medyan `r_eff`** | **1.000** |
+| ortalama | 0.947 · min 0.000 · max 1.995 |
+| nesil bazında | gen1 **0.250** → gen2 1.000 → gen3 1.203 → gen4 **1.337** |
+| dağılım | 48 hücrenin **38'i** `r_eff ≤ 1.0` |
+
+⇒ ⭐⭐ **L3 artık bir türetme değil, ÖLÇÜLMÜŞ bir istatistik.** Bugüne kadar
+*"`z` etkin olarak tek boyutlu"* demenin dayanağı bir argümandı (`k` 192/192
+sabit + spillover skaler). Şimdi **atıf verilebilir bir yöntemle çıkmış bir
+sayı** var, ve nesil boyunca **hafifçe yükseldiği ama 4'e hiç yaklaşmadığı**
+da görünüyor.
+
+⇒ **Sıfır GPU, koşuma dokunmadı, kilidi ihlal etmiyor** — saf raporlama.
+`analyze_population_run`'a eklenmesi §2.10 altında meşru (hesaplamayı
+değiştirmiyor), ⚠️ ama **koşum bittikten sonra**.
+
+## §W.2 ⭐ ALINAN — van Veelen 2005, elimizde olmayan bir eleştiri
+
+`10.1016/j.jtbi.2005.04.026` — Price eşitliğinin **totoloji** olduğu ve
+dinamik olarak yetersiz kaldığı eleştirisi. **Bu kaynağı hiç görmemiştik.**
+
+⇒ Bizim L7/L8'imizi (*"Price + güç analizinin yayımlanmış örneği yok"*,
+*"küçük N'de kestirim yanlı"*) **keskinleştiriyor** ve sonuç raporunda
+*"Price seçilimi VERİR, dinamiği vermez"* cümlesine dayanak sağlıyor.
+⚠️ Alıntının birebirliği **doğrulanmadı** — Crossref'ten kimlik doğru, metin
+kontrolü bekliyor.
+
+## §W.3 ⏸ ADAY — Wasserstein + permütasyon, dördüncü ön-kayıta
+
+`W1(P_ebeveyn, P_varis)` + `w`'yi permüte ederek ampirik null. **Tanımlılık
+problemini yapı gereği ortadan kaldırıyor** (`W1`, `Var(z)=0` iken de
+tanımlı). Gerçek bir alternatif.
+
+⛔ **Şimdi alınamaz:** ön-kayıt 🔒 kilitli (`a1163ac778c9`), birincil uç nokta
+`ΔCov_cond`. Uç noktayı koşum ortasında değiştirmek **post-hoc** olur.
+⏸ Dördüncü ön-kayıt aday listesine (LoRA-FA/TIES'in yanına).
+
+## §W.4 ✅ TEŞHİS DOĞRU, REÇETE MİMARİYE UYMUYOR — darboğaz 5
+
+DR: *"kapı `if len(heir.log) > 0` ve bu bir uygulama kusuru."*
+✅ **Kodda doğrulandı:** `graph.py:1116` → `if state.delta_log:`. **Teşhis
+birebir doğru.**
+
+⛔ **Ama reçete yanlış:** DR *"`heir.somatic_scale = parent.final_somatic_scale`
+ata"* diyor. **Böyle bir alan yok.** Ölçek, `inherited_warning` bayraklı
+**bellek kayıtlarının içinde** yaşıyor ve `apply_inherited_somatic_scale`
+(`emotional_weight.py:124`) onu **retrieval bağlamından** okuyor. Düzeltme
+kayıt yapısına dokunmak zorunda, kuruculara değil.
+
+⛔ **Ve DR'nin *"hiçbir taahhüdü kırmıyor"* iddiası yanlış:** bu bir **fizik
+değişikliğidir** (ilk olayın duygusal ağırlığı değişir ⇒ bütün sayılar
+kayar) ve ön-kayıt **kilitli**. R6'nın kendi COST satırı **hatalı doldurulmuş**.
+
+## §W.5 ⛔ MERKEZ İDDİA ÖLÇÜMLE ÇÜRÜDÜ — 1→2→3 bağımlılık zinciri
+
+DR'nin stratejik başlığı: *"Evrensel defection bütün ajanları AYNI kaynak
+tüketim yoluna sokar ⇒ `z` yörüngeleri özdeşleşir ⇒ `Var(z)=0`. Darboğaz 2
+veya 3'ü, 1'i düzeltmeden çözmek boşa emektir."*
+
+⛔ **Bizim sistemimizde yanlış, ve iki ölçüm bunu çürütüyor:**
+
+| ölçüm | sonuç |
+|---|---|
+| Kurucular ayrışıyor mu (D-173/Q2) | ✅ **her tohumda 8/8 ayrı** |
+| `Var(w) > 0` (gece 1) | ✅ **48/48 hücrede OPEN** |
+
+⭐ **Sebep:** DR **iyi karışmış, eşzamanlı hasat** varsaydı. Bizde hasat
+**sıralı** ve tavan **kalan stoka oranlı** — yani *"özdeş karar veren ama
+farklı yaşayan ajanlar"* tam olarak bu evrenin kurulma amacı (D-084).
+Ajanlar defection'da birleşse **bile** ayrışıyorlar.
+
+⇒ **DR'nin en yüksek sesle söylediği tavsiye, bizim mimarimizi bilmediği için
+verilmiş.** Brief mimariyi anlatıyordu; okunmamış ya da modellenmemiş.
+
+## §W.6 ⛔ ÖLÇÜLMÜŞ BİR ŞEYİ TERSİNE ÖNERİYOR — nucleus sampling
+
+DR'nin radikal yeniden tasarımının birinci maddesi: *"greedy'yi bırak,
+`T=0.7, p=0.9` + deterministik tohum hattı."*
+
+⛔ **Bunu ölçtük ve tam tersi çıktı (D-037):** `warn_only` altında **aynı
+tohum + aynı kod** iki koşumda **farklı adapter** ve **21/50 karar farkı**
+üretti. Koşumdan koşuma gürültü **0.026**, ölçtüğümüz kol farkı **0.015–0.025**
+⇒ **gürültü etkiden büyüktü.** `I0.6` bu yüzden determinizmi **zorunlu**
+kılıyor. DR'nin *"deterministic seed pipeline"* güvencesi tam da başarısız
+olduğunu ölçtüğümüz şey.
+
+## §W.7 ⚠️ Kaynak disiplini — R2 iki kez kırıldı
+
+| şart | sonuç |
+|---|---|
+| **R1** DOI/kimlik | ✅ **8/8** kaynakta var, kimlikler makul |
+| **R2** birebir alıntı | ⛔ **2 kaynakta bozuk** (aşağıda) |
+| **R3** boşluk ilanı | ⚠️ **bir kez** yapıldı (CPR-Bench); *"S ≥ 30 tohum standarttır"* **kaynaksız** iddia edildi |
+| **R5** saldırı vektörü | ✅ her öneride var |
+| **R6** COST | ✅ var, ⛔ **biri hatalı** (§W.4) |
+
+⛔ **Kırık alıntı 1 — Roy & Vetterli 2007.** Verilen *"birebir alıntı"*:
+*"Roy and Vetterli define their effective rank as e raised to the power E s…"*
+⇒ Bu, **onlar hakkında üçüncü bir makalenin yazdığı** metin. Bir makale kendi
+yazarlarından **üçüncü şahısla** söz edemez. ⚠️ **Yöntem doğru, alıntı
+kaynağından değil.**
+
+⛔ **Kırık alıntı 2 — Park ve ark. 2023.** *"Birebir alıntı"* olarak
+**makalenin başlığı** verilmiş (*"Generative agents: Interactive simulacra of
+human behavior"*), ve **üç ayrı iddiaya** dayanak gösterilmiş. Başlık bir
+destekleyici cümle değildir.
+
+⚠️ **Ve şart listesi yine kusuru engellemedi, YAKALANABİLİR kıldı** —
+D-169'un dersinin tekrarı. İkisi de birebir-alıntı şartı olmasa **fark
+edilmeden geçerdi**.
+
+## §W.8 ⛔ Cevaplanmayan soru — Q1c
+
+Sorduğumuz: *"çevresel yapının TEK BAŞINA, özdeş prompt ve özdeş ağırlıkla
+başlayan LLM ajanlarında çeşitlilik ürettiğine dair kanıt var mı?"*
+
+Gelen cevap: **Nowak 2006** — replikatör dinamiği, LLM değil. ⇒ **İkame.**
+LLM sorusuna evrimsel oyun teorisi kaynağıyla cevap verilmiş, ve aradaki
+boşluk **ilan edilmemiş** (R3 ihlali).
+
+⚠️ Nowak 2006'nın kendisi sağlam ve alıntıları makul görünüyor — sorun kaynak
+değil, **sorulan soruya cevap olmaması**.
+
+## §W.9 Sonuç — üç satır
+
+| | |
+|---|---|
+| ⭐ **Alınan** | **effective rank** (ölçüldü, medyan **1.000**) · **van Veelen 2005** (yeni kaynak) |
+| ⏸ **Aday** | Wasserstein + permütasyon · uzamsal kafes + dışlama · alan-ayrıştırılmış `z` — **hepsi dördüncü ön-kayıta** |
+| ⛔ **Alınmayan** | 1→2→3 zinciri (**ölçümle çürüdü**) · nucleus sampling (**D-037 ölçtü**) · B5 reçetesi (mimariye uymuyor) · *"S≥30"* (kaynaksız) |
+
+⛔⛔ **Ve kesişen sınır:** DR'nin **aksiyona dönük her önerisi bir FİZİK
+DEĞİŞİKLİĞİ**, ön-kayıt ise **kilitli** ve koşum **sürüyor**. Hiçbiri bu tura
+uygulanamaz. Bu bir kayıp değil — brief'i **zamanlaması bilinerek** yazdık:
+çıktısı **dördüncü ön-kayıtın girdisi**.

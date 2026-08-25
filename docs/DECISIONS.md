@@ -15394,3 +15394,122 @@ uygulanacak.**
 
 Boş disk **40 GB** · `adapters/` **19 GB** · tohum bloğu **9929–9948
 tertemiz** (0 adapter) · suite **667 passed** · ön-kayıt 🔒 `a1163ac778c9`.
+
+---
+
+## D-184 · 2026-08-25 · 🔍 **DR #14 MUTABAKATI** — iki şey alındı, merkez tavsiye **ölçümle çürüdü**
+
+**Bağlam:** Yasin brief'i bilerek gevşetmemi istedi (*"sınırlamalardan çekil
+ki radikal karar alabilsin"*). Uygulandı: C1–C6 **yasak** olarak değil
+**meydan okunacak liste** olarak verildi, her öneri için **COST satırı** (R6)
+istendi. Tam mutabakat `RECONCILIATION.md` **§W**.
+
+### 1. ⭐⭐ Alınan birinci şey: effective rank — ve **hemen ölçüldü**
+
+Roy & Vetterli 2007 (`10.1109/TSP.2007.898918`):
+`r_eff(Z) = exp(−Σ p_k ln p_k)`, `p_k = σ_k / Σσ_j`.
+
+**Gece 1 verisinde hesaplandı** (48 hücre, `z` = 8 ajan × 4 alan):
+
+| | |
+|---|---|
+| **medyan** | **1.000** |
+| ortalama | 0.947 · min 0.000 · max 1.995 |
+| nesil | gen1 **0.250** → gen2 1.000 → gen3 1.203 → gen4 **1.337** |
+| | 48 hücrenin **38'i** `r_eff ≤ 1.0` |
+
+⇒ ⭐ **L3 artık türetme değil, ölçülmüş istatistik.** *"`z` etkin olarak tek
+boyutlu"* iddiasının dayanağı bugüne kadar bir **argümandı** (`k` 192/192
+sabit + skaler spillover). Artık **atıf verilebilir bir yöntemle çıkmış bir
+sayı**, ve nesil boyunca **yükseldiği ama 4'e yaklaşmadığı** da görünüyor.
+
+⚠️ **Alıntısı bozuk** (§W.7) ama **yöntem doğru** — formül literatürdeki
+tanımla birebir, ve kendi verimizde çalıştı.
+
+### 2. ⭐ Alınan ikinci şey: van Veelen 2005 — elimizde olmayan eleştiri
+
+`10.1016/j.jtbi.2005.04.026` — Price eşitliğinin **totoloji** olduğu ve
+dinamik yetersizliği. Bu kaynağı **hiç görmemiştik**. L7/L8'i keskinleştiriyor
+ve sonuç raporuna *"Price seçilimi verir, dinamiği vermez"* için dayanak.
+⚠️ Alıntı birebirliği **doğrulanmadı**.
+
+### 3. ⛔⛔ Merkez tavsiye ölçümle çürüdü
+
+DR'nin en yüksek sesle söylediği şey: *"evrensel defection ⇒ özdeş `z`
+yörüngeleri ⇒ `Var(z)=0`; darboğaz 2/3'ü 1'i düzeltmeden çözmek boşa emek."*
+
+| ölçüm | sonuç |
+|---|---|
+| kurucular ayrışıyor mu (D-173/Q2) | ✅ **her tohumda 8/8** |
+| `Var(w) > 0` (gece 1) | ✅ **48/48 hücre OPEN** |
+
+⭐ **Sebep:** DR **eşzamanlı, iyi karışmış hasat** varsaydı. Bizde hasat
+**sıralı** ve tavan **kalan stoka oranlı** — *"özdeş karar veren ama farklı
+yaşayan ajanlar"* bu evrenin **kurulma amacı** (D-084). Defection'da
+birleşseler bile ayrışıyorlar.
+
+⇒ ⚠️ Brief mimariyi **anlatıyordu**; okunmamış ya da modellenmemiş.
+
+### 4. ⛔ Ölçülmüş bir şeyin tersini önerdi
+
+*"Greedy'yi bırak, `T=0.7, p=0.9` + deterministik tohum hattı."*
+⛔ **D-037 bunu ölçtü:** `warn_only` altında aynı tohum + aynı kod **farklı
+adapter** ve **21/50 karar farkı**; gürültü **0.026**, kol farkı **0.015–0.025**
+⇒ **gürültü etkiden büyüktü.** `I0.6` determinizmi bu yüzden zorunlu kılıyor.
+
+### 5. ✅ Teşhis doğru, reçete mimariye uymuyor (darboğaz 5)
+
+DR *"kapı `if len(heir.log) > 0`"* dedi — ✅ **kodda doğrulandı**,
+`graph.py:1116` → `if state.delta_log:`.
+⛔ Ama önerdiği düzeltme (`heir.somatic_scale = parent.final_...`) **böyle bir
+alan olmadığı için** uygulanamaz: ölçek `inherited_warning` bayraklı
+**bellek kayıtlarının içinde**, `emotional_weight.py:124` onu **retrieval
+bağlamından** okuyor.
+⛔ Ve DR'nin *"hiçbir taahhüdü kırmıyor"* COST satırı **yanlış** — bu bir
+**fizik değişikliği** ve ön-kayıt **kilitli**.
+
+### 6. Kaynak disiplini — R2 iki kez kırıldı, şart yine yakalattı
+
+| şart | sonuç |
+|---|---|
+| R1 DOI | ✅ 8/8 |
+| **R2 birebir alıntı** | ⛔ **Roy & Vetterli**: verilen alıntı **onlar hakkında üçüncü bir makalenin** metni (bir makale kendi yazarlarından üçüncü şahısla söz edemez) · ⛔ **Park ve ark. 2023**: *"alıntı"* olarak **makale başlığı**, üç ayrı iddiaya dayanak gösterilmiş |
+| R3 boşluk ilanı | ⚠️ bir kez yapıldı; *"S ≥ 30 tohum standarttır"* **kaynaksız** |
+| R5 saldırı vektörü | ✅ |
+| R6 COST | ✅ ama **biri hatalı** |
+
+⚠️ **Desen üçüncü kez teyit edildi:** şart listesi kusuru **engellemiyor**,
+**yakalanabilir** kılıyor. İkisi de birebir-alıntı şartı olmasa fark
+edilmeden geçerdi.
+
+⛔ **Cevaplanmayan soru Q1c:** *"çevresel yapı TEK BAŞINA, özdeş promptlu LLM
+ajanlarında çeşitlilik üretir mi"* sorusuna **Nowak 2006** (replikatör
+dinamiği, LLM değil) ile cevap verildi ⇒ **ikame**, ve boşluk **ilan
+edilmedi**.
+
+### 7. ⛔ Kesişen sınır — hiçbiri bu tura uygulanamaz
+
+DR'nin **aksiyona dönük her önerisi bir fizik değişikliği**; ön-kayıt
+🔒 **kilitli** (`a1163ac778c9`) ve koşum **sürüyor** (gece 2).
+
+⇒ Bu bir kayıp değil: brief **zamanlaması bilinerek** yazıldı. Çıktısı
+**dördüncü ön-kayıtın girdisi**.
+
+### 8. Bu turdan çıkan iş listesi
+
+| # | iş | ne zaman |
+|---|---|---|
+| **1** | `r_eff`'i `analyze_population_run`'a ekle (saf raporlama, §2.10 altında meşru) | ⏸ **koşum bitince** |
+| **2** | van Veelen 2005 ve Roy & Vetterli 2007 alıntılarını **kaynaktan doğrula** | ⏸ koşum bitince |
+| **3** | Wasserstein + permütasyon · uzamsal kafes + dışlama · alan-ayrıştırılmış `z` | ⏸ **dördüncü ön-kayıt** aday listesi |
+| **4** | Darboğaz 5'in **gerçek** reçetesi (kayıt yapısı üzerinden) | ⏸ dördüncü ön-kayıt |
+
+### 9. ⚠️ Sınırlar
+
+- `r_eff` **tek gecede** (4 tohum) ölçüldü; beş gece bitince tam veriyle
+  yeniden okunacak.
+- van Veelen ve Roy & Vetterli alıntıları **doğrulanmadı** — kimlikler makul,
+  metin kontrolü bekliyor. **Doğrulanmadan kayda *"kaynak şunu diyor"* diye
+  yazılmayacak.**
+- §W.5'in çürütmesi **bizim ölçümümüze** dayanıyor; DR'nin genel iddiası
+  (iyi karışmış sistemlerde 1→2→3) **başka mimariler için doğru olabilir**.
