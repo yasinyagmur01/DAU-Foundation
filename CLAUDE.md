@@ -39,17 +39,116 @@ Yukarıdaki tablo **bundan sonrası** için geçerli.
 
 ## Tek cümlede
 
-🔒 **ÖN-KAYIT KİLİTLİ (`a1163ac778c9`, D-182) — sıradaki iş KOŞUM.** Hedef ilan edildi, alet
-onarıldı, taslağın dört kusuru kapandı (D-176: **Kat 2 ·
-70 sa · G=4 · üç kol · MDE 0.676** · D-177: I4.2 kilidi · resume ·
-birleştirici · D-178: Kanal 1 **bağlanmıyor** · D-179/D-180: dört kusur +
-**L9 artık bir kapıya bağlı** · D-181: birleştirici **her parçalı koşumu
-reddediyordu**, düzeltildi) ⇒ sıradaki iş **doğrulayıcı koşum**.
+⏳ **DOĞRULAYICI KOŞUM SÜRÜYOR — 5 gecenin 2'si.** Ön-kayıt 🔒 kilitli
+(`a1163ac778c9`, D-182). ⇒ Sıradaki iş **gece 3'ü başlatmak** (§1.5'teki komut).
+
+⚠️ **Yasin, 2026-08-25: gece 2 bitince İŞLEM YAPILMAYACAK** — yeni sohbete
+geçilecek, sonuçlar ve kalan işler orada ele alınacak.
+
+---
+
+### ▶ KOŞUM DURUMU — yeni oturumun ilk bakacağı yer
+
+| gece | tohum | durum |
+|---|---|---|
+| **1** | 9929–9932 | ✅ **BİTTİ** — 11 sa 31 dk · `complete` · **11/11 kapı sağlıklı** · replay bit-birebir · `Var(w)>0` **48/48** · `dau_runs/c3_population_n8_g4_night1.json` |
+| **2** | 9933–9936 | ⏳ **koşuyor** (12:31 başladı, ~10.4 sa) · `..._night2.json` |
+| **3** | **9937–9940** | ⬜ bekliyor |
+| **4** | **9941–9944** | ⬜ bekliyor |
+| **5** | **9945–9948** | ⬜ bekliyor |
+
+**Gece komutu** (yalnız `--seeds` ve `--results` değişir):
+
+```
+PYTHONHASHSEED=0 python -m dau.diagnostics.run_population_experiment \
+  --seeds 9937 9938 9939 9940 --n-agents 8 --n-generations 4 --events 30 \
+  --lora --fresh-pasture --arms lived shuffle null \
+  --results dau_runs/c3_population_n8_g4_night3.json
+```
+
+Kesilirse **aynı komut + `--resume`**. ⛔ Dış `timeout` **YOK** (D-126).
+⛔ Koşum sürerken `.py` düzenleme ve `git checkout` **YOK**.
+
+**Beş gece bitince:**
+```
+python -m dau.diagnostics.analyze_population_run \
+  --results dau_runs/c3_population_n8_g4_night*.json --out docs/C3_RESULTS_report.md
+```
+⇒ sonra **`docs/C3_RESULTS.md`** yazılır (§11: sonuç ne olursa olsun).
+
+⚠️ **Hız ölçüldü:** iki gece ort. **~11 sa** ⇒ tohum başına ~2 sa 45 dk,
+tahminden **hızlı**. Beş gece toplamı **~55 sa** (bütçe 70 sa).
+⇒ `N_eff` = ⌊q·T_max/t⌋ beş gece bitince **yeniden uygulanacak** (D-174).
+
+---
+
+### ⬜ UYGULANMAYI BEKLEYEN TEK KOD İŞİ — olay-bazı telemetri
+
+**Onaylandı (Yasin), uygulanmadı.** Plan hazır:
+`/tmp/claude-1000/.../scratchpad/telemetry_plan.md` (⚠️ scratchpad geçici;
+özeti burada).
+
+**Ne:** `_pe_event_log` her olayda `agent_id · event_counter · PE ·
+precision · delta_magnitude · delta_class · affected_domain ·
+target_domain · axis_deltas{4 eksen}` yazıyor (`graph.py:409`). Koşucu bunu
+**okuyor ama yalnız özetini** kaydediyor; ham satırlar **atılıyor**.
+⇒ İş: `run_population(...)` **çıkışında** `event_rows = get_pe_event_log()`
+yakala, nesil kaydına yaz.
+
+⛔ **Yakalama noktası kritik:** `generations.append`'e kadar arada eğitim,
+konsolidasyon ve **varis doğumu** var; geç yakalamak varis satırlarını
+**yanlış nesle** bağlar.
+
+**Kanıt şartı (geçmezse geri al):** ① mock digest eşitliği (aynı tohum,
+açık/kapalı → `arm_digest` birebir) ② suite 667 ③ K5 mutasyonu ④ yeni test:
+satırlar o neslin ajanlarına ait, **varis id'si içermiyor**.
+
+**İlan edilecek sınır:** telemetri **tohum 9937+** için var, **9929–9936**
+için yok. Keşifsel; hiçbir ön-kayıtlı uç nokta buna dayanmıyor.
+
+---
+
+### ⭐ 2026-08-25'İN BULGULARI — D-184 … D-190
+
+| kayıt | bulgu |
+|---|---|
+| **D-184** | DR #14 mutabakatı — **effective rank** ve **van Veelen 2005** alındı; merkez tavsiye (*1→2→3 zinciri*) **ölçümle çürüdü**; R2 iki kez kırıldı |
+| **D-185** | ⭐ **Nakil testi (common-garden)** yol haritasına girdi + **iki bağlayıcı kural** (aşağıda) |
+| **D-186** | ⭐⭐ **L3'ün sonucu doğru, GEREKÇESİ yanlış** — eksenler bağımsız (\|r\|≤0.10), `z`'yi **argmax** öldürüyor |
+| **D-187** | ⭐⭐ **`r_eff` 1.000 → 1.453 → 3.194** — argmax **ve** eksen-başı ölçek, ikisi birden gerekiyor. ⭐ Ucuz yolu var: `z`'yi kayıtlı eksen vektöründen okumak **fizik değiştirmez** |
+| **D-188** | ⛔⛔ **L18 ARTIK DOĞRU DEĞİL** — davranış çökük değil: `cooperate` **%57.3**, `defect` %39.6. Eski %94-100 **sabit kota fiziğinden** |
+| **D-189** | Nakil: **kasa kalıcı değil** (temp dir), **adapter'lar duruyor** ⇒ nakil **yalnız Kanal 2** ile. van Veelen alıntısı **kısmi doğrulandı**, Roy & Vetterli alıntısı **bozuk** |
+| **D-190** | ⭐⭐ **Pozitif kontrol CANLI** (36/36 hücrede `Var>0`, %72 pozitif) ⇒ null çıkarsa *"ölçtük, yoktu"* denebilir · **`null` donmuş değil** (L12 zayıfladı) · **kurucu geçiş kullanılabilir** (%50 daha fazla veri) |
+
+⚠️ **Bugün DÖRT belge-ölçüm çelişkisi bulundu** (*"iki kol"* · ROADMAP §3 ·
+L20 · L18). **Desen kural:** bu projede bir belgenin en riskli hâli *yanlış*
+olması değil, **eskimiş** olması — ikisi aynı görünüyor.
+
+### ⛔ İKİ BAĞLAYICI KURAL (D-185)
+
+1. **Nakil testi, sınır kırmadan ÖNCE** — hangi sınırı kırmaya değeceğini o
+   belirliyor.
+2. **`C3_RESULTS.md` yazılıp commit edilmeden hiçbir keşifsel nakil
+   sonucuna BAKILMAZ.**
+
+### 📋 DÖRDÜNCÜ ÖN-KAYIT — öncelik sırası (D-190, ölçüme dayalı)
+
+| # | boşluk | bedel |
+|---|---|---|
+| **1** | ⛔ **`vault-shuffle` kolu yok** — aksiyomun **yarısı yapı gereği sınanamıyor**; koşmakla kapanmaz | +%33 GPU |
+| **2** | **Kurucu geçiş atılıyor** (D-156/B) — bugün **dejenere değil** ⇒ %50 daha fazla veri | ~0 |
+| **3** | `z` tek boyutlu — D-187'nin ucuz yolu | ~0 |
+| **4** | Fizik sıfırlamaları / n=1 — **ucuz çözümü yok** | yüksek |
+
+⏸ Ayrıca: Wasserstein+permütasyon · uzamsal kafes · **maternal etki** olarak
+yeniden çerçevelenmiş GAP-3 · DR #14'ün Darboğaz 1 bölümü **yeniden
+yazılmalı** (L18 obsolet).
 
 ## Durum
 
 - **Branch:** `main`, push edildi. **Son D-kaydı: D-176** (sıradaki: **D-177**).
   **Suite:** **667 passed**, 2 deselected. **Kapı: 11.**
+  **Son D-kaydı: D-190** (sıradaki: **D-191**).
 - 📄 **Varış noktası artık yazılı: `docs/ROADMAP.md`** (D-175). ⚠️ 08-19'dan
   08-24'e kadar **yoktu** — eski haritası iptal edilmiş bir hedefi gösteriyordu.
 - ⭐⭐ **KATMAN 1b PİLOTU BİTTİ (D-173) — Q1 ve Q2 İKİSİ DE 3/3 TUTTU.**
