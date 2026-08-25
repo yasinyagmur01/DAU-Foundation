@@ -15775,3 +15775,103 @@ vektöründen okumak **hiçbir sayıyı sıfırlamaz**.
 
 `z` ön-kayıtta kilitli. Bulgu **dördüncü ön-kayıtın** girdisi; `ROADMAP.md`
 §9.5'in *"alan-ayrıştırılmış `z`"* adayı artık **bir sayıya** dayanıyor.
+
+---
+
+## D-188 · 2026-08-25 · ⛔⛔⛔ **L18 ARTIK DOĞRU DEĞİL — davranış çökük değil, %57 `cooperate`**
+
+**Bağlam:** ROADMAP §9.1 kendi şartını koymuştu: *"D-090 bugünkü fizikte hâlâ
+geçerli mi? Önce sınanmalı."* Sınamak için gece 1'in davranış dağılımına
+bakıldı — ve **daha büyük bir şey çıktı**.
+
+⚠️ **Havuzlanmış, betimleyici okuma. KOL KIRILIMI YAPILMADI (L9).**
+Ön-kayıt §3.3 `demand`'i betimleyici olarak listeliyor.
+
+### 1. Ölçüm — gece 1, 9736 karar olayı, tüm kollar havuzlanmış
+
+| sonuç | sayı | oran |
+|---|---|---|
+| **`cooperate`** | **5575** | **57.3 %** |
+| `defect` | 3854 | **39.6 %** |
+| `deadlock` | 307 | 3.2 % |
+
+⛔ **L18'in iddiası: *"olayların %94–100'ünde DEFECT"* (D-068).**
+⇒ **Ölçülen: %39.6.** Sınır **iki buçuk kat** yanlış tarafta.
+
+**Landmark'a kadar (ilk 10 olay, 3840 karar):** defect **%57.7** ·
+cooperate %41.4 ⇒ ⭐ **erken yaşamda defect baskın, yaşam boyunca cooperate
+öne geçiyor.** Bu, D-090'ın *"cooperate düşük enerji + yüksek drift
+bölgesinde"* gözlemiyle **yön olarak tutarlı** — ama artık **dar bir bölge
+değil, çoğunluk**.
+
+**Nesil bazında defect (havuzlanmış):** gen1 %38.5 · gen2 %33.5 ·
+gen3 %39.3 · gen4 %46.6.
+⚠️ **Bu bir etki değil, betimleme** — kollar birlikte, yorumlanmıyor.
+
+### 2. ⭐ İkinci, DAHA GÜÇLÜ ayak — talep miktarları
+
+`cooperate` etiketi **sözcük tabanlıdır** (`extraction.py:181`, anahtar
+kelime eşleme) ve **GAP-5/L14'ün tam konusudur** (prompt sözlüğü etiketi
+yönlendirebilir). O yüzden tek başına yeterli kanıt değil.
+
+⭐ **Ama hasat miktarı metinden AYRI parse ediliyor** (`decision_to_extraction`
+önce sayıyı arar) ve **o da dağılmış**:
+
+| | eski fizik (D-084) | **bugün (48 hücre)** |
+|---|---|---|
+| hasat miktarı | **10/10 sondada 8.0**, benzersiz outcome = **1** (*"soğurucu çıktı"*) | hücre ortalamaları **3.63 – 6.93** |
+| medyan talep | — | **2.0 – 8.0** |
+| en büyük talep | — | **25.0** (⇒ `EXTRACTION_DEFECT = 8.0`'in **üstünde**) |
+
+⇒ **Bu bir etiketleme artefaktı değil.** Ajanlar gerçekten **farklı sayılar**
+istiyor, ve bazıları eski *"defect kotası"*nın üstüne çıkıyor.
+
+### 3. ⛔ Neden bunu bugüne kadar görmedik
+
+L18, **D-068'de** ölçüldü — ve o ölçüm **sabit kota fiziğinden**. Katman 1
+(D-162/163) hasadı **stoka oranlı bir tavana** bağladı, Katman 1b (D-171)
+niş bandını daralttı. ⇒ Ortamın karnesi değişti, **davranış onunla birlikte
+değişti**, ve **L18 güncellenmedi**.
+
+⚠️ **Bugünün DÖRDÜNCÜ belge-ölçüm çelişkisi.** Önceki üçü: *"iki kol"*
+(D-176) · ROADMAP §3 (D-178) · L20 (D-180). **Desen artık istisna değil
+kural:** bu projede bir belgenin en riskli hâli *yanlış* olması değil,
+**eskimiş** olması.
+
+### 4. ⛔⛔ ACİL — DR #14 brief'i obsolet bir soru soruyor
+
+`2026-08-25_five-bottlenecks-radical-redesign_PLAIN.txt` **Darboğaz 1**'i
+şöyle tarif ediyor: *"Between 94 and 100 percent of decision events resolve
+to DEFECT."*
+
+⇒ **Bu tarif bugünkü fizik için YANLIŞ.** Brief gönderildiyse, DR **var
+olmayan bir problemi** çözmeye çalışıyor: uzamsal kafes, devrilme noktası,
+yansıma döngüsü — hepsi *"defection tuzağından kaçış"* için.
+
+⇒ **Brief'in Darboğaz 1 bölümü yeniden yazılmalı.** Yeni soru artık
+*"nasıl kaçarız"* değil: **"davranış zaten dağılmış — bu dağılım `z`'ye ve
+kalıtıma ulaşıyor mu?"**
+
+### 5. ⭐ İddiaya etkisi — beş sınırın en ağırı hafifledi
+
+D-176'dan beri kayıtlı *"en sert saldırı"*: *"ajanlarınız zaten hep aynı
+kararı veriyor ⇒ bu bir trait'in kalıtımı değil, bir sayının taşınması."*
+
+⇒ **Bu eleştirinin dayanağı zayıfladı.** Davranış **gerçekten dağılmış**
+(%57/%40/%3) ve talep miktarları **sürekli bir aralıkta**.
+
+⚠️ **Ama iddia HENÜZ güçlenmedi.** Kurulması gereken zincir hâlâ eksik:
+davranış dağılımının **`z`'ye**, oradan **kalıtıma** ulaştığı **ölçülmedi**.
+Bugün gösterilen şey yalnız **ön-koşulun var olduğu**.
+
+### 6. ⚠️ Sınırlar
+
+- **Tek gece, 4 tohum.** Beş gece bitince tekrarlanacak.
+- `cooperate` **sözcük etiketidir**; GAP-5/L14 sınırı **aynen geçerli**.
+  Güçlü ayak **miktar dağılımıdır**, etiket değil.
+- **Kol kırılımı yapılmadı ve yapılmayacak** — o, ön-kayıtlı okumanın işi.
+- Nesil eğilimi (%38.5 → %46.6) **havuzlanmış betimleme**, tedavi etkisi
+  değil.
+- ⛔ **L18'in metni kilitli belgede** (`PREREGISTRATION_3.md`) ⇒ **orada
+  değiştirilmiyor**; düzeltme burada ilan ediliyor ve dördüncü ön-kayıta
+  taşınıyor. Sonuç raporunda **bu kayda atıfla** okunacak.
