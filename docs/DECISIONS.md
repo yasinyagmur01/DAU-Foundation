@@ -15701,3 +15701,77 @@ düzeltme dördüncü ön-kayıta taşınıyor ve burada ilan ediliyor.
 - *"Argmax kaldırılırsa `r_eff` yükselir"* bir **çıkarım**, ölçüm değil —
   dördüncü ön-kayıt öncesi **mevcut veriden hesaplanabilir** (eksen
   vektörünü doğrudan `z` sayıp `r_eff` bakmak). Ucuz, ve yapılmalı.
+
+---
+
+## D-187 · 2026-08-25 · ⭐⭐ **`z`'nin BOYUTU GERİ KAZANILABİLİR: `r_eff` 1.000 → 3.194** — ve iki müdahale birden gerekiyor
+
+**Bağlam:** D-186 argmax'ı suçlu ilan etmişti ve son satırında *"argmax
+kaldırılırsa `r_eff` yükselir, bu bir ÇIKARIM, mevcut veriden hesaplanabilir"*
+diyordu. Yasin *"yap"* dedi. Hesaplandı.
+
+⚠️ **Keşifsel yeniden-analiz**, gece 1 verisi (48 hücre). Koşuma dokunulmadı,
+hiçbir sabit değişmedi.
+
+### 1. Üç senaryo, aynı 48 hücre
+
+| # | `z` tanımı | `r_eff` medyan | ort | `≥ 3` |
+|---|---|---|---|---|
+| 1 | **mevcut** — argmax'la etiketlenen alan | **1.000** | 0.947 | 0/48 |
+| 2 | argmax **yok**, dört eksen doğrudan | **1.453** | 1.536 | 0/48 |
+| 3 | ⭐ argmax yok **+ eksen başı z-skor** | **3.194** | 3.167 | **33/48** |
+
+Hücre başına artış (1→2): medyan **+0.490**, **43/48 hücrede** yükseldi.
+
+### 2. ⛔ Kendi tahminimi düzeltiyorum
+
+D-186'yı sunarken *"argmax kaldırılırsa `r_eff` 3.2 çıkabilir"* diye örnek
+vermiştim. ❌ **Tek başına argmax'ı kaldırmak 1.453 veriyor**, 3.2 değil.
+**3.194'e ancak ikinci müdahaleyle** ulaşılıyor.
+
+### 3. ⭐ Sebep ölçüldü — bağımsızlık yetmiyor, ÖLÇEK de gerekiyor
+
+| eksen | ortalama büyüklük |
+|---|---|
+| `energy` | **0.3153** |
+| `social` | 0.1006 |
+| `resource` | 0.0774 |
+| `uncertainty` | **0.0361** |
+
+`energy / uncertainty` = **8.7 kat**, `energy / social` = **3.1 kat**.
+
+⇒ Effective rank **tekil değerlere göre** ağırlıklandırır. Eksenler
+**bağımsız** (D-186: |r| ≤ 0.10) ama **küçük** olan neredeyse hiç katkı
+vermiyor. ⇒ **Düşük korelasyon ≠ karşılaştırılabilir varyans.**
+
+⭐ **DR #14 ile bağımsız yakınsama:** DR'nin 2.1 adayı (*"her ekseni tarihsel
+popülasyon varyansına normalize et"*) teoriden önerilmişti; burada **sayısı
+çıktı**.
+
+### 4. ⛔⛔ En önemli ayrım — hangi versiyon KALDIRAÇ HARCAR
+
+| değişiklik | fizik değişir mi | bedel |
+|---|---|---|
+| `z`'yi **eksen vektörü** olarak tanımla (argmax etiketini **runtime'da bırak**) | ❌ **hayır** — eksen değerleri **zaten hesaplanıyor ve zaten kaydediliyor** (`delta_profile.axes.deltas`, D-136) | ⭐ **saf ölçüm değişikliği** ⇒ taban sıfırlanmaz |
+| Argmax'ı **runtime'dan** kaldır | ✅ **evet** — `affected_domain` etiketi delta log'a yazılıyor, o da duygusal ağırlığa, o da prompt'a gidiyor | **kaldıraç harcar** |
+
+⇒ ⭐ **Ucuz yol var ve önce o denenmeli.** `z`'yi kaydedilmiş eksen
+vektöründen okumak **hiçbir sayıyı sıfırlamaz**.
+
+### 5. ⚠️ Sınırlar — ve bir §2.7 tuzağı
+
+- ⛔ **z-skor normalizasyonu bu hesapta KOŞUMUN KENDİ istatistiğini kullandı.**
+  Ön-kayıtlı bir uç noktada bu **sonuca göre ayar** olur (§2.7). Dördüncü
+  ön-kayıtta referans **önceden** ilan edilmek zorunda — örn. **kurucu
+  neslin** yayılımı ya da sabit bir bölen. **Bu hâliyle uç nokta olamaz.**
+- Tek gece, **4 tohum**, 48 hücre. Beş gece bitince tekrarlanacak.
+- `r_eff` **yaşam-ortalaması** eksen deltaları üzerinden; landmark anının
+  kesitiyle farklı çıkabilir.
+- ⚠️ `r_eff = 3.19` *"dört bağımsız içerik kanalı"* **demek değil** — dört
+  farklı fiziksel niceliğin farkı olduğunu gösterir. Kovaryansın **hangi
+  alanda** olduğu iddiası hâlâ ayrı bir savunma ister.
+
+### 6. Bu koşuma etkisi: YOK
+
+`z` ön-kayıtta kilitli. Bulgu **dördüncü ön-kayıtın** girdisi; `ROADMAP.md`
+§9.5'in *"alan-ayrıştırılmış `z`"* adayı artık **bir sayıya** dayanıyor.

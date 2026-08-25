@@ -269,7 +269,7 @@ bozulursa *"ön-kayıt neyi korudu"* sorusunun cevabı kalmaz.
 
 | aday | neyi hedefliyor | not |
 |---|---|---|
-| **Alan-ayrıştırılmış `z`** (spillover matrisi = `I`, her alan kendi fiziksel kaynağından) | **L3** — `r_eff` 1.000 | ⭐ En doğrudan; `r_eff` artık **başarı ölçütü** olarak kullanılabilir |
+| ⭐⭐ **`z` = eksen vektörü + eksen başı ölçek** (argmax'ı uç noktadan çıkar) | **L3** — `r_eff` 1.000 | ⭐ **Ölçüldü (D-187): `r_eff` 1.000 → 1.453 → 3.194.** İkisi birden gerekiyor: argmax'ı kaldırmak tek başına 1.45'te kalıyor, çünkü `energy` `uncertainty`'nin **8.7 katı**. ⭐ **Ucuz yolu var:** `z`'yi kaydedilmiş eksen vektöründen okumak **fizik değiştirmez** ⇒ kaldıraç harcamaz. ⛔ Normalizasyon referansı **önceden** ilan edilmeli (§2.7) |
 | **Uzamsal kafes + komşu dışlama** | **L18** — davranış çökük | ⚠️ Ortamın özelliği, karar kuralının değil ⇒ K7'yi açmıyor. Ama `I5.6`/`I4.2` yeniden kalibre edilmeli |
 | **Wasserstein + permütasyon** | **tanımlılık problemi** | `W1`, `Var(z)=0` iken de tanımlı ⇒ sıfır-şişkinliği yapı gereği kaldırıyor |
 | **Doğrusal olmayan havuz yenilenmesi (devrilme noktası)** | **L18** | ⚠️ D-163'ün şartı: **denge noktası** da yazılacak |
